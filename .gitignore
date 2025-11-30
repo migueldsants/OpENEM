@@ -1,24 +1,67 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
-/tmp
-
-# Logs
-logs
-*.log
+# Node
+node_modules/
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
-
-# dotenv environment variable files
+pnpm-debug.log*
+dist/
+build/
+.tmp/
+.temp/
+logs/
+*.log
 .env
-.env.development
 .env.test
 .env.production
+.env.development.local
+.env.local
 
-# temp directory
-.temp
-.tmp
+# React
+.cache/
+.vite/
+*.local
+*.DS_Store
+*.swp
+*.swo
+build/
+dist/
+coverage/
+
+# React Native
+android/.gradle/
+android/app/build/
+android/app/debug.keystore
+android/local.properties
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*/xcuserdata/
+ios/*/xcshareddata/
+ios/*/build/
+.expo/
+.expo-shared/
+*.jks
+*.keystore
+.watchmanconfig
+*.bundle
+*.hprof
+
+# NestJS
+dist/
+out/
+*.tsbuildinfo
+.env.*
+!.env.example
+logs/
+*.log
+
+# IDEs e sistema
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-data/
+docker-compose.override.yml
