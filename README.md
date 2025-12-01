@@ -1,2 +1,2 @@
 # OpENEM
-Plataforma open source desenvolvida para facilitar a preparação para o ENEM.  A plataforma oferece questões, simulados e ferramentas de estudo gerais, Além dos exercícios, a plataforma oferece métricas de desempenho e recomendações baseadas no progresso do aluno.
+OpENEM é uma plataforma gratuita e de código aberto desenvolvida para revolucionar a preparação de estudantes para o ENEM. Oferecemos um ambiente completo de estudos com questões comentadas, simulados realistas e ferramentas inteligentes de acompanhamento de desempenho.
