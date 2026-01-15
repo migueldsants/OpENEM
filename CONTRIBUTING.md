@@ -1,5 +1,7 @@
 # Contribuindo para o OpENEM
 
+[Read in English](.github/docs/CONTRIBUTING-EN.md)
+
 Antes de mais nada, obrigado por dedicar seu tempo para contribuir! São pessoas como você que tornam este projeto melhor para todos.
 
 Todos os tipos de contribuições são bem-vindos, desde relatórios de bugs até novas *features* e melhorias na documentação.
@@ -9,7 +11,7 @@ Todos os tipos de contribuições são bem-vindos, desde relatórios de bugs at�
 ## Começando
 
 ### 1. Relatando Bugs
-Antes de criar um relatório de bug, verifique a [aba Issues](link-to-your-issues) para ver se o problema já foi relatado.
+Antes de criar um relatório de bug, verifique a [aba Issues](https://github.com/migueldsants/OpENEM/issues) para ver se o problema já foi relatado.
 
 Ao criar um relatório de bug, por favor inclua:
 * Um título claro e descritivo.

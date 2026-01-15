@@ -1,5 +1,7 @@
 # Contributing to OpENEM
 
+[Leia em Português](../../CONTRIBUTING.md)
+
 First off, thank you for taking the time to contribute! It’s people like you who make this project better for everyone.
 
 All types of contributions are welcome, from bug reports to new features and documentation improvements.
