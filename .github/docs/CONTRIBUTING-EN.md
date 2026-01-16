@@ -61,6 +61,9 @@ We recommend using **Conventional Commits**:
 * Open a **Pull Request (PR)** from your fork to our `main` branch.
 * Describe your changes in detail and link to any related issues (e.g., `Closes #123`).
 
+6. Security
+User and data security is a priority. However, do not open Issues to report vulnerabilities or security flaws.
+Read [SECURITY.md](.github/docs/SECURITY-EN.md)
 ---
 
 ## ⚖️ License
