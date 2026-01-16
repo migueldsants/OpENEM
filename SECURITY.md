@@ -1,5 +1,7 @@
 # Política de Segurança
 
+[Read in English](.github/docs/SECURITY-EN.md)
+
 ## Reportando uma Vulnerabilidade
 
 **Por favor, não abra uma "Issue" pública no GitHub para reportar vulnerabilidades de segurança.**
