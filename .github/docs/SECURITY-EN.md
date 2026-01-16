@@ -1,9 +1,11 @@
 # Security Policy
 
+[Leia em Português](../../SECURITY.md)
+
 ## Reporting a Vulnerability
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-If you discover a potential security issue, please send an email to **security@yourdomain.com**. 
+If you discover a potential security issue, please send an email to **openem.tmp@gmail.com**. 
 
 ### What to include:
 - A detailed description of the vulnerability.
