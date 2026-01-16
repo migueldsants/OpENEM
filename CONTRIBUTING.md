@@ -61,6 +61,9 @@ Recomendamos usar **Conventional Commits**:
 * Abra um **Pull Request (PR)** do seu fork para a nossa branch `main`.
 * Descreva suas alterações detalhadamente e linke quaisquer *issues* relacionadas (ex: `Closes #123`).
 
+6. Segurança
+A segurança dos usuários e dos dados é uma prioridade. No entanto, não abra Issues para relatar vulnerabilidades ou falhas de segurança.
+Leia [SECURITY.md](../../SECURITY.md)
 ---
 
 ## ⚖️ License
