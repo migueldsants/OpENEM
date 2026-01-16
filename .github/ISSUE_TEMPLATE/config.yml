@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Dúvidas e Perguntas
+    url: https://github.com/migueldsants/OpENEM/discussions
+    about: Por favor, faça e responda perguntas aqui.
+  
+  - name: Vulnerabilidade de Segurança
+    url: https://github.com/migueldsants/OpENEM/security/policy
+    about: Por favor, não relate problemas de segurança em issues públicas.

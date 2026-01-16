@@ -1,0 +1,36 @@
+name: Solicitação de Documentação
+description: Sugira melhorias ou correções na documentação
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a melhorar nossa documentação!
+        Por favor, nos informe onde precisamos melhorar.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição da Solicitação
+      description: O que está faltando ou incorreto na documentação atual?
+      placeholder: A seção sobre configuração não menciona...
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: URL ou Arquivo Relacionado
+      description: Link para a página ou caminho do arquivo que precisa de atenção (se aplicável).
+      placeholder: docs/setup.md
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto Adicional
+      description: Adicione qualquer outro contexto, referências ou exemplos que possam ajudar.
+    validations:
+      required: false

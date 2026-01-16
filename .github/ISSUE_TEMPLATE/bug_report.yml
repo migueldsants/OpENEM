@@ -1,0 +1,66 @@
+name: Relatório de Bug
+description: Crie um relatório para nos ajudar a melhorar o OpENEM
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por dedicar seu tempo para relatar um problema! 
+        Por favor, preencha as informações abaixo para que possamos entender e resolver o problema mais rapidamente.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Bug
+      description: Uma descrição clara e concisa do que é o bug.
+      placeholder: O sistema falha quando eu tento...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para Reproduzir
+      description: Passos para ver o comportamento do bug.
+      placeholder: |
+        1. Vá para '...'
+        2. Clique em '...'
+        3. Role para baixo até '...'
+        4. Veja o erro
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento Esperado
+      description: Uma descrição clara e concisa do que você esperava que acontecesse.
+      placeholder: Eu esperava que o botão salvasse o formulário...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento Atual
+      description: O que realmente aconteceu? Inclua logs de erro se possível.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Sistema Operacional, Versão do Node.js, Navegador, etc.
+      placeholder: Windows 10, Node 18, Chrome 90
+    validations:
+      required: false
+
+  - type: textarea
+    id: screens
+    attributes:
+      label: Screenshots ou Logs
+      description: Se aplicável, adicione screenshots ou logs de erro para ajudar a explicar seu problema.
+    validations:
+      required: false
