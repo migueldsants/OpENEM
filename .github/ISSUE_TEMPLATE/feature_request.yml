@@ -1,0 +1,42 @@
+name: Solicitação de Funcionalidade
+description: Sugira uma ideia para este projeto
+title: "[Feature]: "
+labels: ["feature", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por sugerir uma melhoria! 
+        Por favor, preencha as informações abaixo para entendermos melhor sua ideia.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: O problema é relacionado a uma frustração?
+      description: Uma descrição clara e concisa de qual é o problema. Ex: Eu fico frustrado quando...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Descreva a solução que você gostaria
+      description: Uma descrição clara e concisa do que você quer que aconteça.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Descreva as alternativas que você considerou
+      description: Uma descrição clara e concisa de quaisquer soluções ou funcionalidades alternativas que você considerou.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto Adicional
+      description: Adicione qualquer outro contexto ou screenshots sobre o pedido de funcionalidade aqui.
+    validations:
+      required: false
