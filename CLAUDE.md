@@ -6,9 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OpENEM is a free, open-source platform to help students prepare for the ENEM (Brazilian national exam): commented questions, realistic mock exams, and performance-tracking tools.
 
-**Phase 0 (foundation) is implemented:** NestJS API with Prisma+SQLite, JWT auth (`auth` + `users` modules), `/health`, Swagger, the full MVP Prisma schema, a React+Vite+Tailwind PWA scaffold (`openem_frontend/`), Docker Compose, and a GitHub Actions CI pipeline. Domain features (questions, simulations, performance, review) are scaffolded in the schema but not yet exposed as modules — see the roadmap.
+**Phases 0–2 are implemented (API):**
 
-The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
+- **Phase 0 (foundation):** NestJS API with Prisma+SQLite, JWT auth (`auth` + `users` modules), `/health`, Swagger, the full MVP Prisma schema, a React+Vite+Tailwind PWA (`openem_frontend/`), Docker Compose, and a GitHub Actions CI pipeline.
+- **Phase 1 (MVP):** domain modules `subjects`, `questions`, `answers`, `simulations`, `performance`, and `review` (SM-2 spaced repetition in `common/spaced-repetition.ts`).
+- **Phase 2 (post-MVP):** `favorites`, `study-plan` (auto schedule, `common/study-plan.ts`), `essays` (per-competency rubric grading, `common/essay-score.ts`), IRT/TRI scoring of simulations (`common/irt.ts`, populated only when questions carry calibration params `discrimination`/`irtDifficulty`/`guessing`), and a `focusMode` profile flag. The frontend has a router + auth context (`src/auth.tsx`) and Phase 2 screens (`src/pages/`).
+
+The full Phase 1 UI (question browsing, taking simulations, dashboards) is still pending — the frontend ships the auth shell plus Phase 2 screens.
+
+Remaining work (Phase 3): recommendation engine, gamification, community, AI essay correction, native apps. The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
 
 The primary language for documentation and API content is **Portuguese**. English mirrors of the docs live in `.github/docs/` (e.g. `README-EN.md`, `CONTRIBUTING-EN.md`, `SECURITY-EN.md`); keep both in sync when editing docs.
 
