@@ -1,142 +1,111 @@
-import { useEffect, useState } from 'react';
-import { api } from './api';
+import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './auth';
+import Cronograma from './pages/Cronograma';
+import Favoritos from './pages/Favoritos';
+import Login from './pages/Login';
+import Perfil from './pages/Perfil';
+import Redacao from './pages/Redacao';
 
-type Mode = 'login' | 'register';
+const NAV = [
+  { to: '/cronograma', label: 'Cronograma' },
+  { to: '/favoritos', label: 'Favoritos' },
+  { to: '/redacao', label: 'Redação' },
+  { to: '/perfil', label: 'Perfil' },
+];
+
+function Home() {
+  const { me } = useAuth();
+  return (
+    <div className="space-y-3">
+      <h1 className="text-xl font-bold">
+        Olá{me?.profile?.displayName ? `, ${me.profile.displayName}` : ''}!
+      </h1>
+      <p className="text-sm text-slate-400">
+        Use o menu para montar seu cronograma, revisar favoritos, treinar
+        redação ou ajustar seu perfil.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {NAV.slice(0, 3).map((n) => (
+          <NavLink
+            key={n.to}
+            to={n.to}
+            className="rounded-xl bg-slate-900/70 ring-1 ring-slate-800 p-4 hover:ring-emerald-500/50 transition"
+          >
+            <span className="font-semibold">{n.label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [health, setHealth] = useState<'...' | 'online' | 'offline'>('...');
-  const [mode, setMode] = useState<Mode>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { authenticated, me, logout } = useAuth();
+  const focusMode = me?.profile?.focusMode ?? false;
 
-  useEffect(() => {
-    api
-      .health()
-      .then((h) => setHealth(h.status === 'ok' ? 'online' : 'offline'))
-      .catch(() => setHealth('offline'));
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
-    try {
-      const res =
-        mode === 'login'
-          ? await api.login(email, password)
-          : await api.register(email, password);
-      setMessage(`Olá, ${res.user.email}! Token recebido com sucesso.`);
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Erro inesperado');
-    } finally {
-      setLoading(false);
-    }
+  if (!authenticated) {
+    return (
+      <Routes>
+        <Route path="*" element={<Login />} />
+      </Routes>
+    );
   }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <header className="px-6 pt-10 pb-6">
-        <div className="mx-auto max-w-md">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-black tracking-tight">
+      {/* No modo sem distrações, a navegação e elementos decorativos somem. */}
+      {!focusMode && (
+        <header className="border-b border-slate-800 px-4 py-3">
+          <div className="mx-auto max-w-3xl flex items-center gap-3">
+            <NavLink to="/" className="text-lg font-black tracking-tight">
               Op<span className="text-emerald-400">ENEM</span>
-            </span>
-            <span
-              className={`ml-auto text-xs rounded-full px-2 py-1 ${
-                health === 'online'
-                  ? 'bg-emerald-500/15 text-emerald-300'
-                  : health === 'offline'
-                    ? 'bg-rose-500/15 text-rose-300'
-                    : 'bg-slate-700/40 text-slate-300'
-              }`}
-            >
-              API: {health}
-            </span>
+            </NavLink>
+            <nav className="ml-auto flex flex-wrap gap-1 text-sm">
+              {NAV.map((n) => (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  className={({ isActive }) =>
+                    `rounded-md px-2.5 py-1.5 transition ${
+                      isActive
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  {n.label}
+                </NavLink>
+              ))}
+              <button
+                onClick={logout}
+                className="rounded-md px-2.5 py-1.5 text-slate-400 hover:text-rose-300 transition"
+              >
+                Sair
+              </button>
+            </nav>
           </div>
-          <p className="mt-3 text-slate-400 text-sm leading-relaxed">
-            Preparação gratuita e personalizada para o ENEM. Simulados fiéis,
-            estatísticas que mostram onde você erra e revisão inteligente — no
-            seu tempo, no seu celular.
-          </p>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className="flex-1 px-6">
-        <div className="mx-auto max-w-md">
-          <div className="rounded-2xl bg-slate-900/70 ring-1 ring-slate-800 p-6 shadow-xl">
-            <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-800/60 p-1 text-sm font-medium">
-              <button
-                type="button"
-                onClick={() => setMode('login')}
-                className={`rounded-md py-2 transition ${
-                  mode === 'login'
-                    ? 'bg-slate-950 text-white'
-                    : 'text-slate-400'
-                }`}
-              >
-                Entrar
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('register')}
-                className={`rounded-md py-2 transition ${
-                  mode === 'register'
-                    ? 'bg-slate-950 text-white'
-                    : 'text-slate-400'
-                }`}
-              >
-                Criar conta
-              </button>
+      <main className="flex-1 px-4 py-6">
+        <div className="mx-auto max-w-3xl">
+          {focusMode && (
+            <div className="mb-4 text-xs text-slate-500">
+              Modo sem distrações ativo —{' '}
+              <NavLink to="/perfil" className="underline">
+                desativar no perfil
+              </NavLink>
             </div>
-
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              <label className="block">
-                <span className="text-xs text-slate-400">E-mail</span>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg bg-slate-950 ring-1 ring-slate-800 px-3 py-2.5 text-sm outline-none focus:ring-emerald-500"
-                  placeholder="voce@exemplo.com"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs text-slate-400">Senha</span>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 w-full rounded-lg bg-slate-950 ring-1 ring-slate-800 px-3 py-2.5 text-sm outline-none focus:ring-emerald-500"
-                  placeholder="mínimo 8 caracteres"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-60"
-              >
-                {loading
-                  ? 'Enviando…'
-                  : mode === 'login'
-                    ? 'Entrar'
-                    : 'Criar conta'}
-              </button>
-            </form>
-
-            {message && (
-              <p className="mt-4 text-center text-sm text-slate-300">{message}</p>
-            )}
-          </div>
-
-          <p className="mt-6 text-center text-xs text-slate-600">
-            Scaffold da Fase 0 — ver{' '}
-            <span className="text-slate-400">docs/PRD.md</span>
-          </p>
+          )}
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/cronograma" element={<Cronograma />} />
+            <Route path="/favoritos" element={<Favoritos />} />
+            <Route path="/redacao" element={<Redacao />} />
+            <Route path="/perfil" element={<Perfil />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
       </main>
     </div>
