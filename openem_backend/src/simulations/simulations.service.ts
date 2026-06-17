@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { CalibratedItem, triScoreFromItems } from '../common/irt';
 import { shuffle } from '../common/shuffle';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReviewService } from '../review/review.service';
@@ -84,6 +85,7 @@ export class SimulationsService {
         startedAt: true,
         finishedAt: true,
         rawScore: true,
+        triScore: true,
         _count: { select: { answers: true } },
       },
     });
@@ -98,6 +100,7 @@ export class SimulationsService {
       startedAt: simulation.startedAt,
       finishedAt: simulation.finishedAt,
       rawScore: simulation.rawScore,
+      triScore: simulation.triScore,
       answersCount: simulation._count.answers,
     };
   }
@@ -122,6 +125,9 @@ export class SimulationsService {
       select: {
         id: true,
         topicId: true,
+        discrimination: true,
+        irtDifficulty: true,
+        guessing: true,
         alternatives: { select: { id: true, isCorrect: true } },
       },
     });
@@ -133,6 +139,8 @@ export class SimulationsService {
       isCorrect: boolean;
       correctAlternativeId: string | null;
     }[] = [];
+    const irtItems: CalibratedItem[] = [];
+    let allCalibrated = true;
 
     for (const answer of dto.answers) {
       const question = byId.get(answer.questionId);
@@ -153,6 +161,22 @@ export class SimulationsService {
       });
       await this.review.recordOutcome(userId, question.topicId, isCorrect);
 
+      // Coleta os parâmetros TRI; basta uma questão sem calibração para anular a nota.
+      if (
+        question.discrimination !== null &&
+        question.irtDifficulty !== null &&
+        question.guessing !== null
+      ) {
+        irtItems.push({
+          a: question.discrimination,
+          b: question.irtDifficulty,
+          c: question.guessing,
+          correct: isCorrect,
+        });
+      } else {
+        allCalibrated = false;
+      }
+
       details.push({
         questionId: question.id,
         isCorrect,
@@ -161,9 +185,12 @@ export class SimulationsService {
     }
 
     const total = details.length;
+    const triScore =
+      total > 0 && allCalibrated ? triScoreFromItems(irtItems) : null;
+
     await this.prisma.simulation.update({
       where: { id },
-      data: { finishedAt: new Date(), rawScore: correctCount },
+      data: { finishedAt: new Date(), rawScore: correctCount, triScore },
     });
 
     return {
@@ -171,6 +198,7 @@ export class SimulationsService {
       total,
       correct: correctCount,
       percentage: total ? Math.round((correctCount / total) * 100) : 0,
+      triScore,
       details,
     };
   }
