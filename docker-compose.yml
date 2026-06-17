@@ -1,0 +1,36 @@
+# OpENEM — orquestração local (Fase 0).
+# Banco SQLite em volume nomeado; produção -> PostgreSQL (ver docs/PRD.md §12).
+# Sem deploy remoto por enquanto: rode `docker compose up --build` na sua máquina.
+
+services:
+  backend:
+    build: ./openem_backend
+    environment:
+      - DATABASE_URL=file:/data/prod.db
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-dev-insecure-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+    ports:
+      - '3000:3000'
+    volumes:
+      - sqlite-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build: ./openem_frontend
+    ports:
+      - '8080:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  sqlite-data:

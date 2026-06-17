@@ -1,0 +1,131 @@
+// OpENEM — esquema Prisma (Fase 0 / MVP)
+// Datasource SQLite na fase atual; produção -> PostgreSQL (ver docs/PRD.md §9).
+// SQLite não tem enum nativo no Prisma: usamos String com valores controlados na aplicação.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  profile      Profile?
+  answers      Answer[]
+  simulations  Simulation[]
+  reviewItems  ReviewItem[]
+}
+
+model Profile {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal          String  @default("SISU") // SISU | PROUNI | TREINEIRO
+  minutesPerDay Int     @default(60)
+  displayName   String?
+}
+
+model Subject {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  topics Topic[]
+}
+
+model Topic {
+  id          String       @id @default(cuid())
+  name        String
+  subjectId   String
+  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  reviewItems ReviewItem[]
+
+  @@unique([subjectId, name])
+}
+
+model ExamYear {
+  id        String     @id @default(cuid())
+  year      Int        @unique
+  questions Question[]
+}
+
+model Question {
+  id           String        @id @default(cuid())
+  statement    String
+  difficulty   Int           @default(3) // 1..5 (questões por nível)
+  explanation  String
+  topicId      String
+  topic        Topic         @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  examYearId   String?
+  examYear     ExamYear?     @relation(fields: [examYearId], references: [id])
+  alternatives Alternative[]
+  answers      Answer[]
+
+  @@index([topicId, difficulty])
+}
+
+model Alternative {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+}
+
+model SimulationTemplate {
+  id            String       @id @default(cuid())
+  name          String
+  scope         String       @default("FULL") // AREA | FULL
+  subjectId     String?
+  questionCount Int          @default(10)
+  timeLimitMin  Int?
+  simulations   Simulation[]
+}
+
+model Simulation {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId String
+  template   SimulationTemplate @relation(fields: [templateId], references: [id])
+  startedAt  DateTime           @default(now())
+  finishedAt DateTime?
+  rawScore   Float?
+  triScore   Float? // [PLACEHOLDER Fase 2]
+  answers    Answer[]
+}
+
+model Answer {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  chosenId     String?
+  isCorrect    Boolean     @default(false)
+  timeSpentSec Int?
+  simulationId String?
+  simulation   Simulation? @relation(fields: [simulationId], references: [id])
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, questionId])
+}
+
+model ReviewItem {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId    String
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  easeFactor Float    @default(2.5) // SM-2 simplificado
+  intervalD  Int      @default(0)
+  repetition Int      @default(0)
+  dueAt      DateTime @default(now())
+
+  @@unique([userId, topicId])
+}
