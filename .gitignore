@@ -62,6 +62,15 @@ logs/
 .DS_Store
 Thumbs.db
 
+#AI temp
+references/
+
 # Docker
 docker-data/
 docker-compose.override.yml
+
+# Prisma / SQLite (bancos locais; migrations SÃO versionadas)
+*.db
+*.db-journal
+prisma/*.db
+prisma/*.db-journal
