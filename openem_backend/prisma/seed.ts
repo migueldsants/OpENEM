@@ -60,6 +60,11 @@ async function main() {
         topicId,
         examYearId: examYear.id,
         alternatives: { create: alternatives },
+        // Calibração TRI de demonstração (parâmetros 3PL plausíveis derivados do
+        // nível): a=1, c=0.2, b mapeado de difficulty 1..5 para a escala latente.
+        discrimination: 1.0,
+        irtDifficulty: (difficulty - 3) * 0.8,
+        guessing: 0.2,
       },
     });
   }
@@ -152,6 +157,22 @@ async function main() {
       subjectId: math.id,
       questionCount: 4,
       timeLimitMin: 60,
+    },
+  });
+
+  // Tema de redação (Fase 2).
+  await prisma.essayPrompt.upsert({
+    where: { id: 'seed-essay-tecnologia' },
+    update: {},
+    create: {
+      id: 'seed-essay-tecnologia',
+      title: 'Tecnologia e sociedade',
+      theme:
+        'Desafios para o uso consciente da tecnologia na sociedade brasileira',
+      instructions:
+        'Redija um texto dissertativo-argumentativo, respeitando a norma-padrão ' +
+        'da língua portuguesa, com proposta de intervenção que respeite os direitos humanos.',
+      year: 2023,
     },
   });
 
