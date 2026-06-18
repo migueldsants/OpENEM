@@ -41,6 +41,8 @@ export class FavoritesService {
                 subject: { select: { id: true, name: true } },
               },
             },
+            // Sem o gabarito; permite responder a questão favoritada.
+            alternatives: { select: { id: true, text: true } },
           },
         },
       },
