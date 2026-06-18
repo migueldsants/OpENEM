@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { useTheme } from '../theme';
@@ -49,11 +49,22 @@ export default function Perfil() {
 
   const profile = me?.profile;
 
+  // Inputs controlados, re-semeados quando o perfil carrega de forma assíncrona,
+  // para que um blur sem digitação não sobrescreva o que estava salvo.
+  const [displayName, setDisplayName] = useState('');
+  const [minutes, setMinutes] = useState(60);
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName ?? '');
+      setMinutes(profile.minutesPerDay);
+    }
+  }, [profile?.displayName, profile?.minutesPerDay]);
+
   async function update(patch: {
     focusMode?: boolean;
     minutesPerDay?: number;
     goal?: string;
-    displayName?: string;
+    displayName?: string | null;
   }) {
     setSaving(true);
     setError(null);
@@ -103,13 +114,15 @@ export default function Perfil() {
           <input
             type="text"
             maxLength={80}
-            defaultValue={profile?.displayName ?? ''}
+            value={displayName}
             disabled={saving}
             placeholder="Seu nome"
-            onBlur={(e) => {
-              const value = e.target.value.trim();
+            onChange={(e) => setDisplayName(e.target.value)}
+            onBlur={() => {
+              const value = displayName.trim();
               if (value !== (profile?.displayName ?? '')) {
-                void update({ displayName: value });
+                // Vazio volta a null para o fallback de e-mail funcionar.
+                void update({ displayName: value || null });
               }
             }}
             className="input mt-1.5"
@@ -182,12 +195,12 @@ export default function Perfil() {
             type="number"
             min={5}
             max={1440}
-            defaultValue={profile?.minutesPerDay ?? 60}
+            value={minutes}
             disabled={saving}
-            onBlur={(e) => {
-              const value = Number(e.target.value);
-              if (value && value !== profile?.minutesPerDay) {
-                void update({ minutesPerDay: value });
+            onChange={(e) => setMinutes(Number(e.target.value))}
+            onBlur={() => {
+              if (minutes && minutes !== profile?.minutesPerDay) {
+                void update({ minutesPerDay: minutes });
               }
             }}
             className="input w-32"

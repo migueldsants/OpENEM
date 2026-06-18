@@ -203,6 +203,31 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     expect(finish.body.triScore).toBeGreaterThan(500);
   });
 
+  it('deduplica respostas repetidas da mesma questão ao finalizar', async () => {
+    const start = await request(app.getHttpServer())
+      .post('/api/v1/simulations')
+      .set(auth())
+      .send({ templateId: 'seed-template-math' })
+      .expect(201);
+    const q = start.body.questions[0];
+    const chosenId = await correctAlternativeId(q.id);
+
+    // Mesma questão três vezes: deve contar como uma só.
+    const finish = await request(app.getHttpServer())
+      .post(`/api/v1/simulations/${start.body.id}/finish`)
+      .set(auth())
+      .send({
+        answers: [
+          { questionId: q.id, chosenId },
+          { questionId: q.id, chosenId },
+          { questionId: q.id, chosenId },
+        ],
+      })
+      .expect(201);
+    expect(finish.body.total).toBe(1);
+    expect(finish.body.correct).toBe(1);
+  });
+
   it('ativa o modo sem distrações no perfil', async () => {
     const res = await request(app.getHttpServer())
       .put('/api/v1/users/me/profile')

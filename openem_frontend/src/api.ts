@@ -10,6 +10,24 @@ export function setToken(token: string | null): void {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+/** Erro de API que carrega o status HTTP, para o chamador reagir (ex.: 401). */
+export class HttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
+// Notificado quando uma chamada autenticada recebe 401 (token expirado/inválido),
+// para o AuthProvider encerrar a sessão e levar o usuário ao login.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+
 async function request<T>(
   path: string,
   options: { method?: string; body?: unknown } = {},
@@ -26,7 +44,13 @@ async function request<T>(
   });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { message?: string };
-    throw new Error(
+    // Token expirado durante a sessão: limpa e encerra para não travar o usuário.
+    if (res.status === 401 && token) {
+      setToken(null);
+      onUnauthorized?.();
+    }
+    throw new HttpError(
+      res.status,
       (Array.isArray(data.message) ? data.message.join(', ') : data.message) ??
         `Erro ${res.status}`,
     );

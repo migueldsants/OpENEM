@@ -6,7 +6,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { api, getToken, setToken, type Me } from './api';
+import {
+  api,
+  getToken,
+  HttpError,
+  setToken,
+  setUnauthorizedHandler,
+  type Me,
+} from './api';
 
 interface AuthState {
   token: string | null;
@@ -31,17 +38,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       setMe(await api.me());
-    } catch {
-      // Token inválido/expirado: encerra a sessão.
-      setToken(null);
-      setTokenState(null);
-      setMe(null);
+    } catch (e) {
+      // Só encerra a sessão se o token foi rejeitado (401). Falhas de rede ou
+      // 5xx (público mobile, internet instável) mantêm a sessão.
+      if (e instanceof HttpError && e.status === 401) {
+        setToken(null);
+        setTokenState(null);
+        setMe(null);
+      }
     }
   }, []);
 
   useEffect(() => {
     void refreshMe();
   }, [refreshMe]);
+
+  // Um 401 em qualquer chamada autenticada encerra a sessão (estado React).
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setTokenState(null);
+      setMe(null);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   const persist = useCallback((accessToken: string) => {
     setToken(accessToken);

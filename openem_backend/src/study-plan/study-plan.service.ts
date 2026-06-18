@@ -56,21 +56,24 @@ export class StudyPlanService {
 
     const sessions = buildStudyPlan(topics, minutesPerDay);
 
-    // Um plano ativo por usuário: recria do zero.
-    await this.prisma.studyPlan.deleteMany({ where: { userId } });
-    await this.prisma.studyPlan.create({
-      data: {
-        userId,
-        minutesPerDay,
-        sessions: {
-          create: sessions.map((s) => ({
-            topicId: s.topicId,
-            dayIndex: s.dayIndex,
-            minutes: s.minutes,
-          })),
+    // Um plano ativo por usuário: recria do zero, atomicamente, para que uma
+    // falha não deixe o usuário sem plano e regenerações concorrentes serializem.
+    await this.prisma.$transaction([
+      this.prisma.studyPlan.deleteMany({ where: { userId } }),
+      this.prisma.studyPlan.create({
+        data: {
+          userId,
+          minutesPerDay,
+          sessions: {
+            create: sessions.map((s) => ({
+              topicId: s.topicId,
+              dayIndex: s.dayIndex,
+              minutes: s.minutes,
+            })),
+          },
         },
-      },
-    });
+      }),
+    ]);
 
     return this.get(userId);
   }

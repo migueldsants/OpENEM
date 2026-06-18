@@ -119,7 +119,13 @@ export class SimulationsService {
       throw new BadRequestException('Simulado já finalizado');
     }
 
-    const questionIds = dto.answers.map((a) => a.questionId);
+    // Deduplica por questão (última resposta vence): evita inflar rawScore/triScore
+    // e duplicar Answers/atualizações SM-2 se o cliente reenviar a mesma questão.
+    const dedup = new Map<string, (typeof dto.answers)[number]>();
+    for (const a of dto.answers) dedup.set(a.questionId, a);
+    const answers = [...dedup.values()];
+
+    const questionIds = answers.map((a) => a.questionId);
     const questions = await this.prisma.question.findMany({
       where: { id: { in: questionIds } },
       select: {
@@ -142,7 +148,7 @@ export class SimulationsService {
     const irtItems: CalibratedItem[] = [];
     let allCalibrated = true;
 
-    for (const answer of dto.answers) {
+    for (const answer of answers) {
       const question = byId.get(answer.questionId);
       if (!question) continue;
       const correct = question.alternatives.find((a) => a.isCorrect) ?? null;

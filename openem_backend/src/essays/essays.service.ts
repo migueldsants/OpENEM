@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { totalEssayScore } from '../common/essay-score';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
@@ -110,17 +111,28 @@ export class EssaysService {
     }
 
     const total = totalEssayScore(dto);
-    return this.prisma.essayEvaluation.create({
-      data: {
-        submissionId: id,
-        c1: dto.c1,
-        c2: dto.c2,
-        c3: dto.c3,
-        c4: dto.c4,
-        c5: dto.c5,
-        total,
-        feedback: dto.feedback,
-      },
-    });
+    try {
+      return await this.prisma.essayEvaluation.create({
+        data: {
+          submissionId: id,
+          c1: dto.c1,
+          c2: dto.c2,
+          c3: dto.c3,
+          c4: dto.c4,
+          c5: dto.c5,
+          total,
+          feedback: dto.feedback,
+        },
+      });
+    } catch (e) {
+      // Corrida: o índice único de submissionId garante uma avaliação por redação.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('Esta redação já foi avaliada');
+      }
+      throw e;
+    }
   }
 }
