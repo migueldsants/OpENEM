@@ -45,16 +45,54 @@ export interface TopicRef {
   name: string;
   subject: { id: string; name: string };
 }
+export interface Alternative {
+  id: string;
+  text: string;
+}
 export interface Question {
   id: string;
   statement: string;
   difficulty: number;
   topic: TopicRef;
+  alternatives: Alternative[];
 }
 export interface Favorite {
   id: string;
   createdAt: string;
   question: Question;
+}
+export interface AnswerResult {
+  isCorrect: boolean;
+  correctAlternativeId: string | null;
+  explanation: string;
+}
+export interface Subject {
+  id: string;
+  name: string;
+  topics: { id: string; name: string }[];
+}
+export interface AreaPerformance {
+  id: string;
+  name: string;
+  total: number;
+  correct: number;
+  accuracy: number;
+}
+export interface Performance {
+  overall: { total: number; correct: number; accuracy: number };
+  recent: { total: number; correct: number; accuracy: number };
+  bySubject: AreaPerformance[];
+  byTopic: (AreaPerformance & { subjectName?: string })[];
+  weakestTopics: (AreaPerformance & { subjectName?: string })[];
+}
+export interface ReviewItem {
+  id: string;
+  dueAt: string;
+  topic: TopicRef;
+}
+export interface Paginated<T> {
+  items: T[];
+  meta: { total: number; page: number; limit: number; pages: number };
 }
 export interface StudySession {
   id: string;
@@ -125,11 +163,32 @@ export const api = {
 
   me: () => request<Me>('/users/me'),
   updateProfile: (
-    patch: Partial<Pick<Profile, 'focusMode' | 'minutesPerDay'>>,
+    patch: Partial<
+      Pick<Profile, 'focusMode' | 'minutesPerDay' | 'goal' | 'displayName'>
+    >,
   ) => request<Me>('/users/me/profile', { method: 'PUT', body: patch }),
 
-  questions: (limit = 20) =>
-    request<{ items: Question[] }>(`/questions?limit=${limit}`),
+  subjects: () => request<Subject[]>('/subjects'),
+  questions: (params: {
+    subjectId?: string;
+    difficulty?: number;
+    page?: number;
+    limit?: number;
+  } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.subjectId) qs.set('subjectId', params.subjectId);
+    if (params.difficulty) qs.set('difficulty', String(params.difficulty));
+    qs.set('page', String(params.page ?? 1));
+    qs.set('limit', String(params.limit ?? 10));
+    return request<Paginated<Question>>(`/questions?${qs.toString()}`);
+  },
+  answer: (questionId: string, chosenId: string) =>
+    request<AnswerResult>('/answers', {
+      method: 'POST',
+      body: { questionId, chosenId },
+    }),
+  performance: () => request<Performance>('/performance'),
+  reviewQueue: () => request<ReviewItem[]>('/review/queue'),
 
   favorites: () => request<Favorite[]>('/favorites'),
   addFavorite: (questionId: string) =>

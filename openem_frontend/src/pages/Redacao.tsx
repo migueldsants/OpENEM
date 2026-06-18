@@ -5,6 +5,48 @@ import {
   type EssaySubmissionSummary,
 } from '../api';
 
+const COMPETENCIES = [
+  { key: 'c1', label: 'C1 · Norma culta' },
+  { key: 'c2', label: 'C2 · Compreensão do tema' },
+  { key: 'c3', label: 'C3 · Argumentação' },
+  { key: 'c4', label: 'C4 · Coesão' },
+  { key: 'c5', label: 'C5 · Proposta de intervenção' },
+] as const;
+
+function ScoreCard({
+  evaluation,
+}: {
+  evaluation: NonNullable<EssaySubmissionSummary['evaluation']>;
+}) {
+  return (
+    <div className="mt-3 rounded-xl bg-surface-2 p-3">
+      <p className="font-display text-xl font-extrabold tabular-nums text-nat">
+        {evaluation.total}
+        <span className="text-sm font-semibold text-muted">/1000</span>
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {COMPETENCIES.map(({ key, label }) => {
+          const value = evaluation[key];
+          return (
+            <li key={key} className="flex items-center gap-2 text-xs">
+              <span className="w-44 shrink-0 truncate text-muted">{label}</span>
+              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+                <span
+                  className="block h-full rounded-full bg-nat"
+                  style={{ width: `${(value / 200) * 100}%` }}
+                />
+              </span>
+              <span className="w-7 shrink-0 text-right font-medium tabular-nums">
+                {value}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function Redacao() {
   const [prompts, setPrompts] = useState<EssayPrompt[]>([]);
   const [submissions, setSubmissions] = useState<EssaySubmissionSummary[]>([]);
@@ -22,11 +64,11 @@ export default function Redacao() {
       ]);
       setPrompts(p);
       setSubmissions(s);
-      if (p.length && !promptId) setPromptId(p[0].id);
+      setPromptId((cur) => cur || (p[0]?.id ?? ''));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar');
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
     }
-  }, [promptId]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -40,10 +82,10 @@ export default function Redacao() {
     try {
       await api.submitEssay(promptId, content);
       setContent('');
-      setMessage('Redação enviada! Aguardando correção.');
+      setMessage('Redação enviada! Você verá a nota assim que for corrigida.');
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao enviar');
+      setError(err instanceof Error ? err.message : 'Não foi possível enviar.');
     } finally {
       setBusy(false);
     }
@@ -52,21 +94,25 @@ export default function Redacao() {
   const selected = prompts.find((p) => p.id === promptId);
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-xl font-bold">Redação</h1>
+    <div className="space-y-6">
+      <header>
+        <p className="eyebrow">Treino</p>
+        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+          Redação
+        </h1>
+      </header>
 
-      {error && <p className="text-sm text-rose-300">{error}</p>}
+      {error && (
+        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+      )}
 
-      <form
-        onSubmit={submit}
-        className="rounded-xl bg-slate-900/70 ring-1 ring-slate-800 p-4 space-y-3"
-      >
+      <form onSubmit={submit} className="card card-raised space-y-3 p-4">
         <label className="block">
-          <span className="text-xs text-slate-400">Tema</span>
+          <span className="eyebrow">Tema</span>
           <select
             value={promptId}
             onChange={(e) => setPromptId(e.target.value)}
-            className="mt-1 w-full rounded-lg bg-slate-950 ring-1 ring-slate-800 px-3 py-2 text-sm outline-none focus:ring-emerald-500"
+            className="input mt-1.5"
           >
             {prompts.map((p) => (
               <option key={p.id} value={p.id}>
@@ -76,7 +122,9 @@ export default function Redacao() {
           </select>
         </label>
         {selected && (
-          <p className="text-xs text-slate-500">{selected.theme}</p>
+          <p className="rounded-lg border-l-2 border-red bg-red/5 px-3 py-2 text-xs leading-relaxed text-muted">
+            {selected.theme}
+          </p>
         )}
         <textarea
           required
@@ -84,53 +132,43 @@ export default function Redacao() {
           onChange={(e) => setContent(e.target.value)}
           rows={8}
           placeholder="Escreva sua redação dissertativo-argumentativa…"
-          className="w-full rounded-lg bg-slate-950 ring-1 ring-slate-800 px-3 py-2 text-sm outline-none focus:ring-emerald-500"
+          className="input resize-y"
         />
-        <button
-          type="submit"
-          disabled={busy || !promptId}
-          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
-        >
-          {busy ? 'Enviando…' : 'Enviar redação'}
-        </button>
-        {message && <p className="text-sm text-emerald-300">{message}</p>}
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={busy || !promptId}
+            className="btn btn-primary"
+          >
+            {busy ? 'Enviando…' : 'Enviar redação'}
+          </button>
+          {message && <p className="text-sm text-nat">{message}</p>}
+        </div>
       </form>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-300">Meus envios</h2>
+      <section className="space-y-3">
+        <h2 className="eyebrow">Meus envios</h2>
         {submissions.length === 0 ? (
-          <p className="text-sm text-slate-500">Nenhuma redação enviada ainda.</p>
+          <p className="card p-6 text-center text-sm text-muted">
+            Você ainda não enviou nenhuma redação.
+          </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {submissions.map((s) => (
-              <li
-                key={s.id}
-                className="rounded-xl bg-slate-900/70 ring-1 ring-slate-800 p-4"
-              >
-                <p className="text-sm font-medium">{s.prompt.title}</p>
-                <p className="text-xs text-slate-500">
-                  Enviada em {new Date(s.submittedAt).toLocaleDateString('pt-BR')}
-                </p>
-                {s.evaluation ? (
-                  <div className="mt-2">
-                    <p className="text-sm">
-                      Nota:{' '}
-                      <span className="font-bold text-emerald-300">
-                        {s.evaluation.total}
-                      </span>
-                      /1000
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      C1 {s.evaluation.c1} · C2 {s.evaluation.c2} · C3{' '}
-                      {s.evaluation.c3} · C4 {s.evaluation.c4} · C5{' '}
-                      {s.evaluation.c5}
+              <li key={s.id} className="card card-raised p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-display font-bold">{s.prompt.title}</p>
+                    <p className="text-xs text-muted">
+                      Enviada em{' '}
+                      {new Date(s.submittedAt).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                ) : (
-                  <p className="mt-2 text-xs text-amber-300/80">
-                    Aguardando correção.
-                  </p>
-                )}
+                  {!s.evaluation && (
+                    <span className="chip text-hum">Aguardando correção</span>
+                  )}
+                </div>
+                {s.evaluation && <ScoreCard evaluation={s.evaluation} />}
               </li>
             ))}
           </ul>

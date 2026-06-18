@@ -1,15 +1,234 @@
 @import 'tailwindcss';
 
-:root {
+/* ----------------------------------------------------------------------------
+   OpENEM — sistema de design
+   Marca em índigo; as cinco áreas do conhecimento do ENEM são o sistema de cor
+   do conteúdo (Matemática, Natureza, Humanas, Linguagens, Redação).
+---------------------------------------------------------------------------- */
+
+@theme {
+  --font-display:
+    'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Áreas do conhecimento — mesma família de saturação, iguais nos dois temas. */
+  --color-mat: #3e82f7; /* Matemática */
+  --color-nat: #13b981; /* Ciências da Natureza */
+  --color-hum: #f59e3c; /* Ciências Humanas */
+  --color-lin: #9a6bf0; /* Linguagens */
+  --color-red: #f2587a; /* Redação */
+}
+
+/* Tokens semânticos — claro (padrão) */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f1f2fa;
+  --surface: #ffffff;
+  --surface-2: #f7f8fe;
+  --fg: #1c1e2c;
+  --muted: #5c6175;
+  --line: #e5e6f1;
+  --brand: #5b57e0;
+  --brand-2: #8b5cf0;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(28, 30, 44, 0.04), 0 8px 24px rgba(28, 30, 44, 0.06);
+}
+
+/* Tokens semânticos — escuro */
+[data-theme='dark'] {
   color-scheme: dark;
+  --bg: #111220;
+  --surface: #1a1c2b;
+  --surface-2: #222540;
+  --fg: #e9e9f5;
+  --muted: #989cb6;
+  --line: #2a2d44;
+  --brand: #8b87ff;
+  --brand-2: #b18bff;
+  --brand-ink: #131322;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
+/* Expõe os tokens como cores Tailwind (bg-surface, text-muted, bg-brand…). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-brand-ink: var(--brand-ink);
 }
 
-body {
-  margin: 0;
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Transição suave só na troca de tema (cor), não em tudo. */
+  body,
+  .card,
+  .topbar,
+  .tabbar,
+  .input,
+  .btn,
+  .chip,
+  .seg {
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      color 0.25s ease;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--brand) 28%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1.1rem;
+  }
+  .card-raised {
+    box-shadow: var(--shadow);
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 0.7rem;
+    padding: 0.6rem 0.8rem;
+    color: var(--fg);
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .input::placeholder {
+    color: color-mix(in oklab, var(--muted) 75%, transparent);
+  }
+  .input:focus-visible {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 22%, transparent);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border-radius: 0.7rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    user-select: none;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--brand) 88%, black);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--fg);
+    border-color: var(--line);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+
+  /* Grupo de botões segmentado (abas Entrar/Criar conta, Banco/Favoritos). */
+  .seg {
+    display: inline-flex;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    gap: 0.25rem;
+  }
+  .seg > button {
+    border-radius: 0.55rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .seg > button[data-active='true'] {
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: var(--shadow);
+  }
+
+  /* Foco visível e consistente em toda a interface. */
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 0.4rem;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.4s ease both;
 }
