@@ -14,7 +14,12 @@ export class UsersService {
         email: true,
         createdAt: true,
         profile: {
-          select: { goal: true, minutesPerDay: true, displayName: true },
+          select: {
+            goal: true,
+            minutesPerDay: true,
+            displayName: true,
+            focusMode: true,
+          },
         },
       },
     });

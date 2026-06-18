@@ -476,10 +476,62 @@ model ReviewItem {   // fila de revisão espaçada por assunto/questão
   dueAt      DateTime @default(now())
 }
 
-// ---- Fases 2/3 (placeholders de modelagem) ----
-// model EssayPrompt / EssaySubmission / EssayEvaluation  [PLACEHOLDER Fase 2]
-// model StudyPlan / StudySession                          [PLACEHOLDER Fase 2]
-// model Streak / Achievement / Favorite                   [PLACEHOLDER Fase 3]
+// ---- Fase 2 (implementados) ----
+// Question ganhou parâmetros TRI 3PL nullable: discrimination (a),
+// irtDifficulty (b), guessing (c). Profile ganhou focusMode Boolean.
+
+model Favorite {        // questões salvas pelo usuário
+  id String @id @default(cuid())
+  userId String
+  questionId String
+  createdAt DateTime @default(now())
+  @@unique([userId, questionId])
+}
+
+model StudyPlan {       // um plano ativo por usuário
+  id String @id @default(cuid())
+  userId String @unique
+  minutesPerDay Int
+  createdAt DateTime @default(now())
+  sessions StudySession[]
+}
+
+model StudySession {    // bloco de estudo de um assunto num dia do plano
+  id String @id @default(cuid())
+  planId String
+  topicId String
+  dayIndex Int
+  minutes Int
+  done Boolean @default(false)
+}
+
+model EssayPrompt {     // tema de redação
+  id String @id @default(cuid())
+  title String
+  theme String
+  instructions String
+  year Int?
+}
+
+model EssaySubmission { // redação enviada pelo usuário
+  id String @id @default(cuid())
+  userId String
+  promptId String
+  content String
+  submittedAt DateTime @default(now())
+}
+
+model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
+  id String @id @default(cuid())
+  submissionId String @unique
+  c1 Int; c2 Int; c3 Int; c4 Int; c5 Int
+  total Int            // 0..1000
+  feedback String?
+  evaluatedAt DateTime @default(now())
+}
+
+// ---- Fase 3 (placeholders de modelagem) ----
+// model Streak / Achievement / RecommendationFeed         [PLACEHOLDER Fase 3]
 ```
 
 > SQLite não tem `enum` nativo no Prisma; usamos `String` com valores controlados na aplicação. Ao migrar para PostgreSQL, converter para `enum` reais.
@@ -508,7 +560,19 @@ model ReviewItem {   // fila de revisão espaçada por assunto/questão
 | GET | `/api/v1/performance` | Estatísticas por área/assunto/tempo | JWT |
 | GET | `/api/v1/review/queue` | Fila de revisão devida | JWT |
 
-Endpoints de Fases 2/3 (cronograma, redação, gamificação) — `[PLACEHOLDER]`.
+**Endpoints da Fase 2:**
+
+| Método | Rota | Descrição | Auth |
+|---|---|---|---|
+| POST/GET/DELETE | `/api/v1/favorites` (`/:questionId` no DELETE) | Salva/lista/remove questões favoritas | JWT |
+| POST | `/api/v1/study-plan/generate` | Gera o cronograma a partir do desempenho e do tempo disponível | JWT |
+| GET | `/api/v1/study-plan` | Cronograma atual (sessões por dia) | JWT |
+| PATCH | `/api/v1/study-plan/sessions/:id` | Marca uma sessão como concluída | JWT |
+| GET | `/api/v1/essays/prompts` · `/prompts/:id` | Temas de redação | JWT |
+| POST/GET | `/api/v1/essays/submissions` (`/:id` no detalhe) | Envia/lista/detalha redações | JWT |
+| POST | `/api/v1/essays/submissions/:id/evaluation` | Corrige por competência (rubrica, 5×0–200) | JWT |
+
+Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. Endpoints de Fase 3 (gamificação, comunidade, IA) — `[PLACEHOLDER]`.
 
 ---
 
@@ -641,7 +705,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 |---|---|---|
 | **0 — Fundação** | Prisma+SQLite integrado, módulo Auth, Docker Compose, pipeline CI/CD, scaffold do frontend | ✅ Implementada |
 | **1 — MVP (backend)** | Banco de questões (busca/filtro), respostas, simulados (iniciar/finalizar/corrigir), desempenho por área/assunto, revisão inteligente (SM-2) | ✅ Implementada (API) · UI mobile pendente |
-| **2 — Pós-MVP** | Cronograma automático, TRI, correção de redação (rubrica), favoritos, modo sem distrações | Planejado |
+| **2 — Pós-MVP** | Cronograma automático, TRI, correção de redação (rubrica), favoritos, modo sem distrações | ✅ Implementada (API + telas Fase 2) |
 | **3 — Avançado** | Recomendação por erro, gamificação, comunidade, IA, apps nativos | Futuro |
 
 **Marcos-chave:**

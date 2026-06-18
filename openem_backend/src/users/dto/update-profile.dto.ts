@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -35,4 +36,12 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(80)
   displayName?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Modo sem distrações (interface minimalista)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  focusMode?: boolean;
 }

@@ -12,14 +12,17 @@ generator client {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
+  id           String            @id @default(cuid())
+  email        String            @unique
   passwordHash String
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime          @default(now())
   profile      Profile?
   answers      Answer[]
   simulations  Simulation[]
   reviewItems  ReviewItem[]
+  favorites    Favorite[]
+  studyPlan    StudyPlan?
+  essays       EssaySubmission[]
 }
 
 model Profile {
@@ -29,6 +32,7 @@ model Profile {
   goal          String  @default("SISU") // SISU | PROUNI | TREINEIRO
   minutesPerDay Int     @default(60)
   displayName   String?
+  focusMode     Boolean @default(false) // modo sem distrações (Fase 2)
 }
 
 model Subject {
@@ -38,12 +42,13 @@ model Subject {
 }
 
 model Topic {
-  id          String       @id @default(cuid())
-  name        String
-  subjectId   String
-  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  questions   Question[]
-  reviewItems ReviewItem[]
+  id            String         @id @default(cuid())
+  name          String
+  subjectId     String
+  subject       Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions     Question[]
+  reviewItems   ReviewItem[]
+  studySessions StudySession[]
 
   @@unique([subjectId, name])
 }
@@ -65,6 +70,12 @@ model Question {
   examYear     ExamYear?     @relation(fields: [examYearId], references: [id])
   alternatives Alternative[]
   answers      Answer[]
+  favorites    Favorite[]
+
+  // Parâmetros TRI (modelo logístico de 3 parâmetros) — nullable até haver calibração (Fase 2)
+  discrimination Float? // a — discriminação
+  irtDifficulty  Float? // b — dificuldade na escala latente
+  guessing       Float? // c — acerto ao acaso (0..1)
 
   @@index([topicId, difficulty])
 }
@@ -128,4 +139,74 @@ model ReviewItem {
   dueAt      DateTime @default(now())
 
   @@unique([userId, topicId])
+}
+
+// ---- Fase 2 ----
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+}
+
+model StudyPlan {
+  id            String         @id @default(cuid())
+  userId        String         @unique // um plano ativo por usuário
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  minutesPerDay Int
+  createdAt     DateTime       @default(now())
+  sessions      StudySession[]
+}
+
+model StudySession {
+  id       String    @id @default(cuid())
+  planId   String
+  plan     StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  topicId  String
+  topic    Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  dayIndex Int // 0..n
+  minutes  Int
+  done     Boolean   @default(false)
+
+  @@index([planId, dayIndex])
+}
+
+model EssayPrompt {
+  id           String            @id @default(cuid())
+  title        String
+  theme        String // tema da redação
+  instructions String
+  year         Int?
+  createdAt    DateTime          @default(now())
+  submissions  EssaySubmission[]
+}
+
+model EssaySubmission {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promptId    String
+  prompt      EssayPrompt      @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  content     String
+  submittedAt DateTime         @default(now())
+  evaluation  EssayEvaluation?
+}
+
+model EssayEvaluation {
+  id           String          @id @default(cuid())
+  submissionId String          @unique
+  submission   EssaySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  c1           Int // competência 1 (0..200)
+  c2           Int
+  c3           Int
+  c4           Int
+  c5           Int
+  total        Int // 0..1000
+  feedback     String?
+  evaluatedAt  DateTime        @default(now())
 }
