@@ -530,8 +530,10 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
   evaluatedAt DateTime @default(now())
 }
 
-// ---- Fase 3 (placeholders de modelagem) ----
-// model Streak / Achievement / RecommendationFeed         [PLACEHOLDER Fase 3]
+// ---- Fase 3 ----
+// model GamificationStat { points, currentStreak, longestStreak, lastActivityOn, answersCount, correctCount }
+// model UserAchievement { code, unlockedAt }   // catálogo em common/gamification.ts
+// model RecommendationFeed / ForumThread / ...            [PLACEHOLDER Fase 3]
 ```
 
 > SQLite não tem `enum` nativo no Prisma; usamos `String` com valores controlados na aplicação. Ao migrar para PostgreSQL, converter para `enum` reais.
@@ -572,7 +574,14 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 | POST/GET | `/api/v1/essays/submissions` (`/:id` no detalhe) | Envia/lista/detalha redações | JWT |
 | POST | `/api/v1/essays/submissions/:id/evaluation` | Corrige por competência (rubrica, 5×0–200) | JWT |
 
-Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. Endpoints de Fase 3 (gamificação, comunidade, IA) — `[PLACEHOLDER]`.
+**Endpoints da Fase 3 (em andamento):**
+
+| Método | Rota | Descrição | Auth |
+|---|---|---|---|
+| GET | `/api/v1/gamification/me` | Resumo: pontos, sequência (streak), conquistas desbloqueadas | JWT |
+| GET | `/api/v1/gamification/achievements` | Catálogo de conquistas com status de desbloqueio | JWT |
+
+Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): pontos/sequência/conquistas são contabilizados ao responder questões (`POST /answers` devolve o `gamification` delta) e controlados pela flag `gamificationEnabled` em `PUT /users/me/profile`; o catálogo de conquistas vive em `common/gamification.ts`. Demais itens de Fase 3 (recomendação, comunidade, IA) — `[PLACEHOLDER]`.
 
 ---
 

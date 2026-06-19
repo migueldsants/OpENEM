@@ -19,6 +19,7 @@ export class UsersService {
             minutesPerDay: true,
             displayName: true,
             focusMode: true,
+            gamificationEnabled: true,
           },
         },
       },
