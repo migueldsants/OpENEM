@@ -1,9 +1,15 @@
 import {
   ACHIEVEMENTS,
+  comboMultiplierForStreak,
+  dailyBonusXp,
   evaluateAchievements,
+  leagueForLevel,
+  levelFromXp,
   pointsForAnswer,
   POINTS,
   updateStreak,
+  xpForAnswer,
+  xpToReachLevel,
 } from './gamification';
 
 const day = (iso: string) => new Date(`${iso}T12:00:00Z`);
@@ -54,6 +60,65 @@ describe('pointsForAnswer', () => {
     expect(pointsForAnswer(true)).toBe(POINTS.correctAnswer);
     expect(pointsForAnswer(false)).toBe(POINTS.wrongAnswer);
     expect(pointsForAnswer(true)).toBeGreaterThan(pointsForAnswer(false));
+  });
+});
+
+describe('combo e XP por resposta', () => {
+  it('o multiplicador cresce com a streak e satura em 1.6×', () => {
+    expect(comboMultiplierForStreak(1)).toBe(1);
+    expect(comboMultiplierForStreak(2)).toBe(1.1);
+    expect(comboMultiplierForStreak(7)).toBe(1.6);
+    expect(comboMultiplierForStreak(50)).toBe(1.6);
+  });
+
+  it('xpForAnswer aplica o combo sobre o XP base', () => {
+    expect(xpForAnswer(true, 1)).toBe(10);
+    expect(xpForAnswer(true, 7)).toBe(16); // 10 × 1.6
+    expect(xpForAnswer(false, 7)).toBe(3); // round(2 × 1.6)
+  });
+});
+
+describe('dailyBonusXp', () => {
+  it('começa em 15 e escala com a streak até 60', () => {
+    expect(dailyBonusXp(1)).toBe(15);
+    expect(dailyBonusXp(2)).toBe(20);
+    expect(dailyBonusXp(10)).toBe(60);
+    expect(dailyBonusXp(99)).toBe(60);
+  });
+});
+
+describe('níveis (curva quadrática)', () => {
+  it('xpToReachLevel segue 25·(L-1)²', () => {
+    expect(xpToReachLevel(1)).toBe(0);
+    expect(xpToReachLevel(2)).toBe(25);
+    expect(xpToReachLevel(3)).toBe(100);
+    expect(xpToReachLevel(5)).toBe(400);
+  });
+
+  it('levelFromXp deriva nível e progresso', () => {
+    expect(levelFromXp(0).level).toBe(1);
+    expect(levelFromXp(24).level).toBe(1);
+    expect(levelFromXp(25).level).toBe(2);
+    expect(levelFromXp(99).level).toBe(2);
+    expect(levelFromXp(100).level).toBe(3);
+
+    const mid = levelFromXp(62); // nível 2: base 25, próximo 100 → 37/75
+    expect(mid.level).toBe(2);
+    expect(mid.xpIntoLevel).toBe(37);
+    expect(mid.xpForNextLevel).toBe(75);
+    expect(mid.progress).toBeCloseTo(37 / 75, 4);
+  });
+});
+
+describe('leagueForLevel', () => {
+  it('mapeia faixas de nível para ligas', () => {
+    expect(leagueForLevel(1).key).toBe('BRONZE');
+    expect(leagueForLevel(4).key).toBe('BRONZE');
+    expect(leagueForLevel(5).key).toBe('PRATA');
+    expect(leagueForLevel(10).key).toBe('OURO');
+    expect(leagueForLevel(20).key).toBe('PLATINA');
+    expect(leagueForLevel(35).key).toBe('DIAMANTE');
+    expect(leagueForLevel(999).key).toBe('DIAMANTE');
   });
 });
 

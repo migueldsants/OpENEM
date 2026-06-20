@@ -60,7 +60,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
     return correct.id;
   }
 
-  it('responder uma questão dá pontos, sequência e a conquista inicial', async () => {
+  it('responder uma questão dá XP (com bônus diário), nível e a conquista inicial', async () => {
     const list = await request(app.getHttpServer())
       .get('/api/v1/questions?limit=1')
       .set(auth())
@@ -74,23 +74,33 @@ describe('Fase 3 — gamificação (e2e)', () => {
       .send({ questionId, chosenId })
       .expect(201);
 
-    expect(ans.body.gamification).toBeDefined();
-    expect(ans.body.gamification.pointsGained).toBeGreaterThan(0);
-    expect(ans.body.gamification.currentStreak).toBe(1);
-    expect(
-      ans.body.gamification.newAchievements.map(
-        (a: { code: string }) => a.code,
-      ),
-    ).toContain('FIRST_ANSWER');
+    const g = ans.body.gamification;
+    expect(g).toBeDefined();
+    expect(g.xpGained).toBeGreaterThan(0);
+    // 1ª atividade do dia: XP = base × combo (1×) + bônus diário.
+    expect(g.breakdown.base).toBe(10);
+    expect(g.breakdown.comboMultiplier).toBe(1);
+    expect(g.breakdown.dailyBonus).toBeGreaterThan(0);
+    expect(g.xp).toBe(g.xpGained);
+    expect(g.level).toBeGreaterThanOrEqual(1);
+    expect(g.league.key).toBe('BRONZE');
+    expect(g.currentStreak).toBe(1);
+    expect(g.newAchievements.map((a: { code: string }) => a.code)).toContain(
+      'FIRST_ANSWER',
+    );
   });
 
-  it('GET /gamification/me reflete o estado acumulado', async () => {
+  it('GET /gamification/me reflete XP, nível e liga acumulados', async () => {
     const me = await request(app.getHttpServer())
       .get('/api/v1/gamification/me')
       .set(auth())
       .expect(200);
     expect(me.body.enabled).toBe(true);
-    expect(me.body.points).toBeGreaterThan(0);
+    expect(me.body.xp).toBeGreaterThan(0);
+    expect(me.body.level).toBeGreaterThanOrEqual(1);
+    expect(me.body.league.key).toBe('BRONZE');
+    expect(me.body.progress.forNext).toBeGreaterThan(0);
+    expect(me.body.progress.pct).toBeGreaterThanOrEqual(0);
     expect(me.body.currentStreak).toBe(1);
     expect(me.body.answersCount).toBeGreaterThanOrEqual(1);
     expect(me.body.achievementsTotal).toBeGreaterThan(0);

@@ -1,5 +1,6 @@
-// Gamificação (Fase 3): pontos, sequência diária (streak) e conquistas.
-// Funções puras para facilitar testes; o estado é persistido em GamificationStat.
+// Gamificação (Fase 3): XP/níveis, ligas, sequência diária (streak), combo,
+// bônus diário e conquistas. Funções puras para facilitar testes; o estado é
+// persistido em GamificationStat (o campo `points` é o XP total acumulado).
 // O design segue o PRD §5 (Fase 3): "calibrada para não infantilizar — toggle".
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -59,15 +60,98 @@ export function updateStreak(
   };
 }
 
-// ---- Pontos ----
+// ---- XP (os "pontos" acumulados são o XP total que sobe de nível) ----
 
 export const POINTS = {
   correctAnswer: 10,
   wrongAnswer: 2, // participação: errar ainda é estudar
 } as const;
 
+/** XP base de uma resposta, antes de combo e bônus. */
 export function pointsForAnswer(isCorrect: boolean): number {
   return isCorrect ? POINTS.correctAnswer : POINTS.wrongAnswer;
+}
+
+/**
+ * Multiplicador de combo pela sequência diária: quanto maior a streak, mais XP
+ * por questão. +10% por dia, com teto de 1.6× (streak >= 7). Recompensa hábito.
+ */
+export function comboMultiplierForStreak(streak: number): number {
+  const steps = Math.max(0, Math.min(streak - 1, 6));
+  return Number((1 + steps * 0.1).toFixed(2));
+}
+
+/** XP de uma resposta já com o combo da streak aplicado (arredondado). */
+export function xpForAnswer(isCorrect: boolean, streak: number): number {
+  return Math.round(
+    pointsForAnswer(isCorrect) * comboMultiplierForStreak(streak),
+  );
+}
+
+/**
+ * Bônus de XP da 1ª atividade do dia (login diário), escalando com a streak.
+ * Começa em 15 e cresce 5 por dia, com teto de 60 (streak >= 10).
+ */
+export function dailyBonusXp(streak: number): number {
+  return 15 + Math.max(0, Math.min(streak - 1, 9)) * 5;
+}
+
+// ---- Níveis (curva quadrática: rápido no início, encarece depois) ----
+
+const XP_LEVEL_FACTOR = 25;
+
+/** XP total necessário para alcançar um nível (nível 1 = 0 XP). */
+export function xpToReachLevel(level: number): number {
+  const l = Math.max(1, Math.floor(level));
+  return XP_LEVEL_FACTOR * (l - 1) * (l - 1);
+}
+
+export interface LevelInfo {
+  level: number;
+  xpIntoLevel: number; // XP já acumulado dentro do nível atual
+  xpForNextLevel: number; // XP necessário para subir de nível
+  progress: number; // 0..1
+}
+
+/** Deriva o nível e o progresso a partir do XP total acumulado. */
+export function levelFromXp(xp: number): LevelInfo {
+  const safeXp = Math.max(0, Math.floor(xp));
+  const level = Math.floor(Math.sqrt(safeXp / XP_LEVEL_FACTOR)) + 1;
+  const base = xpToReachLevel(level);
+  const next = xpToReachLevel(level + 1);
+  const span = next - base;
+  const xpIntoLevel = safeXp - base;
+  return {
+    level,
+    xpIntoLevel,
+    xpForNextLevel: span,
+    progress: span > 0 ? Number((xpIntoLevel / span).toFixed(4)) : 0,
+  };
+}
+
+// ---- Ligas / tiers (faixas de status por nível) ----
+
+export interface LeagueDef {
+  key: string;
+  name: string;
+  minLevel: number;
+}
+
+export const LEAGUES: readonly LeagueDef[] = [
+  { key: 'BRONZE', name: 'Bronze', minLevel: 1 },
+  { key: 'PRATA', name: 'Prata', minLevel: 5 },
+  { key: 'OURO', name: 'Ouro', minLevel: 10 },
+  { key: 'PLATINA', name: 'Platina', minLevel: 20 },
+  { key: 'DIAMANTE', name: 'Diamante', minLevel: 35 },
+] as const;
+
+/** Liga correspondente a um nível (a de maior `minLevel` que ele alcança). */
+export function leagueForLevel(level: number): LeagueDef {
+  let current = LEAGUES[0];
+  for (const league of LEAGUES) {
+    if (level >= league.minLevel) current = league;
+  }
+  return current;
 }
 
 // ---- Conquistas ----
@@ -118,12 +202,27 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     code: 'POINTS_500',
     name: 'Meio milhar',
-    description: 'Acumule 500 pontos.',
+    description: 'Acumule 500 de XP.',
   },
   {
     code: 'POINTS_2000',
     name: 'Veterano',
-    description: 'Acumule 2000 pontos.',
+    description: 'Acumule 2000 de XP.',
+  },
+  {
+    code: 'REACH_LEVEL_5',
+    name: 'Subindo de liga',
+    description: 'Chegue ao nível 5 (liga Prata).',
+  },
+  {
+    code: 'REACH_LEVEL_10',
+    name: 'Ouro puro',
+    description: 'Chegue ao nível 10 (liga Ouro).',
+  },
+  {
+    code: 'REACH_LEVEL_20',
+    name: 'Elite',
+    description: 'Chegue ao nível 20 (liga Platina).',
   },
 ] as const;
 
@@ -145,6 +244,9 @@ const ACHIEVEMENT_RULES: Record<string, (s: GamificationSnapshot) => boolean> =
     STREAK_30: (s) => s.currentStreak >= 30,
     POINTS_500: (s) => s.points >= 500,
     POINTS_2000: (s) => s.points >= 2000,
+    REACH_LEVEL_5: (s) => levelFromXp(s.points).level >= 5,
+    REACH_LEVEL_10: (s) => levelFromXp(s.points).level >= 10,
+    REACH_LEVEL_20: (s) => levelFromXp(s.points).level >= 20,
   };
 
 /**

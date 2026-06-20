@@ -3,15 +3,25 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   ACHIEVEMENTS,
   AchievementDef,
+  comboMultiplierForStreak,
+  dailyBonusXp,
   evaluateAchievements,
+  leagueForLevel,
+  levelFromXp,
   pointsForAnswer,
   updateStreak,
+  xpForAnswer,
 } from '../common/gamification';
 
 /** Variação aplicada após uma atividade — surge na resposta da questão. */
 export interface GamificationDelta {
-  pointsGained: number;
-  points: number;
+  xpGained: number;
+  breakdown: { base: number; comboMultiplier: number; dailyBonus: number };
+  xp: number;
+  level: number;
+  leveledUp: boolean;
+  league: { key: string; name: string };
+  leagueChanged: boolean;
   currentStreak: number;
   streakIncremented: boolean;
   newAchievements: AchievementDef[];
@@ -43,8 +53,6 @@ export class GamificationService {
       return null;
     }
 
-    const pointsGained = pointsForAnswer(isCorrect);
-
     return this.prisma.$transaction(async (tx) => {
       const stat = await tx.gamificationStat.upsert({
         where: { userId },
@@ -61,9 +69,23 @@ export class GamificationService {
         now,
       );
 
-      const points = stat.points + pointsGained;
+      // XP = base × combo da streak (+ bônus na 1ª atividade do dia).
+      const base = pointsForAnswer(isCorrect);
+      const comboMultiplier = comboMultiplierForStreak(streak.currentStreak);
+      const dailyBonus = streak.incremented
+        ? dailyBonusXp(streak.currentStreak)
+        : 0;
+      const xpGained =
+        xpForAnswer(isCorrect, streak.currentStreak) + dailyBonus;
+
+      const xp = stat.points + xpGained;
       const answersCount = stat.answersCount + 1;
       const correctCount = stat.correctCount + (isCorrect ? 1 : 0);
+
+      const before = levelFromXp(stat.points);
+      const after = levelFromXp(xp);
+      const leagueBefore = leagueForLevel(before.level);
+      const leagueAfter = leagueForLevel(after.level);
 
       const unlocked = await tx.userAchievement.findMany({
         where: { userId },
@@ -71,7 +93,7 @@ export class GamificationService {
       });
       const newCodes = evaluateAchievements(
         {
-          points,
+          points: xp,
           currentStreak: streak.currentStreak,
           answersCount,
           correctCount,
@@ -82,7 +104,7 @@ export class GamificationService {
       await tx.gamificationStat.update({
         where: { userId },
         data: {
-          points,
+          points: xp,
           currentStreak: streak.currentStreak,
           longestStreak: streak.longestStreak,
           lastActivityOn: streak.lastActivityOn,
@@ -99,8 +121,13 @@ export class GamificationService {
 
       const byCode = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
       return {
-        pointsGained,
-        points,
+        xpGained,
+        breakdown: { base, comboMultiplier, dailyBonus },
+        xp,
+        level: after.level,
+        leveledUp: after.level > before.level,
+        league: { key: leagueAfter.key, name: leagueAfter.name },
+        leagueChanged: leagueAfter.key !== leagueBefore.key,
         currentStreak: streak.currentStreak,
         streakIncremented: streak.incremented,
         newAchievements: newCodes
@@ -123,9 +150,20 @@ export class GamificationService {
       where: { userId },
     });
 
+    const xp = stat?.points ?? 0;
+    const levelInfo = levelFromXp(xp);
+    const league = leagueForLevel(levelInfo.level);
+
     return {
       enabled: true as const,
-      points: stat?.points ?? 0,
+      xp,
+      level: levelInfo.level,
+      league: { key: league.key, name: league.name },
+      progress: {
+        into: levelInfo.xpIntoLevel,
+        forNext: levelInfo.xpForNextLevel,
+        pct: levelInfo.progress,
+      },
       currentStreak: stat?.currentStreak ?? 0,
       longestStreak: stat?.longestStreak ?? 0,
       lastActivityOn: stat?.lastActivityOn ?? null,

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { AuthProvider } from './auth.tsx';
+import { GamificationProvider } from './gamification.tsx';
 import './index.css';
 import { ThemeProvider } from './theme.tsx';
 
@@ -11,7 +12,9 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <GamificationProvider>
+            <App />
+          </GamificationProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

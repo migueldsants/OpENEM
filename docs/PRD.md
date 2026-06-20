@@ -578,10 +578,10 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 
 | Método | Rota | Descrição | Auth |
 |---|---|---|---|
-| GET | `/api/v1/gamification/me` | Resumo: pontos, sequência (streak), conquistas desbloqueadas | JWT |
+| GET | `/api/v1/gamification/me` | Resumo: XP, nível, liga, progresso, sequência (streak) e conquistas | JWT |
 | GET | `/api/v1/gamification/achievements` | Catálogo de conquistas com status de desbloqueio | JWT |
 
-Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): pontos/sequência/conquistas são contabilizados ao responder questões (`POST /answers` devolve o `gamification` delta) e controlados pela flag `gamificationEnabled` em `PUT /users/me/profile`; o catálogo de conquistas vive em `common/gamification.ts`. Demais itens de Fase 3 (recomendação, comunidade, IA) — `[PLACEHOLDER]`.
+Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): ao responder questões (`POST /answers`) o usuário ganha **XP** (= base × **combo** da streak, + **bônus diário** na 1ª atividade do dia), sobe de **nível** (curva quadrática) e progride por **ligas** (Bronze→Diamante); o delta `gamification` da resposta inclui `xpGained`/`breakdown`/`level`/`leveledUp`/`league`/`newAchievements`. Tudo é derivado de `GamificationStat.points` (XP total) + streak — **sem novas colunas**. Controlado pela flag `gamificationEnabled` em `PUT /users/me/profile`; a lógica e o catálogo de conquistas vivem em `common/gamification.ts`. O frontend expõe a tela **Progresso**, um widget na Home e feedback de XP ao responder. Demais itens de Fase 3 (recomendação, comunidade, IA) — `[PLACEHOLDER]`.
 
 ---
 
