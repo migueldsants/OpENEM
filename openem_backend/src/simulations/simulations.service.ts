@@ -19,6 +19,32 @@ export class SimulationsService {
     private readonly review: ReviewService,
   ) {}
 
+  async listTemplates() {
+    const templates = await this.prisma.simulationTemplate.findMany({
+      orderBy: [{ scope: 'asc' }, { name: 'asc' }],
+    });
+    const subjectIds = [
+      ...new Set(
+        templates.map((t) => t.subjectId).filter((s): s is string => !!s),
+      ),
+    ];
+    const subjects = subjectIds.length
+      ? await this.prisma.subject.findMany({
+          where: { id: { in: subjectIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const subjectById = new Map(subjects.map((s) => [s.id, s]));
+    return templates.map((t) => ({
+      id: t.id,
+      name: t.name,
+      scope: t.scope,
+      questionCount: t.questionCount,
+      timeLimitMin: t.timeLimitMin,
+      subject: t.subjectId ? (subjectById.get(t.subjectId) ?? null) : null,
+    }));
+  }
+
   async start(userId: string, dto: StartSimulationDto) {
     const template = await this.prisma.simulationTemplate.findUnique({
       where: { id: dto.templateId },
@@ -131,6 +157,7 @@ export class SimulationsService {
       select: {
         id: true,
         topicId: true,
+        explanation: true,
         discrimination: true,
         irtDifficulty: true,
         guessing: true,
@@ -143,7 +170,9 @@ export class SimulationsService {
     const details: {
       questionId: string;
       isCorrect: boolean;
+      chosenId: string | null;
       correctAlternativeId: string | null;
+      explanation: string;
     }[] = [];
     const irtItems: CalibratedItem[] = [];
     let allCalibrated = true;
@@ -186,7 +215,9 @@ export class SimulationsService {
       details.push({
         questionId: question.id,
         isCorrect,
+        chosenId: answer.chosenId ?? null,
         correctAlternativeId: correct?.id ?? null,
+        explanation: question.explanation,
       });
     }
 

@@ -194,6 +194,41 @@ export interface EssaySubmissionSummary {
     'total' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5'
   > | null;
 }
+export interface SimulationTemplate {
+  id: string;
+  name: string;
+  scope: 'AREA' | 'FULL';
+  questionCount: number;
+  timeLimitMin: number | null;
+  subject: { id: string; name: string } | null;
+}
+export interface SimulationStart {
+  id: string;
+  startedAt: string;
+  timeLimitMin: number | null;
+  questionCount: number;
+  questions: Question[];
+}
+export interface SimulationAnswerInput {
+  questionId: string;
+  chosenId?: string;
+  timeSpentSec?: number;
+}
+export interface SimulationResultDetail {
+  questionId: string;
+  isCorrect: boolean;
+  chosenId: string | null;
+  correctAlternativeId: string | null;
+  explanation: string;
+}
+export interface SimulationResult {
+  simulationId: string;
+  total: number;
+  correct: number;
+  percentage: number;
+  triScore: number | null;
+  details: SimulationResultDetail[];
+}
 export interface Profile {
   goal: string;
   minutesPerDay: number;
@@ -259,6 +294,19 @@ export const api = {
     }),
   performance: () => request<Performance>('/performance'),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
+
+  simulationTemplates: () =>
+    request<SimulationTemplate[]>('/simulations/templates'),
+  startSimulation: (templateId: string) =>
+    request<SimulationStart>('/simulations', {
+      method: 'POST',
+      body: { templateId },
+    }),
+  finishSimulation: (id: string, answers: SimulationAnswerInput[]) =>
+    request<SimulationResult>(`/simulations/${id}/finish`, {
+      method: 'POST',
+      body: { answers },
+    }),
 
   favorites: () => request<Favorite[]>('/favorites'),
   addFavorite: (questionId: string) =>
