@@ -6,6 +6,7 @@ import {
   CaretLeft,
   CaretRight,
   Check,
+  Clock,
   Exam,
   Flame,
   House,
@@ -19,6 +20,7 @@ import {
   SlidersHorizontal,
   Star,
   Sun,
+  Timer,
   Trophy,
   User,
   X,
@@ -72,3 +74,5 @@ export const IconLock = shim(LockSimple, 'regular');
 export const IconLogout = shim(SignOut, 'bold');
 export const IconSun = shim(Sun, 'bold');
 export const IconMoon = shim(Moon, 'fill');
+export const IconClock = shim(Clock, 'regular');
+export const IconTimer = shim(Timer, 'duotone');
