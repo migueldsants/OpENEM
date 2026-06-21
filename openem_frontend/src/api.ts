@@ -140,12 +140,19 @@ export interface AreaPerformance {
   correct: number;
   accuracy: number;
 }
+export interface PerformancePoint {
+  date: string;
+  total: number;
+  correct: number;
+  accuracy: number;
+}
 export interface Performance {
   overall: { total: number; correct: number; accuracy: number };
   recent: { total: number; correct: number; accuracy: number };
   bySubject: AreaPerformance[];
   byTopic: (AreaPerformance & { subjectName?: string })[];
   weakestTopics: (AreaPerformance & { subjectName?: string })[];
+  timeline: PerformancePoint[];
 }
 export interface ReviewItem {
   id: string;

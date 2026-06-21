@@ -184,6 +184,11 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(res.body.overall.total).toBeGreaterThan(0);
     expect(res.body.bySubject.length).toBeGreaterThan(0);
     expect(res.body.bySubject[0]).toHaveProperty('accuracy');
+    // Série temporal para o gráfico de evolução.
+    expect(Array.isArray(res.body.timeline)).toBe(true);
+    expect(res.body.timeline.length).toBeGreaterThan(0);
+    expect(res.body.timeline[0]).toHaveProperty('date');
+    expect(res.body.timeline[0]).toHaveProperty('accuracy');
   });
 
   it('retorna a fila de revisão (array) e 404 para item inexistente', async () => {
