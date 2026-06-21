@@ -6,6 +6,7 @@ import {
   IconLogout,
   IconPen,
   IconStack,
+  IconTimer,
   IconUser,
 } from './components/icons';
 import ThemeToggle from './components/ThemeToggle';
@@ -15,10 +16,12 @@ import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import Questoes from './pages/Questoes';
 import Redacao from './pages/Redacao';
+import Simulados from './pages/Simulados';
 
 const NAV = [
   { to: '/', label: 'Início', Icon: IconHome, end: true },
   { to: '/questoes', label: 'Questões', Icon: IconStack },
+  { to: '/simulados', label: 'Simulados', Icon: IconTimer },
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar },
   { to: '/redacao', label: 'Redação', Icon: IconPen },
   { to: '/perfil', label: 'Perfil', Icon: IconUser },
@@ -114,6 +117,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/questoes" element={<Questoes />} />
+      <Route path="/simulados" element={<Simulados />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/redacao" element={<Redacao />} />
       <Route path="/perfil" element={<Perfil />} />
@@ -170,7 +174,7 @@ export default function App() {
       {/* Navegação inferior — padrão mobile (Android). */}
       <nav className="tabbar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/90 backdrop-blur md:hidden">
         <div
-          className="grid grid-cols-5"
+          className="grid grid-cols-6"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           {NAV.map(({ to, label, Icon, end }) => (
