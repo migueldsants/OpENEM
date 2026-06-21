@@ -18,12 +18,14 @@ import { useGamification } from './gamification';
 import { leagueStyle } from './lib/gamification';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
+import Favoritos from './pages/Favoritos';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
 import Redacao from './pages/Redacao';
+import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
 
 // `mobile: false` deixa o item fora da barra inferior (mobile), mas mantém na
@@ -203,11 +205,12 @@ export default function App() {
       <Route path="/questoes" element={<Questoes />} />
       <Route path="/simulados" element={<Simulados />} />
       <Route path="/desempenho" element={<Desempenho />} />
+      <Route path="/revisao" element={<Revisao />} />
       <Route path="/progresso" element={<Progresso />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/redacao" element={<Redacao />} />
       <Route path="/perfil" element={<Perfil />} />
-      <Route path="/favoritos" element={<Navigate to="/questoes" replace />} />
+      <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
