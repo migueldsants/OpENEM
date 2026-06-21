@@ -8,6 +8,7 @@ import {
   IconLogout,
   IconPen,
   IconStack,
+  IconTimer,
   IconTrophy,
   IconUser,
 } from './components/icons';
@@ -16,6 +17,7 @@ import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
 import { leagueStyle } from './lib/gamification';
 import Cronograma from './pages/Cronograma';
+import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -24,15 +26,24 @@ import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
 import Redacao from './pages/Redacao';
 import Revisao from './pages/Revisao';
+import Simulados from './pages/Simulados';
 
+// `mobile: false` deixa o item fora da barra inferior (mobile), mas mantém na
+// sidebar (desktop). Progresso fica acessível no mobile pelo indicador de XP.
 const NAV = [
   { to: '/', label: 'Início', Icon: IconHome, end: true },
   { to: '/questoes', label: 'Questões', Icon: IconStack },
-  { to: '/progresso', label: 'Progresso', Icon: IconTrophy },
+  { to: '/simulados', label: 'Simulados', Icon: IconTimer },
+  { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: false },
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar },
   { to: '/redacao', label: 'Redação', Icon: IconPen },
   { to: '/perfil', label: 'Perfil', Icon: IconUser },
 ];
+
+// Itens exibidos na barra inferior do mobile (limitada a 6 para não apertar).
+const MOBILE_NAV = NAV.filter(
+  (item) => !('mobile' in item) || item.mobile !== false,
+);
 
 function Wordmark({ className = '' }: { className?: string }) {
   return (
@@ -192,6 +203,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/questoes" element={<Questoes />} />
+      <Route path="/simulados" element={<Simulados />} />
+      <Route path="/desempenho" element={<Desempenho />} />
       <Route path="/revisao" element={<Revisao />} />
       <Route path="/progresso" element={<Progresso />} />
       <Route path="/cronograma" element={<Cronograma />} />
@@ -255,7 +268,7 @@ export default function App() {
           className="grid grid-cols-6"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          {NAV.map(({ to, label, Icon, end }) => (
+          {MOBILE_NAV.map(({ to, label, Icon, end }) => (
             <NavLink
               key={to}
               to={to}

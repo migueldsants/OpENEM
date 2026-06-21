@@ -117,6 +117,21 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(bad.body.isCorrect).toBe(false);
   });
 
+  it('lista os templates de simulado disponíveis', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/simulations/templates')
+      .set(auth())
+      .expect(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    const t = res.body.find(
+      (x: { id: string }) => x.id === 'seed-template-math',
+    );
+    expect(t).toMatchObject({ scope: 'AREA' });
+    expect(t.questionCount).toBeGreaterThan(0);
+    expect(t.subject).toHaveProperty('name');
+  });
+
   it('inicia e finaliza um simulado, corrigindo tudo certo = 100%', async () => {
     const start = await request(app.getHttpServer())
       .post('/api/v1/simulations')
@@ -145,6 +160,13 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(finish.body.total).toBe(answers.length);
     expect(finish.body.correct).toBe(answers.length);
     expect(finish.body.percentage).toBe(100);
+    // Os detalhes alimentam o gabarito comentado no frontend.
+    expect(finish.body.details.length).toBe(answers.length);
+    expect(finish.body.details[0]).toHaveProperty('explanation');
+    expect(finish.body.details[0]).toHaveProperty('chosenId');
+    expect(finish.body.details[0].correctAlternativeId).toBe(
+      finish.body.details[0].chosenId,
+    );
 
     // Finalizar de novo deve falhar.
     await request(app.getHttpServer())
@@ -162,6 +184,11 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(res.body.overall.total).toBeGreaterThan(0);
     expect(res.body.bySubject.length).toBeGreaterThan(0);
     expect(res.body.bySubject[0]).toHaveProperty('accuracy');
+    // Série temporal para o gráfico de evolução.
+    expect(Array.isArray(res.body.timeline)).toBe(true);
+    expect(res.body.timeline.length).toBeGreaterThan(0);
+    expect(res.body.timeline[0]).toHaveProperty('date');
+    expect(res.body.timeline[0]).toHaveProperty('accuracy');
   });
 
   it('retorna a fila de revisão (array) e 404 para item inexistente', async () => {

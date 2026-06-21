@@ -14,6 +14,12 @@ import { SimulationsService } from './simulations.service';
 export class SimulationsController {
   constructor(private readonly simulationsService: SimulationsService) {}
 
+  @Get('templates')
+  @ApiOperation({ summary: 'Lista os templates de simulado disponíveis' })
+  templates() {
+    return this.simulationsService.listTemplates();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Inicia um simulado a partir de um template' })
   start(

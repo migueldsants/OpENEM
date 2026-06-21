@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
   Star,
   Sun,
+  Timer,
   Trophy,
   User,
   X,
@@ -74,3 +75,4 @@ export const IconLogout = shim(SignOut, 'bold');
 export const IconSun = shim(Sun, 'bold');
 export const IconMoon = shim(Moon, 'fill');
 export const IconClock = shim(Clock, 'regular');
+export const IconTimer = shim(Timer, 'duotone');

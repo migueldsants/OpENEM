@@ -152,8 +152,8 @@ export default function Home() {
       <section className="card p-5">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-lg font-bold">Desempenho por área</h2>
-          <NavLink to="/questoes" className="text-xs font-medium text-brand">
-            Praticar
+          <NavLink to="/desempenho" className="text-xs font-medium text-brand">
+            Ver completo
           </NavLink>
         </div>
 
