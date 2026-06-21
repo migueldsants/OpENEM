@@ -44,4 +44,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   focusMode?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'Ativa pontos, sequência e conquistas (Fase 3)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  gamificationEnabled?: boolean;
 }

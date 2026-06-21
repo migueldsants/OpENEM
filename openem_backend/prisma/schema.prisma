@@ -23,6 +23,8 @@ model User {
   favorites    Favorite[]
   studyPlan    StudyPlan?
   essays       EssaySubmission[]
+  gamification GamificationStat?
+  achievements UserAchievement[]
 }
 
 model Profile {
@@ -33,6 +35,7 @@ model Profile {
   minutesPerDay Int     @default(60)
   displayName   String?
   focusMode     Boolean @default(false) // modo sem distrações (Fase 2)
+  gamificationEnabled Boolean @default(true) // toggle de gamificação (Fase 3)
 }
 
 model Subject {
@@ -209,4 +212,32 @@ model EssayEvaluation {
   total        Int // 0..1000
   feedback     String?
   evaluatedAt  DateTime        @default(now())
+}
+
+// ---- Fase 3 (gamificação) ----
+
+// Estatísticas de gamificação do usuário (1:1). O catálogo de conquistas vive
+// no código (common/gamification.ts); aqui guardamos apenas o estado acumulado.
+model GamificationStat {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points         Int       @default(0)
+  currentStreak  Int       @default(0) // dias consecutivos com atividade
+  longestStreak  Int       @default(0)
+  lastActivityOn DateTime? // dia (00:00) da última atividade contabilizada
+  answersCount   Int       @default(0)
+  correctCount   Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+}
+
+// Conquistas desbloqueadas (uma linha por conquista por usuário).
+model UserAchievement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code       String // referencia ACHIEVEMENTS em common/gamification.ts
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, code])
 }

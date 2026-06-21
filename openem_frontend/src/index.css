@@ -10,6 +10,8 @@
   --font-display:
     'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
 
   /* Áreas do conhecimento — mesma família de saturação, iguais nos dois temas. */
   --color-mat: #3e82f7; /* Matemática */
@@ -23,31 +25,35 @@
 :root,
 [data-theme='light'] {
   color-scheme: light;
-  --bg: #f1f2fa;
+  --bg: #f5f1f6;
   --surface: #ffffff;
-  --surface-2: #f7f8fe;
-  --fg: #1c1e2c;
-  --muted: #5c6175;
-  --line: #e5e6f1;
-  --brand: #5b57e0;
-  --brand-2: #8b5cf0;
+  --surface-2: #faf6fa;
+  --fg: #211b26;
+  --muted: #6b6473;
+  --line: #ece5ee;
+  --brand: #e0234e; /* vermelho-rosado NestJS */
+  --brand-2: #ff5a7d;
   --brand-ink: #ffffff;
-  --shadow: 0 1px 2px rgba(28, 30, 44, 0.04), 0 8px 24px rgba(28, 30, 44, 0.06);
+  --shadow: 0 1px 2px rgba(40, 14, 22, 0.05), 0 10px 28px rgba(40, 14, 22, 0.07);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
 }
 
 /* Tokens semânticos — escuro */
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: #111220;
-  --surface: #1a1c2b;
-  --surface-2: #222540;
-  --fg: #e9e9f5;
-  --muted: #989cb6;
-  --line: #2a2d44;
-  --brand: #8b87ff;
-  --brand-2: #b18bff;
-  --brand-ink: #131322;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --bg: #15111c;
+  --surface: #1e1926;
+  --surface-2: #2a2335;
+  --fg: #ece7f1;
+  --muted: #a59cb0;
+  --line: #322a3d;
+  --brand: #fb5277; /* vermelho-rosado NestJS, mais vivo no escuro */
+  --brand-2: #ff86a6;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
 }
 
 /* Expõe os tokens como cores Tailwind (bg-surface, text-muted, bg-brand…). */
@@ -231,4 +237,131 @@
 }
 .animate-rise {
   animation: rise 0.4s ease both;
+}
+
+@layer components {
+  /* Dados técnicos: XP, nível, contadores, eyebrows com cara de prova. */
+  .font-data {
+    font-family: var(--font-mono);
+    font-feature-settings: 'tnum' 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Texto com o gradiente da marca. */
+  .text-gradient {
+    background-image: linear-gradient(
+      90deg,
+      var(--brand),
+      var(--brand-2)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Cartão de destaque com brilho da marca. */
+  .card-glow {
+    box-shadow: var(--glow);
+  }
+
+  /* Ergue no hover — usado em cartões clicáveis. */
+  .lift {
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Textura do cartão-resposta: grade de bolhas bem suave (camada decorativa). */
+  .bubble-field {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--brand) 26%, transparent) 1.3px,
+      transparent 1.7px
+    );
+    background-size: 16px 16px;
+  }
+
+  /* Gradientes de liga (Bronze → Diamante). */
+  .league-bronze {
+    background-image: linear-gradient(135deg, #c98a4b, #e6b079);
+  }
+  .league-prata {
+    background-image: linear-gradient(135deg, #9aa3b2, #cdd4e0);
+  }
+  .league-ouro {
+    background-image: linear-gradient(135deg, #e0a83c, #f4cf5a);
+  }
+  .league-platina {
+    background-image: linear-gradient(135deg, #5fb0c9, #9bd7e6);
+  }
+  .league-diamante {
+    background-image: linear-gradient(135deg, var(--brand), var(--brand-2));
+  }
+}
+
+/* Transição de entrada ao trocar de rota. */
+@keyframes routeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-route {
+  animation: routeIn 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Reveal no scroll (a classe é adicionada via IntersectionObserver). */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal-hidden {
+  opacity: 0;
+}
+.reveal-in {
+  animation: reveal 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Surgimento com leve "pop" — conquistas, selos, level-up. */
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Brilho que percorre a barra de XP. */
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+.animate-shimmer {
+  animation: shimmer 2.4s ease-in-out infinite;
 }

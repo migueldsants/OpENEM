@@ -6,15 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OpENEM is a free, open-source platform to help students prepare for the ENEM (Brazilian national exam): commented questions, realistic mock exams, and performance-tracking tools.
 
-**Phases 0–2 are implemented (API):**
+**Phases 0–2 are implemented (API); Phase 3 is in progress (gamification):**
 
 - **Phase 0 (foundation):** NestJS API with Prisma+SQLite, JWT auth (`auth` + `users` modules), `/health`, Swagger, the full MVP Prisma schema, a React+Vite+Tailwind PWA (`openem_frontend/`), Docker Compose, and a GitHub Actions CI pipeline.
 - **Phase 1 (MVP):** domain modules `subjects`, `questions`, `answers`, `simulations`, `performance`, and `review` (SM-2 spaced repetition in `common/spaced-repetition.ts`).
 - **Phase 2 (post-MVP):** `favorites`, `study-plan` (auto schedule, `common/study-plan.ts`), `essays` (per-competency rubric grading, `common/essay-score.ts`), IRT/TRI scoring of simulations (`common/irt.ts`, populated only when questions carry calibration params `discrimination`/`irtDifficulty`/`guessing`), and a `focusMode` profile flag. The frontend has a router + auth context (`src/auth.tsx`) and Phase 2 screens (`src/pages/`).
+- **Phase 3 (in progress):** `gamification` — **XP & levels** (quadratic curve), **leagues** (Bronze→Diamond), daily **streak** with a **combo multiplier**, a **daily login bonus**, and achievements (all pure logic + achievement/league catalog in `common/gamification.ts`, models `GamificationStat`/`UserAchievement`). XP is `GamificationStat.points` (level/league/progress are **derived** — no extra columns). Awarded when answering questions (`POST /answers` returns a rich `gamification` delta: `xpGained`/`breakdown`/`level`/`leveledUp`/`league`/`newAchievements`) and gated by the `gamificationEnabled` profile flag. Exposed via `GET /gamification/me` and `GET /gamification/achievements`. The frontend ships a **Progresso** screen (XP bar, league, streak, achievements), a Home widget, XP feedback on answering (`src/pages/Questoes.tsx`), and a profile toggle.
 
 The full Phase 1 UI (question browsing, taking simulations, dashboards) is still pending — the frontend ships the auth shell plus Phase 2 screens.
 
-Remaining work (Phase 3): recommendation engine, gamification, community, AI essay correction, native apps. The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
+Remaining work (Phase 3): daily challenge, recommendation engine, community, AI essay correction, native apps. The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
 
 The primary language for documentation and API content is **Portuguese**. English mirrors of the docs live in `.github/docs/` (e.g. `README-EN.md`, `CONTRIBUTING-EN.md`, `SECURITY-EN.md`); keep both in sync when editing docs.
 

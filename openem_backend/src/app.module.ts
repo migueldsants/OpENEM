@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { GamificationModule } from './gamification/gamification.module';
 import { HealthModule } from './health/health.module';
 import { PerformanceModule } from './performance/performance.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -32,6 +33,7 @@ import { UsersModule } from './users/users.module';
     FavoritesModule,
     StudyPlanModule,
     EssaysModule,
+    GamificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

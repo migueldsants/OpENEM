@@ -62,6 +62,7 @@ export default function Perfil() {
 
   async function update(patch: {
     focusMode?: boolean;
+    gamificationEnabled?: boolean;
     minutesPerDay?: number;
     goal?: string;
     displayName?: string | null;
@@ -180,6 +181,25 @@ export default function Perfil() {
               disabled={saving}
               onChange={(v) => update({ focusMode: v })}
               label="Alternar modo sem distrações"
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-line" />
+
+        <div className="flex items-center gap-3 p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Gamificação</p>
+            <p className="text-xs text-muted">
+              XP, níveis, sequência e conquistas ao responder questões.
+            </p>
+          </div>
+          <div className="ml-auto">
+            <Switch
+              checked={profile?.gamificationEnabled ?? true}
+              disabled={saving}
+              onChange={(v) => update({ gamificationEnabled: v })}
+              label="Alternar gamificação"
             />
           </div>
         </div>
