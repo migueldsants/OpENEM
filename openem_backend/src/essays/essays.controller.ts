@@ -69,7 +69,7 @@ export class EssaysController {
   }
 
   @Post('submissions/:id/ai-evaluation')
-  @ApiOperation({ summary: 'Corrige a redação por IA (Claude)' })
+  @ApiOperation({ summary: 'Corrige a redação por IA (provedor configurado)' })
   evaluateWithAi(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,

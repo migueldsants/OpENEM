@@ -6,11 +6,52 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { gradeEssayWithAi, isAiEssayConfigured } from '../common/essay-ai';
+import {
+  activeEssayAiProvider,
+  gradeEssayWithAi,
+  isAiEssayConfigured,
+} from '../common/essay-ai';
+import {
+  ResolvedAnnotation,
+  resolveAnnotations,
+} from '../common/essay-ai/annotations';
 import { totalEssayScore } from '../common/essay-score';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { EvaluateEssayDto } from './dto/evaluate-essay.dto';
+
+/** Tipo da avaliação com os campos JSON já parseados para o cliente. */
+type EvaluationWithJson<T> = Omit<T, 'competencyFeedback' | 'annotations'> & {
+  competencyFeedback: Record<string, string> | null;
+  annotations: ResolvedAnnotation[] | null;
+};
+
+/** Faz o parse seguro de uma string JSON; devolve null em caso de falha. */
+function safeParse<T>(value: string | null): T | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Converte as colunas JSON da avaliação (competencyFeedback, annotations) de
+ * string para objeto, para a API entregar dados estruturados.
+ */
+function parseEvaluation<
+  T extends { competencyFeedback: string | null; annotations: string | null },
+>(ev: T | null): EvaluationWithJson<T> | null {
+  if (!ev) return null;
+  return {
+    ...ev,
+    competencyFeedback: safeParse<Record<string, string>>(
+      ev.competencyFeedback,
+    ),
+    annotations: safeParse<ResolvedAnnotation[]>(ev.annotations),
+  };
+}
 
 @Injectable()
 export class EssaysService {
@@ -18,7 +59,8 @@ export class EssaysService {
 
   listPrompts() {
     return this.prisma.essayPrompt.findMany({
-      orderBy: { createdAt: 'desc' },
+      // Mais recentes primeiro; dentro do mesmo ano, ENEM regular antes do PPL.
+      orderBy: [{ year: 'desc' }, { title: 'asc' }],
       select: {
         id: true,
         title: true,
@@ -93,7 +135,10 @@ export class EssaysService {
     if (submission.userId !== userId) {
       throw new ForbiddenException();
     }
-    return submission;
+    return {
+      ...submission,
+      evaluation: parseEvaluation(submission.evaluation),
+    };
   }
 
   /** Registra a correção por rubrica (uma avaliação por redação). */
@@ -138,12 +183,15 @@ export class EssaysService {
     }
   }
 
-  /** Indica se a correção por IA está habilitada (chave de API configurada). */
+  /** Indica se a correção por IA está habilitada e qual provedor está ativo. */
   aiAvailable() {
-    return { available: isAiEssayConfigured() };
+    return {
+      available: isAiEssayConfigured(),
+      provider: activeEssayAiProvider(),
+    };
   }
 
-  /** Corrige a redação por IA (Claude) e persiste a avaliação. */
+  /** Corrige a redação por IA (provedor ativo) e persiste a avaliação. */
   async evaluateWithAi(userId: string, id: string) {
     if (!isAiEssayConfigured()) {
       throw new ServiceUnavailableException(
@@ -176,8 +224,12 @@ export class EssaysService {
       content: submission.content,
     });
     const total = totalEssayScore(scores);
+    const annotations = resolveAnnotations(
+      submission.content,
+      scores.annotations,
+    );
     try {
-      return await this.prisma.essayEvaluation.create({
+      const created = await this.prisma.essayEvaluation.create({
         data: {
           submissionId: id,
           c1: scores.c1,
@@ -187,8 +239,11 @@ export class EssaysService {
           c5: scores.c5,
           total,
           feedback: scores.feedback,
+          competencyFeedback: JSON.stringify(scores.competencyFeedback),
+          annotations: JSON.stringify(annotations),
         },
       });
+      return parseEvaluation(created);
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&

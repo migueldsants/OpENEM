@@ -214,7 +214,11 @@ model EssayEvaluation {
   c4           Int
   c5           Int
   total        Int // 0..1000
-  feedback     String?
+  feedback     String? // comentário geral da redação
+  // JSON (IA): resumo por competência { c1..c5: string }
+  competencyFeedback String?
+  // JSON (IA): anotações por erro [{ competency, start, end, excerpt, comment, suggestion }]
+  annotations  String?
   evaluatedAt  DateTime        @default(now())
 }
 

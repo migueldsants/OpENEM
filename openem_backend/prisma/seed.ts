@@ -176,7 +176,62 @@ async function main() {
     },
   });
 
-  console.log('Seed concluído.');
+  // Temas oficiais do ENEM (regular e PPL). Instrução padrão da prova.
+  const INSTRUCOES_ENEM =
+    'A partir da leitura dos textos motivadores e com base nos conhecimentos ' +
+    'construídos ao longo de sua formação, redija um texto dissertativo-argumentativo ' +
+    'em modalidade escrita formal da língua portuguesa sobre o tema, apresentando ' +
+    'proposta de intervenção que respeite os direitos humanos. Selecione, organize e ' +
+    'relacione, de forma coerente e coesa, argumentos e fatos para defesa de seu ponto de vista.';
+
+  // [id, título, tema, ano]
+  const temasEnem: [string, string, string, number][] = [
+    ['enem-2025', 'ENEM 2025', 'Perspectivas acerca do envelhecimento na sociedade brasileira', 2025],
+    ['enem-2024', 'ENEM 2024', 'Desafios para a valorização da herança africana no Brasil', 2024],
+    ['enem-2023', 'ENEM 2023', 'Desafios para o enfrentamento da invisibilidade do trabalho de cuidado realizado pela mulher no Brasil', 2023],
+    ['enem-2022', 'ENEM 2022', 'Desafios para a valorização de comunidades e povos tradicionais no Brasil', 2022],
+    ['enem-2021', 'ENEM 2021', 'Invisibilidade e registro civil: garantia de acesso à cidadania no Brasil', 2021],
+    ['enem-2020-impresso', 'ENEM 2020 (impresso)', 'O estigma associado às doenças mentais na sociedade brasileira', 2020],
+    ['enem-2020-digital', 'ENEM 2020 (digital)', 'O desafio de reduzir as desigualdades entre as regiões do Brasil', 2020],
+    ['enem-2019', 'ENEM 2019', 'Democratização do acesso ao cinema no Brasil', 2019],
+    ['enem-2018', 'ENEM 2018', 'Manipulação do comportamento do usuário pelo controle de dados na Internet', 2018],
+    ['enem-2017', 'ENEM 2017', 'Desafios para a formação educacional de surdos no Brasil', 2017],
+    ['enem-2016', 'ENEM 2016', 'Caminhos para combater a intolerância religiosa no Brasil', 2016],
+    ['enem-2015', 'ENEM 2015', 'A persistência da violência contra a mulher na sociedade brasileira', 2015],
+    ['enem-2014', 'ENEM 2014', 'Publicidade infantil em questão no Brasil', 2014],
+    ['enem-2013', 'ENEM 2013', 'Efeitos da implantação da Lei Seca no Brasil', 2013],
+    ['enem-2012', 'ENEM 2012', 'Movimento imigratório para o Brasil no século 21', 2012],
+    ['enem-2011', 'ENEM 2011', 'Viver em rede no século XXI: os limites entre o público e o privado', 2011],
+    ['enem-2010', 'ENEM 2010', 'O trabalho na construção da dignidade humana', 2010],
+    ['enem-2009', 'ENEM 2009', 'O indivíduo frente à ética nacional', 2009],
+    // PPL (Pessoas Privadas de Liberdade)
+    ['enem-ppl-2024', 'ENEM PPL 2024', 'Desafios para a valorização da arte de periferia no cenário cultural brasileiro', 2024],
+    ['enem-ppl-2023', 'ENEM PPL 2023', 'Desafios para a (re)inserção socioeconômica da população em situação de rua no Brasil', 2023],
+    ['enem-ppl-2022', 'ENEM PPL 2022', 'Medidas para o enfrentamento da recorrência da insegurança alimentar no Brasil', 2022],
+    ['enem-ppl-2021', 'ENEM PPL 2021', 'Reconhecimento da contribuição das mulheres nas ciências da saúde no Brasil', 2021],
+    ['enem-ppl-2020', 'ENEM PPL 2020', 'A falta de empatia nas relações sociais no Brasil', 2020],
+    ['enem-ppl-2019', 'ENEM PPL 2019', 'Combate ao uso indiscriminado das tecnologias digitais de informação por crianças', 2019],
+    ['enem-ppl-2018', 'ENEM PPL 2018', 'Formas de organização da sociedade para o enfrentamento de problemas econômicos no Brasil', 2018],
+    ['enem-ppl-2017', 'ENEM PPL 2017', 'Consequências da busca por padrões de beleza idealizados', 2017],
+    ['enem-ppl-2016', 'ENEM PPL 2016', 'Alternativas para a diminuição do desperdício de alimentos no Brasil', 2016],
+    ['enem-ppl-2015', 'ENEM PPL 2015', 'O histórico desafio de se valorizar o professor', 2015],
+    ['enem-ppl-2014', 'ENEM PPL 2014', 'O que o fenômeno social dos "rolezinhos" representa?', 2014],
+    ['enem-ppl-2013', 'ENEM PPL 2013', 'Cooperativismo como alternativa social', 2013],
+    ['enem-ppl-2012', 'ENEM PPL 2012', 'O grupo fortalece o indivíduo?', 2012],
+    ['enem-ppl-2011', 'ENEM PPL 2011', 'Cultura e mudança social', 2011],
+    ['enem-ppl-2010', 'ENEM PPL 2010', 'Ajuda humanitária', 2010],
+    ['enem-ppl-2009', 'ENEM PPL 2009', 'A família contemporânea e o que ela representa para a sociedade', 2009],
+  ];
+
+  for (const [id, title, theme, year] of temasEnem) {
+    await prisma.essayPrompt.upsert({
+      where: { id },
+      update: { title, theme, instructions: INSTRUCOES_ENEM, year },
+      create: { id, title, theme, instructions: INSTRUCOES_ENEM, year },
+    });
+  }
+
+  console.log(`Seed concluído. (${temasEnem.length} temas ENEM)`);
 }
 
 main()

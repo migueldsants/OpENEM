@@ -232,6 +232,15 @@ export interface EssayPrompt {
   instructions: string;
   year: number | null;
 }
+/** Destaque de um erro sobre o texto da redação (start/end null = não localizado). */
+export interface EssayAnnotation {
+  competency: number; // 1..5
+  start: number | null;
+  end: number | null;
+  excerpt: string;
+  comment: string;
+  suggestion: string;
+}
 export interface EssayEvaluation {
   c1: number;
   c2: number;
@@ -240,6 +249,8 @@ export interface EssayEvaluation {
   c5: number;
   total: number;
   feedback: string | null;
+  competencyFeedback?: Record<'c1' | 'c2' | 'c3' | 'c4' | 'c5', string> | null;
+  annotations?: EssayAnnotation[] | null;
 }
 export interface EssaySubmissionSummary {
   id: string;
@@ -249,6 +260,13 @@ export interface EssaySubmissionSummary {
     EssayEvaluation,
     'total' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5'
   > | null;
+}
+export interface EssaySubmissionDetail {
+  id: string;
+  submittedAt: string;
+  content: string;
+  prompt: { id: string; title: string; theme: string; instructions: string };
+  evaluation: EssayEvaluation | null;
 }
 export interface SimulationTemplate {
   id: string;
@@ -391,6 +409,8 @@ export const api = {
     }),
   essaySubmissions: () =>
     request<EssaySubmissionSummary[]>('/essays/submissions'),
+  essaySubmission: (id: string) =>
+    request<EssaySubmissionDetail>(`/essays/submissions/${id}`),
   essayAiAvailable: () =>
     request<{ available: boolean }>('/essays/ai-available'),
   evaluateEssayWithAi: (id: string) =>
