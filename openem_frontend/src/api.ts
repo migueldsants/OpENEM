@@ -85,10 +85,48 @@ export interface Favorite {
   createdAt: string;
   question: Question;
 }
+export interface Achievement {
+  code: string;
+  name: string;
+  description: string;
+}
+export interface GamificationDelta {
+  xpGained: number;
+  breakdown: { base: number; comboMultiplier: number; dailyBonus: number };
+  xp: number;
+  level: number;
+  leveledUp: boolean;
+  league: { key: string; name: string };
+  leagueChanged: boolean;
+  currentStreak: number;
+  streakIncremented: boolean;
+  newAchievements: Achievement[];
+}
 export interface AnswerResult {
   isCorrect: boolean;
   correctAlternativeId: string | null;
   explanation: string;
+  gamification?: GamificationDelta;
+}
+export type GamificationSummary =
+  | { enabled: false }
+  | {
+      enabled: true;
+      xp: number;
+      level: number;
+      league: { key: string; name: string };
+      progress: { into: number; forNext: number; pct: number };
+      currentStreak: number;
+      longestStreak: number;
+      lastActivityOn: string | null;
+      answersCount: number;
+      correctCount: number;
+      achievementsUnlocked: number;
+      achievementsTotal: number;
+    };
+export interface AchievementView extends Achievement {
+  unlocked: boolean;
+  unlockedAt: string | null;
 }
 export interface Subject {
   id: string;
@@ -161,6 +199,7 @@ export interface Profile {
   minutesPerDay: number;
   displayName: string | null;
   focusMode: boolean;
+  gamificationEnabled: boolean;
 }
 export interface Me {
   id: string;
@@ -188,7 +227,14 @@ export const api = {
   me: () => request<Me>('/users/me'),
   updateProfile: (
     patch: Partial<
-      Pick<Profile, 'focusMode' | 'minutesPerDay' | 'goal' | 'displayName'>
+      Pick<
+        Profile,
+        | 'focusMode'
+        | 'minutesPerDay'
+        | 'goal'
+        | 'displayName'
+        | 'gamificationEnabled'
+      >
     >,
   ) => request<Me>('/users/me/profile', { method: 'PUT', body: patch }),
 
@@ -237,4 +283,7 @@ export const api = {
     }),
   essaySubmissions: () =>
     request<EssaySubmissionSummary[]>('/essays/submissions'),
+
+  gamification: () => request<GamificationSummary>('/gamification/me'),
+  achievements: () => request<AchievementView[]>('/gamification/achievements'),
 };

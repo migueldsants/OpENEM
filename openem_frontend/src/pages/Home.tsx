@@ -1,9 +1,58 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { api, type Performance, type ReviewItem } from '../api';
+import {
+  api,
+  type GamificationSummary,
+  type Performance,
+  type ReviewItem,
+} from '../api';
 import { useAuth } from '../auth';
-import { IconPen, IconStack } from '../components/icons';
+import { IconFlame, IconPen, IconStack, IconTrophy } from '../components/icons';
 import { areaKey, AREA_DOT } from '../lib/areas';
+import { leagueStyle } from '../lib/gamification';
+
+function ProgressWidget({
+  data,
+}: {
+  data: Extract<GamificationSummary, { enabled: true }>;
+}) {
+  const league = leagueStyle(data.league.key);
+  const pct = Math.round(data.progress.pct * 100);
+  return (
+    <NavLink
+      to="/progresso"
+      className={`card card-raised block p-4 ring-1 transition-transform hover:-translate-y-0.5 ${league.ring}`}
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={`grid size-11 shrink-0 place-items-center rounded-xl ${league.soft} ${league.text}`}
+        >
+          <IconTrophy width={22} height={22} filled />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display font-bold">
+            Nível {data.level}{' '}
+            <span className="text-xs font-medium text-muted">
+              · Liga {data.league.name}
+            </span>
+          </p>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-brand to-brand-2"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+        {data.currentStreak > 0 && (
+          <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-red">
+            <IconFlame width={18} height={18} filled />
+            {data.currentStreak}
+          </span>
+        )}
+      </div>
+    </NavLink>
+  );
+}
 
 function Stat({
   value,
@@ -29,10 +78,12 @@ export default function Home() {
   const name = me?.profile?.displayName?.split(' ')[0];
   const [perf, setPerf] = useState<Performance | null>(null);
   const [review, setReview] = useState<ReviewItem[]>([]);
+  const [game, setGame] = useState<GamificationSummary | null>(null);
 
   useEffect(() => {
     void api.performance().then(setPerf).catch(() => setPerf(null));
     void api.reviewQueue().then(setReview).catch(() => setReview([]));
+    void api.gamification().then(setGame).catch(() => setGame(null));
   }, []);
 
   const answered = perf?.overall.total ?? 0;
@@ -51,6 +102,8 @@ export default function Home() {
             : 'Responda algumas questões para começar a ver seu desempenho aqui.'}
         </p>
       </header>
+
+      {game?.enabled && <ProgressWidget data={game} />}
 
       <div className="grid grid-cols-3 gap-3">
         <Stat

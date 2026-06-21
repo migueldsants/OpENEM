@@ -1,12 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReviewService } from '../review/review.service';
+import {
+  GamificationDelta,
+  GamificationService,
+} from '../gamification/gamification.service';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 
 export interface AnswerResult {
   isCorrect: boolean;
   correctAlternativeId: string | null;
   explanation: string;
+  gamification?: GamificationDelta;
 }
 
 @Injectable()
@@ -14,6 +19,7 @@ export class AnswersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly review: ReviewService,
+    private readonly gamification: GamificationService,
   ) {}
 
   async create(userId: string, dto: CreateAnswerDto): Promise<AnswerResult> {
@@ -45,11 +51,16 @@ export class AnswersService {
     });
 
     await this.review.recordOutcome(userId, question.topicId, isCorrect);
+    const gamification = await this.gamification.recordAnswer(
+      userId,
+      isCorrect,
+    );
 
     return {
       isCorrect,
       correctAlternativeId: correct?.id ?? null,
       explanation: question.explanation,
+      ...(gamification ? { gamification } : {}),
     };
   }
 }
