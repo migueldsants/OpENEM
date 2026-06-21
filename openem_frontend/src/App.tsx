@@ -3,6 +3,7 @@ import { useAuth } from './auth';
 import {
   IconBolt,
   IconCalendar,
+  IconChat,
   IconFlame,
   IconHome,
   IconLogout,
@@ -16,6 +17,7 @@ import RouteTransition from './components/RouteTransition';
 import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
 import { leagueStyle } from './lib/gamification';
+import Comunidade from './pages/Comunidade';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
@@ -37,6 +39,7 @@ const NAV = [
   { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: false },
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar },
   { to: '/redacao', label: 'Redação', Icon: IconPen },
+  { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: false },
   { to: '/perfil', label: 'Perfil', Icon: IconUser },
 ];
 
@@ -209,6 +212,7 @@ export default function App() {
       <Route path="/progresso" element={<Progresso />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/redacao" element={<Redacao />} />
+      <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/login" element={<Navigate to="/" replace />} />

@@ -15,7 +15,9 @@ OpENEM is a free, open-source platform to help students prepare for the ENEM (Br
 
 The full Phase 1 UI (question browsing, taking simulations, dashboards) is still pending — the frontend ships the auth shell plus Phase 2 screens.
 
-Remaining work (Phase 3): daily challenge, recommendation engine, community, AI essay correction, native apps. The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
+Phase 3 also adds: a **daily challenge** (deterministic per-day goal, `common/daily-challenge.ts`, claimed reward in `DailyChallengeLog`, exposed via `GET /gamification/daily-challenge` + `POST .../claim`), a **recommendation engine** (`recommendation` module + `common/recommendation.ts`, `GET /recommendation/next` — weak-topic questions from recent errors), **community/forum** (`community` module, `ForumThread`/`ForumPost`, threads + replies), and **AI essay correction** via Claude (`common/essay-ai.ts`, `POST /essays/submissions/:id/ai-evaluation`, gated by `ANTHROPIC_API_KEY` with `GET /essays/ai-available`; falls back to the manual rubric when unset). Frontend: **Comunidade** screen, daily-challenge card + "Recomendado para você" on Home, and an AI-correct button on Redação.
+
+Remaining work (Phase 3): native apps. The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
 
 The primary language for documentation and API content is **Portuguese**. English mirrors of the docs live in `.github/docs/` (e.g. `README-EN.md`, `CONTRIBUTING-EN.md`, `SECURITY-EN.md`); keep both in sync when editing docs.
 

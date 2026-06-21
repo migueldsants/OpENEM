@@ -4,6 +4,7 @@ import {
   type EssayPrompt,
   type EssaySubmissionSummary,
 } from '../api';
+import { IconSparkle } from '../components/icons';
 
 const COMPETENCIES = [
   { key: 'c1', label: 'C1 · Norma culta' },
@@ -55,20 +56,39 @@ export default function Redacao() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [gradingId, setGradingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [p, s] = await Promise.all([
+      const [p, s, ai] = await Promise.all([
         api.essayPrompts(),
         api.essaySubmissions(),
+        api.essayAiAvailable().catch(() => ({ available: false })),
       ]);
       setPrompts(p);
       setSubmissions(s);
+      setAiAvailable(ai.available);
       setPromptId((cur) => cur || (p[0]?.id ?? ''));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
     }
   }, []);
+
+  async function correctWithAi(id: string) {
+    setGradingId(id);
+    setError(null);
+    try {
+      await api.evaluateEssayWithAi(id);
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível corrigir por IA.',
+      );
+    } finally {
+      setGradingId(null);
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -164,9 +184,19 @@ export default function Redacao() {
                       {new Date(s.submittedAt).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                  {!s.evaluation && (
-                    <span className="chip text-hum">Aguardando correção</span>
-                  )}
+                  {!s.evaluation &&
+                    (aiAvailable ? (
+                      <button
+                        onClick={() => void correctWithAi(s.id)}
+                        disabled={gradingId === s.id}
+                        className="btn btn-primary shrink-0 gap-1.5"
+                      >
+                        <IconSparkle width={16} height={16} />
+                        {gradingId === s.id ? 'Corrigindo…' : 'Corrigir com IA'}
+                      </button>
+                    ) : (
+                      <span className="chip text-hum">Aguardando correção</span>
+                    ))}
                 </div>
                 {s.evaluation && <ScoreCard evaluation={s.evaluation} />}
               </li>

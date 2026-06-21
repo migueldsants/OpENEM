@@ -128,6 +128,55 @@ export interface AchievementView extends Achievement {
   unlocked: boolean;
   unlockedAt: string | null;
 }
+export type DailyChallenge =
+  | { enabled: false }
+  | {
+      enabled: true;
+      day: string;
+      goal: number;
+      xpReward: number;
+      progress: number;
+      completed: boolean;
+      claimed: boolean;
+    };
+export interface DailyChallengeClaim {
+  enabled: boolean;
+  claimed: boolean;
+  xpAwarded: number;
+  xp?: number;
+  level?: number;
+}
+export interface Recommendation {
+  question: Question;
+  reason: string;
+}
+export interface ThreadAuthor {
+  id: string;
+  name: string;
+}
+export interface ForumThreadSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  questionId: string | null;
+  author: ThreadAuthor;
+  replies: number;
+}
+export interface ForumPost {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: ThreadAuthor;
+}
+export interface ForumThread {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  questionId: string | null;
+  author: ThreadAuthor;
+  posts: ForumPost[];
+}
 export interface Subject {
   id: string;
   name: string;
@@ -342,7 +391,35 @@ export const api = {
     }),
   essaySubmissions: () =>
     request<EssaySubmissionSummary[]>('/essays/submissions'),
+  essayAiAvailable: () =>
+    request<{ available: boolean }>('/essays/ai-available'),
+  evaluateEssayWithAi: (id: string) =>
+    request<EssayEvaluation>(`/essays/submissions/${id}/ai-evaluation`, {
+      method: 'POST',
+    }),
 
   gamification: () => request<GamificationSummary>('/gamification/me'),
   achievements: () => request<AchievementView[]>('/gamification/achievements'),
+  dailyChallenge: () =>
+    request<DailyChallenge>('/gamification/daily-challenge'),
+  claimDailyChallenge: () =>
+    request<DailyChallengeClaim>('/gamification/daily-challenge/claim', {
+      method: 'POST',
+    }),
+
+  recommendations: (limit = 5) =>
+    request<Recommendation[]>(`/recommendation/next?limit=${limit}`),
+
+  forumThreads: () => request<ForumThreadSummary[]>('/community/threads'),
+  forumThread: (id: string) => request<ForumThread>(`/community/threads/${id}`),
+  createThread: (title: string, body: string, questionId?: string) =>
+    request<ForumThread>('/community/threads', {
+      method: 'POST',
+      body: { title, body, questionId },
+    }),
+  replyThread: (id: string, body: string) =>
+    request<ForumThread>(`/community/threads/${id}/posts`, {
+      method: 'POST',
+      body: { body },
+    }),
 };

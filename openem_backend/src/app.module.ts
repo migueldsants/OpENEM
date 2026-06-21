@@ -4,6 +4,7 @@ import { AnswersModule } from './answers/answers.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CommunityModule } from './community/community.module';
 import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { GamificationModule } from './gamification/gamification.module';
@@ -11,6 +12,7 @@ import { HealthModule } from './health/health.module';
 import { PerformanceModule } from './performance/performance.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
+import { RecommendationModule } from './recommendation/recommendation.module';
 import { ReviewModule } from './review/review.module';
 import { SimulationsModule } from './simulations/simulations.module';
 import { StudyPlanModule } from './study-plan/study-plan.module';
@@ -34,6 +36,8 @@ import { UsersModule } from './users/users.module';
     StudyPlanModule,
     EssaysModule,
     GamificationModule,
+    RecommendationModule,
+    CommunityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

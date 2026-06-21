@@ -61,4 +61,19 @@ export class EssaysController {
   ) {
     return this.essaysService.evaluate(user.userId, id, dto);
   }
+
+  @Get('ai-available')
+  @ApiOperation({ summary: 'Indica se a correção por IA está disponível' })
+  aiAvailable() {
+    return this.essaysService.aiAvailable();
+  }
+
+  @Post('submissions/:id/ai-evaluation')
+  @ApiOperation({ summary: 'Corrige a redação por IA (Claude)' })
+  evaluateWithAi(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.essaysService.evaluateWithAi(user.userId, id);
+  }
 }

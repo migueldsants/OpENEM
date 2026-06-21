@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
@@ -24,5 +24,19 @@ export class GamificationController {
   @ApiOperation({ summary: 'Catálogo de conquistas com status de desbloqueio' })
   achievements(@CurrentUser() user: AuthenticatedUser) {
     return this.gamification.listAchievements(user.userId);
+  }
+
+  @Get('daily-challenge')
+  @ApiOperation({
+    summary: 'Desafio diário do dia (meta, progresso, recompensa)',
+  })
+  dailyChallenge(@CurrentUser() user: AuthenticatedUser) {
+    return this.gamification.getDailyChallenge(user.userId);
+  }
+
+  @Post('daily-challenge/claim')
+  @ApiOperation({ summary: 'Resgata a recompensa do desafio diário concluído' })
+  claimDailyChallenge(@CurrentUser() user: AuthenticatedUser) {
+    return this.gamification.claimDailyChallenge(user.userId);
   }
 }
