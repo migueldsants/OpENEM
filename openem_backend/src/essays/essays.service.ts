@@ -3,8 +3,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { gradeEssayWithAi, isAiEssayConfigured } from '../common/essay-ai';
 import { totalEssayScore } from '../common/essay-score';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
@@ -126,6 +128,68 @@ export class EssaysService {
       });
     } catch (e) {
       // Corrida: o índice único de submissionId garante uma avaliação por redação.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('Esta redação já foi avaliada');
+      }
+      throw e;
+    }
+  }
+
+  /** Indica se a correção por IA está habilitada (chave de API configurada). */
+  aiAvailable() {
+    return { available: isAiEssayConfigured() };
+  }
+
+  /** Corrige a redação por IA (Claude) e persiste a avaliação. */
+  async evaluateWithAi(userId: string, id: string) {
+    if (!isAiEssayConfigured()) {
+      throw new ServiceUnavailableException(
+        'Correção por IA indisponível. Use a correção por rubrica.',
+      );
+    }
+    const submission = await this.prisma.essaySubmission.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        content: true,
+        evaluation: { select: { id: true } },
+        prompt: { select: { theme: true, instructions: true } },
+      },
+    });
+    if (!submission) {
+      throw new NotFoundException('Redação não encontrada');
+    }
+    if (submission.userId !== userId) {
+      throw new ForbiddenException();
+    }
+    if (submission.evaluation) {
+      throw new ConflictException('Esta redação já foi avaliada');
+    }
+
+    const scores = await gradeEssayWithAi({
+      theme: submission.prompt.theme,
+      instructions: submission.prompt.instructions,
+      content: submission.content,
+    });
+    const total = totalEssayScore(scores);
+    try {
+      return await this.prisma.essayEvaluation.create({
+        data: {
+          submissionId: id,
+          c1: scores.c1,
+          c2: scores.c2,
+          c3: scores.c3,
+          c4: scores.c4,
+          c5: scores.c5,
+          total,
+          feedback: scores.feedback,
+        },
+      });
+    } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002'

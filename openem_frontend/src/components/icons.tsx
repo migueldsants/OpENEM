@@ -5,6 +5,7 @@ import {
   CalendarBlank,
   CaretLeft,
   CaretRight,
+  ChatsCircle,
   Check,
   Clock,
   Exam,
@@ -18,8 +19,10 @@ import {
   NotePencil,
   SignOut,
   SlidersHorizontal,
+  Sparkle,
   Star,
   Sun,
+  Target,
   Timer,
   Trophy,
   User,
@@ -76,3 +79,6 @@ export const IconSun = shim(Sun, 'bold');
 export const IconMoon = shim(Moon, 'fill');
 export const IconClock = shim(Clock, 'regular');
 export const IconTimer = shim(Timer, 'duotone');
+export const IconChat = shim(ChatsCircle, 'duotone');
+export const IconTarget = shim(Target, 'duotone');
+export const IconSparkle = shim(Sparkle, 'fill');

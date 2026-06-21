@@ -1,4 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import {
+  dailyChallengeFor,
+  dailyChallengeStatus,
+} from '../common/daily-challenge';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ACHIEVEMENTS,
@@ -172,6 +176,90 @@ export class GamificationService {
       achievementsUnlocked: unlocked,
       achievementsTotal: ACHIEVEMENTS.length,
     };
+  }
+
+  private startOfDayUtc(now: Date): Date {
+    return new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+  }
+
+  /** Status do desafio diário (ou { enabled: false } se a gamificação está off). */
+  async getDailyChallenge(userId: string, now: Date = new Date()) {
+    if (!(await this.isEnabled(userId))) {
+      return { enabled: false as const };
+    }
+    const spec = dailyChallengeFor(now);
+    const [answeredToday, log] = await Promise.all([
+      this.prisma.answer.count({
+        where: { userId, createdAt: { gte: this.startOfDayUtc(now) } },
+      }),
+      this.prisma.dailyChallengeLog.findUnique({
+        where: { userId_day: { userId, day: spec.day } },
+        select: { id: true },
+      }),
+    ]);
+    return {
+      enabled: true as const,
+      ...dailyChallengeStatus(spec, answeredToday, !!log),
+    };
+  }
+
+  /**
+   * Resgata a recompensa do desafio diário (uma vez por dia, se concluído).
+   * Credita o XP em GamificationStat.points.
+   */
+  async claimDailyChallenge(userId: string, now: Date = new Date()) {
+    if (!(await this.isEnabled(userId))) {
+      return { enabled: false as const };
+    }
+    const spec = dailyChallengeFor(now);
+
+    return this.prisma.$transaction(async (tx) => {
+      const answeredToday = await tx.answer.count({
+        where: { userId, createdAt: { gte: this.startOfDayUtc(now) } },
+      });
+      if (answeredToday < spec.goal) {
+        return {
+          ...dailyChallengeStatus(spec, answeredToday, false),
+          enabled: true as const,
+          claimed: false as const,
+          xpAwarded: 0,
+          reason: 'incompleto' as const,
+        };
+      }
+
+      // Marca o resgate; o índice único garante uma vez por dia.
+      try {
+        await tx.dailyChallengeLog.create({
+          data: { userId, day: spec.day },
+        });
+      } catch {
+        return {
+          ...dailyChallengeStatus(spec, answeredToday, true),
+          enabled: true as const,
+          claimed: true as const,
+          xpAwarded: 0,
+          reason: 'ja_resgatado' as const,
+        };
+      }
+
+      const stat = await tx.gamificationStat.upsert({
+        where: { userId },
+        create: { userId, points: spec.xpReward },
+        update: { points: { increment: spec.xpReward } },
+      });
+      const level = levelFromXp(stat.points);
+
+      return {
+        ...dailyChallengeStatus(spec, answeredToday, true),
+        enabled: true as const,
+        claimed: true as const,
+        xpAwarded: spec.xpReward,
+        xp: stat.points,
+        level: level.level,
+      };
+    });
   }
 
   /** Catálogo de conquistas com a data de desbloqueio (null se ainda travada). */

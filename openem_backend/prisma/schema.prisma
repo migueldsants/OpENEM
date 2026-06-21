@@ -25,6 +25,9 @@ model User {
   essays       EssaySubmission[]
   gamification GamificationStat?
   achievements UserAchievement[]
+  dailyChallenges DailyChallengeLog[]
+  forumThreads ForumThread[]
+  forumPosts   ForumPost[]
 }
 
 model Profile {
@@ -74,6 +77,7 @@ model Question {
   alternatives Alternative[]
   answers      Answer[]
   favorites    Favorite[]
+  forumThreads ForumThread[]
 
   // Parâmetros TRI (modelo logístico de 3 parâmetros) — nullable até haver calibração (Fase 2)
   discrimination Float? // a — discriminação
@@ -240,4 +244,46 @@ model UserAchievement {
   unlockedAt DateTime @default(now())
 
   @@unique([userId, code])
+}
+
+// ---- Fase 3 (avançado) ----
+
+// Registro de conclusão do desafio diário (uma linha por usuário por dia).
+// O conteúdo do desafio é determinístico (common/daily-challenge.ts); aqui só
+// guardamos a data e se a recompensa de XP já foi resgatada.
+model DailyChallengeLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String // dia no formato YYYY-MM-DD (UTC)
+  claimedAt DateTime @default(now())
+
+  @@unique([userId, day])
+}
+
+// Comunidade/fórum: tópicos e respostas (Fase 3).
+model ForumThread {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  body       String
+  questionId String? // tópico opcionalmente ligado a uma questão
+  question   Question?   @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  createdAt  DateTime    @default(now())
+  posts      ForumPost[]
+
+  @@index([createdAt])
+}
+
+model ForumPost {
+  id        String      @id @default(cuid())
+  threadId  String
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@index([threadId, createdAt])
 }
