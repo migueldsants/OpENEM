@@ -241,12 +241,14 @@ export const api = {
   subjects: () => request<Subject[]>('/subjects'),
   questions: (params: {
     subjectId?: string;
+    topicId?: string;
     difficulty?: number;
     page?: number;
     limit?: number;
   } = {}) => {
     const qs = new URLSearchParams();
     if (params.subjectId) qs.set('subjectId', params.subjectId);
+    if (params.topicId) qs.set('topicId', params.topicId);
     if (params.difficulty) qs.set('difficulty', String(params.difficulty));
     qs.set('page', String(params.page ?? 1));
     qs.set('limit', String(params.limit ?? 10));
@@ -259,6 +261,8 @@ export const api = {
     }),
   performance: () => request<Performance>('/performance'),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
+  gradeReview: (id: string, quality: number) =>
+    request(`/review/${id}`, { method: 'POST', body: { quality } }),
 
   favorites: () => request<Favorite[]>('/favorites'),
   addFavorite: (questionId: string) =>

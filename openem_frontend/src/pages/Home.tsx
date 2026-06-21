@@ -7,7 +7,14 @@ import {
   type ReviewItem,
 } from '../api';
 import { useAuth } from '../auth';
-import { IconFlame, IconPen, IconStack, IconTrophy } from '../components/icons';
+import {
+  IconClock,
+  IconFlame,
+  IconPen,
+  IconStack,
+  IconStar,
+  IconTrophy,
+} from '../components/icons';
 import { areaKey, AREA_DOT } from '../lib/areas';
 import { leagueStyle } from '../lib/gamification';
 
@@ -119,6 +126,28 @@ export default function Home() {
         />
       </div>
 
+      {/* Revisão devida — chamada direta quando há assuntos vencidos. */}
+      {review.length > 0 && (
+        <NavLink
+          to="/revisao"
+          className="card card-raised flex items-center gap-3 p-4 ring-1 ring-hum/30 transition-transform hover:-translate-y-0.5"
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-hum/12 text-hum">
+            <IconClock width={22} height={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">
+              Revisar agora
+            </span>
+            <span className="text-xs text-muted">
+              {review.length}{' '}
+              {review.length === 1 ? 'assunto vencido' : 'assuntos vencidos'} na
+              sua fila
+            </span>
+          </span>
+        </NavLink>
+      )}
+
       {/* Desempenho por área — o coração do painel. */}
       <section className="card p-5">
         <div className="flex items-baseline justify-between">
@@ -205,6 +234,18 @@ export default function Home() {
           <span>
             <span className="block font-display font-bold">Treinar redação</span>
             <span className="text-xs text-muted">Nota por competência</span>
+          </span>
+        </NavLink>
+        <NavLink
+          to="/favoritos"
+          className="card card-raised flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
+        >
+          <span className="grid size-11 place-items-center rounded-xl bg-hum/12 text-hum">
+            <IconStar width={22} height={22} filled />
+          </span>
+          <span>
+            <span className="block font-display font-bold">Favoritas</span>
+            <span className="text-xs text-muted">Questões salvas</span>
           </span>
         </NavLink>
       </div>

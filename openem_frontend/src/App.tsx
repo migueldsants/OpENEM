@@ -16,12 +16,14 @@ import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
 import { leagueStyle } from './lib/gamification';
 import Cronograma from './pages/Cronograma';
+import Favoritos from './pages/Favoritos';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
 import Redacao from './pages/Redacao';
+import Revisao from './pages/Revisao';
 
 const NAV = [
   { to: '/', label: 'Início', Icon: IconHome, end: true },
@@ -190,11 +192,12 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/questoes" element={<Questoes />} />
+      <Route path="/revisao" element={<Revisao />} />
       <Route path="/progresso" element={<Progresso />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/redacao" element={<Redacao />} />
       <Route path="/perfil" element={<Perfil />} />
-      <Route path="/favoritos" element={<Navigate to="/questoes" replace />} />
+      <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
