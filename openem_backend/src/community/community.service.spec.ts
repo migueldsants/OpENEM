@@ -29,12 +29,12 @@ function makePrismaMock() {
     threads,
     posts,
     question: {
-      findUnique: jest.fn(async ({ where }: { where: { id: string } }) =>
-        where.id.startsWith('q-') ? { id: where.id } : null,
+      findUnique: jest.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(where.id.startsWith('q-') ? { id: where.id } : null),
       ),
     },
     forumThread: {
-      create: jest.fn(async ({ data }: { data: any }) => {
+      create: jest.fn(({ data }: { data: any }) => {
         const id = nextId();
         const row: ThreadRow = {
           id,
@@ -46,24 +46,26 @@ function makePrismaMock() {
           posts: [],
         };
         threads.set(id, row);
-        return { id };
+        return Promise.resolve({ id });
       }),
-      findMany: jest.fn(async () =>
-        Array.from(threads.values()).map((t) => ({
-          id: t.id,
-          title: t.title,
-          createdAt: t.createdAt,
-          questionId: t.questionId,
-          user: t.user,
-          _count: { posts: t.posts.length },
-        })),
+      findMany: jest.fn(() =>
+        Promise.resolve(
+          Array.from(threads.values()).map((t) => ({
+            id: t.id,
+            title: t.title,
+            createdAt: t.createdAt,
+            questionId: t.questionId,
+            user: t.user,
+            _count: { posts: t.posts.length },
+          })),
+        ),
       ),
-      findUnique: jest.fn(async ({ where }: { where: { id: string } }) =>
-        threads.get(where.id) ?? null,
+      findUnique: jest.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(threads.get(where.id) ?? null),
       ),
     },
     forumPost: {
-      create: jest.fn(async ({ data }: { data: any }) => {
+      create: jest.fn(({ data }: { data: any }) => {
         const id = nextId();
         const post = {
           id,
@@ -74,7 +76,7 @@ function makePrismaMock() {
         posts.set(id, post);
         const thread = threads.get(data.threadId);
         thread?.posts.push(post);
-        return post;
+        return Promise.resolve(post);
       }),
     },
   };
