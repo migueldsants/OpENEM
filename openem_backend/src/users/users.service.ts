@@ -20,6 +20,7 @@ export class UsersService {
             displayName: true,
             focusMode: true,
             gamificationEnabled: true,
+            onboarded: true,
           },
         },
       },

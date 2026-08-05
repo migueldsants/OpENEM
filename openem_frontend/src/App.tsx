@@ -23,6 +23,7 @@ import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Onboarding from './pages/Onboarding';
 import Perfil from './pages/Perfil';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
@@ -193,11 +194,22 @@ function Sidebar({ email, onLogout }: { email?: string; onLogout: () => void }) 
 export default function App() {
   const { authenticated, logout, me } = useAuth();
   const focusMode = me?.profile?.focusMode ?? false;
+  // Usuários recém-cadastrados (onboarded=false) passam pelo onboarding antes do app.
+  const needsOnboarding = authenticated && me && me.profile !== null && !me.profile.onboarded;
 
   if (!authenticated) {
     return (
       <Routes>
         <Route path="*" element={<Login />} />
+      </Routes>
+    );
+  }
+
+  if (needsOnboarding) {
+    return (
+      <Routes>
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }
@@ -215,6 +227,7 @@ export default function App() {
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/favoritos" element={<Favoritos />} />
+      <Route path="/onboarding" element={<Navigate to="/" replace />} />
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

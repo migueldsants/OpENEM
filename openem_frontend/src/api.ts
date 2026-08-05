@@ -309,6 +309,7 @@ export interface Profile {
   displayName: string | null;
   focusMode: boolean;
   gamificationEnabled: boolean;
+  onboarded: boolean;
 }
 export interface Me {
   id: string;
@@ -343,6 +344,7 @@ export const api = {
         | 'goal'
         | 'displayName'
         | 'gamificationEnabled'
+        | 'onboarded'
       >
     >,
   ) => request<Me>('/users/me/profile', { method: 'PUT', body: patch }),
