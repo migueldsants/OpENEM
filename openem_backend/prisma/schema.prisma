@@ -39,6 +39,7 @@ model Profile {
   displayName   String?
   focusMode     Boolean @default(false) // modo sem distrações (Fase 2)
   gamificationEnabled Boolean @default(true) // toggle de gamificação (Fase 3)
+  onboarded     Boolean @default(false) // false até o 1º onboarding ser concluído
 }
 
 model Subject {

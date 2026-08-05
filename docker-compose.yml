@@ -10,6 +10,17 @@ services:
       - PORT=3000
       - JWT_SECRET=${JWT_SECRET:-dev-insecure-secret}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      # Correção de redação por IA (Fase 3) — opcionais. Sem nenhuma chave
+      # configurada a correção por IA fica indisponível e o app recai na rubrica
+      # manual. Ver openem_backend/.env.example para detalhes de cada provedor.
+      - ESSAY_AI_PROVIDER=${ESSAY_AI_PROVIDER:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-}
     ports:
       - '3000:3000'
     volumes:

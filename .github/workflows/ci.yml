@@ -46,7 +46,7 @@ jobs:
         run: npm run test:e2e
 
   frontend:
-    name: Frontend (build)
+    name: Frontend (lint, test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -62,6 +62,12 @@ jobs:
 
       - name: Instalar dependências
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes unitários
+        run: npm test
 
       - name: Build
         run: npm run build

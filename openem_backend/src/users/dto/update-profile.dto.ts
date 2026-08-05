@@ -52,4 +52,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   gamificationEnabled?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'Marcado como true ao concluir o onboarding inicial',
+  })
+  @IsOptional()
+  @IsBoolean()
+  onboarded?: boolean;
 }
