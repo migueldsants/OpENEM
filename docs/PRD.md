@@ -161,7 +161,7 @@ Baseado no ranking de funcionalidades (insights §5): itens com >60% de demanda.
 - **Motor de recomendação** mais sofisticado (sugestão de questões semelhantes às erradas).
 - **Gamificação**: streak, pontos, desafio diário (calibrada para não infantilizar — toggle).
 - **Comunidade/fórum** (20%).
-- **IA**: correção de redação automatizada e geração de microconteúdo. **Provedor de IA: `[PLACEHOLDER]`** (avaliar Claude/Anthropic; ver decisão de stack de IA).
+- **IA**: correção de redação automatizada e geração de microconteúdo. **Provedor de IA:** arquitetura multi-provedor (Anthropic Claude, OpenAI, OpenAI-compatível e Google Gemini), selecionado por `ESSAY_AI_PROVIDER` ou auto-detectado a partir das chaves configuradas. Sem provedor configurado, recai na rubrica manual.
 - **Decisão:** o MVP é entregue como **PWA responsivo (React+Vite)**;
 
 ### Fora de escopo (explícito)
@@ -347,7 +347,7 @@ Monorepo com dois aplicativos (backend e web) e infraestrutura compartilhada, or
 
 **Infra:** Docker + **Docker Compose**; **GitHub Actions** para CI/CD.
 
-> **Nota sobre IA:** funcionalidades de IA (correção de redação, microconteúdo) são de fase avançada. A escolha do provedor/SDK é `[PLACEHOLDER]`; ao implementar, avaliar os modelos Claude (Anthropic) como padrão para tarefas de geração/avaliação de texto.
+> **Nota sobre IA:** a correção de redação por IA (Fase 3) usa uma arquitetura **multi-provedor** (`common/essay-ai/` — Anthropic Claude, OpenAI, OpenAI-compatível/Ollama/Groq/OpenRouter e Google Gemini). O provedor ativo é selecionado por `ESSAY_AI_PROVIDER` ou auto-detectado a partir das chaves/URLs configuradas; sem provedor, o app recai na rubrica manual.
 
 ---
 
@@ -447,7 +447,7 @@ model Simulation {
   startedAt   DateTime           @default(now())
   finishedAt  DateTime?
   rawScore    Float?             // acertos brutos (MVP)
-  triScore    Float?             // nota TRI [PLACEHOLDER Fase 2]
+  triScore    Float?             // nota TRI (3PL) — populada quando as questões têm calibração
   answers     Answer[]
 }
 
@@ -530,10 +530,13 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
   evaluatedAt DateTime @default(now())
 }
 
-// ---- Fase 3 ----
+// ---- Fase 3 (implementados) ----
 // model GamificationStat { points, currentStreak, longestStreak, lastActivityOn, answersCount, correctCount }
 // model UserAchievement { code, unlockedAt }   // catálogo em common/gamification.ts
-// model RecommendationFeed / ForumThread / ...            [PLACEHOLDER Fase 3]
+// model DailyChallengeLog { day, claimedAt }   // desafio diário (common/daily-challenge.ts)
+// model ForumThread { title, body, questionId?, userId, posts ForumPost[] }
+// model ForumPost { threadId, userId, body }
+// Profile ganhou gamificationEnabled (toggle) e onboarded (Fase 3).
 ```
 
 > SQLite não tem `enum` nativo no Prisma; usamos `String` com valores controlados na aplicação. Ao migrar para PostgreSQL, converter para `enum` reais.
@@ -574,14 +577,23 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 | POST/GET | `/api/v1/essays/submissions` (`/:id` no detalhe) | Envia/lista/detalha redações | JWT |
 | POST | `/api/v1/essays/submissions/:id/evaluation` | Corrige por competência (rubrica, 5×0–200) | JWT |
 
-**Endpoints da Fase 3 (em andamento):**
+**Endpoints da Fase 3 (implementados):**
 
 | Método | Rota | Descrição | Auth |
 |---|---|---|---|
 | GET | `/api/v1/gamification/me` | Resumo: XP, nível, liga, progresso, sequência (streak) e conquistas | JWT |
 | GET | `/api/v1/gamification/achievements` | Catálogo de conquistas com status de desbloqueio | JWT |
+| GET | `/api/v1/gamification/daily-challenge` | Desafio diário (meta determinística por dia) | JWT |
+| POST | `/api/v1/gamification/daily-challenge/claim` | Resgata a recompensa do desafio concluído | JWT |
+| GET | `/api/v1/recommendation/next` | Questões recomendadas a partir dos erros recentes | JWT |
+| GET | `/api/v1/community/threads` | Lista tópicos do fórum (com contagem de respostas) | JWT |
+| POST | `/api/v1/community/threads` | Cria um tópico (vínculo a questão opcional) | JWT |
+| GET | `/api/v1/community/threads/:id` | Detalha tópico com posts | JWT |
+| POST | `/api/v1/community/threads/:id/posts` | Responde a um tópico | JWT |
+| GET | `/api/v1/essays/ai-available` | Indica se a IA está configurada + provedor ativo | JWT |
+| POST | `/api/v1/essays/submissions/:id/ai-evaluation` | Corrige redação por IA (multi-provedor) | JWT |
 
-Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): ao responder questões (`POST /answers`) o usuário ganha **XP** (= base × **combo** da streak, + **bônus diário** na 1ª atividade do dia), sobe de **nível** (curva quadrática) e progride por **ligas** (Bronze→Diamante); o delta `gamification` da resposta inclui `xpGained`/`breakdown`/`level`/`leveledUp`/`league`/`newAchievements`. Tudo é derivado de `GamificationStat.points` (XP total) + streak — **sem novas colunas**. Controlado pela flag `gamificationEnabled` em `PUT /users/me/profile`; a lógica e o catálogo de conquistas vivem em `common/gamification.ts`. O frontend expõe a tela **Progresso**, um widget na Home e feedback de XP ao responder. Demais itens de Fase 3 (recomendação, comunidade, IA) — `[PLACEHOLDER]`.
+Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): ao responder questões (`POST /answers`) o usuário ganha **XP** (= base × **combo** da streak, + **bônus diário** na 1ª atividade do dia), sobe de **nível** (curva quadrática) e progride por **ligas** (Bronze→Diamante); o delta `gamification` da resposta inclui `xpGained`/`breakdown`/`level`/`leveledUp`/`league`/`newAchievements`. Tudo é derivado de `GamificationStat.points` (XP total) + streak — **sem novas colunas**. Controlado pela flag `gamificationEnabled` em `PUT /users/me/profile`; a lógica e o catálogo de conquistas vivem em `common/gamification.ts`. O frontend expõe a tela **Progresso**, um widget na Home e feedback de XP ao responder. A Fase 3 também entrega **desafio diário** (`GET /gamification/daily-challenge` + `POST .../claim`), **recomendação** (`GET /recommendation/next` — questões de tópicos fracos a partir dos erros recentes), **comunidade/fórum** (`community` — tópicos + respostas) e **IA de redação** multi-provedor (Anthropic, OpenAI, OpenAI-compatível, Gemini; `POST /essays/submissions/:id/ai-evaluation`, `GET /essays/ai-available`). O **onboarding** (objetivo + minutos/dia) é coletado no 1º acesso via `PUT /users/me/profile` (`onboarded` em `Profile`). Apps nativos (React Native/Expo) estão fora de cogitação por enquanto.
 
 ---
 
@@ -614,7 +626,7 @@ Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET 
 Cada app tem seu **Dockerfile multi-stage** (build → runtime enxuto).
 
 - **`openem_backend/Dockerfile`**: estágio de build (instala deps, `prisma generate`, `nest build`) → estágio runtime (`node dist/main`, usuário não-root, `EXPOSE 3000`, healthcheck em `/health`).
-- **`openem_frontend/Dockerfile`** `[PLACEHOLDER — criar app]`: build Vite → servir estáticos via Nginx (ou `vite preview`), `EXPOSE 80`.
+- **`openem_frontend/Dockerfile`**: multi-stage — build Vite → `nginx:1.27-alpine` servindo estáticos, `EXPOSE 80`, proxy de `/api` e `/health` para o backend.
 
 ### Docker Compose
 
@@ -638,10 +650,12 @@ services:
       timeout: 5s
       retries: 3
 
-  frontend:                       # [PLACEHOLDER — depende do app web]
+  frontend:                       # PWA React+Vite servido via Nginx
     build: ./openem_frontend
     ports: ["8080:80"]
-    depends_on: [backend]
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   sqlite-data:
@@ -678,7 +692,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 | **Unitários** | Jest (`*.spec.ts`) | Services, regras (correção, TRI, repetição espaçada) com mocks de Prisma | `openem_backend/src` |
 | **Integração** | Jest + Prisma em **SQLite efêmero** | Repositórios/serviços contra banco real de teste | backend |
 | **E2E (API)** | Jest + Supertest (`*.e2e-spec.ts`) | Fluxos HTTP (auth, questões, simulado→correção) | `openem_backend/test` |
-| **Frontend (unit/componentes)** | Vitest + Testing Library `[PLACEHOLDER]` | Componentes e hooks | `openem_frontend` |
+| **Frontend (unit/componentes)** | Vitest + Testing Library | Componentes e hooks | `openem_frontend` |
 | **E2E (UI)** | Playwright `[PLACEHOLDER]` | Fluxos críticos no navegador | frontend |
 | **Acessibilidade** | axe / Lighthouse CI `[PLACEHOLDER]` | WCAG AA nas telas-chave | CI |
 
@@ -713,9 +727,9 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 | Fase | Entregáveis | Status |
 |---|---|---|
 | **0 — Fundação** | Prisma+SQLite integrado, módulo Auth, Docker Compose, pipeline CI/CD, scaffold do frontend | ✅ Implementada |
-| **1 — MVP (backend)** | Banco de questões (busca/filtro), respostas, simulados (iniciar/finalizar/corrigir), desempenho por área/assunto, revisão inteligente (SM-2) | ✅ Implementada (API) · UI mobile pendente |
-| **2 — Pós-MVP** | Cronograma automático, TRI, correção de redação (rubrica), favoritos, modo sem distrações | ✅ Implementada (API + telas Fase 2) |
-| **3 — Avançado** | Recomendação por erro, gamificação, comunidade, IA, apps nativos | Futuro |
+| **1 — MVP (backend)** | Banco de questões (busca/filtro), respostas, simulados (iniciar/finalizar/corrigir), desempenho por área/assunto, revisão inteligente (SM-2) | ✅ Implementada (API + UI) |
+| **2 — Pós-MVP** | Cronograma automático, TRI, correção de redação (rubrica), favoritos, modo sem distrações | ✅ Implementada (API + UI) |
+| **3 — Avançado** | Recomendação por erro, gamificação, comunidade, IA de redação (multi-provedor), onboarding | ✅ Implementada (API + UI) · Apps nativos fora de cogitação por enquanto |
 
 **Marcos-chave:**
 - Esquema Prisma + 1ª migration SQLite versionada.
@@ -742,14 +756,14 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 ## 17. Dependências e Premissas
 
 **Dependências internas:**
-- [ ] Adicionar Prisma ao `openem_backend` e definir `schema.prisma`.
-- [ ] Criar o app `openem_frontend` (React+Vite+Tailwind) — hoje inexistente.
+- [x] Adicionar Prisma ao `openem_backend` e definir `schema.prisma` — implementado (SQLite, 7 migrations).
+- [x] Criar o app `openem_frontend` (React+Vite+Tailwind PWA) — implementado, cobrindo Fases 1–3.
 - [ ] Conteúdo seed **misto**: provas oficiais do ENEM + questões autorais da comunidade, com **comentários próprios** escritos pela equipe/colaboradores.
 
 **Dependências externas:**
 - [ ] Provas oficiais do ENEM (INEP/MEC, domínio público) para fidelidade/curadoria.
 - [ ] Questões autorais sob licença compatível (AGPL/CC) — definir rubrica de curadoria.
-- [ ] Provedor de IA (Fase 3) — **decisão adiada para a Fase 3** (avaliar custo, qualidade em PT-BR e opções self-host na ocasião).
+- [x] Provedor de IA (Fase 3) — arquitetura multi-provedor implementada (Anthropic, OpenAI, OpenAI-compatível, Gemini); escolha do provedor padrão por configuração via env.
 - [ ] Registry de imagens / VPS — **adiado**; por enquanto execução local via Docker Compose.
 
 **Premissas:**
@@ -767,7 +781,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 - [x] **Origem do conteúdo** → **misto**: provas oficiais do ENEM (INEP, domínio público) + questões autorais da comunidade, com comentários próprios. Licença das questões autorais compatível com AGPL/CC.
 - [x] **Banco de produção** → manter **SQLite até validar o MVP**; migrar para **PostgreSQL** antes do lançamento público com tração. Prisma abstrai a troca de provider.
 - [x] **Estratégia mobile** → **PWA responsivo (React+Vite)** no MVP; apps nativos (React Native/Expo) na Fase 3.
-- [x] **Provedor de IA** → **decisão adiada para a Fase 3** (avaliar custo, qualidade em PT-BR e self-host quando a funcionalidade entrar).
+- [x] **Provedor de IA** → arquitetura **multi-provedor** (Fase 3): Anthropic Claude, OpenAI, OpenAI-compatível (Ollama/Groq/OpenRouter) e Google Gemini. Seleção por `ESSAY_AI_PROVIDER` ou auto-detecção a partir das chaves configuradas; sem provedor, recai na rubrica manual.
 - [x] **LGPD** → **minimização de PII desde o início** (coletar o mínimo, consentimento claro); formalização jurídica/consentimento parental quando houver tração.
 - [x] **Deploy/hospedagem** → enquanto **não houver VPS**, execução via **`docker compose up` na máquina do mantenedor**; o CI/CD apenas constrói imagens e roda testes. Job de deploy remoto entra quando uma VPS for provisionada.
 
