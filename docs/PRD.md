@@ -780,7 +780,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 - [x] **Sustentabilidade/monetização** → **100% gratuito**, sustentado por doações/patrocínio/grants. Sem paywall em nenhuma fase.
 - [x] **Origem do conteúdo** → **misto**: provas oficiais do ENEM (INEP, domínio público) + questões autorais da comunidade, com comentários próprios. Licença das questões autorais compatível com AGPL/CC.
 - [x] **Banco de produção** → manter **SQLite até validar o MVP**; migrar para **PostgreSQL** antes do lançamento público com tração. Prisma abstrai a troca de provider.
-- [x] **Estratégia mobile** → **PWA responsivo (React+Vite)** no MVP; apps nativos (React Native/Expo) na Fase 3.
+- [x] **Estratégia mobile** → **PWA responsivo (React+Vite)** no MVP e por enquanto. Apps nativos (React Native/Expo) estavam previstos na Fase 3, mas estão **fora de cogitação no curto prazo** — o PWA atende o público-alvo (mobile-first, Android) com manutenção de uma única base. Reavaliar somente se um requisito nativo (ex.: notificações push, integração com OS) tornar-se crítico.
 - [x] **Provedor de IA** → arquitetura **multi-provedor** (Fase 3): Anthropic Claude, OpenAI, OpenAI-compatível (Ollama/Groq/OpenRouter) e Google Gemini. Seleção por `ESSAY_AI_PROVIDER` ou auto-detecção a partir das chaves configuradas; sem provedor, recai na rubrica manual.
 - [x] **LGPD** → **minimização de PII desde o início** (coletar o mínimo, consentimento claro); formalização jurídica/consentimento parental quando houver tração.
 - [x] **Deploy/hospedagem** → enquanto **não houver VPS**, execução via **`docker compose up` na máquina do mantenedor**; o CI/CD apenas constrói imagens e roda testes. Job de deploy remoto entra quando uma VPS for provisionada.
