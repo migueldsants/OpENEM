@@ -59,6 +59,8 @@ export default function Perfil() {
       setDisplayName(profile.displayName ?? '');
       setMinutes(profile.minutesPerDay);
     }
+    // Re-semeia só quando os campos exibidos mudam (não em qualquer update do profile).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.displayName, profile?.minutesPerDay]);
 
   async function update(patch: {
