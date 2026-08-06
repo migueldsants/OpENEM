@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import ThemeCustomizer from '../components/ThemeCustomizer';
 import { THEMES, useTheme } from '../theme';
 
 const GOALS = [
@@ -176,6 +177,8 @@ export default function Perfil() {
           ))}
         </div>
       </div>
+
+      <ThemeCustomizer />
 
       <div className="card p-2">
         <div className="flex items-center gap-3 p-3">

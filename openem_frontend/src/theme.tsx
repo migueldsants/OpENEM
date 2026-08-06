@@ -15,7 +15,8 @@ export type Theme =
   | 'ocean'
   | 'enem'
   | 'indigo'
-  | 'high-contrast';
+  | 'high-contrast'
+  | 'custom'; // tema personalizado via ThemeCustomizer (CSS vars inline)
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const THEMES: { key: Theme; label: string; swatch: string[] }[] = [
@@ -38,7 +39,7 @@ interface ThemeState {
 const ThemeContext = createContext<ThemeState | null>(null);
 const STORAGE_KEY = 'openem.theme';
 
-const VALID: Theme[] = THEMES.map((t) => t.key);
+const VALID: Theme[] = [...THEMES.map((t) => t.key), 'custom'];
 
 function initialTheme(): Theme {
   const saved = localStorage.getItem(STORAGE_KEY);
