@@ -23,6 +23,7 @@ export type XpAction =
   | 'ESSAY'
   | 'REVIEW'
   | 'STUDY_SESSION'
+  | 'GAME'
   | 'DAILY_CHALLENGE';
 
 /** Variação aplicada após uma atividade — surge na resposta da questão. */
