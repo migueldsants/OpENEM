@@ -8,14 +8,17 @@ export default function ThemeToggle() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // Fecha ao clicar fora.
+  // Fecha ao clicar fora. Usamos 'click' (não 'mousedown') para que o clique
+  // em uma opção do menu dispare antes de fechar — evita o bug onde o menu
+  // some antes do onClick da opção registrar.
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    // Evento no próximo tick para não capturar o mesmo clique que abriu.
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
   }, [open]);
 
   const current = FAMILIES.find((f) => f.key === family);
@@ -24,6 +27,7 @@ export default function ThemeToggle() {
     <div ref={ref} className="flex items-center gap-1.5">
       {/* Toggle claro/escuro (dentro da família atual). */}
       <button
+        type="button"
         onClick={toggle}
         aria-label={
           variant === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'
@@ -41,6 +45,7 @@ export default function ThemeToggle() {
       {/* Seletor de família (palette). */}
       <div className="relative">
         <button
+          type="button"
           onClick={() => setOpen((o) => !o)}
           aria-label="Mudar paleta de tema"
           title={current?.label ?? 'Tema'}
@@ -63,11 +68,12 @@ export default function ThemeToggle() {
             {FAMILIES.map((f) => (
               <button
                 key={f.key}
+                type="button"
+                role="menuitem"
                 onClick={() => {
                   setFamily(f.key);
                   setOpen(false);
                 }}
-                role="menuitem"
                 className={`flex items-center gap-2.5 rounded-lg p-2 text-left text-sm transition-colors ${
                   family === f.key
                     ? 'bg-surface-2 text-fg ring-1 ring-brand'

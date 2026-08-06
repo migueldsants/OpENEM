@@ -30,7 +30,7 @@ export const FAMILIES: {
 }[] = [
   { key: 'default', label: 'Padrão', swatch: ['#f5f1f6', '#e0234e'] },
   { key: 'sepia', label: 'Sépia', swatch: ['#f4ecd8', '#b45309'] },
-  { key: 'oled', label: 'OLED', swatch: ['#000000', '#00e5a0'] },
+  { key: 'oled', label: 'Black', swatch: ['#000000', '#00e5a0'] },
   { key: 'ocean', label: 'Ocean', swatch: ['#0c1c2b', '#38bdf8'] },
   { key: 'indigo', label: 'Roxo', swatch: ['#13131f', '#8b5cf6'] },
   { key: 'contrast', label: 'Contraste', swatch: ['#000000', '#ffcc00'] },
@@ -102,28 +102,32 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setTheme('custom');
         return;
       }
-      setTheme(`${f}-${variant}` as Theme);
+      const v = parsed?.variant ?? 'dark';
+      setTheme(`${f}-${v}` as Theme);
     },
-    [variant, setTheme],
+    [parsed, setTheme],
   );
 
   const setVariant = useCallback(
     (v: ThemeVariant) => {
-      if (family === 'custom') return; // custom não tem variante
-      setTheme(`${family}-${v}` as Theme);
+      const f = parsed?.family;
+      if (!f || f === 'custom') return; // custom não tem variante
+      setTheme(`${f}-${v}` as Theme);
     },
-    [family, setTheme],
+    [parsed, setTheme],
   );
 
   // Atalho do header: alterna claro/escuro dentro da família atual.
   const toggle = useCallback(() => {
-    if (family === 'custom') {
+    const currentFamily = parsed?.family ?? 'default';
+    const currentVariant = parsed?.variant ?? 'dark';
+    if (currentFamily === 'custom') {
       // Custom: sai para o tema padrão oposto.
-      setTheme(variant === 'dark' ? 'default-light' : 'default-dark');
+      setTheme(currentVariant === 'dark' ? 'default-light' : 'default-dark');
       return;
     }
-    setVariant(variant === 'dark' ? 'light' : 'dark');
-  }, [family, variant, setVariant, setTheme]);
+    setTheme(`${currentFamily}-${currentVariant === 'dark' ? 'light' : 'dark'}` as Theme);
+  }, [parsed, setTheme]);
 
   return (
     <ThemeContext.Provider
