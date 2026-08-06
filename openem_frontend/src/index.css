@@ -130,35 +130,35 @@
     0 16px 44px color-mix(in oklab, var(--brand) 32%, transparent);
 }
 
-/* ---- Ocean (azul/petróleo) ---- */
-[data-theme='ocean-light'] {
+/* ---- Azul (azure — azul vivo) ---- */
+[data-theme='azure-light'] {
   color-scheme: light;
-  --bg: #eaf3f9;
-  --sidebar: #dfeaf2;
+  --bg: #eaf3fb;
+  --sidebar: #dde9f6;
   --surface: #ffffff;
-  --surface-2: #f0f6fa;
-  --fg: #0c2438;
-  --muted: #5a7a92;
-  --line: #d4e3ee;
-  --brand: #0284c7;
-  --brand-2: #0891b2;
+  --surface-2: #f1f7fd;
+  --fg: #0b1e3f;
+  --muted: #5a7095;
+  --line: #d2e2f1;
+  --brand: #2563eb;
+  --brand-2: #3b82f6;
   --brand-ink: #ffffff;
-  --shadow: 0 1px 2px rgba(12, 36, 56, 0.06), 0 10px 28px rgba(12, 36, 56, 0.08);
+  --shadow: 0 1px 2px rgba(11, 30, 63, 0.06), 0 10px 28px rgba(11, 30, 63, 0.08);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
     0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
 }
-[data-theme='ocean-dark'] {
+[data-theme='azure-dark'] {
   color-scheme: dark;
-  --bg: #0c1c2b;
-  --sidebar: #102438;
-  --surface: #142a3f;
-  --surface-2: #1c3650;
-  --fg: #e4eef7;
-  --muted: #8ba3bd;
-  --line: #23425f;
-  --brand: #38bdf8;
-  --brand-2: #22d3ee;
-  --brand-ink: #06131f;
+  --bg: #0b1626;
+  --sidebar: #102036;
+  --surface: #122447;
+  --surface-2: #1a3260;
+  --fg: #e6eef9;
+  --muted: #93a8c7;
+  --line: #24406a;
+  --brand: #3b82f6;
+  --brand-2: #60a5fa;
+  --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
@@ -193,6 +193,108 @@
   --brand: #8b5cf6;
   --brand-2: #a78bfa;
   --brand-ink: #0f0a1f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Verde (forest — esmeralda) ---- */
+[data-theme='forest-light'] {
+  color-scheme: light;
+  --bg: #eef7ee;
+  --sidebar: #e2f1e2;
+  --surface: #ffffff;
+  --surface-2: #f2f9f2;
+  --fg: #0e2b16;
+  --muted: #5f8268;
+  --line: #d3e8d3;
+  --brand: #16a34a;
+  --brand-2: #22c55e;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(14, 43, 22, 0.06), 0 10px 28px rgba(14, 43, 22, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='forest-dark'] {
+  color-scheme: dark;
+  --bg: #0a1a0f;
+  --sidebar: #0e2417;
+  --surface: #0f2a1a;
+  --surface-2: #163a26;
+  --fg: #e6f4ea;
+  --muted: #8fb59c;
+  --line: #1f4530;
+  --brand: #22c55e;
+  --brand-2: #4ade80;
+  --brand-ink: #04230f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Dourado (gold — âmbar) ---- */
+[data-theme='gold-light'] {
+  color-scheme: light;
+  --bg: #fbf6e3;
+  --sidebar: #f5edd0;
+  --surface: #fffdf4;
+  --surface-2: #f9f1d6;
+  --fg: #33280a;
+  --muted: #8a7438;
+  --line: #ece0b8;
+  --brand: #d4a017;
+  --brand-2: #eab308;
+  --brand-ink: #2a1d04;
+  --shadow: 0 1px 2px rgba(51, 40, 10, 0.06), 0 10px 28px rgba(51, 40, 10, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='gold-dark'] {
+  color-scheme: dark;
+  --bg: #1a1605;
+  --sidebar: #221d08;
+  --surface: #2a2310;
+  --surface-2: #3a3016;
+  --fg: #f7efcf;
+  --muted: #c2a85e;
+  --line: #4a3d1c;
+  --brand: #eab308;
+  --brand-2: #facc15;
+  --brand-ink: #1a1305;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Fogo (red+pink+amber+orange) ---- */
+[data-theme='fire-light'] {
+  color-scheme: light;
+  --bg: #fff0e8;
+  --sidebar: #fbe3d6;
+  --surface: #ffffff;
+  --surface-2: #fff5ef;
+  --fg: #2a1107;
+  --muted: #9a6a52;
+  --line: #f3d4c2;
+  --brand: #ff6b35;
+  --brand-2: #f43f7a;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(42, 17, 7, 0.06), 0 10px 28px rgba(42, 17, 7, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='fire-dark'] {
+  color-scheme: dark;
+  --bg: #1a0a06;
+  --sidebar: #250c08;
+  --surface: #2a0f0a;
+  --surface-2: #3a1610;
+  --fg: #fdeee4;
+  --muted: #d39a82;
+  --line: #5a261c;
+  --brand: #ff7a3c;
+  --brand-2: #ff4d6d;
+  --brand-ink: #1a0a06;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);

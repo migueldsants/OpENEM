@@ -6,14 +6,18 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { clearCustomInlineStyles } from './theme-custom';
 
 /** Família de tema (a "paleta"). Cada família tem versão light e dark. */
 export type ThemeFamily =
   | 'default'
   | 'sepia'
   | 'oled'
-  | 'ocean'
+  | 'azure'
   | 'indigo'
+  | 'forest'
+  | 'gold'
+  | 'fire'
   | 'contrast'
   | 'custom';
 
@@ -31,9 +35,12 @@ export const FAMILIES: {
   { key: 'default', label: 'Padrão', swatch: ['#f5f1f6', '#e0234e'] },
   { key: 'sepia', label: 'Sépia', swatch: ['#f4ecd8', '#b45309'] },
   { key: 'oled', label: 'Black', swatch: ['#000000', '#00e5a0'] },
-  { key: 'ocean', label: 'Ocean', swatch: ['#0c1c2b', '#38bdf8'] },
-  { key: 'indigo', label: 'Roxo', swatch: ['#13131f', '#8b5cf6'] },
-  { key: 'contrast', label: 'Contraste', swatch: ['#000000', '#ffcc00'] },
+  { key: 'azure', label: 'Azul', swatch: ['#eaf3fb', '#2563eb'] },
+  { key: 'indigo', label: 'Roxo', swatch: ['#f3f0fb', '#8b5cf6'] },
+  { key: 'forest', label: 'Verde', swatch: ['#eef7ee', '#16a34a'] },
+  { key: 'gold', label: 'Dourado', swatch: ['#fbf6e3', '#d4a017'] },
+  { key: 'fire', label: 'Fogo', swatch: ['#fff0e8', '#ff6b35'] },
+  { key: 'contrast', label: 'Contraste', swatch: ['#ffffff', '#ffcc00'] },
 ];
 
 interface ThemeState {
@@ -49,7 +56,7 @@ interface ThemeState {
   setVariant: (v: ThemeVariant) => void;
   /** Alterna entre claro e escuro (atalho do header). */
   toggle: () => void;
-  /** Aplica um tema completo (ex: 'ocean-light'). */
+  /** Aplica um tema completo (ex: 'azure-light'). */
   setTheme: (t: Theme) => void;
 }
 
@@ -92,6 +99,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const setTheme = useCallback((t: Theme) => {
+    // Sair de 'custom' remove os overrides inline para que a paleta
+    // escolhida (CSS) realmente apareça — antes ficavam "grudados".
+    if (t !== 'custom') clearCustomInlineStyles();
     localStorage.setItem(STORAGE_KEY, t);
     setThemeState(t);
   }, []);
