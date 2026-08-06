@@ -131,7 +131,7 @@ function TopbarProgress() {
 
 function Sidebar({ email, onLogout }: { email?: string; onLogout: () => void }) {
   return (
-    <aside className="hidden md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-line md:px-4 md:py-5">
+    <aside className="hidden md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-line md:bg-sidebar md:px-4 md:py-5">
       <Wordmark className="px-2" />
       <nav className="mt-7 flex flex-col gap-1">
         {NAV.map(({ to, label, Icon, end }) => (

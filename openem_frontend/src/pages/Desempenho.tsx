@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { api, type Performance, type PerformancePoint } from '../api';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 /** Gráfico de linha leve (SVG puro) da precisão ao longo dos dias. */
@@ -149,7 +150,17 @@ export default function Desempenho() {
   }, [perf, topicSort]);
 
   if (loading) {
-    return <p className="card p-6 text-center text-sm text-muted">Carregando…</p>;
+    return (
+      <div className="space-y-5" aria-busy>
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+        </div>
+        <SkeletonCard lines={4} />
+        <SkeletonCard lines={3} />
+      </div>
+    );
   }
 
   if (error) {

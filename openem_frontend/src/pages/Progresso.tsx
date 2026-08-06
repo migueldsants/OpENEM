@@ -8,6 +8,7 @@ import {
   IconLock,
   IconTrophy,
 } from '../components/icons';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { leagueStyle } from '../lib/gamification';
 
 function XpCard({
@@ -175,7 +176,14 @@ export default function Progresso() {
       </header>
 
       {loading ? (
-        <p className="card p-6 text-center text-sm text-muted">Carregando…</p>
+        <div className="space-y-5" aria-busy>
+          <Skeleton className="h-32" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </div>
+          <SkeletonCard lines={4} />
+        </div>
       ) : summary && summary.enabled ? (
         <>
           <XpCard data={summary} />

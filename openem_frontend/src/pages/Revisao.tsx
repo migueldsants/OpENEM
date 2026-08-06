@@ -7,6 +7,7 @@ import {
   type ReviewItem,
 } from '../api';
 import { IconCheck, IconClock, IconX } from '../components/icons';
+import { SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -180,7 +181,10 @@ function ReviewSession({
       </div>
 
       {loading ? (
-        <p className="card p-6 text-center text-sm text-muted">Carregando…</p>
+        <div className="space-y-3" aria-busy>
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={3} />
+        </div>
       ) : questions.length === 0 ? (
         <p className="card p-5 text-center text-sm text-muted">
           Sem questões cadastradas neste assunto — avalie sua lembrança abaixo.
@@ -275,7 +279,11 @@ export default function Revisao() {
       )}
 
       {loading ? (
-        <p className="card p-6 text-center text-sm text-muted">Carregando…</p>
+        <div className="space-y-3" aria-busy>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
       ) : queue.length === 0 ? (
         <div className="card p-6 text-center">
           <p className="text-sm font-semibold">Tudo em dia! 🎉</p>

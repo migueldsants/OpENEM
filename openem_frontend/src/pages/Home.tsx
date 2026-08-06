@@ -20,6 +20,7 @@ import {
   IconTarget,
   IconTrophy,
 } from '../components/icons';
+import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { leagueStyle } from '../lib/gamification';
 
@@ -171,6 +172,7 @@ export default function Home() {
 
   const answered = perf?.overall.total ?? 0;
   const hasData = answered > 0;
+  const loadingPerf = perf === null;
 
   return (
     <div className="space-y-7">
@@ -188,26 +190,40 @@ export default function Home() {
 
       {game?.enabled && <ProgressWidget data={game} />}
 
-      {daily?.enabled && (
-        <DailyChallengeCard
-          data={daily}
-          onClaim={() => void claimDaily()}
-          claiming={claiming}
-        />
+      {daily === null ? (
+        <Skeleton className="h-20" />
+      ) : (
+        daily?.enabled && (
+          <DailyChallengeCard
+            data={daily}
+            onClaim={() => void claimDaily()}
+            claiming={claiming}
+          />
+        )
       )}
 
       <div className="grid grid-cols-3 gap-3">
-        <Stat
-          value={hasData ? `${perf!.overall.accuracy}%` : '—'}
-          label="de acerto"
-          accent="text-brand"
-        />
-        <Stat value={String(answered)} label="respondidas" />
-        <Stat
-          value={String(review.length)}
-          label="para revisar"
-          accent={review.length ? 'text-hum' : 'text-fg'}
-        />
+        {loadingPerf ? (
+          <>
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </>
+        ) : (
+          <>
+            <Stat
+              value={hasData ? `${perf!.overall.accuracy}%` : '—'}
+              label="de acerto"
+              accent="text-brand"
+            />
+            <Stat value={String(answered)} label="respondidas" />
+            <Stat
+              value={String(review.length)}
+              label="para revisar"
+              accent={review.length ? 'text-hum' : 'text-fg'}
+            />
+          </>
+        )}
       </div>
 
       {/* Revisão devida — chamada direta quando há assuntos vencidos. */}
@@ -241,7 +257,19 @@ export default function Home() {
           </NavLink>
         </div>
 
-        {hasData && perf!.bySubject.length > 0 ? (
+        {loadingPerf ? (
+          <ul className="mt-4 space-y-3" aria-label="Carregando desempenho">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <li key={i} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <SkeletonText width="35%" />
+                  <SkeletonText width="15%" />
+                </div>
+                <Skeleton className="h-2" />
+              </li>
+            ))}
+          </ul>
+        ) : hasData && perf!.bySubject.length > 0 ? (
           <ul className="mt-4 space-y-3">
             {perf!.bySubject.map((s) => {
               const area = areaKey(s.name);

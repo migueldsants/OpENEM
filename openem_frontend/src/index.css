@@ -26,6 +26,7 @@
 [data-theme='light'] {
   color-scheme: light;
   --bg: #f5f1f6;
+  --sidebar: #efeaf1;
   --surface: #ffffff;
   --surface-2: #faf6fa;
   --fg: #211b26;
@@ -43,6 +44,7 @@
 [data-theme='dark'] {
   color-scheme: dark;
   --bg: #15111c;
+  --sidebar: #1a1524;
   --surface: #1e1926;
   --surface-2: #2a2335;
   --fg: #ece7f1;
@@ -59,6 +61,7 @@
 /* Expõe os tokens como cores Tailwind (bg-surface, text-muted, bg-brand…). */
 @theme inline {
   --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-fg: var(--fg);
@@ -222,6 +225,27 @@
     outline: 2px solid var(--brand);
     outline-offset: 2px;
     border-radius: 0.4rem;
+  }
+
+  /* Placeholder animado para estados de carregamento (skeleton). */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface-2);
+    border-radius: 0.6rem;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--fg) 6%, transparent),
+      transparent
+    );
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 }
 

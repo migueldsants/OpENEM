@@ -17,6 +17,7 @@ import {
   IconTrophy,
   IconX,
 } from '../components/icons';
+import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const DIFFICULTIES = [1, 2, 3, 4, 5];
@@ -532,13 +533,30 @@ export default function Questoes() {
       )}
 
       {!current ? (
-        <p className="card p-8 text-center text-sm text-muted">
-          {loading
-            ? 'Carregando…'
-            : onlyFavorites
+        loading ? (
+          <div className="card p-6" aria-busy>
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-9 rounded-full" />
+              <SkeletonText width="40%" />
+            </div>
+            <div className="mt-4 space-y-2">
+              <SkeletonText width="95%" />
+              <SkeletonText width="80%" />
+              <SkeletonText width="60%" />
+            </div>
+            <div className="mt-4 space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-11" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="card p-8 text-center text-sm text-muted">
+            {onlyFavorites
               ? 'Você ainda não favoritou questões com esses filtros.'
               : 'Nenhuma questão encontrada. Ajuste os filtros.'}
-        </p>
+          </p>
+        )
       ) : (
         <QuestionView
           key={current.id}
