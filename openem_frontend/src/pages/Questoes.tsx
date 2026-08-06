@@ -2,22 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   api,
   type AnswerResult,
-  type GamificationDelta,
   type Question,
   type Subject,
 } from '../api';
+import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
-  IconBolt,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconFilter,
-  IconFlame,
   IconStar,
-  IconTrophy,
   IconX,
 } from '../components/icons';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
+import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const DIFFICULTIES = [1, 2, 3, 4, 5];
@@ -26,47 +24,6 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 interface AnswerState {
   chosen: string | null;
   result: AnswerResult | null;
-}
-
-function GamificationFeedback({ g }: { g: GamificationDelta }) {
-  return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 animate-rise">
-      <span className="inline-flex items-center gap-1 rounded-full bg-brand/15 px-2.5 py-1 text-xs font-bold text-brand">
-        <IconBolt width={13} height={13} filled />+{g.xpGained} XP
-      </span>
-      {g.breakdown.comboMultiplier > 1 && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-red/12 px-2.5 py-1 text-xs font-semibold text-red">
-          <IconFlame width={13} height={13} filled />
-          combo ×{g.breakdown.comboMultiplier}
-        </span>
-      )}
-      {g.breakdown.dailyBonus > 0 && (
-        <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-muted">
-          +{g.breakdown.dailyBonus} bônus diário
-        </span>
-      )}
-      {g.leveledUp && (
-        <span className="rounded-full bg-brand/15 px-2.5 py-1 text-xs font-bold text-brand">
-          Subiu para o nível {g.level}!
-        </span>
-      )}
-      {g.leagueChanged && (
-        <span className="rounded-full bg-mat/15 px-2.5 py-1 text-xs font-bold text-mat">
-          Nova liga: {g.league.name}!
-        </span>
-      )}
-      {g.newAchievements.map((a) => (
-        <span
-          key={a.code}
-          title={a.description}
-          className="inline-flex items-center gap-1 rounded-full bg-hum/15 px-2.5 py-1 text-xs font-semibold text-hum"
-        >
-          <IconTrophy width={13} height={13} filled />
-          {a.name}
-        </span>
-      ))}
-    </div>
-  );
 }
 
 /** Card da questão atual — controlado: o estado de resposta vive no pai. */
@@ -321,6 +278,7 @@ function FilterDrawer({
 }
 
 export default function Questoes() {
+  const { refresh } = useGamification();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [favoriteQuestions, setFavoriteQuestions] = useState<Question[]>([]);
@@ -451,6 +409,7 @@ export default function Questoes() {
     try {
       const result = await api.answer(current.id, chosen);
       setAnswers((cur) => ({ ...cur, [current.id]: { chosen, result } }));
+      void refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível enviar.');
     }

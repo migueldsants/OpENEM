@@ -65,11 +65,45 @@ export function updateStreak(
 export const POINTS = {
   correctAnswer: 10,
   wrongAnswer: 2, // participação: errar ainda é estudar
+  // Ações não-resposta (issue #17):XP fixo por participação + bônus por desempenho.
+  reviewGrade: 5, // autoavaliação SM-2
+  studySession: 8, // sessão de cronograma concluída
+  essaySubmit: 15, // enviar redação
+  essayHighScore: 40, // bônus: nota >= 800
+  essayGoodScore: 20, // bônus: nota >= 600
+  simulationBase: 20, // concluir um simulado
+  simulationPerCorrect: 3, // +XP por acerto
+  simulationSpeedBonus: 30, // bônus por terminar em < 60% do tempo limite
 } as const;
 
 /** XP base de uma resposta, antes de combo e bônus. */
 export function pointsForAnswer(isCorrect: boolean): number {
   return isCorrect ? POINTS.correctAnswer : POINTS.wrongAnswer;
+}
+
+/**
+ * XP de um simulado concluído: base + por acerto, com bônus de velocidade opcional.
+ * `fractionOfLimit` é a fração do tempo limite usada (0..1); < 0.6 dá bônus.
+ */
+export function xpForSimulation(
+  correct: number,
+  fractionOfLimit: number | null,
+): number {
+  const base = POINTS.simulationBase + correct * POINTS.simulationPerCorrect;
+  const speed =
+    fractionOfLimit != null && fractionOfLimit < 0.6
+      ? POINTS.simulationSpeedBonus
+      : 0;
+  return base + speed;
+}
+
+/** XP de uma redação avaliada: envio + bônus por nota (total 0..1000). */
+export function xpForEssay(totalScore: number | null): number {
+  if (totalScore == null) return POINTS.essaySubmit;
+  let bonus = 0;
+  if (totalScore >= 800) bonus = POINTS.essayHighScore;
+  else if (totalScore >= 600) bonus = POINTS.essayGoodScore;
+  return POINTS.essaySubmit + bonus;
 }
 
 /**
@@ -224,6 +258,47 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Elite',
     description: 'Chegue ao nível 20 (liga Platina).',
   },
+  // ---- Ações além de questões (issue #17) ----
+  {
+    code: 'FIRST_SIMULATION',
+    name: 'Prova de fogo',
+    description: 'Conclua seu primeiro simulado.',
+  },
+  {
+    code: 'FIVE_SIMULATIONS',
+    name: 'Simulador dedicado',
+    description: 'Conclua 5 simulados.',
+  },
+  {
+    code: 'FIRST_ESSAY',
+    name: 'Primeira redação',
+    description: 'Envie sua primeira redação.',
+  },
+  {
+    code: 'HIGH_SCORE_ESSAY',
+    name: 'Tirou onda',
+    description: 'Tire 800+ em uma redação.',
+  },
+  {
+    code: 'FIRST_REVIEW',
+    name: 'Revisão ativa',
+    description: 'Faça sua primeira autoavaliação de revisão.',
+  },
+  {
+    code: 'TEN_REVIEWS',
+    name: 'Memória de elefante',
+    description: 'Faça 10 autoavaliações de revisão.',
+  },
+  {
+    code: 'FIRST_SESSION',
+    name: 'No cronograma',
+    description: 'Conclua sua primeira sessão de estudo.',
+  },
+  {
+    code: 'TEN_SESSIONS',
+    name: 'Constância',
+    description: 'Conclua 10 sessões de estudo.',
+  },
 ] as const;
 
 export interface GamificationSnapshot {
@@ -231,6 +306,11 @@ export interface GamificationSnapshot {
   currentStreak: number;
   answersCount: number;
   correctCount: number;
+  simulationsCount: number;
+  essaysCount: number;
+  highScoreEssays: number;
+  reviewsCount: number;
+  sessionsDone: number;
 }
 
 const ACHIEVEMENT_RULES: Record<string, (s: GamificationSnapshot) => boolean> =
@@ -247,6 +327,14 @@ const ACHIEVEMENT_RULES: Record<string, (s: GamificationSnapshot) => boolean> =
     REACH_LEVEL_5: (s) => levelFromXp(s.points).level >= 5,
     REACH_LEVEL_10: (s) => levelFromXp(s.points).level >= 10,
     REACH_LEVEL_20: (s) => levelFromXp(s.points).level >= 20,
+    FIRST_SIMULATION: (s) => s.simulationsCount >= 1,
+    FIVE_SIMULATIONS: (s) => s.simulationsCount >= 5,
+    FIRST_ESSAY: (s) => s.essaysCount >= 1,
+    HIGH_SCORE_ESSAY: (s) => s.highScoreEssays >= 1,
+    FIRST_REVIEW: (s) => s.reviewsCount >= 1,
+    TEN_REVIEWS: (s) => s.reviewsCount >= 10,
+    FIRST_SESSION: (s) => s.sessionsDone >= 1,
+    TEN_SESSIONS: (s) => s.sessionsDone >= 10,
   };
 
 /**

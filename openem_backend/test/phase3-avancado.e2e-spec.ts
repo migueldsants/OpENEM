@@ -37,7 +37,10 @@ describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () 
 
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email: `p3adv_${Date.now()}@exemplo.com`, password: 'senhaForte123' })
+      .send({
+        email: `p3adv_${Date.now()}@exemplo.com`,
+        password: 'senhaForte123',
+      })
       .expect(201);
     token = reg.body.accessToken;
   });
@@ -75,7 +78,9 @@ describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
     expect(res.body[0]).toHaveProperty('reason');
-    expect(res.body[0].question.alternatives[0]).not.toHaveProperty('isCorrect');
+    expect(res.body[0].question.alternatives[0]).not.toHaveProperty(
+      'isCorrect',
+    );
   });
 
   it('cria um tópico no fórum, lista, detalha e responde', async () => {

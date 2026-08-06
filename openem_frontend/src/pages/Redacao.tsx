@@ -5,8 +5,11 @@ import {
   type EssayPrompt,
   type EssaySubmissionDetail,
   type EssaySubmissionSummary,
+  type GamificationDelta,
 } from '../api';
+import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconSparkle } from '../components/icons';
+import { useGamification } from '../gamification';
 
 // Metadados por competência: rótulo + cor do marca-texto (uma por competência).
 const COMP_META = [
@@ -294,6 +297,7 @@ function DetailModal({
 }
 
 export default function Redacao() {
+  const { refresh } = useGamification();
   const [prompts, setPrompts] = useState<EssayPrompt[]>([]);
   const [submissions, setSubmissions] = useState<EssaySubmissionSummary[]>([]);
   const [promptId, setPromptId] = useState('');
@@ -305,6 +309,7 @@ export default function Redacao() {
   const [gradingId, setGradingId] = useState<string | null>(null);
   const [detail, setDetail] = useState<EssaySubmissionDetail | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
+  const [award, setAward] = useState<GamificationDelta | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -338,7 +343,12 @@ export default function Redacao() {
     setGradingId(id);
     setError(null);
     try {
-      await api.evaluateEssayWithAi(id);
+      const res = await api.evaluateEssayWithAi(id);
+      const delta = (res as { gamification?: GamificationDelta }).gamification;
+      if (delta) {
+        setAward(delta);
+        void refresh();
+      }
       await load();
       if (detail?.id === id) setDetail(await api.essaySubmission(id));
     } catch (err) {
@@ -360,9 +370,13 @@ export default function Redacao() {
     setMessage(null);
     setError(null);
     try {
-      await api.submitEssay(promptId, content);
+      const res = await api.submitEssay(promptId, content);
       setContent('');
       setMessage('Redação enviada! Você verá a nota assim que for corrigida.');
+      if (res.gamification) {
+        setAward(res.gamification);
+        void refresh();
+      }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível enviar.');
@@ -424,6 +438,7 @@ export default function Redacao() {
           </button>
           {message && <p className="text-sm text-nat">{message}</p>}
         </div>
+        {award && <GamificationFeedback g={award} />}
       </form>
 
       <section className="space-y-3">

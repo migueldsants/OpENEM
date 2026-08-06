@@ -121,6 +121,11 @@ export type GamificationSummary =
       lastActivityOn: string | null;
       answersCount: number;
       correctCount: number;
+      simulationsCount: number;
+      essaysCount: number;
+      highScoreEssays: number;
+      reviewsCount: number;
+      sessionsDone: number;
       achievementsUnlocked: number;
       achievementsTotal: number;
     };
@@ -139,13 +144,28 @@ export type DailyChallenge =
       completed: boolean;
       claimed: boolean;
     };
-export interface DailyChallengeClaim {
-  enabled: boolean;
-  claimed: boolean;
-  xpAwarded: number;
-  xp?: number;
-  level?: number;
+export type DailyChallengeClaim =
+  | { enabled: false }
+  | {
+      enabled: true;
+      claimed: boolean;
+      xpAwarded: number;
+      xp?: number;
+      level?: number;
+      reason?: 'incompleto' | 'ja_resgatado';
+    };
+
+/** Entrada do histórico de XP (XpLog). */
+export interface XpLogEntry {
+  id: string;
+  action: string;
+  xpGained: number;
+  detail: string | null;
+  createdAt: string;
 }
+export type XpHistory =
+  | { enabled: false }
+  | { enabled: true; logs: XpLogEntry[]; byDay: { day: string; xp: number }[] };
 export interface Recommendation {
   question: Question;
   reason: string;
@@ -218,6 +238,7 @@ export interface StudySession {
   minutes: number;
   done: boolean;
   topic: TopicRef;
+  gamification?: GamificationDelta;
 }
 export interface StudyPlan {
   id: string;
@@ -251,6 +272,7 @@ export interface EssayEvaluation {
   feedback: string | null;
   competencyFeedback?: Record<'c1' | 'c2' | 'c3' | 'c4' | 'c5', string> | null;
   annotations?: EssayAnnotation[] | null;
+  gamification?: GamificationDelta;
 }
 export interface EssaySubmissionSummary {
   id: string;
@@ -302,6 +324,7 @@ export interface SimulationResult {
   percentage: number;
   triScore: number | null;
   details: SimulationResultDetail[];
+  gamification?: GamificationDelta;
 }
 export interface Profile {
   goal: string;
@@ -405,7 +428,7 @@ export const api = {
 
   essayPrompts: () => request<EssayPrompt[]>('/essays/prompts'),
   submitEssay: (promptId: string, content: string) =>
-    request<{ id: string }>('/essays/submissions', {
+    request<{ id: string; promptId: string; submittedAt: string; gamification?: GamificationDelta }>('/essays/submissions', {
       method: 'POST',
       body: { promptId, content },
     }),
@@ -422,6 +445,8 @@ export const api = {
 
   gamification: () => request<GamificationSummary>('/gamification/me'),
   achievements: () => request<AchievementView[]>('/gamification/achievements'),
+  xpHistory: (days = 30) =>
+    request<XpHistory>(`/gamification/history?days=${days}`),
   dailyChallenge: () =>
     request<DailyChallenge>('/gamification/daily-challenge'),
   claimDailyChallenge: () =>

@@ -3,15 +3,34 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { POINTS } from '../common/gamification';
+import {
+  GamificationDelta,
+  GamificationService,
+} from '../gamification/gamification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   computeNextReview,
   qualityFromCorrectness,
 } from '../common/spaced-repetition';
 
+export interface ReviewGradeResult {
+  id: string;
+  userId: string;
+  topicId: string;
+  easeFactor: number;
+  intervalD: number;
+  repetition: number;
+  dueAt: Date;
+  gamification?: GamificationDelta;
+}
+
 @Injectable()
 export class ReviewService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gamification: GamificationService,
+  ) {}
 
   /** Atualiza (ou cria) o item de revisão de um assunto após uma tentativa. */
   async recordOutcome(
@@ -45,7 +64,11 @@ export class ReviewService {
   }
 
   /** Reagenda explicitamente um item (ex.: usuário avalia a própria lembrança 0..5). */
-  async grade(userId: string, reviewItemId: string, quality: number) {
+  async grade(
+    userId: string,
+    reviewItemId: string,
+    quality: number,
+  ): Promise<ReviewGradeResult> {
     const item = await this.prisma.reviewItem.findUnique({
       where: { id: reviewItemId },
     });
@@ -63,7 +86,7 @@ export class ReviewService {
       },
       quality,
     );
-    return this.prisma.reviewItem.update({
+    const updated = await this.prisma.reviewItem.update({
       where: { id: reviewItemId },
       data: {
         easeFactor: next.easeFactor,
@@ -72,6 +95,16 @@ export class ReviewService {
         dueAt: next.dueAt,
       },
     });
+    // XP por autoavaliação de revisão (issue #17).
+    const gamification = await this.gamification.recordActivity(
+      userId,
+      'REVIEW',
+      POINTS.reviewGrade,
+      'Autoavaliação de revisão',
+      new Date(),
+      { reviewsCount: 1 },
+    );
+    return { ...updated, ...(gamification ? { gamification } : {}) };
   }
 
   private async reschedule(userId: string, topicId: string, quality: number) {

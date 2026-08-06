@@ -5,8 +5,10 @@ import {
   type SimulationStart,
   type SimulationTemplate,
 } from '../api';
+import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck, IconClock, IconStack, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
+import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -461,6 +463,13 @@ function Result({
         )}
       </div>
 
+      {result.gamification && (
+        <div className="card card-raised p-4">
+          <p className="text-xs text-muted">Recompensa</p>
+          <GamificationFeedback g={result.gamification} />
+        </div>
+      )}
+
       <button onClick={onBack} className="btn btn-primary">
         Voltar aos simulados
       </button>
@@ -557,6 +566,7 @@ function Result({
 }
 
 export default function Simulados() {
+  const { refresh } = useGamification();
   const [phase, setPhase] = useState<Phase>('list');
   const [active, setActive] = useState<ActiveState | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
@@ -595,6 +605,7 @@ export default function Simulados() {
     setResumeAvailable(false);
     setResult(res);
     setPhase('result');
+    void refresh();
   }
 
   function handleAbort() {

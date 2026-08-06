@@ -5,14 +5,30 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { buildStudyPlan, PlanTopic } from '../common/study-plan';
+import { POINTS } from '../common/gamification';
+import {
+  GamificationDelta,
+  GamificationService,
+} from '../gamification/gamification.service';
 import { PerformanceService } from '../performance/performance.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+export interface StudySessionResult {
+  id: string;
+  planId: string;
+  topicId: string;
+  dayIndex: number;
+  minutes: number;
+  done: boolean;
+  gamification?: GamificationDelta;
+}
 
 @Injectable()
 export class StudyPlanService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly performance: PerformanceService,
+    private readonly gamification: GamificationService,
   ) {}
 
   /** Gera (ou regenera) o cronograma do usuário a partir do desempenho e do perfil. */
@@ -111,10 +127,14 @@ export class StudyPlanService {
   }
 
   /** Marca uma sessão como concluída/pendente (valida posse via o plano). */
-  async setSessionDone(userId: string, sessionId: string, done: boolean) {
+  async setSessionDone(
+    userId: string,
+    sessionId: string,
+    done: boolean,
+  ): Promise<StudySessionResult> {
     const session = await this.prisma.studySession.findUnique({
       where: { id: sessionId },
-      select: { id: true, plan: { select: { userId: true } } },
+      select: { id: true, done: true, plan: { select: { userId: true } } },
     });
     if (!session) {
       throw new NotFoundException('Sessão não encontrada');
@@ -122,9 +142,23 @@ export class StudyPlanService {
     if (session.plan.userId !== userId) {
       throw new ForbiddenException();
     }
-    return this.prisma.studySession.update({
+    const updated = await this.prisma.studySession.update({
       where: { id: sessionId },
       data: { done },
     });
+    // XP apenas ao marcar como concluída (não ao desmarcar), para não inflar.
+    let gamification: GamificationDelta | undefined;
+    if (done && !session.done) {
+      const delta = await this.gamification.recordActivity(
+        userId,
+        'STUDY_SESSION',
+        POINTS.studySession,
+        'Sessão de estudo concluída',
+        new Date(),
+        { sessionsDone: 1 },
+      );
+      gamification = delta ?? undefined;
+    }
+    return { ...updated, ...(gamification ? { gamification } : {}) };
   }
 }

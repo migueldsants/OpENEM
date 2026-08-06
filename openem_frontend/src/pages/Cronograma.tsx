@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type StudyPlan, type StudySession } from '../api';
+import {
+  api,
+  type GamificationDelta,
+  type StudyPlan,
+  type StudySession,
+} from '../api';
 import { useAuth } from '../auth';
+import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck } from '../components/icons';
+import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 function groupByDay(sessions: StudySession[]): [number, StudySession[]][] {
@@ -16,10 +23,12 @@ function groupByDay(sessions: StudySession[]): [number, StudySession[]][] {
 
 export default function Cronograma() {
   const { me, refreshMe } = useAuth();
+  const { refresh } = useGamification();
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [minutes, setMinutes] = useState(me?.profile?.minutesPerDay ?? 60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [award, setAward] = useState<GamificationDelta | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -55,8 +64,15 @@ export default function Cronograma() {
   }
 
   async function toggleDone(s: StudySession) {
+    setError(null);
+    setAward(null);
     try {
-      await api.setSessionDone(s.id, !s.done);
+      const res = await api.setSessionDone(s.id, !s.done);
+      const delta = res.gamification;
+      if (delta) {
+        setAward(delta);
+        void refresh();
+      }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível atualizar.');
@@ -102,6 +118,12 @@ export default function Cronograma() {
 
       {error && (
         <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+      )}
+
+      {award && (
+        <div className="card card-raised p-4">
+          <GamificationFeedback g={award} />
+        </div>
       )}
 
       {!plan ? (

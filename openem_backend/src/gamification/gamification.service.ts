@@ -14,8 +14,16 @@ import {
   levelFromXp,
   pointsForAnswer,
   updateStreak,
-  xpForAnswer,
 } from '../common/gamification';
+
+/** Chaves de ação registradas no XpLog (issue #17). */
+export type XpAction =
+  | 'ANSWER'
+  | 'SIMULATION'
+  | 'ESSAY'
+  | 'REVIEW'
+  | 'STUDY_SESSION'
+  | 'DAILY_CHALLENGE';
 
 /** Variação aplicada após uma atividade — surge na resposta da questão. */
 export interface GamificationDelta {
@@ -29,6 +37,17 @@ export interface GamificationDelta {
   currentStreak: number;
   streakIncremented: boolean;
   newAchievements: AchievementDef[];
+}
+
+/** Contadores incrementais opcionais por tipo de atividade. */
+interface Counters {
+  answersCount?: number;
+  correctCount?: number;
+  simulationsCount?: number;
+  essaysCount?: number;
+  highScoreEssays?: number;
+  reviewsCount?: number;
+  sessionsDone?: number;
 }
 
 @Injectable()
@@ -56,6 +75,32 @@ export class GamificationService {
     if (!(await this.isEnabled(userId))) {
       return null;
     }
+    const base = pointsForAnswer(isCorrect);
+    return this.recordActivity(userId, 'ANSWER', base, isCorrect, now, {
+      answersCount: 1,
+      correctCount: isCorrect ? 1 : 0,
+    });
+  }
+
+  /**
+   * Contabiliza uma atividade genérica que dá XP (simulado, redação, revisão,
+   * sessão de cronograma). Atualiza pontos, streak e conquistas — sem tocar nos
+   * contadores de questões (a menos que `counters` os incrementem).
+   *
+   * O combo da streak e o bônus diário se aplicam como nas respostas: a 1ª
+   * atividade do dia recebe o bônus de login, e o XP é multiplicado pelo combo.
+   */
+  async recordActivity(
+    userId: string,
+    action: XpAction,
+    basePoints: number,
+    detail: boolean | string | null,
+    now: Date = new Date(),
+    counters: Counters = {},
+  ): Promise<GamificationDelta | null> {
+    if (!(await this.isEnabled(userId))) {
+      return null;
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const stat = await tx.gamificationStat.upsert({
@@ -73,18 +118,23 @@ export class GamificationService {
         now,
       );
 
-      // XP = base × combo da streak (+ bônus na 1ª atividade do dia).
-      const base = pointsForAnswer(isCorrect);
       const comboMultiplier = comboMultiplierForStreak(streak.currentStreak);
       const dailyBonus = streak.incremented
         ? dailyBonusXp(streak.currentStreak)
         : 0;
-      const xpGained =
-        xpForAnswer(isCorrect, streak.currentStreak) + dailyBonus;
+      const xpGained = Math.round(basePoints * comboMultiplier) + dailyBonus;
 
       const xp = stat.points + xpGained;
-      const answersCount = stat.answersCount + 1;
-      const correctCount = stat.correctCount + (isCorrect ? 1 : 0);
+      const next: Counters = {
+        answersCount: stat.answersCount + (counters.answersCount ?? 0),
+        correctCount: stat.correctCount + (counters.correctCount ?? 0),
+        simulationsCount:
+          stat.simulationsCount + (counters.simulationsCount ?? 0),
+        essaysCount: stat.essaysCount + (counters.essaysCount ?? 0),
+        highScoreEssays: stat.highScoreEssays + (counters.highScoreEssays ?? 0),
+        reviewsCount: stat.reviewsCount + (counters.reviewsCount ?? 0),
+        sessionsDone: stat.sessionsDone + (counters.sessionsDone ?? 0),
+      };
 
       const before = levelFromXp(stat.points);
       const after = levelFromXp(xp);
@@ -99,8 +149,13 @@ export class GamificationService {
         {
           points: xp,
           currentStreak: streak.currentStreak,
-          answersCount,
-          correctCount,
+          answersCount: next.answersCount ?? 0,
+          correctCount: next.correctCount ?? 0,
+          simulationsCount: next.simulationsCount ?? 0,
+          essaysCount: next.essaysCount ?? 0,
+          highScoreEssays: next.highScoreEssays ?? 0,
+          reviewsCount: next.reviewsCount ?? 0,
+          sessionsDone: next.sessionsDone ?? 0,
         },
         unlocked.map((u) => u.code),
       );
@@ -112,8 +167,13 @@ export class GamificationService {
           currentStreak: streak.currentStreak,
           longestStreak: streak.longestStreak,
           lastActivityOn: streak.lastActivityOn,
-          answersCount,
-          correctCount,
+          answersCount: next.answersCount ?? 0,
+          correctCount: next.correctCount ?? 0,
+          simulationsCount: next.simulationsCount ?? 0,
+          essaysCount: next.essaysCount ?? 0,
+          highScoreEssays: next.highScoreEssays ?? 0,
+          reviewsCount: next.reviewsCount ?? 0,
+          sessionsDone: next.sessionsDone ?? 0,
         },
       });
 
@@ -123,10 +183,17 @@ export class GamificationService {
         });
       }
 
+      // Histórico de XP (issue #17): um log por ação.
+      const detailStr =
+        detail == null ? null : typeof detail === 'string' ? detail : null;
+      await tx.xpLog.create({
+        data: { userId, action, xpGained, detail: detailStr },
+      });
+
       const byCode = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
       return {
         xpGained,
-        breakdown: { base, comboMultiplier, dailyBonus },
+        breakdown: { base: basePoints, comboMultiplier, dailyBonus },
         xp,
         level: after.level,
         leveledUp: after.level > before.level,
@@ -173,8 +240,54 @@ export class GamificationService {
       lastActivityOn: stat?.lastActivityOn ?? null,
       answersCount: stat?.answersCount ?? 0,
       correctCount: stat?.correctCount ?? 0,
+      simulationsCount: stat?.simulationsCount ?? 0,
+      essaysCount: stat?.essaysCount ?? 0,
+      highScoreEssays: stat?.highScoreEssays ?? 0,
+      reviewsCount: stat?.reviewsCount ?? 0,
+      sessionsDone: stat?.sessionsDone ?? 0,
       achievementsUnlocked: unlocked,
       achievementsTotal: ACHIEVEMENTS.length,
+    };
+  }
+
+  /**
+   * Histórico de XP do usuário (XpLog), opcionalmente limitado aos últimos N
+   * dias. Retorna os logs ordenados do mais recente ao mais antigo.
+   */
+  async getHistory(userId: string, days = 30) {
+    if (!(await this.isEnabled(userId))) {
+      return { enabled: false as const };
+    }
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - Math.max(1, days));
+    since.setUTCHours(0, 0, 0, 0);
+
+    const logs = await this.prisma.xpLog.findMany({
+      where: { userId, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        action: true,
+        xpGained: true,
+        detail: true,
+        createdAt: true,
+      },
+    });
+
+    // Agrega XP por dia (YYYY-MM-DD UTC) para o gráfico da tela Progresso.
+    const byDay = new Map<string, number>();
+    for (const log of logs) {
+      const d = new Date(log.createdAt);
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      byDay.set(key, (byDay.get(key) ?? 0) + log.xpGained);
+    }
+
+    return {
+      enabled: true as const,
+      logs,
+      byDay: [...byDay.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, xp]) => ({ day, xp })),
     };
   }
 
