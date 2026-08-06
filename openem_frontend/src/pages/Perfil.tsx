@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import ThemeCustomizer from '../components/ThemeCustomizer';
-import { THEMES, useTheme } from '../theme';
+import { FAMILIES, useTheme } from '../theme';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -44,7 +44,7 @@ function Switch({
 
 export default function Perfil() {
   const { me, refreshMe } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { family, variant, setFamily, setVariant } = useTheme();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,17 +151,36 @@ export default function Perfil() {
       </div>
 
       <div className="card p-4">
-        <p className="text-sm font-medium">Aparência</p>
-        <p className="mt-0.5 text-xs text-muted">
-          Escolha o tema que combina com você.
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {THEMES.map((t) => (
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Aparência</p>
+            <p className="mt-0.5 text-xs text-muted">
+              Escolha a paleta e a variante (claro/escuro).
+            </p>
+          </div>
+          {/* Toggle claro/escuro rápido */}
+          <div className="seg">
             <button
-              key={t.key}
-              onClick={() => setTheme(t.key)}
+              data-active={variant === 'light'}
+              onClick={() => setVariant('light')}
+            >
+              Claro
+            </button>
+            <button
+              data-active={variant === 'dark'}
+              onClick={() => setVariant('dark')}
+            >
+              Escuro
+            </button>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {FAMILIES.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFamily(f.key)}
               className={`flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors ${
-                theme === t.key
+                family === f.key
                   ? 'border-brand ring-1 ring-brand'
                   : 'border-line hover:bg-surface-2'
               }`}
@@ -169,10 +188,10 @@ export default function Perfil() {
               <span
                 className="size-9 rounded-lg border border-line"
                 style={{
-                  background: `linear-gradient(135deg, ${t.swatch[0]} 50%, ${t.swatch[1]} 50%)`,
+                  background: `linear-gradient(135deg, ${f.swatch[0]} 50%, ${f.swatch[1]} 50%)`,
                 }}
               />
-              <span className="text-xs font-medium">{t.label}</span>
+              <span className="text-xs font-medium">{f.label}</span>
             </button>
           ))}
         </div>

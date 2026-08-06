@@ -103,7 +103,7 @@ export default function ThemeCustomizer() {
     if (saved && localStorage.getItem(THEME_KEY) === 'custom') {
       applyCustomTheme(saved);
     } else {
-      setTheme(theme === 'custom' ? 'light' : theme);
+      setTheme(theme === 'custom' ? 'default-light' : theme);
     }
     setEditing(false);
     setError(null);
@@ -112,8 +112,8 @@ export default function ThemeCustomizer() {
   function reset() {
     clearCustomTheme();
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.setItem(THEME_KEY, 'light');
-    setTheme('light');
+    localStorage.setItem(THEME_KEY, 'default-light');
+    setTheme('default-light');
     setDraft({});
     setEditing(false);
     setError(null);
