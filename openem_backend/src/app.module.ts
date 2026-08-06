@@ -8,6 +8,7 @@ import { CommunityModule } from './community/community.module';
 import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { GamesModule } from './games/games.module';
 import { HealthModule } from './health/health.module';
 import { PerformanceModule } from './performance/performance.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     GamificationModule,
     RecommendationModule,
     CommunityModule,
+    GamesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,6 +5,7 @@ import {
   IconCalendar,
   IconChat,
   IconFlame,
+  IconGame,
   IconHome,
   IconLogout,
   IconPen,
@@ -21,6 +22,7 @@ import Comunidade from './pages/Comunidade';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
+import Games from './pages/Games';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
@@ -37,14 +39,18 @@ const NAV = [
   { to: '/', label: 'Início', Icon: IconHome, end: true },
   { to: '/questoes', label: 'Questões', Icon: IconStack },
   { to: '/simulados', label: 'Simulados', Icon: IconTimer },
+  { to: '/games', label: 'Games', Icon: IconGame },
   { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: false },
-  { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar },
-  { to: '/redacao', label: 'Redação', Icon: IconPen },
+  { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: false },
+  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: false },
   { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: false },
   { to: '/perfil', label: 'Perfil', Icon: IconUser },
 ];
 
 // Itens exibidos na barra inferior do mobile (limitada a 6 para não apertar).
+// Telas secundárias (Progresso, Cronograma, Redação, Comunidade) ficam acessíveis
+// pela sidebar no desktop e via atalhos/contexto no mobile — a issue #21
+// introduz um botão "Mais" para agrupá-las.
 const MOBILE_NAV = NAV.filter(
   (item) => !('mobile' in item) || item.mobile !== false,
 );
@@ -224,6 +230,7 @@ export default function App() {
       <Route path="/progresso" element={<Progresso />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/redacao" element={<Redacao />} />
+      <Route path="/games" element={<Games />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/favoritos" element={<Favoritos />} />
@@ -282,8 +289,11 @@ export default function App() {
       {/* Navegação inferior — padrão mobile (Android). */}
       <nav className="tabbar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/90 backdrop-blur md:hidden">
         <div
-          className="grid grid-cols-6"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          className="grid"
+          style={{
+            gridTemplateColumns: `repeat(${MOBILE_NAV.length}, minmax(0, 1fr))`,
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
         >
           {MOBILE_NAV.map(({ to, label, Icon, end }) => (
             <NavLink
