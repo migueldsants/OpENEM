@@ -50,7 +50,8 @@ export default function ThemeCustomizer() {
   function update(key: string, value: string) {
     const next = { ...draft, [key]: value };
     setDraft(next);
-    // Preview em tempo real (mutação intencional do DOM).
+    // Preview em tempo real (mutação intencional do DOM, não do estado React).
+    // eslint-disable-next-line react-hooks/immutability
     document.documentElement.dataset.theme = 'custom';
     applyCustomTheme(next);
   }
