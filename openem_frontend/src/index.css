@@ -58,6 +58,113 @@
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
 }
 
+/* Sépia — papel/leitura, baixo contraste para estudos longos */
+[data-theme='sepia'] {
+  color-scheme: light;
+  --bg: #f4ecd8;
+  --sidebar: #ece3cc;
+  --surface: #faf5e9;
+  --surface-2: #f0e8d4;
+  --fg: #43352a;
+  --muted: #8a7a64;
+  --line: #e3d8bf;
+  --brand: #b45309;
+  --brand-2: #d97706;
+  --brand-ink: #fff8ed;
+  --shadow: 0 1px 2px rgba(67, 53, 42, 0.06), 0 10px 28px rgba(67, 53, 42, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+/* OLED Black — preto puro, acentos vibrantes (economia de bateria em OLED) */
+[data-theme='oled-black'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #050505;
+  --surface: #0a0a0a;
+  --surface-2: #161616;
+  --fg: #f5f5f5;
+  --muted: #8a8a8a;
+  --line: #1f1f1f;
+  --brand: #00e5a0;
+  --brand-2: #4dd0ff;
+  --brand-ink: #04130d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.6), 0 14px 34px rgba(0, 0, 0, 0.7);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 30%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 32%, transparent);
+}
+
+/* Ocean — azul/petróleo, calmo e profissional */
+[data-theme='ocean'] {
+  color-scheme: dark;
+  --bg: #0c1c2b;
+  --sidebar: #102438;
+  --surface: #142a3f;
+  --surface-2: #1c3650;
+  --fg: #e4eef7;
+  --muted: #8ba3bd;
+  --line: #23425f;
+  --brand: #38bdf8;
+  --brand-2: #22d3ee;
+  --brand-ink: #06131f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ENEM — amarelo da marca + verde, comemorativo */
+[data-theme='enem'] {
+  color-scheme: light;
+  --bg: #fffbeb;
+  --sidebar: #fef3c7;
+  --surface: #ffffff;
+  --surface-2: #fef9e7;
+  --fg: #3b2f12;
+  --muted: #8a7340;
+  --line: #f3e3b3;
+  --brand: #f59e0b;
+  --brand-2: #84cc16;
+  --brand-ink: #1a1503;
+  --shadow: 0 1px 2px rgba(59, 47, 18, 0.06), 0 10px 28px rgba(59, 47, 18, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 20%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 24%, transparent);
+}
+
+/* Roxo/Índigo — como o comentário original do CSS sugeria */
+[data-theme='indigo'] {
+  color-scheme: dark;
+  --bg: #13131f;
+  --sidebar: #1a1a2e;
+  --surface: #1e1e34;
+  --surface-2: #2a2a45;
+  --fg: #ede9f7;
+  --muted: #9a93b5;
+  --line: #322f54;
+  --brand: #8b5cf6;
+  --brand-2: #a78bfa;
+  --brand-ink: #0f0a1f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* Alto contraste — WCAG AAA, preto e branco puros + acento saturado */
+[data-theme='high-contrast'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #0d0d0d;
+  --surface-2: #1a1a1a;
+  --fg: #ffffff;
+  --muted: #d4d4d4;
+  --line: #404040;
+  --brand: #ffcc00;
+  --brand-2: #00e5ff;
+  --brand-ink: #000000;
+  --shadow: 0 0 0 1px #ffffff, 0 0 0 2px #000000;
+  --glow: 0 0 0 2px var(--brand), 0 0 0 4px #000000;
+}
+
 /* Expõe os tokens como cores Tailwind (bg-surface, text-muted, bg-brand…). */
 @theme inline {
   --color-bg: var(--bg);

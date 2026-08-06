@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { useTheme } from '../theme';
+import { THEMES, useTheme } from '../theme';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -43,7 +43,7 @@ function Switch({
 
 export default function Perfil() {
   const { me, refreshMe } = useAuth();
-  const { theme, toggle } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,25 +149,35 @@ export default function Perfil() {
         </div>
       </div>
 
-      <div className="card p-2">
-        <div className="flex items-center gap-3 p-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Tema escuro</p>
-            <p className="text-xs text-muted">
-              Cores suaves para estudar à noite.
-            </p>
-          </div>
-          <div className="ml-auto">
-            <Switch
-              checked={theme === 'dark'}
-              onChange={toggle}
-              label="Alternar tema escuro"
-            />
-          </div>
+      <div className="card p-4">
+        <p className="text-sm font-medium">Aparência</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Escolha o tema que combina com você.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {THEMES.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTheme(t.key)}
+              className={`flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors ${
+                theme === t.key
+                  ? 'border-brand ring-1 ring-brand'
+                  : 'border-line hover:bg-surface-2'
+              }`}
+            >
+              <span
+                className="size-9 rounded-lg border border-line"
+                style={{
+                  background: `linear-gradient(135deg, ${t.swatch[0]} 50%, ${t.swatch[1]} 50%)`,
+                }}
+              />
+              <span className="text-xs font-medium">{t.label}</span>
+            </button>
+          ))}
         </div>
+      </div>
 
-        <div className="border-t border-line" />
-
+      <div className="card p-2">
         <div className="flex items-center gap-3 p-3">
           <div className="min-w-0">
             <p className="text-sm font-medium">Modo sem distrações</p>
