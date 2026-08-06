@@ -3,11 +3,14 @@ import { NavLink } from 'react-router-dom';
 import {
   api,
   type AnswerResult,
+  type GamificationDelta,
   type Question,
   type ReviewItem,
 } from '../api';
+import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck, IconClock, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
+import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -29,7 +32,13 @@ function overdueLabel(dueAt: string): string {
 }
 
 /** Card de prática de uma questão durante a revisão. */
-function PracticeCard({ question }: { question: Question }) {
+function PracticeCard({
+  question,
+  onAwarded,
+}: {
+  question: Question;
+  onAwarded: () => void;
+}) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [sending, setSending] = useState(false);
@@ -38,7 +47,9 @@ function PracticeCard({ question }: { question: Question }) {
     if (!chosen) return;
     setSending(true);
     try {
-      setResult(await api.answer(question.id, chosen));
+      const res = await api.answer(question.id, chosen);
+      setResult(res);
+      if (res.gamification) onAwarded();
     } finally {
       setSending(false);
     }
@@ -117,6 +128,7 @@ function PracticeCard({ question }: { question: Question }) {
           <p className="mt-1 text-sm leading-relaxed text-muted">
             {result.explanation}
           </p>
+          {result.gamification && <GamificationFeedback g={result.gamification} />}
         </div>
       )}
     </div>
@@ -133,10 +145,12 @@ function ReviewSession({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const { refresh } = useGamification();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [grading, setGrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gradeDelta, setGradeDelta] = useState<GamificationDelta | null>(null);
   const area = areaKey(item.topic.subject.name);
 
   useEffect(() => {
@@ -156,8 +170,14 @@ function ReviewSession({
     setGrading(true);
     setError(null);
     try {
-      await api.gradeReview(item.id, quality);
-      onDone();
+      const res = await api.gradeReview(item.id, quality);
+      const delta = (res as { gamification?: GamificationDelta }).gamification;
+      if (delta) {
+        setGradeDelta(delta);
+        void refresh();
+      }
+      // Pequeno atraso para o usuário ver o XP antes de fechar a sessão.
+      setTimeout(() => onDone(), delta ? 1400 : 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível salvar.');
       setGrading(false);
@@ -192,7 +212,11 @@ function ReviewSession({
       ) : (
         <div className="space-y-3">
           {questions.map((q) => (
-            <PracticeCard key={q.id} question={q} />
+            <PracticeCard
+              key={q.id}
+              question={q}
+              onAwarded={() => void refresh()}
+            />
           ))}
         </div>
       )}
@@ -216,6 +240,7 @@ function ReviewSession({
             </button>
           ))}
         </div>
+        {gradeDelta && <GamificationFeedback g={gradeDelta} />}
       </section>
     </div>
   );

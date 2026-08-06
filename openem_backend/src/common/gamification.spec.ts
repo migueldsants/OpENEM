@@ -9,6 +9,8 @@ import {
   POINTS,
   updateStreak,
   xpForAnswer,
+  xpForEssay,
+  xpForSimulation,
   xpToReachLevel,
 } from './gamification';
 
@@ -110,6 +112,37 @@ describe('níveis (curva quadrática)', () => {
   });
 });
 
+describe('xpForSimulation', () => {
+  it('base + por acerto, sem bônus de velocidade além de 60% do limite', () => {
+    expect(xpForSimulation(0, null)).toBe(POINTS.simulationBase);
+    expect(xpForSimulation(5, 0.9)).toBe(
+      POINTS.simulationBase + 5 * POINTS.simulationPerCorrect,
+    );
+  });
+
+  it('bônus de velocidade quando < 60% do limite', () => {
+    expect(xpForSimulation(5, 0.5)).toBe(
+      POINTS.simulationBase +
+        5 * POINTS.simulationPerCorrect +
+        POINTS.simulationSpeedBonus,
+    );
+    expect(xpForSimulation(0, 0.59)).toBe(
+      POINTS.simulationBase + POINTS.simulationSpeedBonus,
+    );
+  });
+});
+
+describe('xpForEssay', () => {
+  it('envio sem nota dá só XP base', () => {
+    expect(xpForEssay(null)).toBe(POINTS.essaySubmit);
+  });
+  it('nota >= 800 dá bônus alto, nota >= 600 dá bônus médio', () => {
+    expect(xpForEssay(800)).toBe(POINTS.essaySubmit + POINTS.essayHighScore);
+    expect(xpForEssay(600)).toBe(POINTS.essaySubmit + POINTS.essayGoodScore);
+    expect(xpForEssay(599)).toBe(POINTS.essaySubmit);
+  });
+});
+
 describe('leagueForLevel', () => {
   it('mapeia faixas de nível para ligas', () => {
     expect(leagueForLevel(1).key).toBe('BRONZE');
@@ -125,13 +158,33 @@ describe('leagueForLevel', () => {
 describe('evaluateAchievements', () => {
   it('desbloqueia conquistas atingidas e ignora as já obtidas', () => {
     const earned = evaluateAchievements(
-      { points: 0, currentStreak: 1, answersCount: 1, correctCount: 0 },
+      {
+        points: 0,
+        currentStreak: 1,
+        answersCount: 1,
+        correctCount: 0,
+        simulationsCount: 0,
+        essaysCount: 0,
+        highScoreEssays: 0,
+        reviewsCount: 0,
+        sessionsDone: 0,
+      },
       [],
     );
     expect(earned).toContain('FIRST_ANSWER');
 
     const again = evaluateAchievements(
-      { points: 0, currentStreak: 1, answersCount: 1, correctCount: 0 },
+      {
+        points: 0,
+        currentStreak: 1,
+        answersCount: 1,
+        correctCount: 0,
+        simulationsCount: 0,
+        essaysCount: 0,
+        highScoreEssays: 0,
+        reviewsCount: 0,
+        sessionsDone: 0,
+      },
       ['FIRST_ANSWER'],
     );
     expect(again).not.toContain('FIRST_ANSWER');
@@ -139,7 +192,17 @@ describe('evaluateAchievements', () => {
 
   it('respeita os limiares de streak e pontos', () => {
     const earned = evaluateAchievements(
-      { points: 600, currentStreak: 7, answersCount: 10, correctCount: 10 },
+      {
+        points: 600,
+        currentStreak: 7,
+        answersCount: 10,
+        correctCount: 10,
+        simulationsCount: 0,
+        essaysCount: 0,
+        highScoreEssays: 0,
+        reviewsCount: 0,
+        sessionsDone: 0,
+      },
       [],
     );
     expect(earned).toEqual(
@@ -155,6 +218,35 @@ describe('evaluateAchievements', () => {
     expect(earned).not.toContain('POINTS_2000');
   });
 
+  it('desbloqueia conquistas de simulado, redação, revisão e sessão', () => {
+    const earned = evaluateAchievements(
+      {
+        points: 0,
+        currentStreak: 1,
+        answersCount: 0,
+        correctCount: 0,
+        simulationsCount: 5,
+        essaysCount: 1,
+        highScoreEssays: 1,
+        reviewsCount: 10,
+        sessionsDone: 10,
+      },
+      [],
+    );
+    expect(earned).toEqual(
+      expect.arrayContaining([
+        'FIRST_SIMULATION',
+        'FIVE_SIMULATIONS',
+        'FIRST_ESSAY',
+        'HIGH_SCORE_ESSAY',
+        'FIRST_REVIEW',
+        'TEN_REVIEWS',
+        'FIRST_SESSION',
+        'TEN_SESSIONS',
+      ]),
+    );
+  });
+
   it('todo código de regra existe no catálogo', () => {
     const all = evaluateAchievements(
       {
@@ -162,6 +254,11 @@ describe('evaluateAchievements', () => {
         currentStreak: 999,
         answersCount: 999,
         correctCount: 999,
+        simulationsCount: 999,
+        essaysCount: 999,
+        highScoreEssays: 999,
+        reviewsCount: 999,
+        sessionsDone: 999,
       },
       [],
     );

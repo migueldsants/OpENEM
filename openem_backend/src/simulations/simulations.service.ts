@@ -7,16 +7,38 @@ import {
 import { Prisma } from '@prisma/client';
 import { CalibratedItem, triScoreFromItems } from '../common/irt';
 import { shuffle } from '../common/shuffle';
+import { xpForSimulation } from '../common/gamification';
+import {
+  GamificationDelta,
+  GamificationService,
+} from '../gamification/gamification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReviewService } from '../review/review.service';
 import { FinishSimulationDto } from './dto/finish-simulation.dto';
 import { StartSimulationDto } from './dto/start-simulation.dto';
+
+export interface SimulationFinishResult {
+  simulationId: string;
+  total: number;
+  correct: number;
+  percentage: number;
+  triScore: number | null;
+  details: {
+    questionId: string;
+    isCorrect: boolean;
+    chosenId: string | null;
+    correctAlternativeId: string | null;
+    explanation: string;
+  }[];
+  gamification?: GamificationDelta;
+}
 
 @Injectable()
 export class SimulationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly review: ReviewService,
+    private readonly gamification: GamificationService,
   ) {}
 
   async listTemplates() {
@@ -131,9 +153,14 @@ export class SimulationsService {
     };
   }
 
-  async finish(userId: string, id: string, dto: FinishSimulationDto) {
+  async finish(
+    userId: string,
+    id: string,
+    dto: FinishSimulationDto,
+  ): Promise<SimulationFinishResult> {
     const simulation = await this.prisma.simulation.findUnique({
       where: { id },
+      include: { template: { select: { timeLimitMin: true } } },
     });
     if (!simulation) {
       throw new NotFoundException('Simulado não encontrado');
@@ -225,10 +252,30 @@ export class SimulationsService {
     const triScore =
       total > 0 && allCalibrated ? triScoreFromItems(irtItems) : null;
 
+    const finishedAt = new Date();
     await this.prisma.simulation.update({
       where: { id },
-      data: { finishedAt: new Date(), rawScore: correctCount, triScore },
+      data: { finishedAt, rawScore: correctCount, triScore },
     });
+
+    // XP por simulado concluído (issue #17): base + por acerto + bônus de velocidade.
+    const limitMin = simulation.template.timeLimitMin;
+    const elapsedSec = Math.max(
+      0,
+      (finishedAt.getTime() - simulation.startedAt.getTime()) / 1000,
+    );
+    const fractionOfLimit =
+      limitMin != null ? elapsedSec / (limitMin * 60) : null;
+    const baseXp = xpForSimulation(correctCount, fractionOfLimit);
+    const detail = `${correctCount} acerto(s) em ${total} questões`;
+    const gamification = await this.gamification.recordActivity(
+      userId,
+      'SIMULATION',
+      baseXp,
+      detail,
+      finishedAt,
+      { simulationsCount: 1 },
+    );
 
     return {
       simulationId: id,
@@ -237,6 +284,7 @@ export class SimulationsService {
       percentage: total ? Math.round((correctCount / total) * 100) : 0,
       triScore,
       details,
+      ...(gamification ? { gamification } : {}),
     };
   }
 }

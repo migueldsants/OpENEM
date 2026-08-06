@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, EssayEvaluation } from '@prisma/client';
 import {
   activeEssayAiProvider,
   gradeEssayWithAi,
@@ -16,6 +16,11 @@ import {
   resolveAnnotations,
 } from '../common/essay-ai/annotations';
 import { totalEssayScore } from '../common/essay-score';
+import { xpForEssay } from '../common/gamification';
+import {
+  GamificationDelta,
+  GamificationService,
+} from '../gamification/gamification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { EvaluateEssayDto } from './dto/evaluate-essay.dto';
@@ -55,7 +60,10 @@ function parseEvaluation<
 
 @Injectable()
 export class EssaysService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gamification: GamificationService,
+  ) {}
 
   listPrompts() {
     return this.prisma.essayPrompt.findMany({
@@ -87,10 +95,20 @@ export class EssaysService {
     if (!prompt) {
       throw new NotFoundException('Tema de redação não encontrado');
     }
-    return this.prisma.essaySubmission.create({
+    const submission = await this.prisma.essaySubmission.create({
       data: { userId, promptId: dto.promptId, content: dto.content },
       select: { id: true, promptId: true, submittedAt: true },
     });
+    // XP por enviar redação (issue #17). A avaliação dá bônus por nota depois.
+    const gamification = await this.gamification.recordActivity(
+      userId,
+      'ESSAY',
+      xpForEssay(null),
+      'Redação enviada',
+      new Date(submission.submittedAt),
+      { essaysCount: 1 },
+    );
+    return { ...submission, ...(gamification ? { gamification } : {}) };
   }
 
   listSubmissions(userId: string) {
@@ -158,8 +176,9 @@ export class EssaysService {
     }
 
     const total = totalEssayScore(dto);
+    let created: EssayEvaluation;
     try {
-      return await this.prisma.essayEvaluation.create({
+      created = await this.prisma.essayEvaluation.create({
         data: {
           submissionId: id,
           c1: dto.c1,
@@ -181,6 +200,7 @@ export class EssaysService {
       }
       throw e;
     }
+    return this.withEssayBonus(userId, created, total);
   }
 
   /** Indica se a correção por IA está habilitada e qual provedor está ativo. */
@@ -228,8 +248,9 @@ export class EssaysService {
       submission.content,
       scores.annotations,
     );
+    let created: EssayEvaluation;
     try {
-      const created = await this.prisma.essayEvaluation.create({
+      created = await this.prisma.essayEvaluation.create({
         data: {
           submissionId: id,
           c1: scores.c1,
@@ -243,7 +264,6 @@ export class EssaysService {
           annotations: JSON.stringify(annotations),
         },
       });
-      return parseEvaluation(created);
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -253,5 +273,33 @@ export class EssaysService {
       }
       throw e;
     }
+    const parsed = parseEvaluation(created);
+    const base = parsed ?? created;
+    return this.withEssayBonus(userId, base, total);
+  }
+
+  /**
+   * Concede bônus de XP por nota alta (issue #17). Retorna o resultado com o
+   * delta de gamificação embutido (quando houver bônus).
+   */
+  private async withEssayBonus<T extends { total: number }>(
+    userId: string,
+    result: T,
+    total: number,
+  ): Promise<T & { gamification?: GamificationDelta }> {
+    const submitXp = xpForEssay(null);
+    const fullXp = xpForEssay(total);
+    const bonus = Math.max(0, fullXp - submitXp);
+    if (bonus <= 0) return result;
+    const highScore = total >= 800 ? 1 : 0;
+    const gamification = await this.gamification.recordActivity(
+      userId,
+      'ESSAY',
+      bonus,
+      `Nota ${total}/1000`,
+      new Date(),
+      { highScoreEssays: highScore },
+    );
+    return gamification ? { ...result, gamification } : result;
   }
 }

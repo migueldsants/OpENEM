@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { api, type AchievementView, type GamificationSummary } from '../api';
+import {
+  api,
+  type AchievementView,
+  type GamificationSummary,
+  type XpHistory,
+} from '../api';
 import {
   IconBolt,
   IconCheck,
@@ -9,17 +14,50 @@ import {
   IconTrophy,
 } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import { useGamification } from '../gamification';
 import { leagueStyle } from '../lib/gamification';
 
-function XpCard({
-  data,
-}: {
-  data: Extract<GamificationSummary, { enabled: true }>;
-}) {
+/**
+ * Mapeia um código de conquista para o progresso atual (atual/total) quando
+ * possível. Conquistas puramente binárias (ex.: FIRST_ANSWER) não têm barra —
+ * só travado/desbloqueado.
+ */
+const ACHIEVEMENT_THRESHOLDS: Record<
+  string,
+  { current: (s: SummaryData) => number; total: number }
+> = {
+  TEN_ANSWERS: { total: 10, current: (s) => s.answersCount },
+  HUNDRED_ANSWERS: { total: 100, current: (s) => s.answersCount },
+  TEN_CORRECT: { total: 10, current: (s) => s.correctCount },
+  STREAK_3: { total: 3, current: (s) => s.currentStreak },
+  STREAK_7: { total: 7, current: (s) => s.currentStreak },
+  STREAK_30: { total: 30, current: (s) => s.currentStreak },
+  POINTS_500: { total: 500, current: (s) => s.xp },
+  POINTS_2000: { total: 2000, current: (s) => s.xp },
+  FIVE_SIMULATIONS: { total: 5, current: (s) => s.simulationsCount },
+  TEN_REVIEWS: { total: 10, current: (s) => s.reviewsCount },
+  TEN_SESSIONS: { total: 10, current: (s) => s.sessionsDone },
+};
+
+type SummaryData = Extract<GamificationSummary, { enabled: true }> & {
+  nextLevelXp: number;
+};
+
+function withNextLevel(
+  s: Extract<GamificationSummary, { enabled: true }>,
+): SummaryData {
+  const next = s.progress.into + s.progress.forNext;
+  return { ...s, nextLevelXp: next };
+}
+
+function XpCard({ data }: { data: SummaryData }) {
   const league = leagueStyle(data.league.key);
   const pct = Math.round(data.progress.pct * 100);
+  const xpToNext = data.progress.forNext - data.progress.into;
   return (
-    <section className={`card card-raised overflow-hidden p-5 ring-1 ${league.ring}`}>
+    <section
+      className={`card card-raised overflow-hidden p-5 ring-1 ${league.ring}`}
+    >
       <div className="flex items-center gap-4">
         <span
           className={`grid size-14 shrink-0 place-items-center rounded-2xl ${league.soft} ${league.text}`}
@@ -53,6 +91,10 @@ function XpCard({
             style={{ width: `${pct}%` }}
           />
         </div>
+        <p className="mt-1.5 text-xs text-muted">
+          Faltam <strong className="text-fg tabular-nums">{xpToNext} XP</strong>{' '}
+          para o nível {data.level + 1}
+        </p>
       </div>
     </section>
   );
@@ -98,42 +140,222 @@ function StreakRow({
   );
 }
 
-function AchievementsGrid({ items }: { items: AchievementView[] }) {
+/** Gráfico de XP ganho por dia (barras SVG). */
+function XpHistoryChart({ history }: { history: XpHistory }) {
+  if (history.enabled === false) return null;
+  const { byDay } = history;
+  if (byDay.length === 0) {
+    return (
+      <section className="card p-5">
+        <h2 className="font-display text-lg font-bold">XP por dia</h2>
+        <p className="mt-2 text-sm text-muted">
+          Seu histórico de XP aparece aqui conforme você estuda.
+        </p>
+      </section>
+    );
+  }
+  const max = Math.max(1, ...byDay.map((d) => d.xp));
+  const W = Math.max(280, byDay.length * 14);
+  const barW = 10;
+  const gap = 4;
+  const h = 120;
+  const pts = byDay.map((d, i) => {
+    const bh = Math.max(2, Math.round((d.xp / max) * (h - 24)));
+    const x = i * (barW + gap);
+    const y = h - bh - 12;
+    return { ...d, x, y, bh };
+  });
   return (
     <section className="card p-5">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-lg font-bold">Conquistas</h2>
-        <span className="text-xs text-muted">
-          {items.filter((a) => a.unlocked).length}/{items.length}
-        </span>
+        <h2 className="font-display text-lg font-bold">XP por dia</h2>
+        <span className="text-xs text-muted">últimos {byDay.length} dias</span>
       </div>
-      <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
-        {items.map((a) => (
-          <li
-            key={a.code}
-            className={`flex items-start gap-3 rounded-xl border p-3 ${
-              a.unlocked
-                ? 'border-brand/30 bg-brand/5'
-                : 'border-line opacity-70'
-            }`}
-          >
-            <span
-              className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${
+      <div className="mt-3 overflow-x-auto">
+        <svg
+          width={W}
+          height={h}
+          viewBox={`0 0 ${W} ${h}`}
+          role="img"
+          aria-label="XP ganho por dia"
+          className="w-full"
+        >
+          {pts.map((p) => (
+            <g key={p.day}>
+              <rect
+                x={p.x}
+                y={p.y}
+                width={barW}
+                height={p.bh}
+                rx={2}
+                className="fill-brand"
+              >
+                <title>
+                  {p.day}: {p.xp} XP
+                </title>
+              </rect>
+              <text
+                x={p.x + barW / 2}
+                y={h - 2}
+                textAnchor="middle"
+                className="fill-muted"
+                style={{ fontSize: 9 }}
+              >
+                {p.day.slice(8)}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+    </section>
+  );
+}
+
+function AchievementProgress({
+  item,
+  data,
+}: {
+  item: AchievementView;
+  data: SummaryData;
+}) {
+  const rule = ACHIEVEMENT_THRESHOLDS[item.code];
+  if (!rule) return null;
+  const current = Math.min(rule.current(data), rule.total);
+  const pct = Math.round((current / rule.total) * 100);
+  return (
+    <span className="mt-1.5 block">
+      <span className="flex items-center justify-between text-[0.68rem] text-muted">
+        <span>
+          {current}/{rule.total}
+        </span>
+        {!item.unlocked && <span>{pct}%</span>}
+      </span>
+      <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-2">
+        <span
+          className="block h-full rounded-full bg-brand transition-[width]"
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+    </span>
+  );
+}
+
+function AchievementsGrid({
+  items,
+  data,
+}: {
+  items: AchievementView[];
+  data: SummaryData;
+}) {
+  // Próxima conquista: a travada com maior progresso percentual.
+  const next = useMemo(() => {
+    const locked = items.filter((a) => !a.unlocked);
+    if (locked.length === 0) return null;
+    let best: { item: AchievementView; pct: number } | null = null;
+    for (const item of locked) {
+      const rule = ACHIEVEMENT_THRESHOLDS[item.code];
+      if (!rule) continue;
+      const pct = rule.current(data) / rule.total;
+      if (!best || pct > best.pct) best = { item, pct };
+    }
+    return best;
+  }, [items, data]);
+
+  return (
+    <section className="space-y-3">
+      {next && (
+        <div className="card card-raised border-l-4 border-brand p-4">
+          <p className="eyebrow">Próxima conquista</p>
+          <div className="mt-1 flex items-center gap-2">
+            <IconTrophy width={18} height={18} className="text-brand" />
+            <p className="font-display text-sm font-bold">{next.item.name}</p>
+          </div>
+          <p className="mt-0.5 text-xs text-muted">{next.item.description}</p>
+          <AchievementProgress item={next.item} data={data} />
+        </div>
+      )}
+
+      <section className="card p-5">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-lg font-bold">Conquistas</h2>
+          <span className="text-xs text-muted">
+            {items.filter((a) => a.unlocked).length}/{items.length}
+          </span>
+        </div>
+        <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
+          {items.map((a) => (
+            <li
+              key={a.code}
+              className={`flex flex-col rounded-xl border p-3 ${
                 a.unlocked
-                  ? 'bg-brand/15 text-brand'
-                  : 'bg-surface-2 text-muted'
+                  ? 'border-brand/30 bg-brand/5'
+                  : 'border-line opacity-80'
               }`}
             >
-              {a.unlocked ? (
-                <IconCheck width={16} height={16} />
-              ) : (
-                <IconLock width={15} height={15} />
+              <div className="flex items-start gap-3">
+                <span
+                  className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${
+                    a.unlocked ? 'bg-brand/15 text-brand' : 'bg-surface-2 text-muted'
+                  }`}
+                >
+                  {a.unlocked ? (
+                    <IconCheck width={16} height={16} />
+                  ) : (
+                    <IconLock width={15} height={15} />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{a.name}</p>
+                  <p className="text-xs text-muted">{a.description}</p>
+                </div>
+              </div>
+              <AchievementProgress item={a} data={data} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    </section>
+  );
+}
+
+/** Atividades recentes (log de XP). */
+function ActivityFeed({ history }: { history: XpHistory }) {
+  if (history.enabled === false) return null;
+  const { logs } = history;
+  if (logs.length === 0) return null;
+  const labels: Record<string, string> = {
+    ANSWER: 'Questão',
+    SIMULATION: 'Simulado',
+    ESSAY: 'Redação',
+    REVIEW: 'Revisão',
+    STUDY_SESSION: 'Sessão',
+    DAILY_CHALLENGE: 'Desafio diário',
+  };
+  return (
+    <section className="card p-5">
+      <h2 className="font-display text-lg font-bold">Atividades recentes</h2>
+      <ul className="mt-3 space-y-1.5">
+        {logs.slice(0, 8).map((log) => (
+          <li
+            key={log.id}
+            className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-surface-2"
+          >
+            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-brand/12 text-brand">
+              <IconBolt width={14} height={14} filled />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">
+                {labels[log.action] ?? log.action}
+              </span>
+              {log.detail && (
+                <span className="block truncate text-xs text-muted">
+                  {log.detail}
+                </span>
               )}
             </span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{a.name}</p>
-              <p className="text-xs text-muted">{a.description}</p>
-            </div>
+            <span className="shrink-0 text-xs font-bold tabular-nums text-brand">
+              +{log.xpGained} XP
+            </span>
           </li>
         ))}
       </ul>
@@ -142,26 +364,50 @@ function AchievementsGrid({ items }: { items: AchievementView[] }) {
 }
 
 export default function Progresso() {
-  const [summary, setSummary] = useState<GamificationSummary | null>(null);
+  const { summary, refresh } = useGamification();
+  const [localSummary, setLocalSummary] = useState<GamificationSummary | null>(
+    null,
+  );
   const [achievements, setAchievements] = useState<AchievementView[]>([]);
+  const [history, setHistory] = useState<XpHistory | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void (async () => {
       try {
-        const [s, a] = await Promise.all([
-          api.gamification(),
+        const [a, h] = await Promise.all([
           api.achievements(),
+          api.xpHistory(30),
         ]);
-        setSummary(s);
         setAchievements(a);
+        setHistory(h);
       } catch {
-        setSummary(null);
+        /* silencioso */
       } finally {
         setLoading(false);
       }
     })();
   }, []);
+
+  // Mantém o resumo sincronizado com o contexto (que é atualizado após awards).
+  useEffect(() => {
+    if (summary) setLocalSummary(summary);
+  }, [summary]);
+
+  // Recarrega o histórico quando o resumo muda (XP subiu).
+  useEffect(() => {
+    if (summary && summary.enabled) {
+      void api
+        .xpHistory(30)
+        .then(setHistory)
+        .catch(() => {});
+    }
+  }, [summary]);
+
+  void refresh;
+
+  const data =
+    localSummary && localSummary.enabled ? withNextLevel(localSummary) : null;
 
   return (
     <div className="space-y-5">
@@ -171,7 +417,8 @@ export default function Progresso() {
           Progresso
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Ganhe XP respondendo questões, mantenha a sequência e suba de liga.
+          Ganhe XP estudando — questões, simulados, redações, revisões e
+          sessões do cronograma contam.
         </p>
       </header>
 
@@ -184,14 +431,13 @@ export default function Progresso() {
           </div>
           <SkeletonCard lines={4} />
         </div>
-      ) : summary && summary.enabled ? (
+      ) : data ? (
         <>
-          <XpCard data={summary} />
-          <StreakRow
-            current={summary.currentStreak}
-            longest={summary.longestStreak}
-          />
-          <AchievementsGrid items={achievements} />
+          <XpCard data={data} />
+          <StreakRow current={data.currentStreak} longest={data.longestStreak} />
+          {history && <XpHistoryChart history={history} />}
+          <AchievementsGrid items={achievements} data={data} />
+          {history && <ActivityFeed history={history} />}
         </>
       ) : (
         <div className="card p-6 text-center text-sm text-muted">

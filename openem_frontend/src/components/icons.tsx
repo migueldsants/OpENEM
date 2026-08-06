@@ -82,3 +82,4 @@ export const IconTimer = shim(Timer, 'duotone');
 export const IconChat = shim(ChatsCircle, 'duotone');
 export const IconTarget = shim(Target, 'duotone');
 export const IconSparkle = shim(Sparkle, 'fill');
+export const IconGame = shim(Lightning, 'duotone');

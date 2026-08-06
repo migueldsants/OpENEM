@@ -6,8 +6,10 @@ import {
   type Favorite,
   type Question,
 } from '../api';
+import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck, IconStar, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
+import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -15,9 +17,11 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 function FavoriteCard({
   question,
   onRemove,
+  onAwarded,
 }: {
   question: Question;
   onRemove: () => void;
+  onAwarded: () => void;
 }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [result, setResult] = useState<AnswerResult | null>(null);
@@ -28,7 +32,9 @@ function FavoriteCard({
     if (!chosen) return;
     setSending(true);
     try {
-      setResult(await api.answer(question.id, chosen));
+      const res = await api.answer(question.id, chosen);
+      setResult(res);
+      if (res.gamification) onAwarded();
     } finally {
       setSending(false);
     }
@@ -125,6 +131,7 @@ function FavoriteCard({
           <p className="mt-1 text-sm leading-relaxed text-muted">
             {result.explanation}
           </p>
+          {result.gamification && <GamificationFeedback g={result.gamification} />}
         </div>
       )}
     </li>
@@ -132,6 +139,7 @@ function FavoriteCard({
 }
 
 export default function Favoritos() {
+  const { refresh } = useGamification();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +213,7 @@ export default function Favoritos() {
               key={f.id}
               question={f.question}
               onRemove={() => void remove(f.question.id)}
+              onAwarded={() => void refresh()}
             />
           ))}
         </ul>

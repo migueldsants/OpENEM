@@ -26,6 +26,8 @@ model User {
   gamification GamificationStat?
   achievements UserAchievement[]
   dailyChallenges DailyChallengeLog[]
+  xpLogs       XpLog[]
+  gameScores   GameScore[]
   forumThreads ForumThread[]
   forumPosts   ForumPost[]
 }
@@ -237,6 +239,12 @@ model GamificationStat {
   lastActivityOn DateTime? // dia (00:00) da última atividade contabilizada
   answersCount   Int       @default(0)
   correctCount   Int       @default(0)
+  // Contadores por atividade (Fase 3, issue #17) — alimentam conquistas específicas.
+  simulationsCount Int     @default(0)
+  essaysCount      Int     @default(0)
+  highScoreEssays  Int     @default(0) // redações com nota >= 800
+  reviewsCount     Int     @default(0)
+  sessionsDone     Int     @default(0)
   updatedAt      DateTime  @updatedAt
 }
 
@@ -249,6 +257,21 @@ model UserAchievement {
   unlockedAt DateTime @default(now())
 
   @@unique([userId, code])
+}
+
+// Histórico de XP ganho por ação (issue #17) — alimenta o gráfico de XP por dia
+// e o feed de atividades na tela Progresso.
+model XpLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String   // ANSWER | SIMULATION | ESSAY | REVIEW | STUDY_SESSION | DAILY_CHALLENGE
+  xpGained  Int
+  // Detalhe legível (ex.: "10 acertos em simulado", "Redação nota 820") — opcional.
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // ---- Fase 3 (avançado) ----
@@ -291,4 +314,20 @@ model ForumPost {
   createdAt DateTime    @default(now())
 
   @@index([threadId, createdAt])
+}
+
+// ---- Fase 3 (avançado) — Games (issue #18) ----
+
+// Pontuação de um usuário em um minigame (uma linha por partida).
+model GameScore {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameKey    String   // chave do GameDefinition (catálogo em código)
+  score      Int
+  level      Int      // nível alcançado no minigame
+  durationSec Int
+  createdAt  DateTime @default(now())
+
+  @@index([gameKey, score]) // leaderboard por jogo
 }
