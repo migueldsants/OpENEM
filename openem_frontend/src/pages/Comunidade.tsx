@@ -5,6 +5,7 @@ import {
   type ForumThreadSummary,
 } from '../api';
 import { IconChat } from '../components/icons';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -58,7 +59,13 @@ function ThreadView({
   }
 
   if (loading) {
-    return <p className="card p-6 text-center text-sm text-muted">Carregando…</p>;
+    return (
+      <div className="space-y-4" aria-busy>
+        <Skeleton className="h-8 w-24" />
+        <SkeletonCard lines={4} />
+        <SkeletonCard lines={2} />
+      </div>
+    );
   }
   if (!thread) {
     return (
@@ -263,7 +270,11 @@ export default function Comunidade() {
       )}
 
       {loading ? (
-        <p className="card p-6 text-center text-sm text-muted">Carregando…</p>
+        <div className="space-y-3" aria-busy>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
       ) : threads.length === 0 ? (
         <div className="card p-6 text-center text-sm text-muted">
           Ainda não há tópicos. Seja o primeiro a perguntar!

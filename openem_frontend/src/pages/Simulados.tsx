@@ -6,6 +6,7 @@ import {
   type SimulationTemplate,
 } from '../api';
 import { IconCheck, IconClock, IconStack, IconX } from '../components/icons';
+import { SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -123,7 +124,10 @@ function TemplateList({
       )}
 
       {loading ? (
-        <p className="card p-6 text-center text-sm text-muted">Carregando…</p>
+        <div className="space-y-3" aria-busy>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
       ) : templates.length === 0 ? (
         <p className="card p-6 text-center text-sm text-muted">
           Nenhum simulado disponível ainda.

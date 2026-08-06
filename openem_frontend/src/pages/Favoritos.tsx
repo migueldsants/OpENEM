@@ -7,6 +7,7 @@ import {
   type Question,
 } from '../api';
 import { IconCheck, IconStar, IconX } from '../components/icons';
+import { SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -178,7 +179,11 @@ export default function Favoritos() {
       )}
 
       {loading ? (
-        <p className="card p-6 text-center text-sm text-muted">Carregando…</p>
+        <div className="space-y-3" aria-busy>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
       ) : favorites.length === 0 ? (
         <div className="card p-6 text-center text-sm text-muted">
           Você ainda não favoritou questões. Toque na{' '}
