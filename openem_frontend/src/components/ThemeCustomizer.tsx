@@ -1,65 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '../theme';
+import {
+  applyCustomTheme,
+  clearCustomInlineStyles,
+  clearStoredCustom,
+  loadCustom,
+  normalizeColor,
+  readCurrentTokens,
+  saveCustom,
+  TOKENS,
+  validateCustomJson,
+  type ThemeJson,
+} from '../theme-custom';
 
-/** Tokens customizaveis (nome -> label amigavel). */
-const TOKENS: { key: string; label: string }[] = [
-  { key: 'bg', label: 'Fundo' },
-  { key: 'sidebar', label: 'Sidebar' },
-  { key: 'surface', label: 'Cartões' },
-  { key: 'surface-2', label: 'Cartões 2' },
-  { key: 'fg', label: 'Texto' },
-  { key: 'muted', label: 'Texto suave' },
-  { key: 'line', label: 'Bordas' },
-  { key: 'brand', label: 'Marca' },
-  { key: 'brand-2', label: 'Marca 2' },
-  { key: 'brand-ink', label: 'Texto na marca' },
-];
-
-type ThemeJson = Record<string, string>;
-
-const STORAGE_KEY = 'openem.theme.custom';
 const THEME_KEY = 'openem.theme';
 
-function loadCustom(): ThemeJson | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as ThemeJson) : null;
-  } catch {
-    return null;
-  }
-}
-
-function readCurrentTokens(): ThemeJson {
-  const style = getComputedStyle(document.documentElement);
-  const out: ThemeJson = {};
-  for (const t of TOKENS) {
-    const v = style.getPropertyValue(`--${t.key}`).trim();
-    if (v) out[t.key] = v;
-  }
-  return out;
-}
-
-function applyCustomTheme(json: ThemeJson) {
-  const root = document.documentElement;
-  for (const [k, v] of Object.entries(json)) {
-    root.style.setProperty(`--${k}`, v);
-  }
-}
-
-function clearCustomTheme() {
-  const root = document.documentElement;
-  for (const t of TOKENS) {
-    root.style.removeProperty(`--${t.key}`);
-  }
-}
-
 export default function ThemeCustomizer() {
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ThemeJson>({});
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedNote, setSavedNote] = useState<string | null>(null);
 
   // Carrega o tema custom salvo ao montar, se houver.
   useEffect(() => {
@@ -70,27 +33,35 @@ export default function ThemeCustomizer() {
     }
   }, []);
 
+  // Limpa qualquer nota de "salvo" depois de uns segundos.
+  useEffect(() => {
+    if (!savedNote) return;
+    const id = setTimeout(() => setSavedNote(null), 2500);
+    return () => clearTimeout(id);
+  }, [savedNote]);
+
   function startEditing() {
     setDraft(readCurrentTokens());
     setEditing(true);
     setError(null);
+    setSavedNote(null);
   }
 
   function update(key: string, value: string) {
     const next = { ...draft, [key]: value };
     setDraft(next);
-    // Preview em tempo real (mutacao intencional do DOM).
-    // eslint-disable-next-line react-hooks/immutability
+    // Preview em tempo real (mutação intencional do DOM).
     document.documentElement.dataset.theme = 'custom';
     applyCustomTheme(next);
   }
 
   function save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      saveCustom(draft);
       localStorage.setItem(THEME_KEY, 'custom');
       setError(null);
       setEditing(false);
+      setSavedNote('Tema personalizado salvo.');
     } catch {
       setError('Não foi possível salvar o tema.');
     }
@@ -98,33 +69,40 @@ export default function ThemeCustomizer() {
 
   function cancel() {
     // Restaura o tema anterior (custom salvo ou o tema pronto selecionado).
-    clearCustomTheme();
+    clearCustomInlineStyles();
     const saved = loadCustom();
-    if (saved && localStorage.getItem(THEME_KEY) === 'custom') {
+    const currentKey = localStorage.getItem(THEME_KEY);
+    if (saved && currentKey === 'custom') {
       applyCustomTheme(saved);
+      setDraft(saved);
     } else {
-      setTheme(theme === 'custom' ? 'light' : theme);
+      // Volta para o tema pronto previamente selecionado (não 'custom').
+      document.documentElement.dataset.theme = (currentKey && currentKey !== 'custom')
+        ? currentKey
+        : 'default-light';
     }
     setEditing(false);
     setError(null);
   }
 
   function reset() {
-    clearCustomTheme();
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.setItem(THEME_KEY, 'light');
-    setTheme('light');
+    clearCustomInlineStyles();
+    clearStoredCustom();
+    localStorage.setItem(THEME_KEY, 'default-light');
+    document.documentElement.dataset.theme = 'default-light';
     setDraft({});
     setEditing(false);
     setError(null);
+    setSavedNote('Tema resetado para o padrão.');
   }
 
   function exportJson() {
     const json = JSON.stringify(draft, null, 2);
     navigator.clipboard
       ?.writeText(json)
+      .then(() => setSavedNote('JSON copiado para a área de transferência.'))
       .catch(() => {
-        /* clipboard pode estar indisponivel */
+        /* clipboard pode estar indisponível */
       });
     setImportText(json);
     setShowImport(true);
@@ -132,50 +110,61 @@ export default function ThemeCustomizer() {
 
   function importJson() {
     try {
-      const parsed = JSON.parse(importText) as ThemeJson;
-      if (typeof parsed !== 'object' || parsed === null) {
-        throw new Error('JSON inválido');
-      }
-      // Valida chaves conhecidas.
-      const valid: ThemeJson = {};
-      for (const t of TOKENS) {
-        if (typeof parsed[t.key] === 'string') valid[t.key] = parsed[t.key];
-      }
-      if (Object.keys(valid).length === 0) throw new Error('Nenhum token válido');
+      const valid = validateCustomJson(importText);
       setDraft(valid);
+      document.documentElement.dataset.theme = 'custom';
       applyCustomTheme(valid);
       setError(null);
+      setSavedNote('JSON aplicado — lembre-se de salvar.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'JSON inválido');
     }
   }
 
-  const isCustom = theme === 'custom' || !!loadCustom();
+  const isCustomActive = theme === 'custom' || !!loadCustom();
 
   return (
     <div className="card p-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-sm font-medium">Tema personalizado</p>
           <p className="mt-0.5 text-xs text-muted">
             Ajuste cada cor ou importe um JSON de tema.
           </p>
         </div>
         {!editing ? (
-          <button onClick={startEditing} className="btn btn-ghost text-sm">
-            Personalizar
+          <button
+            type="button"
+            onClick={startEditing}
+            className="btn btn-primary text-sm"
+          >
+            {isCustomActive ? 'Editar' : 'Personalizar'}
           </button>
         ) : (
           <div className="flex gap-2">
-            <button onClick={cancel} className="btn btn-ghost text-sm">
+            <button
+              type="button"
+              onClick={cancel}
+              className="btn btn-ghost text-sm"
+            >
               Cancelar
             </button>
-            <button onClick={save} className="btn btn-primary text-sm">
+            <button
+              type="button"
+              onClick={save}
+              className="btn btn-primary text-sm"
+            >
               Salvar
             </button>
           </div>
         )}
       </div>
+
+      {savedNote && (
+        <p className="mt-3 rounded-lg bg-brand/10 px-3 py-2 text-sm text-brand">
+          {savedNote}
+        </p>
+      )}
 
       {error && (
         <p className="mt-3 rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
@@ -194,14 +183,14 @@ export default function ThemeCustomizer() {
                     type="color"
                     value={normalizeColor(draft[t.key] ?? '')}
                     onChange={(e) => update(t.key, e.target.value)}
-                    className="size-9 cursor-pointer rounded-lg border border-line bg-transparent p-0.5"
+                    className="size-9 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent p-0.5"
                     aria-label={t.label}
                   />
                   <input
                     type="text"
                     value={draft[t.key] ?? ''}
                     onChange={(e) => update(t.key, e.target.value)}
-                    className="input w-full font-data text-xs"
+                    className="input w-full font-mono text-xs"
                     placeholder="#000000"
                   />
                 </div>
@@ -210,23 +199,27 @@ export default function ThemeCustomizer() {
           </div>
 
           <div className="flex flex-wrap gap-2 border-t border-line pt-3">
-            <button onClick={exportJson} className="btn btn-ghost text-sm">
+            <button
+              type="button"
+              onClick={exportJson}
+              className="btn btn-ghost text-sm"
+            >
               Exportar JSON
             </button>
             <button
+              type="button"
               onClick={() => setShowImport((s) => !s)}
               className="btn btn-ghost text-sm"
             >
               {showImport ? 'Ocultar importar' : 'Importar JSON'}
             </button>
-            {isCustom && (
-              <button
-                onClick={reset}
-                className="btn btn-ghost text-sm text-red"
-              >
-                Resetar
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={reset}
+              className="btn btn-ghost text-sm text-red"
+            >
+              Resetar
+            </button>
           </div>
 
           {showImport && (
@@ -235,10 +228,14 @@ export default function ThemeCustomizer() {
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 rows={8}
-                className="input font-data text-xs"
+                className="input font-mono text-xs"
                 placeholder='{"brand":"#ff0000","bg":"#ffffff",...}'
               />
-              <button onClick={importJson} className="btn btn-primary text-sm">
+              <button
+                type="button"
+                onClick={importJson}
+                className="btn btn-primary text-sm"
+              >
                 Aplicar JSON
               </button>
             </div>
@@ -247,12 +244,4 @@ export default function ThemeCustomizer() {
       )}
     </div>
   );
-}
-
-/** Garante string de cor valida para o input type="color" (que aceita só #rrggbb). */
-function normalizeColor(value: string): string {
-  const hex = value.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
-  // Tenta ler do computed style como fallback.
-  return '#000000';
 }

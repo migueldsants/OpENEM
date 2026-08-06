@@ -21,9 +21,15 @@
   --color-red: #f2587a; /* Redação */
 }
 
-/* Tokens semânticos — claro (padrão) */
-:root,
-[data-theme='light'] {
+/* =============================================================================
+   Temas — cada família tem variante clara (light) e escura (dark).
+   O seletor escolhe a família; o toggle claro/escuro troca a variante.
+   Convenção: [data-theme='familia-light'] | [data-theme='familia-dark'].
+   ============================================================================= */
+
+/* ---- Padrão (marca vermelho-rosado NestJS) ---- */
+[data-theme='default-light'],
+:root {
   color-scheme: light;
   --bg: #f5f1f6;
   --sidebar: #efeaf1;
@@ -32,16 +38,14 @@
   --fg: #211b26;
   --muted: #6b6473;
   --line: #ece5ee;
-  --brand: #e0234e; /* vermelho-rosado NestJS */
+  --brand: #e0234e;
   --brand-2: #ff5a7d;
   --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(40, 14, 22, 0.05), 0 10px 28px rgba(40, 14, 22, 0.07);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
     0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
 }
-
-/* Tokens semânticos — escuro */
-[data-theme='dark'] {
+[data-theme='default-dark'] {
   color-scheme: dark;
   --bg: #15111c;
   --sidebar: #1a1524;
@@ -50,7 +54,7 @@
   --fg: #ece7f1;
   --muted: #a59cb0;
   --line: #322a3d;
-  --brand: #fb5277; /* vermelho-rosado NestJS, mais vivo no escuro */
+  --brand: #fb5277;
   --brand-2: #ff86a6;
   --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
@@ -58,8 +62,8 @@
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
 }
 
-/* Sépia — papel/leitura, baixo contraste para estudos longos */
-[data-theme='sepia'] {
+/* ---- Sépia (papel/leitura) ---- */
+[data-theme='sepia-light'] {
   color-scheme: light;
   --bg: #f4ecd8;
   --sidebar: #ece3cc;
@@ -75,9 +79,41 @@
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
     0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
 }
+[data-theme='sepia-dark'] {
+  color-scheme: dark;
+  --bg: #2a2118;
+  --sidebar: #241c14;
+  --surface: #33291d;
+  --surface-2: #3d3122;
+  --fg: #f0e6d2;
+  --muted: #b8a786;
+  --line: #4a3d2c;
+  --brand: #f59e0b;
+  --brand-2: #fbbf24;
+  --brand-ink: #1a1206;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
 
-/* OLED Black — preto puro, acentos vibrantes (economia de bateria em OLED) */
-[data-theme='oled-black'] {
+/* ---- OLED (acentos vibrantes) ---- */
+[data-theme='oled-light'] {
+  color-scheme: light;
+  --bg: #f0f0f0;
+  --sidebar: #e6e6e6;
+  --surface: #ffffff;
+  --surface-2: #ebebeb;
+  --fg: #0a0a0a;
+  --muted: #5a5a5a;
+  --line: #dadada;
+  --brand: #00b377;
+  --brand-2: #0d9488;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 10px 28px rgba(0, 0, 0, 0.1);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 20%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 24%, transparent);
+}
+[data-theme='oled-dark'] {
   color-scheme: dark;
   --bg: #000000;
   --sidebar: #050505;
@@ -94,44 +130,58 @@
     0 16px 44px color-mix(in oklab, var(--brand) 32%, transparent);
 }
 
-/* Ocean — azul/petróleo, calmo e profissional */
-[data-theme='ocean'] {
+/* ---- Azul (azure — azul vivo) ---- */
+[data-theme='azure-light'] {
+  color-scheme: light;
+  --bg: #eaf3fb;
+  --sidebar: #dde9f6;
+  --surface: #ffffff;
+  --surface-2: #f1f7fd;
+  --fg: #0b1e3f;
+  --muted: #5a7095;
+  --line: #d2e2f1;
+  --brand: #2563eb;
+  --brand-2: #3b82f6;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(11, 30, 63, 0.06), 0 10px 28px rgba(11, 30, 63, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='azure-dark'] {
   color-scheme: dark;
-  --bg: #0c1c2b;
-  --sidebar: #102438;
-  --surface: #142a3f;
-  --surface-2: #1c3650;
-  --fg: #e4eef7;
-  --muted: #8ba3bd;
-  --line: #23425f;
-  --brand: #38bdf8;
-  --brand-2: #22d3ee;
-  --brand-ink: #06131f;
+  --bg: #0b1626;
+  --sidebar: #102036;
+  --surface: #122447;
+  --surface-2: #1a3260;
+  --fg: #e6eef9;
+  --muted: #93a8c7;
+  --line: #24406a;
+  --brand: #3b82f6;
+  --brand-2: #60a5fa;
+  --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
 }
 
-/* ENEM — amarelo da marca + verde, comemorativo */
-[data-theme='enem'] {
+/* ---- Roxo/Índigo ---- */
+[data-theme='indigo-light'] {
   color-scheme: light;
-  --bg: #fffbeb;
-  --sidebar: #fef3c7;
+  --bg: #f3f0fb;
+  --sidebar: #ebe6f7;
   --surface: #ffffff;
-  --surface-2: #fef9e7;
-  --fg: #3b2f12;
-  --muted: #8a7340;
-  --line: #f3e3b3;
-  --brand: #f59e0b;
-  --brand-2: #84cc16;
-  --brand-ink: #1a1503;
-  --shadow: 0 1px 2px rgba(59, 47, 18, 0.06), 0 10px 28px rgba(59, 47, 18, 0.08);
-  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 20%, transparent),
-    0 14px 38px color-mix(in oklab, var(--brand) 24%, transparent);
+  --surface-2: #f7f4fc;
+  --fg: #1e1830;
+  --muted: #6b6388;
+  --line: #e2dbf0;
+  --brand: #7c3aed;
+  --brand-2: #8b5cf6;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(30, 24, 48, 0.06), 0 10px 28px rgba(30, 24, 48, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
 }
-
-/* Roxo/Índigo — como o comentário original do CSS sugeria */
-[data-theme='indigo'] {
+[data-theme='indigo-dark'] {
   color-scheme: dark;
   --bg: #13131f;
   --sidebar: #1a1a2e;
@@ -148,8 +198,125 @@
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
 }
 
-/* Alto contraste — WCAG AAA, preto e branco puros + acento saturado */
-[data-theme='high-contrast'] {
+/* ---- Verde (forest — esmeralda) ---- */
+[data-theme='forest-light'] {
+  color-scheme: light;
+  --bg: #eef7ee;
+  --sidebar: #e2f1e2;
+  --surface: #ffffff;
+  --surface-2: #f2f9f2;
+  --fg: #0e2b16;
+  --muted: #5f8268;
+  --line: #d3e8d3;
+  --brand: #16a34a;
+  --brand-2: #22c55e;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(14, 43, 22, 0.06), 0 10px 28px rgba(14, 43, 22, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='forest-dark'] {
+  color-scheme: dark;
+  --bg: #0a1a0f;
+  --sidebar: #0e2417;
+  --surface: #0f2a1a;
+  --surface-2: #163a26;
+  --fg: #e6f4ea;
+  --muted: #8fb59c;
+  --line: #1f4530;
+  --brand: #22c55e;
+  --brand-2: #4ade80;
+  --brand-ink: #04230f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Dourado (gold — âmbar) ---- */
+[data-theme='gold-light'] {
+  color-scheme: light;
+  --bg: #fbf6e3;
+  --sidebar: #f5edd0;
+  --surface: #fffdf4;
+  --surface-2: #f9f1d6;
+  --fg: #33280a;
+  --muted: #8a7438;
+  --line: #ece0b8;
+  --brand: #d4a017;
+  --brand-2: #eab308;
+  --brand-ink: #2a1d04;
+  --shadow: 0 1px 2px rgba(51, 40, 10, 0.06), 0 10px 28px rgba(51, 40, 10, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='gold-dark'] {
+  color-scheme: dark;
+  --bg: #1a1605;
+  --sidebar: #221d08;
+  --surface: #2a2310;
+  --surface-2: #3a3016;
+  --fg: #f7efcf;
+  --muted: #c2a85e;
+  --line: #4a3d1c;
+  --brand: #eab308;
+  --brand-2: #facc15;
+  --brand-ink: #1a1305;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Fogo (red+pink+amber+orange) ---- */
+[data-theme='fire-light'] {
+  color-scheme: light;
+  --bg: #fff0e8;
+  --sidebar: #fbe3d6;
+  --surface: #ffffff;
+  --surface-2: #fff5ef;
+  --fg: #2a1107;
+  --muted: #9a6a52;
+  --line: #f3d4c2;
+  --brand: #ff6b35;
+  --brand-2: #f43f7a;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(42, 17, 7, 0.06), 0 10px 28px rgba(42, 17, 7, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='fire-dark'] {
+  color-scheme: dark;
+  --bg: #1a0a06;
+  --sidebar: #250c08;
+  --surface: #2a0f0a;
+  --surface-2: #3a1610;
+  --fg: #fdeee4;
+  --muted: #d39a82;
+  --line: #5a261c;
+  --brand: #ff7a3c;
+  --brand-2: #ff4d6d;
+  --brand-ink: #1a0a06;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Contraste (acessibilidade WCAG AAA) ---- */
+[data-theme='contrast-light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --sidebar: #f5f5f5;
+  --surface: #ffffff;
+  --surface-2: #ededed;
+  --fg: #000000;
+  --muted: #333333;
+  --line: #666666;
+  --brand: #b8000a;
+  --brand-2: #c2410c;
+  --brand-ink: #ffffff;
+  --shadow: 0 0 0 1px #000000;
+  --glow: 0 0 0 2px var(--brand), 0 0 0 4px #000000;
+}
+[data-theme='contrast-dark'] {
   color-scheme: dark;
   --bg: #000000;
   --sidebar: #000000;
