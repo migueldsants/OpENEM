@@ -10,6 +10,7 @@ import {
   comboMultiplierForStreak,
   dailyBonusXp,
   evaluateAchievements,
+  LEAGUES,
   leagueForLevel,
   levelFromXp,
   pointsForAnswer,
@@ -388,5 +389,108 @@ export class GamificationService {
       unlocked: byCode.has(a.code),
       unlockedAt: byCode.get(a.code) ?? null,
     }));
+  }
+
+  /**
+   * Ranking de XP (issue #19). `scope = 'league'` restringe à liga do usuário
+   * que pede (ranking social entre pares); `scope = 'global'` (default) é o
+   * ranking geral. Sempre inclui o próprio usuário mesmo se fora do top N.
+   * Retorna { entries, scope, league? }.
+   */
+  async leaderboard(
+    userId: string,
+    scope: 'global' | 'league' = 'global',
+    limit = 10,
+  ) {
+    const cap = Math.min(Math.max(1, limit), 50);
+
+    // Liga do solicitante (para o scope=league). Se a gamificação está off,
+    // cai no ranking global (não há como filtrar por liga sem o próprio XP).
+    let leagueKey: string | null = null;
+    if (scope === 'league') {
+      const stat = await this.prisma.gamificationStat.findUnique({
+        where: { userId },
+        select: { points: true },
+      });
+      const xp = stat?.points ?? 0;
+      leagueKey = leagueForLevel(levelFromXp(xp).level).key;
+    }
+
+    // Faixa de níveis que cobre a liga (para filtrar por nível derivado do XP).
+    // Como a liga é função do nível, filtramos pelos níveis daquela liga.
+    const levelRange = leagueKey
+      ? LEAGUES.filter((l) => l.key === leagueKey)[0]
+      : null;
+    const minLevel = levelRange?.minLevel ?? 0;
+    const nextLeague = levelRange
+      ? LEAGUES.find((l) => l.minLevel > minLevel)
+      : null;
+    const maxLevelExclusive = nextLeague ? nextLeague.minLevel : Infinity;
+
+    // Buscamos mais registros que o necessário para derivar o nível e filtrar
+    // por liga no código (SQLite não computa levelFromXp em SQL). Para a maioria
+    // dos casos o volume de usuários com XP é pequeno.
+    const stats = await this.prisma.gamificationStat.findMany({
+      orderBy: { points: 'desc' },
+      select: { userId: true, points: true },
+    });
+
+    const enriched = stats.map((s) => ({
+      userId: s.userId,
+      xp: s.points,
+      level: levelFromXp(s.points).level,
+    }));
+
+    // Garante que o solicitante esteja presente (mesmo sem stat ainda — XP 0).
+    if (!enriched.some((e) => e.userId === userId)) {
+      enriched.push({ userId, xp: 0, level: levelFromXp(0).level });
+    }
+
+    const filtered = leagueKey
+      ? enriched.filter(
+          (e) => e.level >= minLevel && e.level < maxLevelExclusive,
+        )
+      : enriched;
+
+    const top = filtered.slice(0, cap);
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: top.map((e) => e.userId) } },
+      select: { id: true, profile: { select: { displayName: true } } },
+    });
+    const nameById = new Map(
+      users.map((u) => [u.id, u.profile?.displayName ?? 'Estudante']),
+    );
+
+    const entries = top.map((e) => ({
+      userId: e.userId,
+      displayName: nameById.get(e.userId) ?? 'Estudante',
+      xp: e.xp,
+      level: e.level,
+    }));
+
+    // Garante que o solicitante aparece (mesmo fora do top).
+    const meInEntries = entries.some((e) => e.userId === userId);
+    if (!meInEntries) {
+      const me = enriched.find((e) => e.userId === userId);
+      if (me) {
+        entries.push({
+          userId: me.userId,
+          displayName: nameById.get(me.userId) ?? 'Estudante',
+          xp: me.xp,
+          level: me.level,
+        });
+      }
+    }
+
+    return {
+      scope,
+      league: leagueKey
+        ? leagueForLevel(
+            levelFromXp(enriched.find((e) => e.userId === userId)?.xp ?? 0)
+              .level,
+          ).name
+        : null,
+      entries,
+    };
   }
 }

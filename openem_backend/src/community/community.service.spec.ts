@@ -15,6 +15,8 @@ type ThreadRow = {
     body: string;
     createdAt: Date;
     user: { id: string; profile: { displayName: string | null } | null };
+    _count?: { likes: number };
+    likes?: { id: string }[];
   }[];
   _count?: { posts: number };
 };
@@ -22,12 +24,17 @@ type ThreadRow = {
 function makePrismaMock() {
   const threads = new Map<string, ThreadRow>();
   const posts = new Map<string, ThreadRow['posts'][number]>();
+  const likes = new Map<
+    string,
+    { id: string; postId: string; userId: string }
+  >();
   let idCounter = 0;
   const nextId = () => `id-${++idCounter}`;
 
   return {
     threads,
     posts,
+    likes,
     question: {
       findUnique: jest.fn(({ where }: { where: { id: string } }) =>
         Promise.resolve(where.id.startsWith('q-') ? { id: where.id } : null),
@@ -72,12 +79,63 @@ function makePrismaMock() {
           body: data.body,
           createdAt: new Date(),
           user: { id: data.userId, profile: { displayName: 'Replyer' } },
+          _count: { likes: 0 },
+          likes: [],
+          threadId: data.threadId,
         };
         posts.set(id, post);
         const thread = threads.get(data.threadId);
         thread?.posts.push(post);
         return Promise.resolve(post);
       }),
+      findUnique: jest.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(posts.get(where.id) ?? null),
+      ),
+    },
+    forumPostLike: {
+      findUnique: jest.fn(
+        ({
+          where,
+        }: {
+          where: { postId_userId: { postId: string; userId: string } };
+        }) =>
+          Promise.resolve(
+            Array.from(likes.values()).find(
+              (l) =>
+                l.postId === where.postId_userId.postId &&
+                l.userId === where.postId_userId.userId,
+            ) ?? null,
+          ),
+      ),
+      create: jest.fn(({ data }: { data: any }) => {
+        const id = nextId();
+        const like = { id, postId: data.postId, userId: data.userId };
+        likes.set(id, like);
+        const post = posts.get(data.postId);
+        if (post) {
+          (post.likes ??= []).push({ id });
+          post._count = { likes: (post._count?.likes ?? 0) + 1 };
+        }
+        return Promise.resolve(like);
+      }),
+      delete: jest.fn(({ where }: { where: { id: string } }) => {
+        const like = likes.get(where.id);
+        if (like) {
+          likes.delete(where.id);
+          const post = posts.get(like.postId);
+          if (post) {
+            post.likes = (post.likes ?? []).filter((l) => l.id !== where.id);
+            post._count = { likes: Math.max(0, (post._count?.likes ?? 1) - 1) };
+          }
+        }
+        return Promise.resolve({ id: where.id });
+      }),
+      count: jest.fn(({ where }: { where: { postId: string } }) =>
+        Promise.resolve(
+          Array.from(likes.values()).filter((l) => l.postId === where.postId)
+            .length,
+        ),
+      ),
     },
   };
 }
@@ -164,6 +222,40 @@ describe('CommunityService', () => {
     const { service } = makeService();
     await expect(
       service.addPost('u-1', 'inexistente', { body: 'oi' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('toggle like: curtir, descurtir e 404 para post inexistente', async () => {
+    const { service } = makeService();
+    const t = await service.createThread('u-1', {
+      title: 'Like',
+      body: 'corpo',
+    });
+    await service.addPost('u-2', t.id, { body: 'resposta' });
+    const posts = (await service.getThread(t.id, 'u-3')).posts;
+    const postId = posts[0].id;
+
+    // curte como u-3
+    const liked = await service.toggleLike('u-3', t.id, postId);
+    expect(liked.liked).toBe(true);
+    expect(liked.likes).toBe(1);
+    // getThread reflete like do u-3
+    const after = await service.getThread(t.id, 'u-3');
+    expect(after.posts[0].likes).toBe(1);
+    expect(after.posts[0].liked).toBe(true);
+
+    // descurte como u-3
+    const unliked = await service.toggleLike('u-3', t.id, postId);
+    expect(unliked.liked).toBe(false);
+    expect(unliked.likes).toBe(0);
+
+    // post inexistente -> 404
+    await expect(
+      service.toggleLike('u-3', t.id, 'inexistente'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    // post de outro tópico -> 404
+    await expect(
+      service.toggleLike('u-3', 'outro-thread', postId),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

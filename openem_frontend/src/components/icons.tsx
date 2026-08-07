@@ -10,6 +10,7 @@ import {
   Clock,
   Exam,
   Flame,
+  Heart,
   House,
   type Icon as PhosphorIcon,
   type IconProps,
@@ -66,6 +67,7 @@ export const IconTrophy = shim(Trophy, 'duotone');
 
 // Ações e estados.
 export const IconStar = shim(Star, 'regular');
+export const IconHeart = shim(Heart, 'regular');
 export const IconCheck = shim(Check, 'bold');
 export const IconX = shim(X, 'bold');
 export const IconChevronLeft = shim(CaretLeft, 'bold');
