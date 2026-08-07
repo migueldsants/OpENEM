@@ -30,8 +30,8 @@ export class CommunityController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detalha um tópico com suas respostas' })
-  get(@Param('id') id: string) {
-    return this.community.getThread(id);
+  get(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.community.getThread(id, user.userId);
   }
 
   @Post(':id/posts')
@@ -42,5 +42,15 @@ export class CommunityController {
     @Body() dto: CreatePostDto,
   ) {
     return this.community.addPost(user.userId, id, dto);
+  }
+
+  @Post(':id/posts/:postId/like')
+  @ApiOperation({ summary: 'Curtir/descurtir uma resposta do fórum (toggle)' })
+  toggleLike(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('postId') postId: string,
+  ) {
+    return this.community.toggleLike(user.userId, id, postId);
   }
 }

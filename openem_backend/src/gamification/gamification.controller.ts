@@ -26,6 +26,22 @@ export class GamificationController {
     return this.gamification.listAchievements(user.userId);
   }
 
+  @Get('leaderboard')
+  @ApiOperation({
+    summary: 'Ranking de XP (global ou por liga do solicitante)',
+  })
+  leaderboard(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('scope') scope?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.gamification.leaderboard(
+      user.userId,
+      scope === 'league' ? 'league' : 'global',
+      limit ? Number(limit) : 10,
+    );
+  }
+
   @Get('history')
   @ApiOperation({
     summary: 'Histórico de XP ganho (logs + agregado por dia)',

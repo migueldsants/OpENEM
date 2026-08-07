@@ -215,6 +215,8 @@ export interface ForumPost {
   body: string;
   createdAt: string;
   author: ThreadAuthor;
+  likes: number;
+  liked: boolean;
 }
 export interface ForumThread {
   id: string;
@@ -224,6 +226,38 @@ export interface ForumThread {
   questionId: string | null;
   author: ThreadAuthor;
   posts: ForumPost[];
+}
+export interface ToggleLikeResult {
+  liked: boolean;
+  likes: number;
+}
+export interface PublicProfile {
+  id: string;
+  displayName: string;
+  goal: string;
+  createdAt: string;
+  xp: number;
+  level: number;
+  league: { key: string; name: string };
+  currentStreak: number;
+  achievementsUnlocked: number;
+  achievementsTotal: number;
+  featuredAchievements: {
+    code: string;
+    name: string;
+    description: string;
+  }[];
+}
+export interface LeaderboardEntryXp {
+  userId: string;
+  displayName: string;
+  xp: number;
+  level: number;
+}
+export interface LeaderboardResult {
+  scope: 'global' | 'league';
+  league: string | null;
+  entries: LeaderboardEntryXp[];
 }
 export interface Subject {
   id: string;
@@ -497,6 +531,19 @@ export const api = {
       method: 'POST',
       body: { body },
     }),
+  togglePostLike: (threadId: string, postId: string) =>
+    request<ToggleLikeResult>(
+      `/community/threads/${threadId}/posts/${postId}/like`,
+      { method: 'POST' },
+    ),
+
+  publicProfile: (userId: string) =>
+    request<PublicProfile>(`/users/${userId}/profile`),
+
+  xpLeaderboard: (scope: 'global' | 'league' = 'global', limit = 10) =>
+    request<LeaderboardResult>(
+      `/gamification/leaderboard?scope=${scope}&limit=${limit}`,
+    ),
 
   gameCatalog: () => request<GameCatalogItem[]>('/games'),
   submitGameScore: (

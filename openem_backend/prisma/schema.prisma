@@ -30,6 +30,7 @@ model User {
   gameScores   GameScore[]
   forumThreads ForumThread[]
   forumPosts   ForumPost[]
+  postLikes    ForumPostLike[]
 }
 
 model Profile {
@@ -312,8 +313,23 @@ model ForumPost {
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   body      String
   createdAt DateTime    @default(now())
+  likes     ForumPostLike[]
 
   @@index([threadId, createdAt])
+}
+
+// Curtidas em respostas do fórum (issue #19). Um like por usuário por post
+// (índice único). A exclusão é em cascata com o post.
+model ForumPostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
 }
 
 // ---- Fase 3 (avançado) — Games (issue #18) ----

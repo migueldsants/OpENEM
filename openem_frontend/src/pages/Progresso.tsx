@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   api,
   type AchievementView,
   type GamificationSummary,
+  type LeaderboardResult,
   type XpHistory,
 } from '../api';
 import {
@@ -363,6 +364,92 @@ function ActivityFeed({ history }: { history: XpHistory }) {
   );
 }
 
+/** Ranking de XP (global ou por liga) — issue #19. */
+function LeaderboardSection() {
+  const navigate = useNavigate();
+  const [scope, setScope] = useState<'global' | 'league'>('league');
+  const [board, setBoard] = useState<LeaderboardResult | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api
+      .xpLeaderboard(scope, 10)
+      .then(setBoard)
+      .catch(() => setBoard(null))
+      .finally(() => setLoading(false));
+  }, [scope]);
+
+  return (
+    <section className="card p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-lg font-bold">Ranking</h2>
+        <div className="seg">
+          <button
+            data-active={scope === 'league'}
+            onClick={() => setScope('league')}
+          >
+            Minha liga
+          </button>
+          <button
+            data-active={scope === 'global'}
+            onClick={() => setScope('global')}
+          >
+            Geral
+          </button>
+        </div>
+      </div>
+      {board?.league && (
+        <p className="mt-1 text-xs text-muted">Liga {board.league}</p>
+      )}
+      {loading ? (
+        <div className="mt-3 space-y-1.5" aria-busy>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-9" />
+          ))}
+        </div>
+      ) : !board || board.entries.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">
+          Nenhum jogador ainda. Jogue para aparecer no ranking!
+        </p>
+      ) : (
+        <ol className="mt-3 space-y-1.5">
+          {board.entries.map((e, i) => (
+            <li
+              key={e.userId}
+              className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2"
+              onClick={() => navigate(`/usuarios/${e.userId}`)}
+            >
+              <span
+                className={`grid size-7 shrink-0 place-items-center rounded-md text-xs font-bold tabular-nums ${
+                  i === 0
+                    ? 'bg-mat/15 text-mat'
+                    : i === 1
+                      ? 'bg-surface-2 text-muted'
+                      : i === 2
+                        ? 'bg-hum/15 text-hum'
+                        : 'bg-surface-2 text-muted'
+                }`}
+              >
+                {i + 1}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {e.displayName}
+              </span>
+              <span className="shrink-0 text-xs text-muted">
+                Nv {e.level}
+              </span>
+              <span className="shrink-0 font-display font-bold tabular-nums text-brand">
+                {e.xp.toLocaleString('pt-BR')}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
 export default function Progresso() {
   const { summary, refresh } = useGamification();
   const [localSummary, setLocalSummary] = useState<GamificationSummary | null>(
@@ -435,6 +522,7 @@ export default function Progresso() {
         <>
           <XpCard data={data} />
           <StreakRow current={data.currentStreak} longest={data.longestStreak} />
+          <LeaderboardSection />
           {history && <XpHistoryChart history={history} />}
           <AchievementsGrid items={achievements} data={data} />
           {history && <ActivityFeed history={history} />}

@@ -36,7 +36,7 @@ export class CommunityService {
       data: { userId, title: dto.title, body: dto.body, questionId },
       select: { id: true },
     });
-    return this.getThread(thread.id);
+    return this.getThread(thread.id, userId);
   }
 
   async listThreads() {
@@ -62,7 +62,7 @@ export class CommunityService {
     }));
   }
 
-  async getThread(id: string) {
+  async getThread(id: string, currentUserId?: string) {
     const thread = await this.prisma.forumThread.findUnique({
       where: { id },
       select: {
@@ -79,6 +79,10 @@ export class CommunityService {
             body: true,
             createdAt: true,
             user: AUTHOR_SELECT,
+            _count: { select: { likes: true } },
+            likes: currentUserId
+              ? { where: { userId: currentUserId }, select: { id: true } }
+              : false,
           },
         },
       },
@@ -98,6 +102,9 @@ export class CommunityService {
         body: p.body,
         createdAt: p.createdAt,
         author: authorName(p.user),
+        likes: p._count.likes,
+        liked:
+          currentUserId && Array.isArray(p.likes) ? p.likes.length > 0 : false,
       })),
     };
   }
@@ -113,6 +120,42 @@ export class CommunityService {
     await this.prisma.forumPost.create({
       data: { threadId, userId, body: dto.body },
     });
-    return this.getThread(threadId);
+    return this.getThread(threadId, userId);
+  }
+
+  /**
+   * Alterna (toggle) o like de um usuário em uma resposta do fórum (issue #19).
+   * Retorna o estado resultante: { liked, likes }. Lança 404 se o post não
+   * existe (ou pertence a um tópico diferente do informado na rota — mantém o
+   * path RESTful coerente com o resource do like).
+   */
+  async toggleLike(
+    userId: string,
+    threadId: string,
+    postId: string,
+  ): Promise<{ liked: boolean; likes: number }> {
+    const post = await this.prisma.forumPost.findUnique({
+      where: { id: postId },
+      select: { id: true, threadId: true },
+    });
+    if (!post || post.threadId !== threadId) {
+      throw new NotFoundException('Resposta não encontrada');
+    }
+    const existing = await this.prisma.forumPostLike.findUnique({
+      where: { postId_userId: { postId, userId } },
+      select: { id: true },
+    });
+    if (existing) {
+      await this.prisma.forumPostLike.delete({ where: { id: existing.id } });
+      const likes = await this.prisma.forumPostLike.count({
+        where: { postId },
+      });
+      return { liked: false, likes };
+    }
+    await this.prisma.forumPostLike.create({ data: { postId, userId } });
+    const likes = await this.prisma.forumPostLike.count({
+      where: { postId },
+    });
+    return { liked: true, likes };
   }
 }

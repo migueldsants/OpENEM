@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   api,
   type ForumThread,
   type ForumThreadSummary,
 } from '../api';
-import { IconChat } from '../components/icons';
+import { IconChat, IconHeart } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
 function timeAgo(iso: string): string {
@@ -16,6 +17,26 @@ function timeAgo(iso: string): string {
   if (h < 24) return `${h} h`;
   const d = Math.floor(h / 24);
   return `${d} d`;
+}
+
+/** Renderiza o corpo de um post, convertendo menções @usuarioId em links. */
+function renderBody(body: string) {
+  const parts = body.split(/(@[a-zA-Z0-9_-]+)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('@') && part.length > 1) {
+      const id = part.slice(1);
+      return (
+        <Link
+          key={i}
+          to={`/usuarios/${id}`}
+          className="font-medium text-brand hover:underline"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
 
 /** Detalhe de um tópico: enunciado, respostas e caixa de resposta. */
@@ -30,6 +51,7 @@ function ThreadView({
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +77,52 @@ function ThreadView({
       setError(err instanceof Error ? err.message : 'Não foi possível enviar.');
     } finally {
       setSending(false);
+    }
+  }
+
+  async function toggleLike(postId: string, liked: boolean) {
+    if (toggling) return;
+    setToggling(postId);
+    // Otimista: atualiza UI imediatamente.
+    setThread((prev) =>
+      prev
+        ? {
+            ...prev,
+            posts: prev.posts.map((p) =>
+              p.id === postId
+                ? {
+                    ...p,
+                    liked: !liked,
+                    likes: Math.max(0, p.likes + (liked ? -1 : 1)),
+                  }
+                : p,
+            ),
+          }
+        : prev,
+    );
+    try {
+      await api.togglePostLike(id, postId);
+    } catch (err) {
+      // Reverte em caso de erro.
+      setThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              posts: prev.posts.map((p) =>
+                p.id === postId
+                  ? {
+                      ...p,
+                      liked,
+                      likes: Math.max(0, p.likes + (liked ? 1 : -1)),
+                    }
+                  : p,
+              ),
+            }
+          : prev,
+      );
+      setError(err instanceof Error ? err.message : 'Não foi possível curtir.');
+    } finally {
+      setToggling(null);
     }
   }
 
@@ -91,10 +159,16 @@ function ThreadView({
           {thread.title}
         </h1>
         <p className="mt-1 text-xs text-muted">
-          {thread.author.name} · {timeAgo(thread.createdAt)}
+          <Link
+            to={`/usuarios/${thread.author.id}`}
+            className="font-medium text-brand hover:underline"
+          >
+            {thread.author.name}
+          </Link>{' '}
+          · {timeAgo(thread.createdAt)}
         </p>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
-          {thread.body}
+          {renderBody(thread.body)}
         </p>
       </article>
 
@@ -106,14 +180,35 @@ function ThreadView({
       <ul className="space-y-3">
         {thread.posts.map((p) => (
           <li key={p.id} className="card p-4">
-            <p className="text-xs font-semibold">
-              {p.author.name}{' '}
-              <span className="font-normal text-muted">
-                · {timeAgo(p.createdAt)}
-              </span>
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1 text-xs font-semibold">
+                <Link
+                  to={`/usuarios/${p.author.id}`}
+                  className="font-medium text-brand hover:underline"
+                >
+                  {p.author.name}
+                </Link>{' '}
+                <span className="font-normal text-muted">
+                  · {timeAgo(p.createdAt)}
+                </span>
+              </p>
+              <button
+                onClick={() => void toggleLike(p.id, p.liked)}
+                disabled={toggling === p.id}
+                aria-pressed={p.liked}
+                aria-label={p.liked ? 'Descurtir' : 'Curtir'}
+                className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                  p.liked
+                    ? 'bg-red/12 text-red'
+                    : 'bg-surface-2 text-muted hover:text-fg'
+                }`}
+              >
+                <IconHeart width={16} height={16} filled={p.liked} />
+                {p.likes}
+              </button>
+            </div>
             <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed">
-              {p.body}
+              {renderBody(p.body)}
             </p>
           </li>
         ))}
@@ -126,7 +221,7 @@ function ThreadView({
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           rows={3}
-          placeholder="Escreva uma resposta…"
+          placeholder="Escreva uma resposta… (use @ para mencionar alguém)"
           className="w-full resize-y rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-brand"
         />
         <div className="mt-2 flex justify-end">
@@ -295,7 +390,13 @@ export default function Comunidade() {
                     {t.title}
                   </span>
                   <span className="text-xs text-muted">
-                    {t.author.name} · {timeAgo(t.createdAt)} · {t.replies}{' '}
+                    <Link
+                      to={`/usuarios/${t.author.id}`}
+                      className="font-medium text-brand hover:underline"
+                    >
+                      {t.author.name}
+                    </Link>{' '}
+                    · {timeAgo(t.createdAt)} · {t.replies}{' '}
                     {t.replies === 1 ? 'resposta' : 'respostas'}
                   </span>
                 </span>

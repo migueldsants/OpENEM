@@ -27,6 +27,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import Perfil from './pages/Perfil';
+import PerfilPublico from './pages/PerfilPublico';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
 import Redacao from './pages/Redacao';
@@ -43,14 +44,15 @@ const NAV = [
   { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: false },
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: false },
   { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: false },
-  { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: false },
+  { to: '/comunidade', label: 'Comunidade', Icon: IconChat },
   { to: '/perfil', label: 'Perfil', Icon: IconUser },
 ];
 
-// Itens exibidos na barra inferior do mobile (limitada a 6 para não apertar).
-// Telas secundárias (Progresso, Cronograma, Redação, Comunidade) ficam acessíveis
-// pela sidebar no desktop e via atalhos/contexto no mobile — a issue #21
-// introduz um botão "Mais" para agrupá-las.
+// Itens exibidos na barra inferior do mobile. A issue #19 adicionou Comunidade
+// à tabbar (acesso direto no mobile). Telas ainda sem atalho direto no mobile
+// (Progresso, Cronograma, Redação) ficam acessíveis pela sidebar no desktop e
+// via atalhos/contexto no mobile — a issue #21 introduz um botão "Mais" para
+// agrupá-las.
 const MOBILE_NAV = NAV.filter(
   (item) => !('mobile' in item) || item.mobile !== false,
 );
@@ -233,6 +235,7 @@ export default function App() {
       <Route path="/games" element={<Games />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
+      <Route path="/usuarios/:id" element={<PerfilPublico />} />
       <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
       <Route path="/login" element={<Navigate to="/" replace />} />

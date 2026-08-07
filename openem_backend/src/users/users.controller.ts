@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
@@ -17,6 +17,12 @@ export class UsersController {
   @ApiOperation({ summary: 'Retorna o usuário autenticado e seu perfil' })
   getMe(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.getMe(user.userId);
+  }
+
+  @Get(':id/profile')
+  @ApiOperation({ summary: 'Perfil público de um usuário (sem PII)' })
+  getPublicProfile(@Param('id') id: string) {
+    return this.usersService.getPublicProfile(id);
   }
 
   @Put('me/profile')
