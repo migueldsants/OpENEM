@@ -537,6 +537,31 @@
   animation: rise 0.4s ease both;
 }
 
+/* Bottom-sheet "Mais" da tabbar mobile (issue #21). */
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-sheet {
+  animation: sheetUp 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade {
+  animation: fadeIn 0.2s ease both;
+}
+
 @layer components {
   /* Dados técnicos: XP, nível, contadores, eyebrows com cara de prova. */
   .font-data {

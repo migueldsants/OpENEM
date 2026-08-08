@@ -1,4 +1,5 @@
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './auth';
 import {
   IconBolt,
@@ -8,12 +9,15 @@ import {
   IconGame,
   IconHome,
   IconLogout,
+  IconMore,
   IconPen,
   IconStack,
+  IconStar,
   IconTimer,
   IconTrophy,
   IconUser,
 } from './components/icons';
+import { MoreSheet, type NavItem } from './components/MoreSheet';
 import RouteTransition from './components/RouteTransition';
 import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
@@ -34,28 +38,27 @@ import Redacao from './pages/Redacao';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
 
-// `mobile: false` deixa o item fora da barra inferior (mobile), mas mantém na
-// sidebar (desktop). Progresso fica acessível no mobile pelo indicador de XP.
-const NAV = [
-  { to: '/', label: 'Início', Icon: IconHome, end: true },
-  { to: '/questoes', label: 'Questões', Icon: IconStack },
-  { to: '/simulados', label: 'Simulados', Icon: IconTimer },
-  { to: '/games', label: 'Games', Icon: IconGame },
-  { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: false },
-  { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: false },
-  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: false },
-  { to: '/comunidade', label: 'Comunidade', Icon: IconChat },
-  { to: '/perfil', label: 'Perfil', Icon: IconUser },
+// `mobile` controla a presença na tabbar do mobile: 'primary' = atalho visível
+// (5 no total, cabem em 360px); 'more' = dentro do bottom-sheet "Mais". A
+// sidebar do desktop mostra todos (NAV). A issue #21 introduz o botão "Mais"
+// para agrupar Progresso, Comunidade, Cronograma, Redação e Favoritos.
+const NAV: NavItem[] = [
+  { to: '/', label: 'Início', Icon: IconHome, end: true, mobile: 'primary' },
+  { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary' },
+  { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary' },
+  { to: '/games', label: 'Games', Icon: IconGame, mobile: 'primary' },
+  { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more' },
+  { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: 'more' },
+  { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more' },
+  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more' },
+  { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
+  { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'primary' },
 ];
 
-// Itens exibidos na barra inferior do mobile. A issue #19 adicionou Comunidade
-// à tabbar (acesso direto no mobile). Telas ainda sem atalho direto no mobile
-// (Progresso, Cronograma, Redação) ficam acessíveis pela sidebar no desktop e
-// via atalhos/contexto no mobile — a issue #21 introduz um botão "Mais" para
-// agrupá-las.
-const MOBILE_NAV = NAV.filter(
-  (item) => !('mobile' in item) || item.mobile !== false,
-);
+// 5 atalhos visíveis na barra inferior + 1 botão "Mais" (6 slots, igual ao
+// layout anterior — não aperta em 360px). Telas em 'more' ficam a 2 taps.
+const MOBILE_PRIMARY = NAV.filter((n) => n.mobile === 'primary');
+const MOBILE_MORE = NAV.filter((n) => n.mobile === 'more');
 
 function Wordmark({ className = '' }: { className?: string }) {
   return (
@@ -202,6 +205,11 @@ function Sidebar({ email, onLogout }: { email?: string; onLogout: () => void }) 
 export default function App() {
   const { authenticated, logout, me } = useAuth();
   const focusMode = me?.profile?.focusMode ?? false;
+  // Bottom-sheet "Mais" da tabbar mobile (issue #21).
+  const [moreOpen, setMoreOpen] = useState(false);
+  const location = useLocation();
+  // Botão "Mais" fica destacado quando a rota atual é uma tela secundária.
+  const moreActive = MOBILE_MORE.some((n) => n.to === location.pathname);
   // Usuários recém-cadastrados (onboarded=false) passam pelo onboarding antes do app.
   const needsOnboarding = authenticated && me && me.profile !== null && !me.profile.onboarded;
 
@@ -289,16 +297,17 @@ export default function App() {
         </main>
       </div>
 
-      {/* Navegação inferior — padrão mobile (Android). */}
+      {/* Navegação inferior — padrão mobile (Android). 5 atalhos + botão "Mais"
+          que abre um bottom-sheet com as telas secundárias (issue #21). */}
       <nav className="tabbar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/90 backdrop-blur md:hidden">
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `repeat(${MOBILE_NAV.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${MOBILE_PRIMARY.length + 1}, minmax(0, 1fr))`,
             paddingBottom: 'env(safe-area-inset-bottom)',
           }}
         >
-          {MOBILE_NAV.map(({ to, label, Icon, end }) => (
+          {MOBILE_PRIMARY.map(({ to, label, Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -321,8 +330,31 @@ export default function App() {
               )}
             </NavLink>
           ))}
+
+          {/* Botão "Mais": abre o bottom-sheet com Progresso, Comunidade,
+              Cronograma, Redação e Favoritos (todas a 2 taps). */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-label="Mais telas"
+            aria-expanded={moreOpen}
+            className={`flex flex-col items-center gap-1 py-2.5 text-[0.68rem] font-medium transition-colors ${
+              moreActive ? 'text-brand' : 'text-muted'
+            }`}
+          >
+            <IconMore
+              width={22}
+              height={22}
+              weight={moreActive ? 'fill' : 'duotone'}
+            />
+            Mais
+          </button>
         </div>
       </nav>
+
+      {moreOpen && (
+        <MoreSheet items={MOBILE_MORE} onClose={() => setMoreOpen(false)} />
+      )}
     </div>
   );
 }
