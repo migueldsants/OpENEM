@@ -7,8 +7,9 @@ import {
   type EssaySubmissionSummary,
   type GamificationDelta,
 } from '../api';
+import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconSparkle } from '../components/icons';
+import { IconPen, IconSparkle } from '../components/icons';
 import { useGamification } from '../gamification';
 
 // Metadados por competência: rótulo + cor do marca-texto (uma por competência).
@@ -444,9 +445,12 @@ export default function Redacao() {
       <section className="space-y-3">
         <h2 className="eyebrow">Meus envios</h2>
         {submissions.length === 0 ? (
-          <p className="card p-6 text-center text-sm text-muted">
-            Você ainda não enviou nenhuma redação.
-          </p>
+          <EmptyState
+            icon={IconPen}
+            title="Nenhuma redação ainda"
+            description="Escreva sua primeira redação para receber feedback."
+            tip="Nota por competência, com correção por IA quando disponível"
+          />
         ) : (
           <ul className="space-y-3">
             {submissions.map((s) => (

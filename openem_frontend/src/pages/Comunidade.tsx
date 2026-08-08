@@ -5,7 +5,8 @@ import {
   type ForumThread,
   type ForumThreadSummary,
 } from '../api';
-import { IconChat, IconHeart } from '../components/icons';
+import { EmptyState } from '../components/EmptyState';
+import { IconChat, IconHeart, IconQuestion } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
 function timeAgo(iso: string): string {
@@ -178,6 +179,16 @@ function ThreadView({
       </h2>
 
       <ul className="space-y-3">
+        {thread.posts.length === 0 && (
+          <li>
+            <EmptyState
+              icon={IconChat}
+              title="Sem respostas ainda"
+              description="Quebre o gelo e seja a primeira pessoa a responder."
+              dense
+            />
+          </li>
+        )}
         {thread.posts.map((p) => (
           <li key={p.id} className="card p-4">
             <div className="flex items-center gap-2">
@@ -371,9 +382,13 @@ export default function Comunidade() {
           <SkeletonCard lines={2} />
         </div>
       ) : threads.length === 0 ? (
-        <div className="card p-6 text-center text-sm text-muted">
-          Ainda não há tópicos. Seja o primeiro a perguntar!
-        </div>
+        <EmptyState
+          icon={IconQuestion}
+          title="Nenhum tópico ainda"
+          description="Seja o primeiro a perguntar e ajudar outros estudantes."
+          action={{ onClick: () => setView('new'), label: 'Criar tópico' }}
+          tip="Dúvidas, dicas e resumos — a comunidade responde"
+        />
       ) : (
         <ul className="space-y-3">
           {threads.map((t) => (

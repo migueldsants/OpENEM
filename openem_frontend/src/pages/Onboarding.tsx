@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { IconCheck, IconTarget, IconTimer } from '../components/icons';
+import { IconCheck, IconSparkle, IconStar, IconTarget, IconTimer } from '../components/icons';
 
 const GOALS = [
   {
@@ -34,6 +34,7 @@ export default function Onboarding() {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   async function finish() {
     setSaving(true);
@@ -41,12 +42,40 @@ export default function Onboarding() {
     try {
       await api.updateProfile({ goal, minutesPerDay, onboarded: true });
       await refreshMe();
-      navigate('/', { replace: true });
+      setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível salvar.');
     } finally {
       setSaving(false);
     }
+  }
+
+  if (done) {
+    return (
+      <div className="mx-auto max-w-md px-5 py-10 text-center animate-pop">
+        <span className="mx-auto grid size-24 place-items-center rounded-3xl bg-brand/12 text-brand animate-pop">
+          <IconCheck width={56} height={56} filled />
+        </span>
+        <h1 className="mt-5 font-display text-3xl font-extrabold tracking-tight">
+          Bem-vindo(a) ao OpENEM!
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Seu plano está pronto. Bora estudar?
+        </p>
+        <div className="mt-4 flex justify-center gap-1.5 text-brand">
+          <IconSparkle width={20} height={20} />
+          <IconStar width={20} height={20} filled />
+          <IconSparkle width={20} height={20} />
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/', { replace: true })}
+          className="btn btn-primary mt-6 w-full"
+        >
+          Começar
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -146,9 +175,9 @@ export default function Onboarding() {
               >
                 <span className="font-data text-lg font-bold">
                   {m >= 60 ? m / 60 : m}
-                </span>
-                <span className="text-xs text-muted">
-                  {m >= 60 ? (m / 60 === 1 ? 'h' : 'h') : 'min'}
+                  <span className="ml-1 text-xs text-muted">
+                    {m >= 60 ? 'h' : 'min'}
+                  </span>
                 </span>
               </button>
             ))}

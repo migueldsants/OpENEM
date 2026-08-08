@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   api,
   type GamificationDelta,
@@ -6,19 +6,38 @@ import {
   type StudySession,
 } from '../api';
 import { useAuth } from '../auth';
+import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconCheck } from '../components/icons';
+import { IconCalendar, IconCheck } from '../components/icons';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
-function groupByDay(sessions: StudySession[]): [number, StudySession[]][] {
-  const map = new Map<number, StudySession[]>();
-  for (const s of sessions) {
-    const list = map.get(s.dayIndex) ?? [];
-    list.push(s);
-    map.set(s.dayIndex, list);
-  }
-  return [...map.entries()].sort((a, b) => a[0] - b[0]);
+const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
+
+function startOfDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function sameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function fmtDay(d: Date): string {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(
+    d.getMonth() + 1,
+  ).padStart(2, '0')}`;
 }
 
 export default function Cronograma() {
@@ -127,12 +146,13 @@ export default function Cronograma() {
       )}
 
       {!plan ? (
-        <div className="card p-6 text-center">
-          <p className="text-sm text-muted">
-            Gere um plano adaptado ao seu tempo disponível que prioriza os
-            assuntos em que você mais erra.
-          </p>
-        </div>
+        <EmptyState
+          icon={IconCalendar}
+          title="Sem cronograma ainda"
+          description="Gere um plano adaptado ao seu tempo disponível."
+          action={{ onClick: generate, label: 'Gerar cronograma' }}
+          tip="Priorizamos os assuntos em que você mais erra"
+        />
       ) : (
         <>
           <div className="card card-raised flex items-center gap-4 p-4">
@@ -156,48 +176,139 @@ export default function Cronograma() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            {groupByDay(plan.sessions).map(([day, sessions]) => (
-              <div key={day} className="card p-4">
-                <h2 className="eyebrow">Dia {day + 1}</h2>
-                <ul className="mt-3 space-y-1">
-                  {sessions.map((s) => {
-                    const area = areaKey(s.topic.subject.name);
-                    return (
-                      <li key={s.id}>
-                        <button
-                          onClick={() => toggleDone(s)}
-                          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-surface-2"
-                        >
-                          <span
-                            className={`grid size-5 shrink-0 place-items-center rounded-md border transition-colors ${
-                              s.done
-                                ? 'border-transparent bg-brand text-brand-ink'
-                                : 'border-line'
-                            }`}
-                          >
-                            {s.done && <IconCheck width={14} height={14} />}
-                          </span>
-                          <span className={`size-2.5 shrink-0 rounded-full ${AREA_DOT[area]}`} />
-                          <span className={s.done ? 'text-muted line-through' : ''}>
-                            <span className={`font-medium ${s.done ? '' : AREA_TEXT[area]}`}>
-                              {s.topic.subject.name}
-                            </span>{' '}
-                            · {s.topic.name}
-                          </span>
-                          <span className="ml-auto shrink-0 text-xs text-muted tabular-nums">
-                            {s.minutes} min
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
+          <WeeklyCalendar plan={plan} onToggle={toggleDone} />
         </>
       )}
+    </div>
+  );
+}
+
+/** Calendário visual semanal do cronograma — cada dia num grid Seg–Dom. */
+function WeeklyCalendar({
+  plan,
+  onToggle,
+}: {
+  plan: StudyPlan;
+  onToggle: (s: StudySession) => void;
+}) {
+  const { cells } = useMemo(() => {
+    const planStart = startOfDay(new Date(plan.createdAt));
+    const maxDay = plan.sessions.reduce((m, s) => Math.max(m, s.dayIndex), -1);
+    const totalDays = maxDay + 1;
+    const startOffset = (planStart.getDay() + 6) % 7; // Seg=0..Dom=6
+    const weeks = Math.ceil((startOffset + totalDays) / 7);
+    const byDay = new Map<number, StudySession[]>();
+    for (const s of plan.sessions) {
+      const list = byDay.get(s.dayIndex) ?? [];
+      list.push(s);
+      byDay.set(s.dayIndex, list);
+    }
+    const rows: { date: Date | null; dayIndex: number | null; sessions: StudySession[] }[][] = [];
+    for (let w = 0; w < weeks; w += 1) {
+      const row: { date: Date | null; dayIndex: number | null; sessions: StudySession[] }[] = [];
+      for (let c = 0; c < 7; c += 1) {
+        const globalIndex = w * 7 + c - startOffset;
+        if (globalIndex >= 0 && globalIndex < totalDays) {
+          row.push({
+            date: addDays(planStart, globalIndex),
+            dayIndex: globalIndex,
+            sessions: byDay.get(globalIndex) ?? [],
+          });
+        } else {
+          row.push({ date: null, dayIndex: null, sessions: [] });
+        }
+      }
+      rows.push(row);
+    }
+    return { cells: rows };
+  }, [plan]);
+
+  const today = startOfDay(new Date());
+
+  return (
+    <div className="card p-4">
+      <div className="grid grid-cols-7 gap-1.5">
+        {WEEKDAYS.map((d) => (
+          <div
+            key={d}
+            className="text-center text-[10px] font-semibold uppercase tracking-wide text-muted"
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 space-y-1.5">
+        {cells.map((row, w) => (
+          <div key={w} className="grid grid-cols-7 gap-1.5">
+            {row.map((cell, c) => {
+              if (cell.date === null) {
+                return (
+                  <div
+                    key={c}
+                    className="min-h-[88px] rounded-lg border border-line/30 opacity-40"
+                  />
+                );
+              }
+              const isToday = sameDay(cell.date, today);
+              const hasSessions = cell.sessions.length > 0;
+              return (
+                <div
+                  key={c}
+                  className={`min-h-[88px] rounded-lg border p-1.5 ${
+                    hasSessions ? 'border-line bg-surface' : 'border-line/50'
+                  } ${isToday ? 'ring-1 ring-brand' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-semibold tabular-nums text-muted">
+                      {fmtDay(cell.date)}
+                    </span>
+                    {isToday && (
+                      <span className="rounded-full bg-brand/12 px-1.5 py-0.5 text-[9px] font-semibold text-brand">
+                        hoje
+                      </span>
+                    )}
+                  </div>
+                  <ul className="mt-1 space-y-0.5">
+                    {cell.sessions.map((s) => {
+                      const area = areaKey(s.topic.subject.name);
+                      return (
+                        <li key={s.id}>
+                          <button
+                            onClick={() => onToggle(s)}
+                            className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[10px] transition-colors hover:bg-surface-2"
+                          >
+                            <span
+                              className={`grid size-3.5 shrink-0 place-items-center rounded border ${
+                                s.done
+                                  ? 'border-transparent bg-brand text-brand-ink'
+                                  : 'border-line'
+                              }`}
+                            >
+                              {s.done && <IconCheck width={9} height={9} />}
+                            </span>
+                            <span
+                              className={`size-1.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
+                            />
+                            <span
+                              className={`truncate ${
+                                s.done
+                                  ? 'text-muted line-through'
+                                  : AREA_TEXT[area]
+                              }`}
+                            >
+                              {s.topic.name}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

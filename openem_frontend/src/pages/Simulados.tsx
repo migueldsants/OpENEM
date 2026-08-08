@@ -5,8 +5,9 @@ import {
   type SimulationStart,
   type SimulationTemplate,
 } from '../api';
+import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconCheck, IconClock, IconStack, IconX } from '../components/icons';
+import { IconBook, IconCheck, IconClock, IconStack, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
@@ -131,9 +132,12 @@ function TemplateList({
           <SkeletonCard lines={2} />
         </div>
       ) : templates.length === 0 ? (
-        <p className="card p-6 text-center text-sm text-muted">
-          Nenhum simulado disponível ainda.
-        </p>
+        <EmptyState
+          icon={IconBook}
+          title="Nenhum simulado disponível ainda"
+          description="Os simulados seguem o padrão ENEM, com cronômetro e gabarito."
+          tip="Em breve novos templates por área"
+        />
       ) : (
         <ul className="space-y-3">
           {templates.map((t) => {

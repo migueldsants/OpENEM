@@ -7,8 +7,14 @@ import {
   type Question,
   type ReviewItem,
 } from '../api';
+import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconCheck, IconClock, IconX } from '../components/icons';
+import {
+  IconCheck,
+  IconClock,
+  IconStack,
+  IconX,
+} from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
@@ -206,9 +212,13 @@ function ReviewSession({
           <SkeletonCard lines={3} />
         </div>
       ) : questions.length === 0 ? (
-        <p className="card p-5 text-center text-sm text-muted">
-          Sem questões cadastradas neste assunto — avalie sua lembrança abaixo.
-        </p>
+        <EmptyState
+          icon={IconStack}
+          title="Sem questões neste assunto"
+          description="Avalie sua lembrança abaixo mesmo assim."
+          bare
+          dense
+        />
       ) : (
         <div className="space-y-3">
           {questions.map((q) => (
@@ -310,16 +320,20 @@ export default function Revisao() {
           <SkeletonCard lines={2} />
         </div>
       ) : queue.length === 0 ? (
-        <div className="card p-6 text-center">
-          <p className="text-sm font-semibold">Tudo em dia! 🎉</p>
-          <p className="mt-1 text-sm text-muted">
-            Nenhum assunto vencido agora.{' '}
-            <NavLink to="/questoes" className="font-medium text-brand">
-              Praticar questões
-            </NavLink>{' '}
-            mantém sua revisão em dia.
-          </p>
-        </div>
+        <EmptyState
+          icon={IconClock}
+          title="Tudo em dia! 🎉"
+          description={
+            <>
+              Nenhum assunto vencido agora.{' '}
+              <NavLink to="/questoes" className="font-medium text-brand">
+                Praticar questões
+              </NavLink>{' '}
+              mantém sua revisão em dia.
+            </>
+          }
+          tip="Revisão espaçada mantém a memória fresca"
+        />
       ) : (
         <ul className="space-y-3">
           {queue.map((item) => {

@@ -5,12 +5,14 @@ import {
   type Question,
   type Subject,
 } from '../api';
+import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconFilter,
+  IconStack,
   IconStar,
   IconX,
 } from '../components/icons';
@@ -510,11 +512,16 @@ export default function Questoes() {
             </div>
           </div>
         ) : (
-          <p className="card p-8 text-center text-sm text-muted">
-            {onlyFavorites
-              ? 'Você ainda não favoritou questões com esses filtros.'
-              : 'Nenhuma questão encontrada. Ajuste os filtros.'}
-          </p>
+          <EmptyState
+            icon={IconStack}
+            title="Nenhuma questão encontrada"
+            description={
+              onlyFavorites
+                ? 'Você ainda não favoritou questões com esses filtros.'
+                : 'Ajuste os filtros para ver outras questões.'
+            }
+            tip="Tente outra área ou remova os favoritos"
+          />
         )
       ) : (
         <QuestionView
