@@ -40,7 +40,11 @@ function relativeDate(iso: string): string {
   return months === 1 ? 'mês atrás' : `${months} meses atrás`;
 }
 
-/** Thumbnail: BoardSVG com fórmula em texto simples (sem KaTeX). */
+/** Thumbnail: BoardSVG com fórmula em texto simples (sem KaTeX). Mostra o
+ * canvas inteiro (0 0 2000 1400) escalado na caixa — sem isso, o viewBox
+ * default recortaria só o canto superior esquerdo e o thumb ficava vazio. */
+const WORLD_VIEWBOX = '0 0 2000 1400';
+
 function Thumb({ board }: { board: Board }) {
   const renderFormula = (el: BoardElement) =>
     el.latex ? (
@@ -52,6 +56,7 @@ function Thumb({ board }: { board: Board }) {
         board={board}
         width={300}
         height={170}
+        viewBox={WORLD_VIEWBOX}
         renderFormula={renderFormula}
       />
     </div>

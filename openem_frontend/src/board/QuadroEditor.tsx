@@ -256,7 +256,9 @@ export function QuadroEditor({
     (e: React.PointerEvent) => {
       if (editingId) return;
       const world = snapPoint(toWorld(e.clientX, e.clientY));
-      (e.target as Element).setPointerCapture?.(e.pointerId);
+      // Captura no viewport (que detém os handlers de move/up) — não em e.target,
+      // que pode ser um filho do SVG re-renderizado e perder o capture.
+      viewportRef.current?.setPointerCapture?.(e.pointerId);
 
       // Pan: tool pan ou espaço pressionado ou botão do meio.
       if (tool === 'pan' || spaceRef.current || e.button === 1) {
@@ -522,7 +524,7 @@ export function QuadroEditor({
   ) => {
     e.stopPropagation();
     if (!selected) return;
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    viewportRef.current?.setPointerCapture?.(e.pointerId);
     dragRef.current = {
       mode: handle === 'rotate' ? 'rotate' : 'resize',
       startWorld: snapPoint(toWorld(e.clientX, e.clientY)),
@@ -582,7 +584,7 @@ export function QuadroEditor({
     el.latex ? <Katex latex={el.latex} /> : null;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="absolute inset-0 flex flex-col">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-surface/80 px-2 py-1.5 backdrop-blur">
         <div className="seg">
@@ -690,7 +692,7 @@ export function QuadroEditor({
       {/* Viewport */}
       <div
         ref={viewportRef}
-        className="relative flex-1 overflow-hidden bg-bg touch-none"
+        className="relative min-h-0 flex-1 overflow-hidden bg-bg touch-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

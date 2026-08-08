@@ -226,12 +226,16 @@ export function BoardSVG({
   board,
   width,
   height,
+  viewBox,
   renderFormula,
   showBackground = true,
 }: {
   board: Board;
   width?: number;
   height?: number;
+  /** viewBox opcional (default = "0 0 width height"). Útil p/ thumbnails
+   * mostrarem o canvas inteiro em escala (ex.: "0 0 2000 1400"). */
+  viewBox?: string;
   renderFormula?: (el: BoardElement) => React.ReactNode;
   showBackground?: boolean;
 }) {
@@ -240,7 +244,7 @@ export function BoardSVG({
     <svg
       width={width}
       height={height}
-      viewBox={`0 0 ${width ?? 1000} ${height ?? 700}`}
+      viewBox={viewBox ?? `0 0 ${width ?? 1000} ${height ?? 700}`}
       xmlns="http://www.w3.org/2000/svg"
       style={{ background: 'var(--bg, #fff)', display: 'block' }}
     >
