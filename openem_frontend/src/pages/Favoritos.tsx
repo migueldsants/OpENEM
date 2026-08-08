@@ -6,6 +6,7 @@ import {
   type Favorite,
   type Question,
 } from '../api';
+import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck, IconStar, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
@@ -193,19 +194,26 @@ export default function Favoritos() {
           <SkeletonCard lines={2} />
         </div>
       ) : favorites.length === 0 ? (
-        <div className="card p-6 text-center text-sm text-muted">
-          Você ainda não favoritou questões. Toque na{' '}
-          <IconStar
-            width={14}
-            height={14}
-            className="inline align-text-bottom text-hum"
-          />{' '}
-          ao responder em{' '}
-          <NavLink to="/questoes" className="font-medium text-brand">
-            Questões
-          </NavLink>
-          .
-        </div>
+        <EmptyState
+          icon={IconStar}
+          title="Nenhuma favorita ainda"
+          description={
+            <>
+              Toque na{' '}
+              <IconStar
+                width={14}
+                height={14}
+                className="inline align-text-bottom text-hum"
+              />{' '}
+              ao responder em{' '}
+              <NavLink to="/questoes" className="font-medium text-brand">
+                Questões
+              </NavLink>
+              .
+            </>
+          }
+          tip="Favoritas ficam salvas para revisar quando quiser"
+        />
       ) : (
         <ul className="space-y-3">
           {favorites.map((f) => (

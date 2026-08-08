@@ -12,8 +12,10 @@ import {
   IconCheck,
   IconFlame,
   IconLock,
+  IconSparkle,
   IconTrophy,
 } from '../components/icons';
+import { EmptyState } from '../components/EmptyState';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { leagueStyle } from '../lib/gamification';
@@ -149,9 +151,13 @@ function XpHistoryChart({ history }: { history: XpHistory }) {
     return (
       <section className="card p-5">
         <h2 className="font-display text-lg font-bold">XP por dia</h2>
-        <p className="mt-2 text-sm text-muted">
-          Seu histórico de XP aparece aqui conforme você estuda.
-        </p>
+        <EmptyState
+          icon={IconBolt}
+          title="Sem XP registrado ainda"
+          description="Seu histórico de XP aparece aqui conforme você estuda."
+          tip="Responda questões e pratique para acumular XP"
+          bare
+        />
       </section>
     );
   }
@@ -323,7 +329,20 @@ function AchievementsGrid({
 function ActivityFeed({ history }: { history: XpHistory }) {
   if (history.enabled === false) return null;
   const { logs } = history;
-  if (logs.length === 0) return null;
+  if (logs.length === 0) {
+    return (
+      <section className="card p-5">
+        <h2 className="font-display text-lg font-bold">Atividades recentes</h2>
+        <EmptyState
+          icon={IconSparkle}
+          title="Nenhuma atividade ainda"
+          description="Suas ações recentes aparecem aqui."
+          tip="Toda resposta vira XP e aparece aqui"
+          bare
+        />
+      </section>
+    );
+  }
   const labels: Record<string, string> = {
     ANSWER: 'Questão',
     SIMULATION: 'Simulado',
@@ -409,9 +428,12 @@ function LeaderboardSection() {
           ))}
         </div>
       ) : !board || board.entries.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">
-          Nenhum jogador ainda. Jogue para aparecer no ranking!
-        </p>
+        <EmptyState
+          icon={IconTrophy}
+          title="Nenhum jogador ainda"
+          description="Jogue para aparecer no ranking!"
+          bare
+        />
       ) : (
         <ol className="mt-3 space-y-1.5">
           {board.entries.map((e, i) => (
@@ -528,13 +550,20 @@ export default function Progresso() {
           {history && <ActivityFeed history={history} />}
         </>
       ) : (
-        <div className="card p-6 text-center text-sm text-muted">
-          A gamificação está desativada.{' '}
-          <NavLink to="/perfil" className="font-medium text-brand">
-            Ativar no perfil
-          </NavLink>{' '}
-          para ganhar XP e conquistas.
-        </div>
+        <EmptyState
+          icon={IconLock}
+          title="Gamificação desativada"
+          description={
+            <>
+              Ative no{' '}
+              <NavLink to="/perfil" className="font-medium text-brand">
+                perfil
+              </NavLink>{' '}
+              para ganhar XP e conquistas.
+            </>
+          }
+          tip="XP, ligas e streaks deixam o estudo mais vivo"
+        />
       )}
     </div>
   );

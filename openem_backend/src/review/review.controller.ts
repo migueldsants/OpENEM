@@ -19,6 +19,12 @@ export class ReviewController {
     return this.reviewService.queue(user.userId);
   }
 
+  @Get('next')
+  @ApiOperation({ summary: 'Próxima revisão agendada (dueAt > agora)' })
+  next(@CurrentUser() user: AuthenticatedUser) {
+    return this.reviewService.next(user.userId);
+  }
+
   @Post(':id')
   @ApiOperation({
     summary: 'Reagenda um item de revisão pela lembrança (0..5)',

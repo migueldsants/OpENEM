@@ -63,6 +63,29 @@ export class ReviewService {
     });
   }
 
+  /** Próxima revisão agendada (dueAt > agora) — a mais próxima do vencimento. */
+  async next(userId: string) {
+    const item = await this.prisma.reviewItem.findFirst({
+      where: { userId, dueAt: { gt: new Date() } },
+      orderBy: { dueAt: 'asc' },
+      select: {
+        id: true,
+        topicId: true,
+        intervalD: true,
+        repetition: true,
+        dueAt: true,
+        topic: {
+          select: {
+            id: true,
+            name: true,
+            subject: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+    return item ?? null;
+  }
+
   /** Reagenda explicitamente um item (ex.: usuário avalia a própria lembrança 0..5). */
   async grade(
     userId: string,

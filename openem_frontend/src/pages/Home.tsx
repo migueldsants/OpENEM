@@ -3,13 +3,16 @@ import { NavLink } from 'react-router-dom';
 import {
   api,
   type DailyChallenge,
+  type ForumThreadSummary,
   type GamificationSummary,
   type Performance,
   type Recommendation,
   type ReviewItem,
 } from '../api';
 import { useAuth } from '../auth';
+import { EmptyState } from '../components/EmptyState';
 import {
+  IconCalendar,
   IconChat,
   IconClock,
   IconFlame,
@@ -23,6 +26,19 @@ import {
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { leagueStyle } from '../lib/gamification';
+
+const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+
+/** "em 2 dias", "amanhã", "em 3 horas" — relativo a agora. */
+function relativeDate(iso: string): string {
+  const diffMs = new Date(iso).getTime() - Date.now();
+  const day = 86_400_000;
+  if (Math.abs(diffMs) < day) {
+    const hours = Math.round(diffMs / 3_600_000);
+    return rtf.format(hours, 'hour');
+  }
+  return rtf.format(Math.round(diffMs / day), 'day');
+}
 
 function ProgressWidget({
   data,
@@ -147,6 +163,8 @@ export default function Home() {
   const [game, setGame] = useState<GamificationSummary | null>(null);
   const [daily, setDaily] = useState<DailyChallenge | null>(null);
   const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [nextReview, setNextReview] = useState<ReviewItem | null>(null);
+  const [threads, setThreads] = useState<ForumThreadSummary[]>([]);
   const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
@@ -155,6 +173,8 @@ export default function Home() {
     void api.gamification().then(setGame).catch(() => setGame(null));
     void api.dailyChallenge().then(setDaily).catch(() => setDaily(null));
     void api.recommendations(3).then(setRecs).catch(() => setRecs([]));
+    void api.reviewNext().then(setNextReview).catch(() => setNextReview(null));
+    void api.forumThreads().then(setThreads).catch(() => setThreads([]));
   }, []);
 
   async function claimDaily() {
@@ -173,6 +193,14 @@ export default function Home() {
   const answered = perf?.overall.total ?? 0;
   const hasData = answered > 0;
   const loadingPerf = perf === null;
+  const hotThread =
+    threads.length > 0
+      ? [...threads].sort(
+          (a, b) =>
+            b.replies - a.replies ||
+            +new Date(b.createdAt) - +new Date(a.createdAt),
+        )[0]
+      : null;
 
   return (
     <div className="space-y-7">
@@ -248,6 +276,29 @@ export default function Home() {
         </NavLink>
       )}
 
+      {/* Próxima revisão agendada — só quando a fila de vencidos está vazia. */}
+      {review.length === 0 && nextReview && (
+        <NavLink
+          to="/revisao"
+          className="card flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
+            <IconCalendar width={22} height={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">
+              Próxima revisão
+            </span>
+            <span className="text-xs text-muted">
+              {nextReview.topic.name} · {relativeDate(nextReview.dueAt)}
+            </span>
+          </span>
+          <span className="chip shrink-0 bg-surface-2 text-muted">
+            {nextReview.topic.subject.name}
+          </span>
+        </NavLink>
+      )}
+
       {/* Desempenho por área — o coração do painel. */}
       <section className="card p-5">
         <div className="flex items-baseline justify-between">
@@ -295,13 +346,21 @@ export default function Home() {
             })}
           </ul>
         ) : (
-          <div className="mt-4 rounded-xl border border-dashed border-line p-5 text-center text-sm text-muted">
-            Sem dados ainda.{' '}
-            <NavLink to="/questoes" className="font-medium text-brand">
-              Responda sua primeira questão
-            </NavLink>{' '}
-            para ver suas estatísticas.
-          </div>
+          <EmptyState
+            icon={IconTrophy}
+            title="Sem dados ainda"
+            description={
+              <>
+                Responda sua primeira questão em{' '}
+                <NavLink to="/questoes" className="font-medium text-brand">
+                  Questões
+                </NavLink>{' '}
+                para ver suas estatísticas.
+              </>
+            }
+            tip="Cada resposta alimenta seu desempenho por área"
+            bare
+          />
         )}
       </section>
 
@@ -357,6 +416,32 @@ export default function Home() {
             })}
           </ul>
         </section>
+      )}
+
+      {/* Fórum em alta — tópico com mais respostas (proxy de "quente"). */}
+      {hotThread && (
+        <NavLink
+          to="/comunidade"
+          className="card card-raised flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-lin/12 text-lin">
+            <IconChat width={22} height={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">Fórum em alta</span>
+            <span className="block truncate text-xs text-muted">
+              {hotThread.title}
+            </span>
+          </span>
+          <span className="shrink-0 text-right">
+            <span className="block font-data font-bold tabular-nums">
+              {hotThread.replies}
+            </span>
+            <span className="text-[10px] text-muted">
+              {hotThread.replies === 1 ? 'resposta' : 'respostas'}
+            </span>
+          </span>
+        </NavLink>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">

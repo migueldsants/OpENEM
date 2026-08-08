@@ -56,7 +56,10 @@ async function request<T>(
     );
   }
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  // Corpo vazio ou `null` (ex.: GET /review/next sem revisão agendada).
+  if (text === '' || text === 'null') return null as T;
+  return JSON.parse(text) as T;
 }
 
 // ---- Tipos ----
@@ -455,8 +458,10 @@ export const api = {
       method: 'POST',
       body: { questionId, chosenId },
     }),
-  performance: () => request<Performance>('/performance'),
+  performance: (period: '7d' | '30d' | 'all' = '30d') =>
+    request<Performance>(`/performance?period=${period}`),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
+  reviewNext: () => request<ReviewItem | null>('/review/next'),
   gradeReview: (id: string, quality: number) =>
     request(`/review/${id}`, { method: 'POST', body: { quality } }),
 
