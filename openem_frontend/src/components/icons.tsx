@@ -2,6 +2,7 @@
 // nomes usados na base. O shim traduz a API antiga (width/height/filled) para a
 // do Phosphor (size/weight), então os call sites seguem funcionando.
 import {
+  BookOpen,
   CalendarBlank,
   CaretLeft,
   CaretRight,
@@ -18,6 +19,7 @@ import {
   LockSimple,
   Moon,
   NotePencil,
+  Question,
   SignOut,
   SlidersHorizontal,
   Sparkle,
@@ -85,3 +87,5 @@ export const IconChat = shim(ChatsCircle, 'duotone');
 export const IconTarget = shim(Target, 'duotone');
 export const IconSparkle = shim(Sparkle, 'fill');
 export const IconGame = shim(Lightning, 'duotone');
+export const IconBook = shim(BookOpen, 'duotone');
+export const IconQuestion = shim(Question, 'duotone');
