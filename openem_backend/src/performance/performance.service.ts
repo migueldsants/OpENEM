@@ -24,9 +24,14 @@ function summarize(bucket: Bucket) {
 export class PerformanceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async overview(userId: string) {
+  async overview(userId: string, period: '7d' | '30d' | 'all' = '30d') {
+    const since =
+      period === 'all'
+        ? undefined
+        : new Date(Date.now() - (period === '7d' ? 7 : 30) * 86_400_000);
+
     const answers = await this.prisma.answer.findMany({
-      where: { userId },
+      where: { userId, ...(since ? { createdAt: { gte: since } } : {}) },
       orderBy: { createdAt: 'desc' },
       select: {
         isCorrect: true,
@@ -99,7 +104,7 @@ export class PerformanceService {
         accuracy: accuracy(d.correct, d.total),
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-30);
+      .slice(period === '7d' ? -7 : -30);
 
     // Assuntos com mais dificuldade (menor precisão, mínimo de tentativas).
     const weakestTopics = [...topics.values()]
