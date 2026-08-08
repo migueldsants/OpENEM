@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   api,
   type AnswerResult,
@@ -8,6 +8,7 @@ import {
 import { EmptyState } from '../components/EmptyState';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
+  IconBoard,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
@@ -19,6 +20,11 @@ import {
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+
+// Overlay "Anotar" é lazy (carrega o editor + mathlive só quando aberto).
+const AnnotateOverlay = lazy(() =>
+  import('../board/AnnotateOverlay').then((m) => ({ default: m.AnnotateOverlay })),
+);
 
 const DIFFICULTIES = [1, 2, 3, 4, 5];
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -35,12 +41,14 @@ function QuestionView({
   favorited,
   onChoose,
   onToggleFavorite,
+  onAnnotate,
 }: {
   question: Question;
   state: AnswerState;
   favorited: boolean;
   onChoose: (alternativeId: string) => void;
   onToggleFavorite: () => void;
+  onAnnotate: () => void;
 }) {
   const area = areaKey(question.topic.subject.name);
   const { chosen, result } = state;
@@ -62,6 +70,14 @@ function QuestionView({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <span className="chip">nível {question.difficulty}</span>
+          <button
+            onClick={onAnnotate}
+            aria-label="Anotar esta questão"
+            title="Anotar no quadro"
+            className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            <IconBoard width={18} height={18} />
+          </button>
           <button
             onClick={onToggleFavorite}
             aria-pressed={favorited}
@@ -303,6 +319,9 @@ export default function Questoes() {
   // Estado de resposta por questão (preservado ao revisitar).
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
 
+  // Overlay "Anotar" — board scratch vinculado à questão atual (issue #32).
+  const [annotateFor, setAnnotateFor] = useState<string | null>(null);
+
   // Catálogo de áreas e favoritos (uma vez).
   useEffect(() => {
     void (async () => {
@@ -531,6 +550,7 @@ export default function Questoes() {
           favorited={favoritedIds.has(current.id)}
           onChoose={choose}
           onToggleFavorite={() => toggleFavorite(current)}
+          onAnnotate={() => setAnnotateFor(current.id)}
         />
       )}
 
@@ -589,6 +609,22 @@ export default function Questoes() {
           setDrawerOpen(false);
         }}
       />
+
+      {annotateFor && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 grid place-items-center bg-bg text-sm text-muted">
+              Carregando editor…
+            </div>
+          }
+        >
+          <AnnotateOverlay
+            questionId={annotateFor}
+            questionTitle={current?.statement ?? 'Questão'}
+            onClose={() => setAnnotateFor(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
