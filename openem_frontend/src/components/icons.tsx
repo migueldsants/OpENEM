@@ -9,6 +9,7 @@ import {
   ChatsCircle,
   Check,
   Clock,
+  DotsThree,
   Exam,
   Flame,
   Heart,
@@ -89,3 +90,5 @@ export const IconSparkle = shim(Sparkle, 'fill');
 export const IconGame = shim(Lightning, 'duotone');
 export const IconBook = shim(BookOpen, 'duotone');
 export const IconQuestion = shim(Question, 'duotone');
+// Botão "Mais" na tabbar mobile (issue #21) — elipse universal de "more".
+export const IconMore = shim(DotsThree, 'bold');
