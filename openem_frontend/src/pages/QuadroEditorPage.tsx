@@ -4,6 +4,7 @@
 // para manter mathlive+katex num chunk separado.
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { IconChevronLeft } from '../components/icons';
 import type { Board } from '../board/types';
@@ -108,8 +109,8 @@ export default function QuadroEditorPage() {
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-30 flex flex-col bg-bg">
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex flex-col bg-bg">
       <header className="flex items-center gap-2 border-b border-line bg-bg/90 px-3 py-2 backdrop-blur">
         <button
           onClick={() => navigate('/quadro')}
@@ -186,6 +187,7 @@ export default function QuadroEditorPage() {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

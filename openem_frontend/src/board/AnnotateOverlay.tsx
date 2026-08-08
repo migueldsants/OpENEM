@@ -3,6 +3,7 @@
 // QuadroEditor em modo folha e salva local. Não toca no estado de resposta.
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { IconX } from '../components/icons';
 import type { Board } from './types';
 import { createBoard } from './types';
@@ -61,8 +62,8 @@ export function AnnotateOverlay({
     onClose();
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg">
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex flex-col bg-bg">
       <header className="flex items-center gap-2 border-b border-line bg-bg/90 px-3 py-2 backdrop-blur">
         <button
           onClick={handleClose}
@@ -94,6 +95,7 @@ export function AnnotateOverlay({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
