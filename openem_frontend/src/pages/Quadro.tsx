@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { IconBoard, IconImage as ImageIcon } from '../components/icons';
 import { BoardSVG } from '../board/render';
+import { boardsBBox } from '../board/transform';
 import {
   createBoard,
   type Board,
@@ -40,23 +41,23 @@ function relativeDate(iso: string): string {
   return months === 1 ? 'mês atrás' : `${months} meses atrás`;
 }
 
-/** Thumbnail: BoardSVG com fórmula em texto simples (sem KaTeX). Mostra o
- * canvas inteiro (0 0 2000 1400) escalado na caixa — sem isso, o viewBox
- * default recortaria só o canto superior esquerdo e o thumb ficava vazio. */
-const WORLD_VIEWBOX = '0 0 2000 1400';
-
+/** Thumbnail: BoardSVG com fórmula em texto simples (sem KaTeX). Enquadra o
+ * conteúdo real (boardsBBox) em vez de um canvas fixo — funciona mesmo com
+ * elementos em coords negativas (canvas infinito). Quadro vazio usa um
+ * viewBox padrão para não renderizar vazio. */
 function Thumb({ board }: { board: Board }) {
   const renderFormula = (el: BoardElement) =>
     el.latex ? (
       <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{el.latex}</span>
     ) : null;
+  const b = boardsBBox(board.elements);
   return (
     <div className="aspect-video overflow-hidden rounded-lg bg-bg">
       <BoardSVG
         board={board}
         width={300}
         height={170}
-        viewBox={WORLD_VIEWBOX}
+        viewBox={`${b.x} ${b.y} ${b.w} ${b.h}`}
         renderFormula={renderFormula}
       />
     </div>

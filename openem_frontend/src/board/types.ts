@@ -4,6 +4,7 @@
 export type ElKind =
   | 'rect'
   | 'ellipse'
+  | 'diamond'
   | 'line'
   | 'arrow'
   | 'text'
@@ -16,9 +17,17 @@ export type ElKind =
 /** Fundo do quadro. */
 export type BoardBackground = 'grid' | 'dots' | 'blank';
 
+/** Modos da borracha: apaga elemento inteiro ou corta pedaços de um traço. */
+export type EraserMode = 'object' | 'stroke';
+
+/** Tamanho da célula da grade (snap e fundo). */
+export const GRID = 20;
+
 export interface Point {
   x: number;
   y: number;
+  /** Pressão 0..1 (caneta/mesa digitalizadora). Opcional p/ retrocompat. */
+  p?: number;
 }
 
 export interface BoardElement {

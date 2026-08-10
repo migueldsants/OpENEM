@@ -94,7 +94,16 @@ function normalizeElement(el: Record<string, unknown>): import('./types').BoardE
     w: Number(e.w) || 0,
     h: Number(e.h) || 0,
     rotation: typeof e.rotation === 'number' ? e.rotation : undefined,
-    points: Array.isArray(e.points) ? e.points : undefined,
+    points: Array.isArray(e.points)
+      ? (e.points as unknown[]).map((pt) => {
+          const p = pt as Record<string, unknown>;
+          return {
+            x: Number(p.x) || 0,
+            y: Number(p.y) || 0,
+            ...(typeof p.p === 'number' ? { p: p.p } : {}),
+          };
+        })
+      : undefined,
     text: typeof e.text === 'string' ? e.text : undefined,
     latex: typeof e.latex === 'string' ? e.latex : undefined,
     color: typeof e.color === 'string' ? e.color : undefined,

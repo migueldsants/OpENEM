@@ -7,6 +7,13 @@ import {
   boardsBBox,
   rotateAround,
   screenToWorld,
+  groupBBox,
+  rectsIntersect,
+  marqueeSelect,
+  diamondPoints,
+  pointInPolygon,
+  splitStrokeAtEraser,
+  moveElements,
 } from './transform';
 import type { BoardElement } from './types';
 
@@ -119,5 +126,91 @@ describe('transform helpers', () => {
       x: 50,
       y: 25,
     });
+  });
+
+  it('rectsIntersect detecta sobreposição AABB', () => {
+    expect(rectsIntersect({ x: 0, y: 0, w: 10, h: 10 }, { x: 5, y: 5, w: 10, h: 10 })).toBe(true);
+    expect(rectsIntersect({ x: 0, y: 0, w: 10, h: 10 }, { x: 20, y: 0, w: 10, h: 10 })).toBe(false);
+    expect(rectsIntersect({ x: 0, y: 0, w: 10, h: 10 }, { x: 10, y: 0, w: 10, h: 10 })).toBe(false);
+  });
+
+  it('groupBBox une vários elementos', () => {
+    const g = groupBBox([rect({ x: 100, y: 100, w: 80, h: 50 }), rect({ x: 0, y: 0, w: 10, h: 10 })]);
+    expect(g).toEqual({ x: 0, y: 0, w: 180, h: 150 });
+    expect(groupBBox([])).toEqual({ x: 0, y: 0, w: 0, h: 0 });
+  });
+
+  it('marqueeSelect pega retângulos que intersectam', () => {
+    const els = [rect({ id: 'a', x: 0, y: 0, w: 10, h: 10 }), rect({ id: 'b', x: 100, y: 100, w: 10, h: 10 })];
+    expect(marqueeSelect(els, { x: 5, y: 5, w: 20, h: 20 })).toEqual(['a']);
+    expect(marqueeSelect(els, { x: 30, y: 30, w: -25, h: -25 })).toEqual(['a']); // normaliza negativo (5..30 sobrepõe a)
+  });
+
+  it('diamondPoints retorna os 4 vértices', () => {
+    const d = rect({ kind: 'diamond', x: 0, y: 0, w: 40, h: 40 });
+    expect(diamondPoints(d)).toEqual([
+      { x: 20, y: 0 },
+      { x: 40, y: 20 },
+      { x: 20, y: 40 },
+      { x: 0, y: 20 },
+    ]);
+  });
+
+  it('pointInPolygon acerta dentro/fora', () => {
+    const poly = [
+      { x: 20, y: 0 },
+      { x: 40, y: 20 },
+      { x: 20, y: 40 },
+      { x: 0, y: 20 },
+    ];
+    expect(pointInPolygon({ x: 20, y: 20 }, poly)).toBe(true);
+    expect(pointInPolygon({ x: 0, y: 0 }, poly)).toBe(false);
+  });
+
+  it('hitTest acerta losango', () => {
+    const d = rect({ kind: 'diamond', x: 0, y: 0, w: 40, h: 40 });
+    expect(hitTest(d, { x: 20, y: 20 })).toBe(true);
+    expect(hitTest(d, { x: 0, y: 0 })).toBe(false);
+  });
+
+  it('splitStrokeAtEraser: sem corte', () => {
+    const pts = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    expect(splitStrokeAtEraser(pts, { center: { x: 200, y: 200 }, r: 5 })).toEqual([pts]);
+  });
+
+  it('splitStrokeAtEraser: corte no meio gera 2 subs', () => {
+    const pts = [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 }];
+    const subs = splitStrokeAtEraser(pts, { center: { x: 50, y: 0 }, r: 5 });
+    expect(subs.length).toBe(2);
+  });
+
+  it('splitStrokeAtEraser: apaga tudo', () => {
+    const pts = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 20, y: 0 }];
+    const subs = splitStrokeAtEraser(pts, { center: { x: 10, y: 0 }, r: 50 });
+    expect(subs).toEqual([]);
+  });
+
+  it('splitStrokeAtEraser: descarta sub de 1 ponto', () => {
+    const pts = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 200, y: 0 }];
+    // Apaga o primeiro segmento perto de x=0; sub [p0] deve ser descartada.
+    const subs = splitStrokeAtEraser(pts, { center: { x: 5, y: 0 }, r: 20 });
+    expect(subs.every((s) => s.length > 1)).toBe(true);
+  });
+
+  it('moveElements move o conjunto', () => {
+    const els = [rect({ id: 'a', x: 0, y: 0 }), rect({ id: 'b', x: 100, y: 100 })];
+    const out = moveElements(els, new Set(['a']), 10, 20);
+    expect(out[0].x).toBe(10);
+    expect(out[0].y).toBe(20);
+    expect(out[1].x).toBe(100);
+  });
+
+  it('boardsBBox cobre stroke e diamond', () => {
+    const bb = boardsBBox([
+      { id: 's', kind: 'stroke', x: 0, y: 0, w: 0, h: 0, points: [{ x: 5, y: 5 }, { x: 15, y: 15 }] },
+      rect({ kind: 'diamond', x: 100, y: 100, w: 40, h: 40 }),
+    ]);
+    expect(bb.x).toBeLessThanOrEqual(5);
+    expect(bb.x + bb.w).toBeGreaterThanOrEqual(140);
   });
 });

@@ -15,6 +15,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "katex": "^0.18.1",
     "mathlive": "^0.110.0",
+    "perfect-freehand": "^1.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.0"

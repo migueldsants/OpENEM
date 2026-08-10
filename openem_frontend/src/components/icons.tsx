@@ -12,6 +12,7 @@ import {
   Check,
   Circle,
   Clock,
+  Diamond,
   DotsThree,
   Eraser,
   Exam,
@@ -116,6 +117,7 @@ export const IconRect = shim(Square, 'duotone');
 export const IconEllipse = shim(Circle, 'duotone');
 export const IconLine = shim(LineSegment, 'duotone');
 export const IconArrow = shim(ArrowUpRight, 'duotone');
+export const IconDiamond = shim(Diamond, 'duotone');
 export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
 export const IconSticky = shim(Note, 'duotone');

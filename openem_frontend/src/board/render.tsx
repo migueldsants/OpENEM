@@ -6,6 +6,7 @@
 
 import type { Board, BoardElement } from './types';
 import { elementCenter } from './transform';
+import { diamondPathD, strokeOutlineD } from './stroke-utils';
 
 const ARROW_ID = 'board-arrowhead';
 
@@ -52,6 +53,16 @@ export function RenderElement({
           strokeWidth={sw}
         />,
       );
+    case 'diamond':
+      return wrap(
+        <path
+          d={diamondPathD(el)}
+          fill={el.fill ?? 'none'}
+          stroke={stroke}
+          strokeWidth={sw}
+          strokeLinejoin="round"
+        />,
+      );
     case 'line':
       return wrap(
         <line
@@ -77,20 +88,18 @@ export function RenderElement({
           markerEnd={`url(#${ARROW_ID})`}
         />,
       );
-    case 'stroke':
+    case 'stroke': {
+      const d = strokeOutlineD(el);
+      if (!d) return null;
       return wrap(
-        <polyline
-          points={(el.points ?? [])
-            .map((p) => `${p.x},${p.y}`)
-            .join(' ')}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={el.highlight ? (sw + 6) : sw}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={el.highlight ? 0.35 : 1}
+        <path
+          d={d}
+          fill={stroke}
+          fillOpacity={el.highlight ? 0.35 : 1}
+          stroke="none"
         />,
       );
+    }
     case 'text':
       return wrap(
         <text

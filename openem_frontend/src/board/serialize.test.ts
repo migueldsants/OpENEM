@@ -119,4 +119,71 @@ describe('serialize .openem', () => {
     expect(b).toBeTruthy();
     expect(a).not.toBe(b);
   });
+
+  it('round-trip preserva pressão dos pontos e o losango', () => {
+    const board = sampleBoard({
+      elements: [
+        {
+          id: 's',
+          kind: 'stroke',
+          x: 0,
+          y: 0,
+          w: 10,
+          h: 10,
+          points: [
+            { x: 1, y: 1, p: 0.2 },
+            { x: 5, y: 6, p: 0.9 },
+          ],
+        },
+        {
+          id: 'd',
+          kind: 'diamond',
+          x: 100,
+          y: 100,
+          w: 40,
+          h: 40,
+          color: '#2563eb',
+        },
+      ],
+    });
+    const back = parseOpenEm(toOpenEm(board));
+    expect(back.elements[0].points).toEqual([
+      { x: 1, y: 1, p: 0.2 },
+      { x: 5, y: 6, p: 0.9 },
+    ]);
+    expect(back.elements[1].kind).toBe('diamond');
+    expect(back.elements[1].w).toBe(40);
+  });
+
+  it('arquivo antigo (sem pressão) normaliza points sem p', () => {
+    const old = JSON.stringify({
+      schemaVersion: 1,
+      type: 'study-board',
+      id: 'b',
+      title: 't',
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      elements: [
+        {
+          id: 's',
+          kind: 'stroke',
+          x: 0,
+          y: 0,
+          w: 10,
+          h: 10,
+          points: [
+            { x: 1, y: 1 },
+            { x: 5, y: 6 },
+          ],
+        },
+      ],
+    });
+    const back = parseOpenEm(old);
+    expect(back.elements[0].points).toEqual([
+      { x: 1, y: 1 },
+      { x: 5, y: 6 },
+    ]);
+    // sem p
+    expect(back.elements[0].points?.[0].p).toBeUndefined();
+  });
 });

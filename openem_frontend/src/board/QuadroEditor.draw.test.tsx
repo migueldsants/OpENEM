@@ -28,7 +28,7 @@ describe('QuadroEditor — fluxo de desenho', () => {
     const { container } = render(<QuadroEditor board={board} onChange={onChange} />);
 
     // Seleciona a ferramenta retângulo.
-    const rectBtn = container.querySelector('button[title="Retângulo"]') as HTMLButtonElement;
+    const rectBtn = container.querySelector('button[title*="Retângulo"]') as HTMLButtonElement;
     act(() => fireEvent.click(rectBtn));
 
     const vp = viewport(container);

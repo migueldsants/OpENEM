@@ -6,6 +6,7 @@
 import type { Board, BoardElement } from './types';
 import { boardsBBox, elementCenter } from './transform';
 import { parseOpenEm } from './serialize';
+import { diamondPathD, strokeOutlineD } from './stroke-utils';
 
 // CSS do KaTeX embutido como string (vai pro <style> do SVG de export).
 import katexCssText from 'katex/dist/katex.min.css?inline';
@@ -20,6 +21,15 @@ function escapeXml(s: string): string {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Lê uma cor do tema ativo (var CSS em :root) p/ o export honrar o dark-mode. */
+function resolveVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  const v = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return v || fallback;
 }
 
 const ARROW_ID = 'board-arrowhead';
@@ -40,13 +50,15 @@ function elementToSvg(el: BoardElement, katexHtml: (latex: string) => string): s
       return `${open()}<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="4" fill="${el.fill ?? 'none'}" stroke="${stroke}" stroke-width="${sw}"/>${close}`;
     case 'ellipse':
       return `${open()}<ellipse cx="${el.x + el.w / 2}" cy="${el.y + el.h / 2}" rx="${el.w / 2}" ry="${el.h / 2}" fill="${el.fill ?? 'none'}" stroke="${stroke}" stroke-width="${sw}"/>${close}`;
+    case 'diamond':
+      return `${open()}<path d="${diamondPathD(el)}" fill="${el.fill ?? 'none'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>${close}`;
     case 'line':
       return `${open()}<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>${close}`;
     case 'arrow':
       return `${open()}<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" marker-end="url(#${ARROW_ID})"/>${close}`;
     case 'stroke': {
-      const pts = (el.points ?? []).map((p) => `${p.x},${p.y}`).join(' ');
-      return `${open()}<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${el.highlight ? sw + 6 : sw}" stroke-linecap="round" stroke-linejoin="round" opacity="${el.highlight ? 0.35 : 1}"/>${close}`;
+      const d = strokeOutlineD(el);
+      return `${open()}<path d="${d}" fill="${stroke}" fill-opacity="${el.highlight ? 0.35 : 1}" stroke="none"/>${close}`;
     }
     case 'text': {
       const fs = el.fontSize ?? 18;
@@ -77,6 +89,7 @@ function elementToSvg(el: BoardElement, katexHtml: (latex: string) => string): s
 }
 
 function mindLinksSvg(board: Board): string {
+  const linkColor = resolveVar('--muted', '#6b6473');
   return board.elements
     .filter((e) => e.kind === 'mindnode' && e.linkTo)
     .map((n) => {
@@ -84,22 +97,24 @@ function mindLinksSvg(board: Board): string {
       if (!target) return '';
       const a = elementCenter(n);
       const b = elementCenter(target);
-      return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#6b6473" stroke-width="2" marker-end="url(#${ARROW_ID})"/>`;
+      return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${linkColor}" stroke-width="2" marker-end="url(#${ARROW_ID})"/>`;
     })
     .join('');
 }
 
 function defsSvg(board: Board): string {
   const bg = board.background ?? 'grid';
+  const lineColor = resolveVar('--line', '#ece5ee');
+  const linkColor = resolveVar('--muted', '#6b6473');
   const bgRect =
     bg === 'blank'
       ? ''
       : `<pattern id="bg" width="${bg === 'dots' ? 24 : 32}" height="${bg === 'dots' ? 24 : 32}" patternUnits="userSpaceOnUse">${
           bg === 'dots'
-            ? '<circle cx="2" cy="2" r="1.5" fill="#ece5ee"/>'
-            : '<path d="M 32 0 L 0 0 0 32" fill="none" stroke="#ece5ee" stroke-width="1"/>'
+            ? `<circle cx="2" cy="2" r="1.5" fill="${lineColor}"/>`
+            : `<path d="M 32 0 L 0 0 0 32" fill="none" stroke="${lineColor}" stroke-width="1"/>`
         }</pattern><rect width="100%" height="100%" fill="url(#bg)"/>`;
-  return `<defs><marker id="${ARROW_ID}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b6473"/></marker></defs>${bgRect}`;
+  return `<defs><marker id="${ARROW_ID}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${linkColor}"/></marker></defs>${bgRect}`;
 }
 
 /** Constrói a string SVG standalone do quadro (com KaTeX renderizado). */
@@ -123,25 +138,159 @@ export async function toSVG(board: Board): Promise<string> {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bbox.x} ${bbox.y} ${bbox.w} ${bbox.h}" width="${bbox.w}" height="${bbox.h}"><style>${katexCssText}</style>${inner}</svg>`;
 }
 
-/** Gera um dataURL PNG de alta resolução (scale). */
+
+/** Gera um dataURL PNG de alta resolução (scale). Tenta SVG→Image primeiro;
+ * se falhar (ex.: foreignObject/KaTeX bloqueado), fallback para renderização
+ * simplificada sem fórmulas, garantindo que algo seja exportado. */
 export async function toPNGDataUrl(board: Board, scale = 2): Promise<string> {
+  const bbox = boardsBBox(board.elements);
   const svg = await toSVG(board);
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   try {
-    const bbox = boardsBBox(board.elements);
     const img = await loadImage(url);
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(bbox.w * scale));
     canvas.height = Math.max(1, Math.round(bbox.h * scale));
     const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = resolveVar('--bg', '#ffffff');
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/png');
+  } catch {
+    // Fallback: renderiza o contorno dos traços/shapes sem foreignObject.
+    return renderFallbackPNG(board, scale);
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Fallback simples de rasterização: desenha shapes/texto/traços no canvas 2D. */
+function renderFallbackPNG(board: Board, scale: number): string {
+  const bbox = boardsBBox(board.elements);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bbox.w * scale));
+  canvas.height = Math.max(1, Math.round(bbox.h * scale));
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = resolveVar('--bg', '#ffffff');
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Fundo do board no canvas fallback.
+  const bg = board.background ?? 'grid';
+  if (bg !== 'blank') {
+    const cell = (bg === 'dots' ? 24 : 32) * scale;
+    ctx.save();
+    ctx.strokeStyle = '#c0c0c0';
+    ctx.lineWidth = 1;
+    if (bg === 'dots') {
+      for (let x = 0; x < canvas.width; x += cell) {
+        for (let y = 0; y < canvas.height; y += cell) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.5 * scale, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    } else {
+      for (let x = 0; x <= canvas.width; x += cell) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += cell) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.translate(-bbox.x, -bbox.y);
+  for (const el of board.elements) {
+    ctx.save();
+    const cx = el.x + el.w / 2;
+    const cy = el.y + el.h / 2;
+    if (el.rotation) {
+      ctx.translate(cx, cy);
+      ctx.rotate((el.rotation * Math.PI) / 180);
+      ctx.translate(-cx, -cy);
+    }
+    switch (el.kind) {
+      case 'rect':
+        ctx.fillStyle = el.fill ?? 'none';
+        if (el.fill && el.fill !== 'none') ctx.fillRect(el.x, el.y, el.w, el.h);
+        ctx.strokeStyle = el.color ?? '#000';
+        ctx.lineWidth = el.strokeWidth ?? 2;
+        ctx.strokeRect(el.x, el.y, el.w, el.h);
+        break;
+      case 'ellipse': {
+        ctx.beginPath();
+        ctx.ellipse(el.x + el.w / 2, el.y + el.h / 2, el.w / 2, el.h / 2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = el.fill ?? 'none';
+        if (el.fill && el.fill !== 'none') ctx.fill();
+        ctx.strokeStyle = el.color ?? '#000';
+        ctx.lineWidth = el.strokeWidth ?? 2;
+        ctx.stroke();
+        break;
+      }
+      case 'diamond':
+      case 'line':
+      case 'arrow': {
+        ctx.beginPath();
+        ctx.moveTo(el.x, el.y);
+        ctx.lineTo(el.x + el.w, el.y + el.h);
+        ctx.strokeStyle = el.color ?? '#000';
+        ctx.lineWidth = el.strokeWidth ?? 2;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        break;
+      }
+      case 'stroke': {
+        const d = strokeOutlineD(el);
+        if (d) {
+          const p = new Path2D(d);
+          ctx.fillStyle = el.color ?? '#000';
+          ctx.globalAlpha = el.highlight ? 0.35 : 1;
+          ctx.fill(p);
+          ctx.globalAlpha = 1;
+        }
+        break;
+      }
+      case 'text':
+      case 'sticky':
+      case 'mindnode': {
+        ctx.fillStyle = el.color ?? '#000';
+        ctx.font = `${el.fontSize ?? 18}px ui-sans-serif, system-ui, sans-serif`;
+        const text = el.text ?? '';
+        const lines = text.split('\n');
+        const lh = (el.fontSize ?? 18) * 1.2;
+        lines.forEach((line, i) => {
+          ctx.fillText(line, el.x, el.y + i * lh + (el.fontSize ?? 18));
+        });
+        break;
+      }
+      case 'formula': {
+        ctx.fillStyle = el.color ?? '#000';
+        ctx.font = `${(el.fontSize ?? 18)}px monospace`;
+        ctx.fillText(el.latex ?? '', el.x, el.y + (el.fontSize ?? 18));
+        break;
+      }
+      case 'image':
+        if (el.src) {
+          const img = new Image();
+          img.src = el.src;
+          ctx.drawImage(img, el.x, el.y, el.w, el.h);
+        }
+        break;
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+  return canvas.toDataURL('image/png');
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -158,11 +307,21 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 export async function printPDF(board: Board): Promise<void> {
   const png = await toPNGDataUrl(board, 2);
   const w = window.open('', '_blank');
-  if (!w) throw new Error('Pop-up bloqueado. Permita pop-ups para exportar PDF.');
+  if (!w) {
+    // Pop-up bloqueado: fallback para download do PNG, para o usuário não ficar sem saída.
+    downloadDataUrl(png, `${escapeHtml(board.title).replace(/[^\w-]+/g, '_') || 'quadro'}.png`);
+    return;
+  }
   w.document.write(`<!doctype html><html><head><title>${escapeHtml(board.title)} — PDF</title><style>@page{size:A4;margin:12mm}html,body{margin:0}img{max-width:100%;max-height:100%;display:block;margin:auto}</style></head><body><img src="${png}"/></body></html>`);
   w.document.close();
   w.focus();
-  setTimeout(() => w.print(), 400);
+  setTimeout(() => {
+    try {
+      w.print();
+    } catch {
+      // Se a impressora/indisponível, o usuário ainda tem a janela aberta com a imagem.
+    }
+  }, 400);
 }
 
 // --- Download helpers ---
@@ -178,7 +337,10 @@ export function downloadDataUrl(dataUrl: string, filename: string) {
 
 export function downloadText(text: string, filename: string, mime = 'application/json') {
   const blob = new Blob([text], { type: mime });
-  downloadDataUrl(URL.createObjectURL(blob), filename);
+  const url = URL.createObjectURL(blob);
+  downloadDataUrl(url, filename);
+  // Pequeno delay antes de revogar para garantir que o download inicie.
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 export function downloadSvg(svg: string, filename: string) {
