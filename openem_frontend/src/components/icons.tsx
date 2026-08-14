@@ -2,31 +2,49 @@
 // nomes usados na base. O shim traduz a API antiga (width/height/filled) para a
 // do Phosphor (size/weight), então os call sites seguem funcionando.
 import {
+  Cursor,
+  ArrowUpRight,
   BookOpen,
   CalendarBlank,
   CaretLeft,
   CaretRight,
   ChatsCircle,
   Check,
+  Circle,
   Clock,
+  Diamond,
   DotsThree,
+  Eraser,
   Exam,
   Flame,
+  BoundingBox,
+  Hand,
   Heart,
+  Highlighter,
   House,
+  Image as ImageIcon,
   type Icon as PhosphorIcon,
   type IconProps,
   Lightning,
+  LineSegment,
   LockSimple,
+  MagnifyingGlassMinus,
+  MagnifyingGlassPlus,
+  Minus,
   Moon,
+  Note,
   NotePencil,
+  Pi,
+  PencilRuler,
   Question,
   SignOut,
   SlidersHorizontal,
   Sparkle,
+  Square,
   Star,
   Sun,
   Target,
+  TextT,
   Timer,
   Trophy,
   User,
@@ -92,3 +110,23 @@ export const IconBook = shim(BookOpen, 'duotone');
 export const IconQuestion = shim(Question, 'duotone');
 // Botão "Mais" na tabbar mobile (issue #21) — elipse universal de "more".
 export const IconMore = shim(DotsThree, 'bold');
+// Item "Quadro" de estudos (issue #32) e ícone do botão "Anotar".
+export const IconBoard = shim(PencilRuler, 'duotone');
+// Ferramentas do editor de quadro (issue #32).
+export const IconCursor = shim(Cursor, 'duotone');
+export const IconHighlighter = shim(Highlighter, 'fill');
+export const IconRect = shim(Square, 'duotone');
+export const IconEllipse = shim(Circle, 'duotone');
+export const IconLine = shim(LineSegment, 'duotone');
+export const IconArrow = shim(ArrowUpRight, 'duotone');
+export const IconDiamond = shim(Diamond, 'duotone');
+export const IconText = shim(TextT, 'duotone');
+export const IconFormula = shim(Pi, 'duotone');
+export const IconSticky = shim(Note, 'duotone');
+export const IconImage = shim(ImageIcon, 'duotone');
+export const IconEraser = shim(Eraser, 'duotone');
+export const IconHand = shim(Hand, 'duotone');
+export const IconMinus = shim(Minus, 'bold');
+export const IconZoomIn = shim(MagnifyingGlassPlus, 'bold');
+export const IconZoomOut = shim(MagnifyingGlassMinus, 'bold');
+export const IconFit = shim(BoundingBox, 'bold');

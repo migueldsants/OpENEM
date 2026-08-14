@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './auth';
 import {
   IconBolt,
+  IconBoard,
   IconCalendar,
   IconChat,
   IconFlame,
@@ -34,9 +35,13 @@ import Perfil from './pages/Perfil';
 import PerfilPublico from './pages/PerfilPublico';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
+import Quadro from './pages/Quadro';
 import Redacao from './pages/Redacao';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
+
+// Editor do Quadro é lazy: mantém mathlive+katex num chunk separado (issue #32).
+const QuadroEditorPage = lazy(() => import('./pages/QuadroEditorPage'));
 
 // `mobile` controla a presença na tabbar do mobile: 'primary' = atalho visível
 // (5 no total, cabem em 360px); 'more' = dentro do bottom-sheet "Mais". A
@@ -52,6 +57,7 @@ const NAV: NavItem[] = [
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more' },
   { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
+  { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more' },
   { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'primary' },
 ];
 
@@ -245,6 +251,34 @@ export default function App() {
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/usuarios/:id" element={<PerfilPublico />} />
       <Route path="/favoritos" element={<Favoritos />} />
+      <Route
+        path="/quadro"
+        element={
+          <Suspense
+            fallback={
+              <div className="grid min-h-[60vh] place-items-center text-sm text-muted">
+                Carregando…
+              </div>
+            }
+          >
+            <Quadro />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/quadro/:id"
+        element={
+          <Suspense
+            fallback={
+              <div className="grid min-h-[60vh] place-items-center text-sm text-muted">
+                Carregando editor…
+              </div>
+            }
+          >
+            <QuadroEditorPage />
+          </Suspense>
+        }
+      />
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
