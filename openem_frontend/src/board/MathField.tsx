@@ -33,8 +33,10 @@ export function MathField({
   const editingRef = useRef(false);
   const onChangeRef = useRef(onChange);
   const onCommitRef = useRef(onCommit);
-  onChangeRef.current = onChange;
-  onCommitRef.current = onCommit;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onCommitRef.current = onCommit;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +73,7 @@ export function MathField({
       mf.focus?.();
     }, 0);
     return () => clearTimeout(t);
-  }, [elId, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [elId, ready]);
 
   // Sync externo→campo: só re-aplica se NÃO estiver editando (ex.: undo/programático).
   useEffect(() => {
