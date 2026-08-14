@@ -45,13 +45,25 @@ function sampleBoard(overrides: Partial<Board> = {}): Board {
       },
       {
         id: 'e4',
-        kind: 'mindnode',
+        kind: 'arrow',
         x: 50,
         y: 80,
         w: 140,
         h: 40,
-        text: 'Tópico',
-        linkTo: 'e1',
+        color: '#2563eb',
+        arrowStart: 'dot',
+        arrowEnd: 'arrow',
+      },
+      {
+        id: 'e5',
+        kind: 'sticky',
+        x: 70,
+        y: 90,
+        w: 160,
+        h: 100,
+        fill: '#fff7cc',
+        textColor: '#5a4a1a',
+        text: 'Nota',
       },
     ],
     ...overrides,
@@ -67,13 +79,33 @@ describe('serialize .openem', () => {
     expect(back.title).toBe('Quadro teste');
     expect(back.schemaVersion).toBe(1);
     expect(back.type).toBe('study-board');
-    expect(back.elements).toHaveLength(4);
+    expect(back.elements).toHaveLength(5);
     expect(back.elements[1].points).toEqual([
       { x: 1, y: 1 },
       { x: 5, y: 6 },
     ]);
     expect(back.elements[2].latex).toBe('\\frac{a}{b}');
-    expect(back.elements[3].linkTo).toBe('e1');
+    expect(back.elements[3].arrowStart).toBe('dot');
+    expect(back.elements[3].arrowEnd).toBe('arrow');
+    expect(back.elements[4].textColor).toBe('#5a4a1a');
+  });
+
+  it('filtra nós de mapa mental de arquivos antigos', () => {
+    const old = JSON.stringify({
+      schemaVersion: 1,
+      type: 'study-board',
+      id: 'b',
+      title: 't',
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      elements: [
+        { id: 'r', kind: 'rect', x: 0, y: 0, w: 10, h: 10 },
+        { id: 'm', kind: 'mindnode', x: 0, y: 0, w: 10, h: 10, linkTo: 'r' },
+      ],
+    });
+    const back = parseOpenEm(old);
+    expect(back.elements).toHaveLength(1);
+    expect(back.elements[0].kind).toBe('rect');
   });
 
   it('rejeita JSON malformado', () => {

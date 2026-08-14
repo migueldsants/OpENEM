@@ -4,9 +4,16 @@
 // fallback no raster (limitação documentada); o `.openem` é lossless.
 
 import type { Board, BoardElement } from './types';
-import { boardsBBox, elementCenter } from './transform';
+import { GRID } from './types';
+import { boardsBBox } from './transform';
 import { parseOpenEm } from './serialize';
-import { diamondPathD, strokeOutlineD } from './stroke-utils';
+import {
+  diamondPathD,
+  strokeOutlineD,
+  arrowMarkerDefSvg,
+  arrowMarkerId,
+  resolveArrow,
+} from './stroke-utils';
 
 // CSS do KaTeX embutido como string (vai pro <style> do SVG de export).
 import katexCssText from 'katex/dist/katex.min.css?inline';
@@ -32,8 +39,6 @@ function resolveVar(name: string, fallback: string): string {
   return v || fallback;
 }
 
-const ARROW_ID = 'board-arrowhead';
-
 /** Renderiza um elemento como string SVG (espelha render.tsx para export). */
 function elementToSvg(el: BoardElement, katexHtml: (latex: string) => string): string {
   const stroke = el.color ?? 'currentColor';
@@ -53,9 +58,13 @@ function elementToSvg(el: BoardElement, katexHtml: (latex: string) => string): s
     case 'diamond':
       return `${open()}<path d="${diamondPathD(el)}" fill="${el.fill ?? 'none'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>${close}`;
     case 'line':
-      return `${open()}<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>${close}`;
-    case 'arrow':
-      return `${open()}<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" marker-end="url(#${ARROW_ID})"/>${close}`;
+    case 'arrow': {
+      const st = resolveArrow(el, 'start');
+      const en = resolveArrow(el, 'end');
+      const mStart = st === 'none' ? '' : ` marker-start="url(#${arrowMarkerId(el.id, 'start')}')"`;
+      const mEnd = en === 'none' ? '' : ` marker-end="url(#${arrowMarkerId(el.id, 'end')}')"`;
+      return `${open()}<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"${mStart}${mEnd}/>${close}`;
+    }
     case 'stroke': {
       const d = strokeOutlineD(el);
       return `${open()}<path d="${d}" fill="${stroke}" fill-opacity="${el.highlight ? 0.35 : 1}" stroke="none"/>${close}`;
@@ -69,12 +78,10 @@ function elementToSvg(el: BoardElement, katexHtml: (latex: string) => string): s
             `<tspan x="${el.x}" dy="${i === 0 ? 0 : fs * 1.2}">${escapeXml(ln)}</tspan>`,
         )
         .join('');
-      return `${open()}<text x="${el.x}" y="${el.y}" fill="${stroke}" font-size="${fs}" font-family="ui-sans-serif, system-ui, sans-serif">${tspans}${close}</text>`;
+      return `${open()}<text x="${el.x}" y="${el.y}" fill="${stroke}" font-size="${fs}" font-family="ui-sans-serif, system-ui, sans-serif" dominant-baseline="text-before-edge">${tspans}${close}</text>`;
     }
     case 'sticky':
-      return `${open()}<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="6" fill="${el.fill ?? '#fff7cc'}" stroke="${stroke}" stroke-width="1"/><foreignObject x="${el.x + 6}" y="${el.y + 6}" width="${el.w - 12}" height="${el.h - 12}"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:${el.fontSize ?? 14}px;color:#5a4a1a;white-space:pre-wrap;word-break:break-word">${escapeHtml(el.text ?? '')}</div></foreignObject>${close}`;
-    case 'mindnode':
-      return `${open()}<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${el.h / 2}" fill="${el.fill ?? '#e0234e'}" stroke="${stroke ?? 'transparent'}" stroke-width="1"/><foreignObject x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}"><div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:ui-sans-serif,system-ui,sans-serif;font-size:${el.fontSize ?? 14}px;font-weight:600;color:#fff;text-align:center;padding:0 10px">${escapeHtml(el.text ?? '')}</div></foreignObject>${close}`;
+      return `${open()}<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="6" fill="${el.fill ?? '#fff7cc'}" stroke="${stroke}" stroke-width="1"/><foreignObject x="${el.x + 6}" y="${el.y + 6}" width="${el.w - 12}" height="${el.h - 12}"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:${el.fontSize ?? 14}px;color:${el.textColor ?? '#5a4a1a'};white-space:pre-wrap;word-break:break-word">${escapeHtml(el.text ?? '')}</div></foreignObject>${close}`;
     case 'image':
       return el.src
         ? `${open()}<image href="${el.src}" x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" preserveAspectRatio="xMidYMid meet"/>${close}`
@@ -88,37 +95,39 @@ function elementToSvg(el: BoardElement, katexHtml: (latex: string) => string): s
   }
 }
 
-function mindLinksSvg(board: Board): string {
-  const linkColor = resolveVar('--muted', '#6b6473');
-  return board.elements
-    .filter((e) => e.kind === 'mindnode' && e.linkTo)
-    .map((n) => {
-      const target = board.elements.find((e) => e.id === n.linkTo);
-      if (!target) return '';
-      const a = elementCenter(n);
-      const b = elementCenter(target);
-      return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${linkColor}" stroke-width="2" marker-end="url(#${ARROW_ID})"/>`;
-    })
-    .join('');
+export interface ExportOptions {
+  /** Força o fundo (ignora board.background). 'blank' remove a grid. */
+  background?: 'grid' | 'dots' | 'blank';
+  /** Escala para PNG (default 2). */
+  scale?: number;
 }
 
-function defsSvg(board: Board): string {
-  const bg = board.background ?? 'grid';
-  const lineColor = resolveVar('--line', '#ece5ee');
-  const linkColor = resolveVar('--muted', '#6b6473');
+function defsSvg(board: Board, opts?: ExportOptions): string {
+  const bg = opts?.background ?? board.background ?? 'grid';
+  const mutedColor = resolveVar('--muted', '#6b6473');
+  const markers = board.elements
+    .filter((e) => e.kind === 'line' || e.kind === 'arrow')
+    .flatMap((el) => {
+      const color = el.color ?? 'currentColor';
+      return [
+        arrowMarkerDefSvg(el.id, 'start', resolveArrow(el, 'start'), color),
+        arrowMarkerDefSvg(el.id, 'end', resolveArrow(el, 'end'), color),
+      ];
+    })
+    .join('');
   const bgRect =
     bg === 'blank'
       ? ''
-      : `<pattern id="bg" width="${bg === 'dots' ? 24 : 32}" height="${bg === 'dots' ? 24 : 32}" patternUnits="userSpaceOnUse">${
+      : `<pattern id="bg" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse">${
           bg === 'dots'
-            ? `<circle cx="2" cy="2" r="1.5" fill="${lineColor}"/>`
-            : `<path d="M 32 0 L 0 0 0 32" fill="none" stroke="${lineColor}" stroke-width="1"/>`
+            ? `<circle cx="2" cy="2" r="1.5" fill="${mutedColor}" fill-opacity="0.3"/>`
+            : `<path d="M ${GRID} 0 L 0 0 0 ${GRID}" fill="none" stroke="${mutedColor}" stroke-opacity="0.22" stroke-width="1"/>`
         }</pattern><rect width="100%" height="100%" fill="url(#bg)"/>`;
-  return `<defs><marker id="${ARROW_ID}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${linkColor}"/></marker></defs>${bgRect}`;
+  return `<defs>${markers}</defs>${bgRect}`;
 }
 
 /** Constrói a string SVG standalone do quadro (com KaTeX renderizado). */
-export async function toSVG(board: Board): Promise<string> {
+export async function toSVG(board: Board, opts?: ExportOptions): Promise<string> {
   let renderLatex = (latex: string) =>
     `<span style="font-family:monospace">${escapeHtml(latex)}</span>`;
   try {
@@ -131,8 +140,7 @@ export async function toSVG(board: Board): Promise<string> {
 
   const bbox = boardsBBox(board.elements);
   const inner = [
-    defsSvg(board),
-    mindLinksSvg(board),
+    defsSvg(board, opts),
     ...board.elements.map((el) => elementToSvg(el, renderLatex)),
   ].join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bbox.x} ${bbox.y} ${bbox.w} ${bbox.h}" width="${bbox.w}" height="${bbox.h}"><style>${katexCssText}</style>${inner}</svg>`;
@@ -142,9 +150,10 @@ export async function toSVG(board: Board): Promise<string> {
 /** Gera um dataURL PNG de alta resolução (scale). Tenta SVG→Image primeiro;
  * se falhar (ex.: foreignObject/KaTeX bloqueado), fallback para renderização
  * simplificada sem fórmulas, garantindo que algo seja exportado. */
-export async function toPNGDataUrl(board: Board, scale = 2): Promise<string> {
+export async function toPNGDataUrl(board: Board, opts?: ExportOptions): Promise<string> {
+  const scale = opts?.scale ?? 2;
   const bbox = boardsBBox(board.elements);
-  const svg = await toSVG(board);
+  const svg = await toSVG(board, opts);
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   try {
@@ -159,14 +168,14 @@ export async function toPNGDataUrl(board: Board, scale = 2): Promise<string> {
     return canvas.toDataURL('image/png');
   } catch {
     // Fallback: renderiza o contorno dos traços/shapes sem foreignObject.
-    return renderFallbackPNG(board, scale);
+    return renderFallbackPNG(board, scale, opts);
   } finally {
     URL.revokeObjectURL(url);
   }
 }
 
 /** Fallback simples de rasterização: desenha shapes/texto/traços no canvas 2D. */
-function renderFallbackPNG(board: Board, scale: number): string {
+function renderFallbackPNG(board: Board, scale: number, opts?: ExportOptions): string {
   const bbox = boardsBBox(board.elements);
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(bbox.w * scale));
@@ -176,11 +185,11 @@ function renderFallbackPNG(board: Board, scale: number): string {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Fundo do board no canvas fallback.
-  const bg = board.background ?? 'grid';
+  const bg = opts?.background ?? board.background ?? 'grid';
   if (bg !== 'blank') {
-    const cell = (bg === 'dots' ? 24 : 32) * scale;
+    const cell = GRID * scale;
     ctx.save();
-    ctx.strokeStyle = '#c0c0c0';
+    ctx.strokeStyle = resolveVar('--muted', '#c0c0c0');
     ctx.lineWidth = 1;
     if (bg === 'dots') {
       for (let x = 0; x < canvas.width; x += cell) {
@@ -261,15 +270,15 @@ function renderFallbackPNG(board: Board, scale: number): string {
         break;
       }
       case 'text':
-      case 'sticky':
-      case 'mindnode': {
-        ctx.fillStyle = el.color ?? '#000';
+      case 'sticky': {
+        ctx.fillStyle = el.textColor ?? el.color ?? '#000';
         ctx.font = `${el.fontSize ?? 18}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.textBaseline = 'top';
         const text = el.text ?? '';
         const lines = text.split('\n');
         const lh = (el.fontSize ?? 18) * 1.2;
         lines.forEach((line, i) => {
-          ctx.fillText(line, el.x, el.y + i * lh + (el.fontSize ?? 18));
+          ctx.fillText(line, el.x, el.y + i * lh);
         });
         break;
       }
@@ -304,8 +313,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /** Abre uma janela A4 print-ready com o quadro (PNG) e dispara a impressão. */
-export async function printPDF(board: Board): Promise<void> {
-  const png = await toPNGDataUrl(board, 2);
+export async function printPDF(board: Board, opts?: ExportOptions): Promise<void> {
+  const png = await toPNGDataUrl(board, opts);
   const w = window.open('', '_blank');
   if (!w) {
     // Pop-up bloqueado: fallback para download do PNG, para o usuário não ficar sem saída.

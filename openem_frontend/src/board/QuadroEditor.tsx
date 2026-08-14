@@ -11,32 +11,45 @@ import {
   IconDiamond,
   IconEllipse,
   IconEraser,
+  IconFit,
   IconFormula,
   IconHand,
   IconHighlighter,
   IconImage,
   IconLine,
-  IconMind,
   IconPen,
   IconRect,
   IconSticky,
   IconText,
+  IconZoomIn,
+  IconZoomOut,
 } from '../components/icons';
 import { cryptoRandomId } from './serialize';
 import { BoardSVG } from './render';
 import { Katex } from './Katex';
 import { MathField } from './MathField';
-import type { Board, BoardElement, EraserMode, Point } from './types';
+import { measureText } from './text-measure';
+import type { Board, BoardElement, Point } from './types';
 import { GRID } from './types';
 import {
+  atBack,
+  atFront,
+  boardsBBox,
+  bboxHit,
+  bringForward,
+  bringToFront,
   clamp,
   elementCenter,
+  eraserHit,
   groupBBox,
   hitTest,
   marqueeSelect,
   moveElement,
+  moveEndpoint,
   resizeElement,
   screenToWorld,
+  sendBackward,
+  sendToBack,
   splitStrokeAtEraser,
   snap as snapVal,
   type ResizeHandle,
@@ -54,7 +67,6 @@ export type Tool =
   | 'text'
   | 'formula'
   | 'sticky'
-  | 'mindnode'
   | 'image'
   | 'eraser'
   | 'pan';
@@ -68,8 +80,17 @@ const COLORS = [
   '#0f172a',
   '#6b6473',
 ];
-const WIDTHS = [1, 2, 4, 8];
+const WIDTH_MIN = 1;
+const WIDTH_SLIDER_MAX = 32;
+const WIDTH_MAX = 256;
 const FONT_SIZES = [14, 18, 24, 32];
+/** Formas que aceitam preenchimento (toggle "Preencher"). */
+const SHAPE_KINDS: ReadonlySet<string> = new Set(['rect', 'ellipse', 'diamond']);
+/** Elementos que aceitam mudança de fundo via paleta (formas + sticky). */
+const FILLABLE: ReadonlySet<string> = new Set(['rect', 'ellipse', 'diamond', 'sticky']);
+/** Estilos de ponta de linha/seta. */
+const ARROW_TIPS = ['none', 'arrow', 'dot', 'bar'] as const;
+type ArrowTip = (typeof ARROW_TIPS)[number];
 
 const MARGIN = 800; // borda extra ao redor do conteúdo/viewport (canvas "infinito")
 const MIN_W = 1600;
@@ -87,7 +108,6 @@ const TOOLS: { tool: Tool; label: string; Icon: typeof IconCursor; key?: string 
   { tool: 'text', label: 'Texto (T)', Icon: IconText, key: 't' },
   { tool: 'formula', label: 'Fórmula', Icon: IconFormula },
   { tool: 'sticky', label: 'Sticky', Icon: IconSticky },
-  { tool: 'mindnode', label: 'Mapa mental', Icon: IconMind },
   { tool: 'image', label: 'Imagem', Icon: IconImage },
   { tool: 'eraser', label: 'Borracha (E)', Icon: IconEraser, key: 'e' },
   { tool: 'pan', label: 'Mover (H)', Icon: IconHand, key: 'h' },
@@ -110,6 +130,11 @@ interface DragState {
   eraseIds?: Set<string>;
   eraseChanged?: boolean;
   moved?: boolean;
+  /** Snapshot mais recente do estado durante o arrasto (move/resize/rotate/draw/erase).
+   * Computado a partir de `preDragRef.current` + snapshots — puro, síncrono —
+   * para que o pointerup possa emitir sem ler dentro do updater do setElementsState
+   * (o que dispararia o setState do pai durante o render). */
+  committed?: BoardElement[];
 }
 
 // Clipboard interno (escopo de módulo) — sobrevive a re-renders, sem async.
@@ -137,14 +162,15 @@ export function QuadroEditor({
   const [color, setColor] = useState<string>(COLORS[0]);
   const [strokeWidth, setStrokeWidth] = useState<number>(2);
   const [fontSize, setFontSize] = useState<number>(18);
+  const [fillOn, setFillOn] = useState<boolean>(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [snapOn, setSnapOn] = useState(false);
   const [past, setPast] = useState<BoardElement[][]>([]);
   const [future, setFuture] = useState<BoardElement[][]>([]);
-  const [eraserMode, setEraserMode] = useState<EraserMode>('object');
   const [vp, setVp] = useState({ w: 0, h: 0 });
   const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; ids: string[] } | null>(null);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -256,6 +282,7 @@ export function QuadroEditor({
       } else if (e.key === 'Escape') {
         setSelectedIds(new Set());
         setTool('select');
+        setCtxMenu(null);
       } else if (e.code === 'Space') {
         spaceRef.current = true;
       } else if (!mod && !spaceRef.current && TOOL_KEYS[e.key.toLowerCase()]) {
@@ -294,6 +321,21 @@ export function QuadroEditor({
     if (selected.length === 0) return;
     clipboard = selected.map((el) => ({ ...el }));
     paste(20);
+  }
+
+  // Duplica ids explícitos (menu de contexto) sem depender do `selected` do closure.
+  function duplicateIds(ids: string[]) {
+    const items = elements.filter((e) => ids.includes(e.id));
+    if (items.length === 0) return;
+    const pasted = items.map((el) => ({
+      ...el,
+      id: cryptoRandomId(),
+      x: el.x + 20,
+      y: el.y + 20,
+      points: el.points?.map((p) => ({ x: p.x + 20, y: p.y + 20, ...(p.p != null ? { p: p.p } : {}) })),
+    }));
+    commitFrom(elements, [...elements, ...pasted]);
+    setSelectedIds(new Set(pasted.map((p) => p.id)));
   }
 
   // --- Conversões de coordenada ---
@@ -342,6 +384,14 @@ export function QuadroEditor({
   const origin = { x: worldBounds.x, y: worldBounds.y };
   const originRef = useRef(origin);
   originRef.current = origin;
+
+  // Sempre fresco: handlers de pointer (useCallback cu deps não incluem
+  // `elements`) precisam do estado mais recente sem ler dentro do updater do
+  // setElementsState — chamar commit/commitFrom dentro do updater dispara o
+  // setState do pai (onChange/emit) na fase de render ("Cannot update a
+  // component while rendering a different component").
+  const elementsRef = useRef(elements);
+  elementsRef.current = elements;
 
   // Observa tamanho do viewport (p/ bounds e centralização).
   useLayoutEffect(() => {
@@ -406,64 +456,74 @@ export function QuadroEditor({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
-  // --- Borracha (object / stroke) aplicada a partir do snapshot pré-arrasto ---
+  // --- Borracha: apaga qualquer elemento que encosta e corta traços parcial ---
+  // Sem toggle objeto/traço: a borracha apaga setas/linhas/formas/textos ao
+  // encostar (via eraserHit, que usa o raio da borracha) e corta traços livres
+  // onde o círculo cruza (splitStrokeAtEraser) — dá pra apagar pedaços de um
+  // traço sem apagar o todo. O arrasto acumula: a base é o `committed` corrente,
+  // não o snapshot pré-arrasto, então varrer apaga cada elemento encostado em
+  // vez de apagar só o que está sob o cursor ao soltar.
   const applyErase = useCallback(
     (world: Point) => {
       const drag = dragRef.current;
       if (!drag || drag.mode !== 'erase') return;
-      const base = preDragRef.current ?? elements;
+      const base = drag.committed ?? preDragRef.current ?? elements;
       const r = (strokeWidth ?? 2) + 8;
       const eraser = { center: world, r };
       let changed = drag.eraseChanged ?? false;
 
       const next = base.flatMap((el) => {
+        // Broad-phase: bbox local + folga. Para elementos rotacionados o bbox
+        // real é maior que o local, então expande pela meia-diagonal.
+        const pad = (el.rotation ?? 0) ? Math.hypot(el.w, el.h) / 2 + r : r;
         const near =
-          el.x - r <= world.x &&
-          world.x <= el.x + el.w + r &&
-          el.y - r <= world.y &&
-          world.y <= el.y + el.h + r;
+          el.x - pad <= world.x &&
+          world.x <= el.x + el.w + pad &&
+          el.y - pad <= world.y &&
+          world.y <= el.y + el.h + pad;
         if (!near) return [el];
-        if (eraserMode === 'object') {
-          if (hitTest(el, world)) {
+
+        // Traço livre: corta no círculo da borracha (apagado parcial).
+        if (el.kind === 'stroke' && el.points && el.points.length >= 2) {
+          const subs = splitStrokeAtEraser(el.points, eraser);
+          if (subs.length === 0) {
             changed = true;
             return [];
           }
-          return [el];
+          if (subs.length === 1 && subs[0].length === el.points.length) {
+            return [el]; // não mudou significativamente
+          }
+          changed = true;
+          return subs.map((pts) => {
+            const xs = pts.map((p) => p.x);
+            const ys = pts.map((p) => p.y);
+            const x = Math.min(...xs);
+            const y = Math.min(...ys);
+            return {
+              ...el,
+              id: cryptoRandomId(),
+              x,
+              y,
+              w: Math.max(...xs) - x,
+              h: Math.max(...ys) - y,
+              points: pts,
+            } as BoardElement;
+          });
         }
-        // stroke: só afeta traços (shapes intocados, estilo Excalidraw).
-        if (el.kind !== 'stroke' || !el.points || el.points.length < 2) {
-          return [el];
-        }
-        const subs = splitStrokeAtEraser(el.points, eraser);
-        if (subs.length === 0) {
+
+        // Demais elementos (seta/linha/forma/texto/sticky/imagem/fórmula):
+        // apaga o elemento inteiro se a borracha encostar na coisa em si.
+        if (eraserHit(el, world, r)) {
           changed = true;
           return [];
         }
-        if (subs.length === 1 && subs[0].length === el.points.length) {
-          // não mudou significativamente
-          return [el];
-        }
-        changed = true;
-        return subs.map((pts) => {
-          const xs = pts.map((p) => p.x);
-          const ys = pts.map((p) => p.y);
-          const x = Math.min(...xs);
-          const y = Math.min(...ys);
-          return {
-            ...el,
-            id: cryptoRandomId(),
-            x,
-            y,
-            w: Math.max(...xs) - x,
-            h: Math.max(...ys) - y,
-            points: pts,
-          } as BoardElement;
-        });
+        return [el];
       });
       drag.eraseChanged = changed;
+      drag.committed = next;
       setElementsState(next);
     },
-    [elements, eraserMode, strokeWidth],
+    [elements, strokeWidth],
   );
 
   // --- Pointer handlers ---
@@ -501,7 +561,19 @@ export function QuadroEditor({
       }
 
       if (tool === 'select') {
-        const hit = [...elements].reverse().find((el) => hitTest(el, world));
+        // Hit em camadas: primeiro a GEOMETRIA real (a coisa em si), depois o
+        // bbox de um já-selecionado (arrastar forma vazada pelo interior) e só
+        // então o bbox de qualquer elemento. Assim, clicar num traço que está
+        // atrás de um retângulo vazado seleciona o traço (a geometria vence),
+        // mas clicar no centro de um retângulo vazado isolado ainda o seleciona.
+        const hit =
+          [...elements].reverse().find((el) => hitTest(el, world)) ??
+          (!e.shiftKey
+            ? [...elements]
+                .reverse()
+                .find((el) => selectedIds.has(el.id) && bboxHit(el, world))
+            : undefined) ??
+          [...elements].reverse().find((el) => bboxHit(el, world));
         if (hit) {
           let group: Set<string>;
           if (e.shiftKey) {
@@ -568,10 +640,10 @@ export function QuadroEditor({
         return;
       }
 
-      if (tool === 'text' || tool === 'sticky' || tool === 'mindnode' || tool === 'formula') {
+      if (tool === 'text' || tool === 'sticky' || tool === 'formula') {
         const id = cryptoRandomId();
-        const w = tool === 'text' ? 200 : tool === 'mindnode' ? 140 : tool === 'formula' ? 160 : 160;
-        const h = tool === 'text' ? 40 : tool === 'mindnode' ? 44 : tool === 'formula' ? 48 : 100;
+        const w = tool === 'text' ? 200 : tool === 'formula' ? 160 : 160;
+        const h = tool === 'text' ? 40 : tool === 'formula' ? 48 : 100;
         const el: BoardElement = {
           id,
           kind: tool,
@@ -583,13 +655,8 @@ export function QuadroEditor({
           strokeWidth,
           fontSize,
           text: tool === 'formula' ? undefined : '',
-          latex: tool === 'formula' ? 'x' : undefined,
-          fill:
-            tool === 'sticky'
-              ? '#fff7cc'
-              : tool === 'mindnode'
-                ? color
-                : undefined,
+          latex: tool === 'formula' ? '' : undefined,
+          fill: tool === 'sticky' ? '#fff7cc' : undefined,
         };
         commit([...elements, el]);
         setSelectedIds(new Set([id]));
@@ -609,7 +676,14 @@ export function QuadroEditor({
         h: 0,
         color,
         strokeWidth,
+        ...(fillOn && SHAPE_KINDS.has(tool) ? { fill: color } : {}),
+        ...(tool === 'arrow'
+          ? { arrowStart: 'none', arrowEnd: 'arrow' }
+          : tool === 'line'
+            ? { arrowStart: 'none', arrowEnd: 'none' }
+            : {}),
       };
+      preDragRef.current = elements; // snapshot pré-draw (sem o draft) p/ undo
       dragRef.current = {
         mode: 'draw',
         startWorld: world,
@@ -619,7 +693,7 @@ export function QuadroEditor({
       };
       setElementsState([...elements, el]); // preview sem histórico
     },
-    [tool, elements, pan, toWorld, snapPoint, commit, color, strokeWidth, fontSize, editingId, selectedIds, applyErase], // eslint-disable-line react-hooks/exhaustive-deps
+    [tool, elements, pan, toWorld, snapPoint, commit, color, strokeWidth, fontSize, fillOn, editingId, selectedIds, applyErase], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const onPointerMove = useCallback(
@@ -655,23 +729,32 @@ export function QuadroEditor({
         const dx = world.x - drag.startWorld.x;
         const dy = world.y - drag.startWorld.y;
         if (dx !== 0 || dy !== 0) drag.moved = true;
-        setElementsState((els) =>
-          els.map((el) => {
-            const snap = drag.startEls!.find((s) => s.id === el.id);
-            return snap ? moveElement(snap, dx, dy) : el;
-          }),
-        );
+        const base = preDragRef.current ?? elements;
+        const next = base.map((el) => {
+          const snap = drag.startEls!.find((s) => s.id === el.id);
+          return snap ? moveElement(snap, dx, dy) : el;
+        });
+        drag.committed = next;
+        setElementsState(next);
         return;
       }
       if (drag.mode === 'resize' && drag.startEl && drag.handle) {
+        const startEl = drag.startEl;
+        const handle = drag.handle;
+        const base = preDragRef.current ?? elements;
+        if (handle === 'ep-start' || handle === 'ep-end') {
+          drag.moved = true;
+          const next = base.map((el) => (el.id === startEl.id ? moveEndpoint(startEl, handle, world) : el));
+          drag.committed = next;
+          setElementsState(next);
+          return;
+        }
         const dx = world.x - drag.startWorld.x;
         const dy = world.y - drag.startWorld.y;
         if (dx !== 0 || dy !== 0) drag.moved = true;
-        const startEl = drag.startEl;
-        const handle = drag.handle;
-        setElementsState((els) =>
-          els.map((el) => (el.id === startEl.id ? resizeElement(startEl, handle, dx, dy) : el)),
-        );
+        const next = base.map((el) => (el.id === startEl.id ? resizeElement(startEl, handle, dx, dy) : el));
+        drag.committed = next;
+        setElementsState(next);
         return;
       }
       if (drag.mode === 'rotate' && drag.startEl) {
@@ -680,9 +763,10 @@ export function QuadroEditor({
           (Math.atan2(world.y - center.y, world.x - center.x) * 180) / Math.PI + 90;
         const rot = Math.round(ang);
         drag.moved = true;
-        setElementsState((els) =>
-          els.map((el) => (el.id === drag.startEl!.id ? { ...el, rotation: rot } : el)),
-        );
+        const base = preDragRef.current ?? elements;
+        const next = base.map((el) => (el.id === drag.startEl!.id ? { ...el, rotation: rot } : el));
+        drag.committed = next;
+        setElementsState(next);
         return;
       }
       if (drag.mode === 'draw' && drag.startEl && drag.draftId) {
@@ -703,9 +787,11 @@ export function QuadroEditor({
         }
         const w = dx;
         const h = dy;
-        setElementsState((els) =>
-          els.map((el) => (el.id === drag.draftId ? { ...el, w, h } : el)),
-        );
+        // base = pré-draw (sem o draft) + draft com w/h atuais.
+        const base = preDragRef.current ?? elements.filter((el) => el.id !== drag.draftId);
+        const next = [...base, { ...drag.startEl, w, h }];
+        drag.committed = next;
+        setElementsState(next);
         return;
       }
       if (drag.mode === 'stroke' && drag.points) {
@@ -755,10 +841,8 @@ export function QuadroEditor({
 
       if (drag.mode === 'move' || drag.mode === 'resize' || drag.mode === 'rotate') {
         if (drag.moved) {
-          setElementsState((els) => {
-            commitFrom(preDragRef.current ?? elements, els);
-            return els;
-          });
+          const next = drag.committed ?? elementsRef.current;
+          commitFrom(preDragRef.current ?? next, next);
         }
         preDragRef.current = null;
         return;
@@ -770,35 +854,44 @@ export function QuadroEditor({
         return;
       }
       if (drag.mode === 'erase') {
-        setElementsState((els) => {
-          if (drag.eraseChanged) commitFrom(preDragRef.current ?? elements, els);
-          return els;
-        });
+        if (drag.eraseChanged) {
+          const next = drag.committed ?? elementsRef.current;
+          commitFrom(preDragRef.current ?? next, next);
+        }
         preDragRef.current = null;
         return;
       }
       if (drag.mode === 'draw') {
-        setElementsState((els) => {
-          const el = els.find((x) => x.id === drag.draftId);
-          if (!el || (Math.abs(el.w) < 4 && Math.abs(el.h) < 4)) {
-            const filtered = els.filter((x) => x.id !== drag.draftId);
-            setElementsState(filtered);
-            return filtered;
-          }
-          const norm = els.map((x) =>
-            x.id === drag.draftId
-              ? {
+        const committed = drag.committed ?? elementsRef.current;
+        const el = committed.find((x) => x.id === drag.draftId);
+        if (!el || (Math.abs(el.w) < 4 && Math.abs(el.h) < 4)) {
+          // draft descartado: volta ao pré-draw, sem histórico.
+          const filtered = (preDragRef.current ?? committed.filter((x) => x.id !== drag.draftId));
+          setElementsState(filtered);
+          preDragRef.current = null;
+          return;
+        }
+        // Normaliza w/h p/ formas (rect/elipse/losango): o retângulo é o mesmo
+        // independente do sentido do arrasto. MAS linha/seta têm DIREÇÃO —
+        // (x,y) é o início (pointerdown) e (x+w,y+h) é o fim (onde soltou, onde
+        // fica a ponta). Normalizar trocaria início↔fim e a seta "viraria para
+        // o outro lado" ao arrastar pra esquerda. Mantém o sinal p/ line/arrow.
+        const isLineLike = el.kind === 'line' || el.kind === 'arrow';
+        const norm = committed.map((x) =>
+          x.id === drag.draftId
+            ? isLineLike
+              ? x
+              : {
                   ...x,
                   w: Math.abs(x.w),
                   h: Math.abs(x.h),
                   x: x.w < 0 ? x.x + x.w : x.x,
                   y: x.h < 0 ? x.y + x.h : x.y,
                 }
-              : x,
-          );
-          commit(norm);
-          return norm;
-        });
+            : x,
+        );
+        commitFrom(preDragRef.current ?? committed.filter((x) => x.id !== drag.draftId), norm);
+        preDragRef.current = null;
         return;
       }
       if (drag.mode === 'stroke' && drag.points && drag.points.length > 1) {
@@ -843,6 +936,106 @@ export function QuadroEditor({
     },
     [zoom, pan],
   );
+
+  // --- Zoom ancorado no centro do viewport (botões da ilha de zoom) ---
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      const cx = rect ? rect.width / 2 : 0;
+      const cy = rect ? rect.height / 2 : 0;
+      const newZoom = clamp(zoom * factor, 0.2, 4);
+      const wx = (cx - pan.x) / zoom;
+      const wy = (cy - pan.y) / zoom;
+      setPan({ x: cx - wx * newZoom, y: cy - wy * newZoom });
+      setZoom(newZoom);
+    },
+    [zoom, pan],
+  );
+
+  // --- Ajusta zoom/pan para enquadar todo o conteúdo ---
+  const fitToContent = useCallback(() => {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0 || elements.length === 0) {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    const b = boardsBBox(elements);
+    if (b.w <= 0 || b.h <= 0) {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    const pad = 80;
+    const z = clamp(
+      Math.min((rect.width - pad * 2) / b.w, (rect.height - pad * 2) / b.h),
+      0.2,
+      4,
+    );
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const bx = b.x + b.w / 2;
+    const by = b.y + b.h / 2;
+    setZoom(z);
+    setPan({ x: cx - bx * z, y: cy - by * z });
+  }, [elements]);
+
+  // --- Menu de contexto (botão-direito sobre um elemento) ---
+  const onContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      const world = toWorld(e.clientX, e.clientY);
+      // Geometria real primeiro; senão cai no bbox (botão-direito no centro de
+      // um retângulo vazado também abre o menu dele).
+      const hit =
+        [...elements].reverse().find((el) => hitTest(el, world)) ??
+        [...elements].reverse().find((el) => bboxHit(el, world));
+      if (!hit) {
+        setCtxMenu(null);
+        return;
+      }
+      e.preventDefault();
+      const ids = selectedIds.has(hit.id) ? [...selectedIds] : [hit.id];
+      if (!selectedIds.has(hit.id)) setSelectedIds(new Set([hit.id]));
+      const rect = viewportRef.current!.getBoundingClientRect();
+      setCtxMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, ids });
+    },
+    [elements, selectedIds, toWorld],
+  );
+
+  // Duplo-clique reedita o conteúdo de texto/sticky/fórmula.
+  const onDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (tool !== 'select') return;
+      const world = toWorld(e.clientX, e.clientY);
+      const hit = [...elements]
+        .reverse()
+        .find(
+          (el) =>
+            (el.kind === 'text' || el.kind === 'sticky' || el.kind === 'formula') &&
+            hitTest(el, world),
+        );
+      if (!hit) return;
+      setSelectedIds(new Set([hit.id]));
+      setEditingId(hit.id);
+      setEditingKind(hit.kind === 'formula' ? 'formula' : 'text');
+    },
+    [tool, elements, toWorld],
+  );
+
+  const reorder = useCallback(
+    (fn: (els: BoardElement[], ids: string[]) => BoardElement[]) => {
+      if (!ctxMenu) return;
+      const next = fn(elements, ctxMenu.ids);
+      commitFrom(elements, next);
+      setCtxMenu(null);
+    },
+    [ctxMenu, elements, commitFrom],
+  );
+
+  // Fecha o menu de contexto ao mudar zoom/pan (ele é posicionado em tela).
+  useEffect(() => {
+    setCtxMenu(null);
+  }, [zoom, pan]);
 
   // --- Handles de seleção (single) ---
   const startHandle = (e: React.PointerEvent, handle: ResizeHandle | 'rotate') => {
@@ -894,17 +1087,35 @@ export function QuadroEditor({
 
   // --- Edição de texto/fórmula ---
   const commitEdit = (id: string, value: string) => {
-    setElementsState((els) => {
-      const next = els.map((el) =>
-        el.id === id
-          ? el.kind === 'formula'
-            ? { ...el, latex: value }
-            : { ...el, text: value }
-          : el,
-      );
+    const v = value ?? '';
+    const el0 = elements.find((e) => e.id === id);
+    // Texto/fórmula vazios depois do commit viram fantasma invisível: o
+    // <text> vazio e o renderFormula (latex vazio) não desenham nada, então
+    // não dá pra reselecionar e o elemento fica preso no quadro. Descarta.
+    // Sticky mantém (tem caixa visível mesmo sem texto).
+    if (el0 && (el0.kind === 'text' || el0.kind === 'formula') && v.trim() === '') {
+      const next = elements.filter((e) => e.id !== id);
       commit(next);
-      return next;
+      setSelectedIds(new Set());
+      return;
+    }
+    const next = elements.map((el) => {
+      if (el.id !== id) return el;
+      if (el.kind === 'formula') return { ...el, latex: v };
+      if (el.kind === 'text') {
+        // Casa o bbox com o texto desenhado (largura/altura medidas), senão a
+        // caixa de seleção e os handles ficam soltos do texto. Sticky não:
+        // a caixa é controlada pelo usuário (foreignObject com wrap).
+        const m = measureText(v, el.fontSize ?? 18);
+        return { ...el, text: v, w: m.w, h: m.h };
+      }
+      return { ...el, text: v };
     });
+    // commit() chama setElementsState + emit (onChange do pai). NÃO pode estar
+    // dentro do updater do setElementsState — o updater roda na fase de render
+    // e dispararia o setState do pai durante o render do QuadroEditor (warning
+    // "Cannot update a component while rendering a different component").
+    commit(next);
   };
 
   const renderFormula = (el: BoardElement) =>
@@ -913,24 +1124,42 @@ export function QuadroEditor({
   // Aplica estilo a todos os selecionados.
   const applyStyle = (patch: Partial<BoardElement>) => {
     if (selectedIds.size === 0) return;
-    setElementsState((els) => {
-      const next = els.map((el) => (selectedIds.has(el.id) ? { ...el, ...patch } : el));
-      commitFrom(elements, next);
-      return next;
-    });
+    const next = elements.map((el) => (selectedIds.has(el.id) ? { ...el, ...patch } : el));
+    commitFrom(elements, next);
   };
 
-  // Estilo de fundo (grade/pontos) em tela, sempre visível ao panar.
-  // Usa --muted (texto secundário) com opacidade baixa em vez de --line,
-  // pois --line pode ser quase branco no tema claro padrão e sumir no fundo.
+  // Aplica preenchimento aos selecionados que aceitam fundo (formas + sticky).
+  const applyFill = (value: string | undefined) => {
+    if (selectedIds.size === 0) return;
+    const next = elements.map((el) =>
+      selectedIds.has(el.id) && FILLABLE.has(el.kind) ? { ...el, fill: value } : el,
+    );
+    commitFrom(elements, next);
+  };
+
+  const toggleFill = () => {
+    const next = !fillOn;
+    setFillOn(next);
+    applyFill(next ? color : undefined);
+  };
+
+  // Mostra o toggle "Preencher" quando a ferramenta ativa aceita fundo ou há
+  // algum elemento que aceita na seleção.
+  const showFill = FILLABLE.has(tool) || selected.some((e) => FILLABLE.has(e.kind));
+
+  // Grade/pontos em tela (espaço de tela, não mundo): o tamanho da célula
+  // escala com o zoom e a posição acompanha o pan (via módulo → infinito). Linhas
+  // de 1px constantes — não tremelica ao zoomar. Única fonte no editor: o
+  // pattern SVG do BoardSVG é desligado aqui (showBackground={false}) para não
+  // duplicar. Usa --muted com opacidade baixa (visível nos dois temas).
   const bgStyle = useMemo(() => {
     const bg = board.background ?? 'grid';
+    if (bg === 'blank') return { background: 'var(--bg)' } as React.CSSProperties;
     const cell = GRID * zoom;
     const px = pan.x % cell;
     const py = pan.y % cell;
     const dotColor = 'color-mix(in oklab, var(--muted) 28%, transparent)';
     const gridColor = 'color-mix(in oklab, var(--muted) 18%, transparent)';
-    if (bg === 'blank') return { background: 'var(--bg)' } as React.CSSProperties;
     if (bg === 'dots') {
       return {
         backgroundColor: 'var(--bg)',
@@ -982,7 +1211,9 @@ export function QuadroEditor({
               title="Cor"
               onClick={() => {
                 setColor(c);
-                applyStyle({ color: c });
+                const patch: Partial<BoardElement> = { color: c };
+                if (fillOn) patch.fill = c;
+                applyStyle(patch);
               }}
               className={`size-5 rounded-full border ${color === c ? 'ring-2 ring-brand' : 'border-line'}`}
               style={{ background: c }}
@@ -990,26 +1221,94 @@ export function QuadroEditor({
           ))}
         </div>
 
-        {/* Espessura */}
-        <div className="seg">
-          {WIDTHS.map((w) => (
+        {/* Preenchimento (só para formas) */}
+        {showFill && (
+          <div className="seg">
             <button
-              key={w}
               type="button"
-              title={`Espessura ${w}`}
-              data-active={strokeWidth === w}
-              onClick={() => {
-                setStrokeWidth(w);
-                applyStyle({ strokeWidth: w });
-              }}
-              className="px-2 text-xs font-data"
+              title="Preencher forma com a cor atual"
+              data-active={fillOn}
+              onClick={toggleFill}
+              className="px-2 text-xs"
             >
-              {w}
+              Preencher
             </button>
-          ))}
+          </div>
+        )}
+
+        {/* Pontas de linha/seta */}
+        {selectedSingle &&
+          (selectedSingle.kind === 'arrow' || selectedSingle.kind === 'line') && (
+            <div className="flex items-center gap-1.5 px-1">
+              <TipSelector
+                label="Início"
+                value={
+                  selectedSingle.arrowStart ??
+                  'none'
+                }
+                onChange={(v) => applyStyle({ arrowStart: v })}
+              />
+              <TipSelector
+                label="Fim"
+                value={
+                  selectedSingle.arrowEnd ??
+                  (selectedSingle.kind === 'arrow' ? 'arrow' : 'none')
+                }
+                onChange={(v) => applyStyle({ arrowEnd: v })}
+              />
+            </div>
+          )}
+
+        {/* Cor do texto (sticky) */}
+        {selectedSingle?.kind === 'sticky' && (
+          <div className="flex items-center gap-1 px-1">
+            <span className="text-[10px] text-muted">Texto</span>
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                title="Cor do texto"
+                onClick={() => applyStyle({ textColor: c })}
+                className={`size-4 rounded-full border ${
+                  (selectedSingle.textColor ?? '#5a4a1a') === c ? 'ring-2 ring-brand' : 'border-line'
+                }`}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Espessura */}
+        <div className="flex items-center gap-1.5">
+          <input
+            type="range"
+            min={WIDTH_MIN}
+            max={WIDTH_SLIDER_MAX}
+            value={Math.min(strokeWidth, WIDTH_SLIDER_MAX)}
+            onChange={(e) => {
+              const w = Number(e.target.value);
+              setStrokeWidth(w);
+              applyStyle({ strokeWidth: w });
+            }}
+            className="h-5 w-16 cursor-pointer accent-brand"
+            title={`Espessura ${strokeWidth}`}
+          />
+          <input
+            type="number"
+            min={WIDTH_MIN}
+            max={WIDTH_MAX}
+            value={strokeWidth}
+            onChange={(e) => {
+              const w = Math.min(WIDTH_MAX, Math.max(WIDTH_MIN, Number(e.target.value) || WIDTH_MIN));
+              setStrokeWidth(w);
+              applyStyle({ strokeWidth: w });
+            }}
+            className="w-12 rounded-md border border-line bg-transparent px-1 py-0.5 text-center text-xs font-data tabular-nums outline-none focus:border-brand"
+            title="Espessura do pincel"
+          />
         </div>
 
-        {(tool === 'text' || tool === 'sticky' || tool === 'mindnode') && (
+        {(tool === 'text' || tool === 'sticky') && (
           <div className="seg">
             {FONT_SIZES.map((s) => (
               <button
@@ -1023,22 +1322,6 @@ export function QuadroEditor({
                 className="px-2 text-xs font-data"
               >
                 {s}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {tool === 'eraser' && (
-          <div className="seg">
-            {(['object', 'stroke'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                data-active={eraserMode === m}
-                onClick={() => setEraserMode(m)}
-                className="px-2 text-xs"
-              >
-                {m === 'object' ? 'Objeto' : 'Traço'}
               </button>
             ))}
           </div>
@@ -1072,12 +1355,6 @@ export function QuadroEditor({
           >
             Snap
           </button>
-          <div className="seg">
-            <button type="button" onClick={() => setZoom((z) => clamp(z * 1.2, 0.2, 4))} className="px-2 text-xs">＋</button>
-            <button type="button" className="px-2 font-data text-xs" disabled>{Math.round(zoom * 100)}%</button>
-            <button type="button" onClick={() => setZoom((z) => clamp(z / 1.2, 0.2, 4))} className="px-2 text-xs">－</button>
-            <button type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} className="px-2 text-xs">100%</button>
-          </div>
         </div>
       </div>
 
@@ -1090,6 +1367,8 @@ export function QuadroEditor({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
+        onContextMenu={onContextMenu}
+        onDoubleClick={onDoubleClick}
         style={{ ...bgStyle, cursor: tool === 'pan' ? 'grab' : tool === 'select' ? 'default' : 'crosshair' }}
       >
         <div
@@ -1107,6 +1386,7 @@ export function QuadroEditor({
             height={worldBounds.h}
             viewBox={vb}
             renderFormula={renderFormula}
+            showBackground={false}
           />
           <canvas
             ref={canvasRef}
@@ -1177,6 +1457,10 @@ export function QuadroEditor({
                 commitEdit(selectedSingle.id, v);
                 setEditingId(null);
                 setEditingKind(null);
+                // Volta pra Selecionar: senão a ferramenta continua em Texto e o
+                // próximo clique/arraste cria um novo texto em vez de mover o
+                // recém-criado (que já está selecionado e é móvel).
+                setTool('select');
               }}
             />
           )}
@@ -1189,26 +1473,128 @@ export function QuadroEditor({
             >
               <MathField
                 value={selectedSingle.latex ?? ''}
+                elId={selectedSingle.id}
                 onChange={(v) => {
                   setElementsState((els) =>
                     els.map((el) => (el.id === selectedSingle.id ? { ...el, latex: v } : el)),
                   );
                 }}
                 onCommit={() => {
-                  setElementsState((els) => {
-                    const next = els.map((el) =>
-                      el.id === selectedSingle.id ? { ...el, latex: selectedSingle.latex ?? '' } : el,
-                    );
-                    commit(next);
-                    return next;
-                  });
+                  commitEdit(selectedSingle.id, selectedSingle.latex ?? '');
                   setEditingId(null);
                   setEditingKind(null);
+                  setTool('select');
                 }}
               />
             </div>
           )}
         </div>
+
+        {/* Ilha de zoom (fixa em tela, canto inferior direito) */}
+        <div
+          className="absolute bottom-3 right-3 z-20 flex flex-col items-center gap-0.5 rounded-xl border border-line bg-surface/90 p-1 shadow-[var(--shadow)] backdrop-blur"
+          onPointerDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            title="Aproximar"
+            onClick={() => zoomBy(1.2)}
+            className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
+          >
+            <IconZoomIn width={18} height={18} />
+          </button>
+          <button
+            type="button"
+            title="Restaurar 100%"
+            onClick={() => {
+              setZoom(1);
+              setPan({ x: 0, y: 0 });
+            }}
+            className="px-1 py-0.5 text-center font-data text-[11px] leading-none text-muted hover:text-fg"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            title="Afastar"
+            onClick={() => zoomBy(1 / 1.2)}
+            className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
+          >
+            <IconZoomOut width={18} height={18} />
+          </button>
+          <div className="my-0.5 h-px w-6 bg-line" />
+          <button
+            type="button"
+            title="Ajustar à tela"
+            onClick={fitToContent}
+            className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
+          >
+            <IconFit width={18} height={18} />
+          </button>
+        </div>
+
+        {/* Menu de contexto (camadas + ações rápidas) */}
+        {ctxMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setCtxMenu(null)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setCtxMenu(null);
+              }}
+              aria-hidden
+            />
+            <div
+              className="absolute z-30 w-48 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-[var(--shadow)]"
+              style={{ left: ctxMenu.x, top: ctxMenu.y }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <CtxItem
+                disabled={atFront(elements, ctxMenu.ids)}
+                onClick={() => reorder(bringToFront)}
+              >
+                Trazer para frente
+              </CtxItem>
+              <CtxItem
+                disabled={atFront(elements, ctxMenu.ids)}
+                onClick={() => reorder(bringForward)}
+              >
+                Avançar
+              </CtxItem>
+              <CtxItem
+                disabled={atBack(elements, ctxMenu.ids)}
+                onClick={() => reorder(sendBackward)}
+              >
+                Recuar
+              </CtxItem>
+              <CtxItem
+                disabled={atBack(elements, ctxMenu.ids)}
+                onClick={() => reorder(sendToBack)}
+              >
+                Enviar para trás
+              </CtxItem>
+              <div className="my-1 h-px bg-line" />
+              <CtxItem onClick={() => { duplicateIds(ctxMenu.ids); setCtxMenu(null); }}>
+                Duplicar
+              </CtxItem>
+              <CtxItem
+                danger
+                onClick={() => {
+                  commitFrom(
+                    elements,
+                    elements.filter((e) => !ctxMenu.ids.includes(e.id)),
+                  );
+                  setSelectedIds(new Set());
+                  setCtxMenu(null);
+                }}
+              >
+                Excluir
+              </CtxItem>
+            </div>
+          </>
+        )}
 
         <input
           ref={fileInputRef}
@@ -1244,16 +1630,22 @@ function SelectionHandles({
   const H = 9 / zoom;
   const sw = 1.5 / zoom;
   const dash = `${4 / zoom} ${3 / zoom}`;
-  const handles: { h: ResizeHandle; x: number; y: number }[] = [
-    { h: 'nw', x: el.x, y: el.y },
-    { h: 'n', x: cx, y: el.y },
-    { h: 'ne', x: el.x + el.w, y: el.y },
-    { h: 'e', x: el.x + el.w, y: cy },
-    { h: 'se', x: el.x + el.w, y: el.y + el.h },
-    { h: 's', x: cx, y: el.y + el.h },
-    { h: 'sw', x: el.x, y: el.y + el.h },
-    { h: 'w', x: el.x, y: cy },
-  ];
+  const isLine = el.kind === 'line' || el.kind === 'arrow';
+  const handles: { h: ResizeHandle; x: number; y: number }[] = isLine
+    ? [
+        { h: 'ep-start', x: el.x, y: el.y },
+        { h: 'ep-end', x: el.x + el.w, y: el.y + el.h },
+      ]
+    : [
+        { h: 'nw', x: el.x, y: el.y },
+        { h: 'n', x: cx, y: el.y },
+        { h: 'ne', x: el.x + el.w, y: el.y },
+        { h: 'e', x: el.x + el.w, y: cy },
+        { h: 'se', x: el.x + el.w, y: el.y + el.h },
+        { h: 's', x: cx, y: el.y + el.h },
+        { h: 'sw', x: el.x, y: el.y + el.h },
+        { h: 'w', x: el.x, y: cy },
+      ];
   return (
     <svg
       className="absolute left-0 top-0"
@@ -1288,25 +1680,29 @@ function SelectionHandles({
             style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
           />
         ))}
-        {/* handle de giro */}
-        <line
-          x1={cx}
-          y1={el.y}
-          x2={cx}
-          y2={el.y - 26 / zoom}
-          stroke="var(--brand)"
-          strokeWidth={sw}
-        />
-        <circle
-          cx={cx}
-          cy={el.y - 30 / zoom}
-          r={6 / zoom}
-          fill="var(--surface)"
-          stroke="var(--brand)"
-          strokeWidth={sw}
-          onPointerDown={(e) => onHandle(e, 'rotate')}
-          style={{ cursor: 'grab', pointerEvents: 'all' }}
-        />
+        {/* handle de giro (não faz sentido para linha/seta) */}
+        {!isLine && (
+          <>
+            <line
+              x1={cx}
+              y1={el.y}
+              x2={cx}
+              y2={el.y - 26 / zoom}
+              stroke="var(--brand)"
+              strokeWidth={sw}
+            />
+            <circle
+              cx={cx}
+              cy={el.y - 30 / zoom}
+              r={6 / zoom}
+              fill="var(--surface)"
+              stroke="var(--brand)"
+              strokeWidth={sw}
+              onPointerDown={(e) => onHandle(e, 'rotate')}
+              style={{ cursor: 'grab', pointerEvents: 'all' }}
+            />
+          </>
+        )}
       </g>
     </svg>
   );
@@ -1324,9 +1720,17 @@ function InlineTextEditor({
 }) {
   const [value, setValue] = useState(el.text ?? '');
   const ref = useRef<HTMLTextAreaElement | null>(null);
-  useLayoutEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
+  // Foca depois que o ciclo de pointer/click do criador assenta: focar
+  // sincronamente durante o pointerdown (com pointer capture no viewport)
+  // faz o browser reverter o foco para <body> no click seguinte, disparando
+  // onBlur → commit → desmonta o editor antes da edição. setTimeout(0) só
+  // dispara depois de pointerup/click, então o foco "gruda".
+  useEffect(() => {
+    const t = setTimeout(() => {
+      ref.current?.focus();
+      ref.current?.select();
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
   return (
     <textarea
@@ -1351,5 +1755,66 @@ function InlineTextEditor({
         fontFamily: 'ui-sans-serif, system-ui, sans-serif',
       }}
     />
+  );
+}
+
+// --- Item do menu de contexto ---
+function CtxItem({
+  children,
+  onClick,
+  disabled,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex w-full items-center px-3 py-1.5 text-left text-sm transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent ${
+        danger ? 'text-red' : 'text-fg'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// --- Seletor de ponta de linha/seta ---
+const TIP_GLYPH: Record<ArrowTip, string> = {
+  none: '—',
+  arrow: '▶',
+  dot: '●',
+  bar: '▮',
+};
+function TipSelector({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: ArrowTip;
+  onChange: (v: ArrowTip) => void;
+}) {
+  return (
+    <div className="seg">
+      <span className="px-1 text-[10px] text-muted">{label}</span>
+      {ARROW_TIPS.map((t) => (
+        <button
+          key={t}
+          type="button"
+          title={t}
+          data-active={value === t}
+          onClick={() => onChange(t)}
+          className="px-1.5 text-xs"
+        >
+          {TIP_GLYPH[t]}
+        </button>
+      ))}
+    </div>
   );
 }

@@ -76,9 +76,9 @@ export function parseOpenEm(text: string): Board {
       obj.background === 'grid' || obj.background === 'dots' || obj.background === 'blank'
         ? obj.background
         : 'grid',
-    elements: (obj.elements as unknown[]).map((e) =>
-      normalizeElement(e as Record<string, unknown>),
-    ),
+    elements: (obj.elements as unknown[])
+      .map((e) => normalizeElement(e as Record<string, unknown>))
+      .filter((e) => (e.kind as string) !== 'mindnode'), // mapa mental foi removido
     questionId: typeof obj.questionId === 'string' ? obj.questionId : undefined,
   };
 }
@@ -108,10 +108,18 @@ function normalizeElement(el: Record<string, unknown>): import('./types').BoardE
     latex: typeof e.latex === 'string' ? e.latex : undefined,
     color: typeof e.color === 'string' ? e.color : undefined,
     fill: typeof e.fill === 'string' ? e.fill : undefined,
+    textColor: typeof e.textColor === 'string' ? e.textColor : undefined,
     strokeWidth: typeof e.strokeWidth === 'number' ? e.strokeWidth : undefined,
     fontSize: typeof e.fontSize === 'number' ? e.fontSize : undefined,
     highlight: typeof e.highlight === 'boolean' ? e.highlight : undefined,
-    linkTo: typeof e.linkTo === 'string' ? e.linkTo : undefined,
+    arrowStart:
+      e.arrowStart === 'none' || e.arrowStart === 'arrow' || e.arrowStart === 'dot' || e.arrowStart === 'bar'
+        ? e.arrowStart
+        : undefined,
+    arrowEnd:
+      e.arrowEnd === 'none' || e.arrowEnd === 'arrow' || e.arrowEnd === 'dot' || e.arrowEnd === 'bar'
+        ? e.arrowEnd
+        : undefined,
     src: typeof e.src === 'string' ? e.src : undefined,
   };
 }

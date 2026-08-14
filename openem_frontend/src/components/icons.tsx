@@ -17,6 +17,7 @@ import {
   Eraser,
   Exam,
   Flame,
+  BoundingBox,
   Hand,
   Heart,
   Highlighter,
@@ -27,6 +28,8 @@ import {
   Lightning,
   LineSegment,
   LockSimple,
+  MagnifyingGlassMinus,
+  MagnifyingGlassPlus,
   Minus,
   Moon,
   Note,
@@ -43,7 +46,6 @@ import {
   Target,
   TextT,
   Timer,
-  TreeStructure,
   Trophy,
   User,
   X,
@@ -121,8 +123,10 @@ export const IconDiamond = shim(Diamond, 'duotone');
 export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
 export const IconSticky = shim(Note, 'duotone');
-export const IconMind = shim(TreeStructure, 'duotone');
 export const IconImage = shim(ImageIcon, 'duotone');
 export const IconEraser = shim(Eraser, 'duotone');
 export const IconHand = shim(Hand, 'duotone');
 export const IconMinus = shim(Minus, 'bold');
+export const IconZoomIn = shim(MagnifyingGlassPlus, 'bold');
+export const IconZoomOut = shim(MagnifyingGlassMinus, 'bold');
+export const IconFit = shim(BoundingBox, 'bold');

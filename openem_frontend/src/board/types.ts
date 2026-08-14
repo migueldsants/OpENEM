@@ -10,15 +10,11 @@ export type ElKind =
   | 'text'
   | 'formula'
   | 'sticky'
-  | 'mindnode'
   | 'image'
   | 'stroke';
 
 /** Fundo do quadro. */
 export type BoardBackground = 'grid' | 'dots' | 'blank';
-
-/** Modos da borracha: apaga elemento inteiro ou corta pedaços de um traço. */
-export type EraserMode = 'object' | 'stroke';
 
 /** Tamanho da célula da grade (snap e fundo). */
 export const GRID = 20;
@@ -42,18 +38,21 @@ export interface BoardElement {
   rotation?: number;
   /** Traço livre (lápis/highlighter) — pontos em coords do mundo. */
   points?: Point[];
-  /** Conteúdo textual (text/sticky/mindnode). */
+  /** Conteúdo textual (text/sticky). */
   text?: string;
   /** LaTeX da fórmula (kind === 'formula'). */
   latex?: string;
   color?: string;
   fill?: string;
+  /** Cor do texto (text/sticky). Default segue o tema. */
+  textColor?: string;
   strokeWidth?: number;
   fontSize?: number;
   /** Highlighter: traço grosso semi-transparente. */
   highlight?: boolean;
-  /** Mapa mental: id do nó de destino da ligação (seta). */
-  linkTo?: string;
+  /** Pontas de linha/seta: 'none' | 'arrow' | 'dot' | 'bar'. */
+  arrowStart?: 'none' | 'arrow' | 'dot' | 'bar';
+  arrowEnd?: 'none' | 'arrow' | 'dot' | 'bar';
   /** Imagem embutida como dataURL (kind === 'image'). */
   src?: string;
 }

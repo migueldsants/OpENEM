@@ -5,10 +5,8 @@
 // fora do chunk principal.
 
 import type { Board, BoardElement } from './types';
-import { elementCenter } from './transform';
-import { diamondPathD, strokeOutlineD } from './stroke-utils';
-
-const ARROW_ID = 'board-arrowhead';
+import { GRID } from './types';
+import { diamondPathD, strokeOutlineD, arrowMarkerId, arrowMarkerInnerSvg, resolveArrow, type ArrowStyle } from './stroke-utils';
 
 export function RenderElement({
   el,
@@ -26,6 +24,9 @@ export function RenderElement({
 
   const wrap = (children: React.ReactNode) =>
     transform ? <g transform={transform}>{children}</g> : <>{children}</>;
+
+  const markerRef = (end: 'start' | 'end', style: ArrowStyle) =>
+    style === 'none' ? undefined : `url(#${arrowMarkerId(el.id, end)})`;
 
   switch (el.kind) {
     case 'rect':
@@ -64,6 +65,9 @@ export function RenderElement({
         />,
       );
     case 'line':
+    case 'arrow': {
+      const st = resolveArrow(el, 'start');
+      const en = resolveArrow(el, 'end');
       return wrap(
         <line
           x1={el.x}
@@ -73,21 +77,11 @@ export function RenderElement({
           stroke={stroke}
           strokeWidth={sw}
           strokeLinecap="round"
+          markerStart={markerRef('start', st)}
+          markerEnd={markerRef('end', en)}
         />,
       );
-    case 'arrow':
-      return wrap(
-        <line
-          x1={el.x}
-          y1={el.y}
-          x2={el.x + el.w}
-          y2={el.y + el.h}
-          stroke={stroke}
-          strokeWidth={sw}
-          strokeLinecap="round"
-          markerEnd={`url(#${ARROW_ID})`}
-        />,
-      );
+    }
     case 'stroke': {
       const d = strokeOutlineD(el);
       if (!d) return null;
@@ -108,6 +102,7 @@ export function RenderElement({
           fill={stroke}
           fontSize={el.fontSize ?? 18}
           fontFamily="ui-sans-serif, system-ui, sans-serif"
+          dominantBaseline="text-before-edge"
         >
           {(el.text ?? '').split('\n').map((line, i) => (
             <tspan key={i} x={el.x} dy={i === 0 ? 0 : (el.fontSize ?? 18) * 1.2}>
@@ -134,43 +129,9 @@ export function RenderElement({
               style={{
                 fontFamily: 'ui-sans-serif, system-ui, sans-serif',
                 fontSize: el.fontSize ?? 14,
-                color: '#5a4a1a',
+                color: el.textColor ?? '#5a4a1a',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
-              }}
-            >
-              {el.text}
-            </div>
-          </foreignObject>
-        </g>,
-      );
-    case 'mindnode':
-      return wrap(
-        <g>
-          <rect
-            x={el.x}
-            y={el.y}
-            width={el.w}
-            height={el.h}
-            rx={el.h / 2}
-            fill={el.fill ?? 'var(--brand, #e0234e)'}
-            stroke={stroke ?? 'transparent'}
-            strokeWidth={1}
-          />
-          <foreignObject x={el.x} y={el.y} width={el.w} height={el.h}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '100%',
-                height: '100%',
-                fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                fontSize: el.fontSize ?? 14,
-                fontWeight: 600,
-                color: '#fff',
-                textAlign: 'center',
-                padding: '0 10px',
               }}
             >
               {el.text}
@@ -204,33 +165,6 @@ export function RenderElement({
   }
 }
 
-/** Renderiza as setas de ligação do mapa mental (depois dos nós, por baixo). */
-function MindLinks({ board }: { board: Board }) {
-  const nodes = board.elements.filter((e) => e.kind === 'mindnode' && e.linkTo);
-  return (
-    <>
-      {nodes.map((n) => {
-        const target = board.elements.find((e) => e.id === n.linkTo);
-        if (!target) return null;
-        const a = elementCenter(n);
-        const b = elementCenter(target);
-        return (
-          <line
-            key={`link-${n.id}`}
-            x1={a.x}
-            y1={a.y}
-            x2={b.x}
-            y2={b.y}
-            stroke="var(--muted, #6b6473)"
-            strokeWidth={2}
-            markerEnd={`url(#${ARROW_ID})`}
-          />
-        );
-      })}
-    </>
-  );
-}
-
 export function BoardSVG({
   board,
   width,
@@ -249,40 +183,54 @@ export function BoardSVG({
   showBackground?: boolean;
 }) {
   const bg = board.background ?? 'grid';
+  const arrowEls = board.elements.filter((e) => e.kind === 'line' || e.kind === 'arrow');
   return (
     <svg
       width={width}
       height={height}
       viewBox={viewBox ?? `0 0 ${width ?? 1000} ${height ?? 700}`}
       xmlns="http://www.w3.org/2000/svg"
-      style={{ background: 'var(--bg, #fff)', display: 'block' }}
+      style={{ background: showBackground ? 'var(--bg, #fff)' : 'transparent', display: 'block' }}
     >
       <defs>
-        <marker
-          id={ARROW_ID}
-          viewBox="0 0 10 10"
-          refX="8"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
-        >
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
-        </marker>
+        {arrowEls.flatMap((el) => {
+          const color = el.color ?? 'currentColor';
+          const ends: ('start' | 'end')[] = ['start', 'end'];
+          return ends
+            .map((end) => {
+              const style = resolveArrow(el, end);
+              if (style === 'none') return null;
+              return (
+                <marker
+                  key={`${el.id}-${end}`}
+                  id={arrowMarkerId(el.id, end)}
+                  viewBox="0 0 10 10"
+                  refX="8"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                  dangerouslySetInnerHTML={{ __html: arrowMarkerInnerSvg(style, color) }}
+                />
+              );
+            })
+            .filter(Boolean);
+        })}
         {showBackground && bg !== 'blank' && (
           <pattern
             id="board-bg"
-            width={bg === 'dots' ? 24 : 32}
-            height={bg === 'dots' ? 24 : 32}
+            width={GRID}
+            height={GRID}
             patternUnits="userSpaceOnUse"
           >
             {bg === 'dots' ? (
-              <circle cx={2} cy={2} r={1.5} fill="var(--line, #ece5ee)" />
+              <circle cx={2} cy={2} r={1.5} fill="var(--muted, #6b6473)" fillOpacity={0.3} />
             ) : (
               <path
-                d="M 32 0 L 0 0 0 32"
+                d={`M ${GRID} 0 L 0 0 0 ${GRID}`}
                 fill="none"
-                stroke="var(--line, #ece5ee)"
+                stroke="var(--muted, #6b6473)"
+                strokeOpacity={0.22}
                 strokeWidth="1"
               />
             )}
@@ -292,7 +240,6 @@ export function BoardSVG({
       {showBackground && bg !== 'blank' && (
         <rect width="100%" height="100%" fill="url(#board-bg)" />
       )}
-      <MindLinks board={board} />
       {board.elements.map((el) => (
         <g key={el.id} data-id={el.id}>
           <RenderElement el={el} renderFormula={renderFormula} />

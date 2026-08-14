@@ -25,6 +25,7 @@ import {
   downloadSvg,
   downloadText,
   importOpenEmFile,
+  printPDF,
   toPNGDataUrl,
   toSVG,
 } from '../board/export';
@@ -52,7 +53,7 @@ function Thumb({ board }: { board: Board }) {
     ) : null;
   const b = boardsBBox(board.elements);
   return (
-    <div className="aspect-video overflow-hidden rounded-lg bg-bg">
+    <div className="aspect-video overflow-hidden rounded-t-[1.1rem] bg-bg">
       <BoardSVG
         board={board}
         width={300}
@@ -141,7 +142,7 @@ export default function Quadro() {
     }
   }
 
-  async function onExport(id: string, kind: 'openem' | 'png' | 'svg') {
+  async function onExport(id: string, kind: 'openem' | 'png' | 'svg' | 'pdf') {
     const b = boards.find((x) => x.id === id);
     setMenuFor(null);
     if (!b) return;
@@ -152,8 +153,10 @@ export default function Quadro() {
         downloadText(toOpenEm(b), `${slug}.openem`);
       } else if (kind === 'svg') {
         downloadSvg(await toSVG(b), `${slug}.svg`);
+      } else if (kind === 'pdf') {
+        await printPDF(b);
       } else {
-        downloadDataUrl(await toPNGDataUrl(b, 2), `${slug}.png`);
+        downloadDataUrl(await toPNGDataUrl(b, { scale: 2 }), `${slug}.png`);
       }
     } catch (err) {
       setError(
@@ -173,7 +176,7 @@ export default function Quadro() {
             Quadro de Estudos
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Mapas mentais, fórmulas e rascunhos — salvos no dispositivo.
+            Fórmulas, rascunhos e diagramas — salvos no dispositivo.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -210,14 +213,14 @@ export default function Quadro() {
         <EmptyState
           icon={IconBoard}
           title="Nenhum quadro ainda"
-          description="Crie mapas mentais, escreva fórmulas e rabisque geometria num canvas livre voltado para o estudo."
+          description="Escreva fórmulas, rabisque geometria e monte diagramas num canvas livre voltado para o estudo."
           action={{ onClick: newBoard, label: 'Criar primeiro quadro' }}
           tip="Ou importe um arquivo .openem"
         />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {boards.map((b) => (
-            <div key={b.id} className="card card-raised overflow-hidden">
+            <div key={b.id} className="card card-raised">
               <button
                 onClick={() => navigate(`/quadro/${b.id}`)}
                 className="block w-full"
@@ -293,6 +296,12 @@ export default function Quadro() {
                           icon={<ImageIcon width={15} height={15} />}
                         >
                           Exportar SVG
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => onExport(b.id, 'pdf')}
+                          icon={<ImageIcon width={15} height={15} />}
+                        >
+                          Exportar PDF
                         </MenuItem>
                         <MenuItem
                           onClick={() => onDuplicate(b.id)}

@@ -14,6 +14,13 @@ import {
   pointInPolygon,
   splitStrokeAtEraser,
   moveElements,
+  moveEndpoint,
+  bringToFront,
+  bringForward,
+  sendBackward,
+  sendToBack,
+  atFront,
+  atBack,
 } from './transform';
 import type { BoardElement } from './types';
 
@@ -78,9 +85,72 @@ describe('transform helpers', () => {
     expect(r.w).toBeGreaterThanOrEqual(4);
   });
 
-  it('hitTest acerta dentro do bbox', () => {
-    expect(hitTest(rect(), { x: 120, y: 120 })).toBe(true);
-    expect(hitTest(rect(), { x: 50, y: 50 })).toBe(false);
+  it('resizeElement escala texto uniformemente (w/h/fonte pela razão dominante)', () => {
+    const t = rect({ kind: 'text', id: 't', w: 86, h: 24, fontSize: 18 });
+    // Arrasto vertical dominante (h: 24 → 48, razão 2) → dobra tudo, NW fixo.
+    const out = resizeElement(t, 'se', 0, 24);
+    expect(out.h).toBe(48);
+    expect(out.w).toBe(172); // 86 * 2 (uniforme, não só a altura)
+    expect(out.fontSize).toBe(36);
+    expect(out.x).toBe(100);
+    expect(out.y).toBe(100);
+  });
+
+  it('resizeElement texto: canto NW mantém o SE fixo', () => {
+    const t = rect({ kind: 'text', id: 't', x: 100, y: 100, w: 86, h: 24, fontSize: 18 });
+    // Arrasta NW p/ cima-esquerda (dx,dy negativos): razão 1.5, SE (186,124) fixo.
+    const out = resizeElement(t, 'nw', -43, -12);
+    expect(out.x + out.w).toBeCloseTo(186, 0);
+    expect(out.y + out.h).toBeCloseTo(124, 0);
+    expect(out.fontSize).toBeGreaterThan(18);
+  });
+
+  it('resizeElement texto: encolher respeita mínimo de fonte 6 e bbox 4', () => {
+    const t = rect({ kind: 'text', id: 't', w: 86, h: 24, fontSize: 18 });
+    const out = resizeElement(t, 'se', -82, -20); // arrasto p/ dentro → encolhe
+    expect(out.fontSize).toBe(6);
+    expect(out.w).toBeGreaterThanOrEqual(4);
+    expect(out.h).toBeGreaterThanOrEqual(4);
+  });
+
+  it('resizeElement não muda a fonte de formas (só texto escala)', () => {
+    const out = resizeElement(rect(), 'se', 0, 40);
+    expect(out.h).toBe(90);
+    expect((out as BoardElement).fontSize).toBeUndefined();
+  });
+
+  it('hitTest: retângulo vazado acerta só na borda (não no centro do bbox)', () => {
+    // retângulo 100,100 80x50, sem preenchimento → borda apenas.
+    expect(hitTest(rect(), { x: 100, y: 120 })).toBe(true); // aresta esquerda
+    expect(hitTest(rect(), { x: 140, y: 100 })).toBe(true); // aresta superior
+    expect(hitTest(rect(), { x: 140, y: 125 })).toBe(false); // centro do bbox
+    expect(hitTest(rect(), { x: 50, y: 50 })).toBe(false); // fora
+  });
+
+  it('hitTest: retângulo preenchido acerta em qualquer ponto interno', () => {
+    const r = rect({ fill: '#2563eb' });
+    expect(hitTest(r, { x: 140, y: 125 })).toBe(true); // centro
+    expect(hitTest(r, { x: 100, y: 120 })).toBe(true); // borda
+    expect(hitTest(r, { x: 50, y: 50 })).toBe(false); // fora
+  });
+
+  it('hitTest: elipse vazada acerta na borda, não no centro', () => {
+    const e = rect({ kind: 'ellipse', x: 0, y: 0, w: 80, h: 80 });
+    expect(hitTest(e, { x: 40, y: 0 })).toBe(true); // topo (borda)
+    expect(hitTest(e, { x: 40, y: 40 })).toBe(false); // centro
+    const ef = rect({ kind: 'ellipse', x: 0, y: 0, w: 80, h: 80, fill: '#2563eb' });
+    expect(hitTest(ef, { x: 40, y: 40 })).toBe(true); // centro preenchido
+  });
+
+  it('hitTest: forma rotacionada leva o ponto ao frame local', () => {
+    // retângulo 80x50 girado 90° em torno do centro (140,125): vira 50(larg)x80(alt).
+    const r = rect({ rotation: 90 });
+    // (115,125) = meio da aresta esquerda da forma girada → borda → acerta.
+    expect(hitTest(r, { x: 115, y: 125 })).toBe(true);
+    // (140,125) = centro da forma girada → vazado, longe da borda → não acerta.
+    expect(hitTest(r, { x: 140, y: 125 })).toBe(false);
+    // Preenchido: centro acerta.
+    expect(hitTest(rect({ rotation: 90, fill: '#2563eb' }), { x: 140, y: 125 })).toBe(true);
   });
 
   it('hitTest acerta traço por proximidade', () => {
@@ -167,10 +237,13 @@ describe('transform helpers', () => {
     expect(pointInPolygon({ x: 0, y: 0 }, poly)).toBe(false);
   });
 
-  it('hitTest acerta losango', () => {
+  it('hitTest acerta losango (borda se vazio, interior se preenchido)', () => {
     const d = rect({ kind: 'diamond', x: 0, y: 0, w: 40, h: 40 });
-    expect(hitTest(d, { x: 20, y: 20 })).toBe(true);
+    expect(hitTest(d, { x: 20, y: 0 })).toBe(true); // vértice (borda)
+    expect(hitTest(d, { x: 20, y: 20 })).toBe(false); // centro do losango vazio
     expect(hitTest(d, { x: 0, y: 0 })).toBe(false);
+    const df = rect({ kind: 'diamond', x: 0, y: 0, w: 40, h: 40, fill: '#2563eb' });
+    expect(hitTest(df, { x: 20, y: 20 })).toBe(true); // centro preenchido
   });
 
   it('splitStrokeAtEraser: sem corte', () => {
@@ -212,5 +285,92 @@ describe('transform helpers', () => {
     ]);
     expect(bb.x).toBeLessThanOrEqual(5);
     expect(bb.x + bb.w).toBeGreaterThanOrEqual(140);
+  });
+
+  describe('moveEndpoint (alças de linha/seta)', () => {
+    const line = (over: Partial<BoardElement> = {}): BoardElement => ({
+      id: 'l',
+      kind: 'line',
+      x: 100,
+      y: 100,
+      w: 50,
+      h: 0,
+      ...over,
+    });
+
+    it('ep-end redefine o delta até o ponto', () => {
+      const out = moveEndpoint(line(), 'ep-end', { x: 200, y: 130 });
+      expect(out.x).toBe(100);
+      expect(out.y).toBe(100);
+      expect(out.w).toBe(100);
+      expect(out.h).toBe(30);
+    });
+
+    it('ep-start redefine a origem e ajusta o delta', () => {
+      const out = moveEndpoint(line(), 'ep-start', { x: 80, y: 120 });
+      // extremidade final (x+w, y+h) = (150, 100) permanece
+      expect(out.x).toBe(80);
+      expect(out.y).toBe(120);
+      expect(out.x + out.w).toBe(150);
+      expect(out.y + out.h).toBe(100);
+    });
+  });
+
+  describe('z-order (camadas)', () => {
+    const abc = (): BoardElement[] => [
+      rect({ id: 'a' }),
+      rect({ id: 'b' }),
+      rect({ id: 'c' }),
+    ];
+
+    it('bringToFront manda o selecionado para o final (topo)', () => {
+      const out = bringToFront(abc(), ['a']);
+      expect(out.map((e) => e.id)).toEqual(['b', 'c', 'a']);
+    });
+
+    it('sendToBack manda o selecionado para o início (fundo)', () => {
+      const out = sendToBack(abc(), ['c']);
+      expect(out.map((e) => e.id)).toEqual(['c', 'a', 'b']);
+    });
+
+    it('bringForward avança uma posição', () => {
+      const out = bringForward(abc(), ['a']);
+      expect(out.map((e) => e.id)).toEqual(['b', 'a', 'c']);
+    });
+
+    it('sendBackward recua uma posição', () => {
+      const out = sendBackward(abc(), ['c']);
+      expect(out.map((e) => e.id)).toEqual(['a', 'c', 'b']);
+    });
+
+    it('preserva ordem relativa na multi-seleção (bringToFront)', () => {
+      // a,b selecionados (nessa ordem no array) → vão ao topo mantendo a,b
+      const out = bringToFront(abc(), ['a', 'b']);
+      expect(out.map((e) => e.id)).toEqual(['c', 'a', 'b']);
+    });
+
+    it('bringForward com múltiplos preserva ordem relativa', () => {
+      const els = [rect({ id: 'a' }), rect({ id: 'x' }), rect({ id: 'b' }), rect({ id: 'y' }), rect({ id: 'c' })];
+      // a,b avançam uma posição cada, trocando só com não-selecionados (x,y)
+      const out = bringForward(els, ['a', 'b']);
+      expect(out.map((e) => e.id)).toEqual(['x', 'a', 'y', 'b', 'c']);
+    });
+
+    it('idempotente nos limites (já no topo/fundo)', () => {
+      const els = abc();
+      expect(bringForward(els, ['c']).map((e) => e.id)).toEqual(['a', 'b', 'c']);
+      expect(sendBackward(els, ['a']).map((e) => e.id)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('atFront/atBack detectam os limites', () => {
+      const els = abc();
+      expect(atFront(els, ['c'])).toBe(true);
+      expect(atFront(els, ['a'])).toBe(false);
+      expect(atBack(els, ['a'])).toBe(true);
+      expect(atBack(els, ['c'])).toBe(false);
+      // multi: todos no topo
+      expect(atFront(abc(), ['b', 'c'])).toBe(true);
+      expect(atFront(abc(), ['a', 'c'])).toBe(false);
+    });
   });
 });

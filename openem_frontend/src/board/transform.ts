@@ -158,7 +158,9 @@ export type ResizeHandle =
   | 'se'
   | 's'
   | 'sw'
-  | 'w';
+  | 'w'
+  | 'ep-start'
+  | 'ep-end';
 
 /**
  * Redimensiona um elemento a partir do arrasto de um handle. O delta
@@ -200,10 +202,77 @@ export function resizeElement(
     if (top) y = el.y + el.h - 4;
     h = 4;
   }
+  // Texto: o render desenha em (x, y) com fontSize e o bbox é casado ao texto
+  // (medido no commit). Redimensionar tem que escalar w, h E a fonte pela
+  // MESMA razão (mantendo a aresta/canto oposto ao handle fixo), senão a caixa
+  // e o texto dessincronizam. A razão segue o EIXO DOMINANTE do arrasto (maior
+  // variação relativa) — funciona p/ crescer, encolher e arrastos horizontais/
+  // verticais mistos. O eixo não envolvido no handle tem razão 1, então nunca
+  // é escolhido (|1−1| = 0).
+  if (el.kind === 'text' && el.h > 0) {
+    const oldW = el.w || 1;
+    const oldH = el.h || 1;
+    const rw = w / oldW;
+    const rh = h / oldH;
+    const ratio = Math.abs(rw - 1) >= Math.abs(rh - 1) ? rw : rh;
+    const fontSize = Math.max(6, (el.fontSize ?? 18) * ratio);
+    const newW = Math.max(4, oldW * ratio);
+    const newH = Math.max(4, oldH * ratio);
+    const ax = left ? el.x + el.w : el.x;
+    const ay = top ? el.y + el.h : el.y;
+    const nx = left ? ax - newW : ax;
+    const ny = top ? ay - newH : ay;
+    return { ...el, x: nx, y: ny, w: newW, h: newH, fontSize };
+  }
   return { ...el, x, y, w, h };
 }
 
-/** Hit-test: um ponto (em coords do mundo) está dentro do bbox do elemento? */
+/**
+ * Move uma extremidade de linha/seta para `world`. `ep-start` redefine a
+ * origem (x,y); `ep-end` redefine o delta (w,h) até o ponto. Usado pelas alças
+ * de extremidade dedicadas (em vez dos handles de bbox, que não fazem sentido
+ * para uma reta).
+ */
+export function moveEndpoint(
+  el: BoardElement,
+  which: 'ep-start' | 'ep-end',
+  world: Point,
+): BoardElement {
+  if (which === 'ep-start') {
+    const w = el.x + el.w - world.x;
+    const h = el.y + el.h - world.y;
+    return { ...el, x: world.x, y: world.y, w, h };
+  }
+  return { ...el, w: world.x - el.x, h: world.y - el.y };
+}
+
+/** Tolerância de hit (px além da metade do traço) p/ bordas de formas vazadas. */
+const HIT_TOL = 6;
+
+/** Levava o ponto ao frame local do elemento (sem rotação) p/ testes de forma. */
+function localPoint(el: BoardElement, p: Point): Point {
+  const rot = el.rotation ?? 0;
+  return rot ? rotateAround(p, elementCenter(el), -rot) : p;
+}
+
+/** Menor distância de um ponto a qualquer aresta de um polígono (fechado). */
+function distToPolygon(p: Point, poly: Point[]): number {
+  let min = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    min = Math.min(min, distToSegment(p, a, b));
+  }
+  return min;
+}
+
+/**
+ * Hit-test pelo contorno/área real da forma, não pelo bbox. Formas preenchidas
+ * acertam em qualquer ponto interno; formas vazadas só na borda (com tol),
+ * assim clicar dentro de um retângulo sem preenchimento não "rouba" a seleção
+ * de um traço atrás dele — e a borracha apaga ao passar pela coisa em si,
+ * não pela caixa ao redor. line/arrow/stroke já são geométricos por natureza.
+ */
 export function hitTest(el: BoardElement, p: Point): boolean {
   if (el.kind === 'stroke' && el.points && el.points.length > 0) {
     // Tolerância para traços: verifica proximidade a qualquer segmento.
@@ -218,14 +287,118 @@ export function hitTest(el: BoardElement, p: Point): boolean {
     const b = { x: el.x + el.w, y: el.y + el.h };
     return distToSegment(p, a, b) <= (el.strokeWidth ?? 2) + 6;
   }
+  const q = localPoint(el, p);
+  const tol = (el.strokeWidth ?? 2) / 2 + HIT_TOL;
   if (el.kind === 'diamond') {
-    // Aplica rotação inversa antes do teste de polígono.
-    let q = p;
-    const rot = el.rotation ?? 0;
-    if (rot) q = rotateAround(p, elementCenter(el), -rot);
-    return pointInPolygon(q, diamondPoints(el));
+    const verts = diamondPoints(el);
+    if (el.fill) return pointInPolygon(q, verts);
+    return distToPolygon(q, verts) <= tol;
   }
-  return p.x >= el.x && p.x <= el.x + el.w && p.y >= el.y && p.y <= el.y + el.h;
+  if (el.kind === 'ellipse') {
+    const rx = el.w / 2;
+    const ry = el.h / 2;
+    if (rx <= 0 || ry <= 0) return false;
+    const cx = el.x + el.w / 2;
+    const cy = el.y + el.h / 2;
+    // Coordenadas normalizadas: 1 = borda, <1 = dentro, >1 = fora.
+    const d = Math.hypot((q.x - cx) / rx, (q.y - cy) / ry);
+    if (el.fill) return d <= 1;
+    return Math.abs(d - 1) <= tol / Math.min(rx, ry);
+  }
+  if (el.kind === 'rect') {
+    const left = el.x;
+    const right = el.x + el.w;
+    const top = el.y;
+    const bottom = el.y + el.h;
+    const insideX = q.x >= left && q.x <= right;
+    const insideY = q.y >= top && q.y <= bottom;
+    if (insideX && insideY) {
+      if (el.fill) return true;
+      // Vazado: distância à aresta mais próxima.
+      const m = Math.min(q.x - left, right - q.x, q.y - top, bottom - q.y);
+      return m <= tol;
+    }
+    // Fora: distância ao canto/aresta mais próxima (igual à borda do retângulo).
+    const dx = Math.max(left - q.x, q.x - right, 0);
+    const dy = Math.max(top - q.y, q.y - bottom, 0);
+    return Math.hypot(dx, dy) <= tol;
+  }
+  // text/sticky/image/formula: preenchem a caixa (bbox no frame local).
+  return q.x >= el.x && q.x <= el.x + el.w && q.y >= el.y && q.y <= el.y + el.h;
+}
+
+/**
+ * Contenção no bbox (com rotação levada ao frame local). Usado no fallback de
+ * "arrastar seleção existente": se o clique não acertou a geometria de ninguém,
+ * mas caiu dentro do bbox de um elemento já selecionado, move o grupo — assim
+ * dá pra arrastar uma forma vazada pelo interior depois de selecioná-la.
+ */
+export function bboxHit(el: BoardElement, p: Point): boolean {
+  const q = localPoint(el, p);
+  return q.x >= el.x && q.x <= el.x + el.w && q.y >= el.y && q.y <= el.y + el.h;
+}
+
+/**
+ * A borracha (círculo de centro `p` e raio `r`) encosta na geometria desenhada
+ * do elemento? Diferente do hitTest de seleção (tolerância fixa do traço),
+ * usa o raio da borracha — assim a borracha apaga setas/linhas/formas ao
+ * encostar, não só ao cruzar o eixo exato. Formas vazadas testam só a borda;
+ * preenchidas, qualquer ponto interno (ou dentro do raio).
+ */
+export function eraserHit(el: BoardElement, p: Point, r: number): boolean {
+  if (el.kind === 'stroke' && el.points && el.points.length > 0) {
+    for (let i = 1; i < el.points.length; i++) {
+      if (distToSegment(p, el.points[i - 1], el.points[i]) <= r) return true;
+    }
+    return false;
+  }
+  if (el.kind === 'line' || el.kind === 'arrow') {
+    return (
+      distToSegment(p, { x: el.x, y: el.y }, { x: el.x + el.w, y: el.y + el.h }) <= r
+    );
+  }
+  const q = localPoint(el, p);
+  if (el.kind === 'diamond') {
+    const verts = diamondPoints(el);
+    if (el.fill) return pointInPolygon(q, verts) || distToPolygon(q, verts) <= r;
+    return distToPolygon(q, verts) <= r;
+  }
+  if (el.kind === 'ellipse') {
+    const rx = el.w / 2;
+    const ry = el.h / 2;
+    if (rx <= 0 || ry <= 0) return false;
+    const cx = el.x + el.w / 2;
+    const cy = el.y + el.h / 2;
+    const d = Math.hypot((q.x - cx) / rx, (q.y - cy) / ry); // 1 = borda
+    const tol = r / Math.min(rx, ry);
+    if (el.fill) return d <= 1 + tol;
+    return Math.abs(d - 1) <= tol;
+  }
+  if (el.kind === 'rect') {
+    const left = el.x;
+    const right = el.x + el.w;
+    const top = el.y;
+    const bottom = el.y + el.h;
+    const insideX = q.x >= left && q.x <= right;
+    const insideY = q.y >= top && q.y <= bottom;
+    if (el.fill) {
+      // eraser circle intersecta a área preenchida
+      const dx = Math.max(left - q.x, q.x - right, 0);
+      const dy = Math.max(top - q.y, q.y - bottom, 0);
+      return Math.hypot(dx, dy) <= r;
+    }
+    if (insideX && insideY) {
+      const m = Math.min(q.x - left, right - q.x, q.y - top, bottom - q.y);
+      return m <= r;
+    }
+    const dx = Math.max(left - q.x, q.x - right, 0);
+    const dy = Math.max(top - q.y, q.y - bottom, 0);
+    return Math.hypot(dx, dy) <= r;
+  }
+  // text/sticky/image/formula: bbox
+  const dx = Math.max(el.x - q.x, q.x - (el.x + el.w), 0);
+  const dy = Math.max(el.y - q.y, q.y - (el.y + el.h), 0);
+  return Math.hypot(dx, dy) <= r;
 }
 
 function distToSegment(p: Point, a: Point, b: Point): number {
@@ -294,6 +467,63 @@ export function moveElements(
   dy: number,
 ): BoardElement[] {
   return els.map((el) => (ids.has(el.id) ? moveElement(el, dx, dy) : el));
+}
+
+// --- Reordenação de camadas (z-order = ordem do array; último = topo). ---
+// Todas preservam a ordem relativa entre os selecionados.
+
+/** Move os selecionados para o final do array (topo da pilha). */
+export function bringToFront(els: BoardElement[], ids: Iterable<string>): BoardElement[] {
+  const set = new Set(ids);
+  return [...els.filter((e) => !set.has(e.id)), ...els.filter((e) => set.has(e.id))];
+}
+
+/** Move os selecionados para o início do array (fundo da pilha). */
+export function sendToBack(els: BoardElement[], ids: Iterable<string>): BoardElement[] {
+  const set = new Set(ids);
+  return [...els.filter((e) => set.has(e.id)), ...els.filter((e) => !set.has(e.id))];
+}
+
+/** Avança cada selecionado uma posição em direção ao topo, trocando só com
+ * vizinho não-selecionado (preserva a ordem relativa do grupo). */
+export function bringForward(els: BoardElement[], ids: Iterable<string>): BoardElement[] {
+  const set = new Set(ids);
+  const next = [...els];
+  for (let i = next.length - 2; i >= 0; i--) {
+    if (set.has(next[i].id) && !set.has(next[i + 1].id)) {
+      [next[i], next[i + 1]] = [next[i + 1], next[i]];
+    }
+  }
+  return next;
+}
+
+/** Recua cada selecionado uma posição em direção ao fundo, trocando só com
+ * vizinho não-selecionado (preserva a ordem relativa do grupo). */
+export function sendBackward(els: BoardElement[], ids: Iterable<string>): BoardElement[] {
+  const set = new Set(ids);
+  const next = [...els];
+  for (let i = 1; i < next.length; i++) {
+    if (set.has(next[i].id) && !set.has(next[i - 1].id)) {
+      [next[i], next[i - 1]] = [next[i - 1], next[i]];
+    }
+  }
+  return next;
+}
+
+/** Indica se todos os selecionados já estão nas últimas `n` posições (topo). */
+export function atFront(els: BoardElement[], ids: Iterable<string>): boolean {
+  const set = new Set(ids);
+  const n = set.size;
+  if (n === 0) return true;
+  return els.slice(els.length - n).every((e) => set.has(e.id));
+}
+
+/** Indica se todos os selecionados já estão nas primeiras `n` posições (fundo). */
+export function atBack(els: BoardElement[], ids: Iterable<string>): boolean {
+  const set = new Set(ids);
+  const n = set.size;
+  if (n === 0) return true;
+  return els.slice(0, n).every((e) => set.has(e.id));
 }
 
 /**

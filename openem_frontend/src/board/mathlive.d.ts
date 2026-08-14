@@ -6,7 +6,7 @@ import type React from 'react';
 
 export interface MathFieldElement extends HTMLElement {
   value?: string;
-  setValue?: (v: string) => void;
+  setValue?: (v: string, options?: { silenceNotifications?: boolean }) => void;
   executeCommand?: (command: string, ...args: unknown[]) => unknown;
   focus?: () => void;
 }
