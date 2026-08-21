@@ -256,22 +256,16 @@ function StudyPath({
 // Níveis: Área > Matéria > Subtema > Deck. Cada nível é expansível e tem um
 // botão "Estudar" que monta a fila filtrada por aquele escopo (área/matéria/subtema).
 // =============================================================================
-interface ScopeButtonProps {
-  area: 'mat' | 'nat' | 'hum' | 'lin' | 'red' | 'default';
-  count: number;
-  onStudy: () => void;
-}
-
-/** Botão "Estudar" inline num nível da árvore. */
-function ScopeButton({ count, area, onStudy }: ScopeButtonProps) {
+/** Botão "Estudar" inline num nível da árvore — cor primária do tema (destaque). */
+function ScopeButton({ count, onStudy }: { count: number; onStudy: () => void }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onStudy(); }}
       title={`Estudar ${count} cards deste escopo`}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[0.68rem] font-semibold transition-colors ${AREA_BADGE[area]} hover:ring-1 hover:ring-current`}
+      className="btn btn-primary shrink-0 rounded-full px-3 py-1 text-[0.7rem] font-semibold"
     >
       Estudar
-      <span className="tabular-nums opacity-75">{count}</span>
+      <span className="tabular-nums opacity-85">{count}</span>
     </button>
   );
 }
@@ -320,8 +314,28 @@ function DeckTree({
     return items.reduce((s, d) => s + d._count.flashcards, 0);
   }
 
+  const totalCount = totalCards(decks);
+
   return (
     <div className="card card-raised overflow-hidden p-2 sm:p-3">
+      {/* Cabeçalho: "Revisar tudo" — estuda todos os decks públicos de uma vez. */}
+      <div className="mb-2 flex items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5">
+        <IconStack width={18} height={18} className="shrink-0 text-muted" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-fg">Todos os decks</p>
+          <p className="text-xs text-muted">
+            {decks.length} decks · {totalCount} cards · revisar tudo de uma vez
+          </p>
+        </div>
+        <button
+          onClick={() => onStudyScope({})}
+          title={`Revisar todos os ${totalCount} cards`}
+          className="btn btn-primary shrink-0"
+        >
+          Revisar tudo
+        </button>
+      </div>
+
       <ul className="space-y-0.5">
         {[...tree.entries()].map(([area, subjects]) => {
           const areaDecks = [...subjects.values()]
@@ -353,7 +367,6 @@ function DeckTree({
                 <span className="shrink-0 text-xs text-muted tabular-nums">{areaCards} cards</span>
                 <ScopeButton
                   count={areaCards}
-                  area={ak}
                   onStudy={() => onStudyScope({ subject: area })}
                 />
               </div>
@@ -388,7 +401,6 @@ function DeckTree({
                           <span className="shrink-0 text-xs text-muted tabular-nums">{topicCards}</span>
                           <ScopeButton
                             count={topicCards}
-                            area={tk}
                             onStudy={() => onStudyScope({ subject: area, topic })}
                           />
                         </div>
@@ -400,7 +412,6 @@ function DeckTree({
                               const subCards = totalCards(dDecks);
                               const subKey = `${area}/${topic}/${subtheme}`;
                               const isSubOpen = openSub.has(subKey);
-                              const sk = tk; // herda cor do tópico
                               const showSubHeader = subthemes.size > 1 || subtheme !== 'Geral';
                               return (
                                 <li key={subtheme}>
@@ -423,7 +434,6 @@ function DeckTree({
                                       <span className="shrink-0 text-xs text-muted tabular-nums">{subCards}</span>
                                       <ScopeButton
                                         count={subCards}
-                                        area={sk}
                                         onStudy={() => onStudyScope({ subject: area, topic, subtheme })}
                                       />
                                     </div>
@@ -448,9 +458,9 @@ function DeckTree({
                                             <button
                                               onClick={(e) => { e.stopPropagation(); onStudyScope({ subject: area, topic, subtheme }); }}
                                               title={`Estudar ${d._count.flashcards} cards`}
-                                              className="shrink-0 text-xs font-semibold text-muted transition-colors hover:text-brand"
+                                              className="btn btn-primary shrink-0 rounded-full px-2.5 py-0.5 text-[0.66rem] font-semibold"
                                             >
-                                              ▸
+                                              Estudar
                                             </button>
                                           </div>
                                         </li>
