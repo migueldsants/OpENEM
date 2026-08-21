@@ -91,14 +91,24 @@ export class FlashcardsController {
   // ---- Estudo ----
 
   @Get('study/queue')
-  @ApiOperation({ summary: 'Fila otimizada de estudo (SM-2 + Pareto)' })
+  @ApiOperation({
+    summary: 'Fila otimizada de estudo (SM-2 + Pareto) — filtros por escopo',
+  })
   studyQueue(
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
+    @Query('subject') subject?: string,
+    @Query('topic') topic?: string,
+    @Query('subtheme') subtheme?: string,
   ) {
     return this.flashcards.studyQueue(
       user.userId,
-      limit ? parseInt(limit, 10) : 20,
+      limit ? parseInt(limit, 10) : 30,
+      {
+        subject: subject || undefined,
+        topic: topic || undefined,
+        subtheme: subtheme || undefined,
+      },
     );
   }
 

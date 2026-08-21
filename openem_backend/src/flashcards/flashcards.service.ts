@@ -104,8 +104,14 @@ export class FlashcardsService {
    * - inclui todos os flashcards de decks do usuário + decks públicos;
    * - estado SM-2 vem do FlashcardReview (default: novo, dueAt = agora);
    * - Pareto via weight do deck; SM-2 via vencimento.
+   * - filtros opcionais: subject (área), topic (matéria), subtheme (subtema)
+   *   permitem estudar um escopo específico da árvore de decks.
    */
-  async studyQueue(userId: string, limit = 20): Promise<FlashcardQueueItem[]> {
+  async studyQueue(
+    userId: string,
+    limit = 30,
+    filters?: { subject?: string; topic?: string; subtheme?: string },
+  ): Promise<FlashcardQueueItem[]> {
     const reviews = await this.prisma.flashcardReview.findMany({
       where: { userId },
       select: {
@@ -131,6 +137,11 @@ export class FlashcardsService {
     const allCards = await this.prisma.flashcard.findMany({
       where: {
         OR: [{ deck: { userId } }, { deck: { isPublic: true } }],
+        deck: {
+          ...(filters?.subject ? { subject: filters.subject } : {}),
+          ...(filters?.topic ? { topic: filters.topic } : {}),
+          ...(filters?.subtheme ? { subtheme: filters.subtheme } : {}),
+        },
       },
       select: {
         id: true,

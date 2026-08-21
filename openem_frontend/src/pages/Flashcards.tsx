@@ -9,7 +9,6 @@ import {
   IconChevronRight,
   IconPlus,
   IconStack,
-  IconThumbsUp,
   IconX,
 } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
@@ -253,74 +252,45 @@ function StudyPath({
 }
 
 // =============================================================================
-// ÁRVORE — decks agrupados por área → matéria → subtema (colorido + recolhível).
+// ÁRVORE — tree-view compacta e estilizada.
+// Níveis: Área > Matéria > Subtema > Deck. Cada nível é expansível e tem um
+// botão "Estudar" que monta a fila filtrada por aquele escopo (área/matéria/subtema).
 // =============================================================================
-function DeckLeaf({
-  deck,
-  onStudy,
-  onVote,
-}: {
-  deck: FlashcardDeckBrief;
+interface ScopeButtonProps {
+  area: 'mat' | 'nat' | 'hum' | 'lin' | 'red' | 'default';
+  count: number;
   onStudy: () => void;
-  onVote: (vote: 'up' | 'down') => void;
-}) {
-  const area = areaKey(deck.topic ?? deck.subject);
+}
+
+/** Botão "Estudar" inline num nível da árvore. */
+function ScopeButton({ count, area, onStudy }: ScopeButtonProps) {
   return (
-    <li>
-      <div className="card card-raised overflow-hidden transition-transform hover:-translate-y-0.5">
-        <div className="flex items-center gap-3 p-4">
-          <span
-            className={`grid size-11 shrink-0 place-items-center rounded-xl text-2xl ${AREA_BADGE[area]}`}
-          >
-            {deck.icon}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h4 className="truncate font-display text-sm font-bold">
-              {deck.title}
-            </h4>
-            <p className="mt-0.5 text-xs text-muted">
-              {deck._count.flashcards}{' '}
-              {deck._count.flashcards === 1 ? 'card' : 'cards'}
-              {deck.weight >= 4 && (
-                <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-hum/12 px-1 py-0.5 text-[0.62rem] font-semibold text-hum align-middle">
-                  Peso {deck.weight}
-                </span>
-              )}
-            </p>
-          </div>
-          <button
-            onClick={onStudy}
-            className="btn btn-primary shrink-0 text-xs"
-          >
-            Estudar
-          </button>
-        </div>
-        <footer className="flex items-center gap-1 border-t border-line px-3 py-2">
-          <button
-            onClick={() => onVote('up')}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-muted transition-colors hover:bg-nat/10 hover:text-nat"
-          >
-            <IconThumbsUp width={14} height={14} />
-            {deck.upvotes}
-          </button>
-        </footer>
-      </div>
-    </li>
+    <button
+      onClick={(e) => { e.stopPropagation(); onStudy(); }}
+      title={`Estudar ${count} cards deste escopo`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[0.68rem] font-semibold transition-colors ${AREA_BADGE[area]} hover:ring-1 hover:ring-current`}
+    >
+      Estudar
+      <span className="tabular-nums opacity-75">{count}</span>
+    </button>
   );
 }
 
 function DeckTree({
   decks,
-  onStudy,
-  onVote,
+  onStudyScope,
 }: {
   decks: FlashcardDeckBrief[];
-  onStudy: (deckId: string) => void;
-  onVote: (deckId: string, vote: 'up' | 'down') => void;
+  onStudyScope: (
+    scope: { subject?: string; topic?: string; subtheme?: string },
+  ) => void;
 }) {
   // Agrupa: área (subject) → matéria (topic) → subtema (subtheme) → decks.
   const tree = useMemo(() => {
-    const byArea = new Map<string, Map<string, Map<string, FlashcardDeckBrief[]>>>();
+    const byArea = new Map<
+      string,
+      Map<string, Map<string, FlashcardDeckBrief[]>>
+    >();
     for (const d of decks) {
       const area = d.subject;
       const topic = d.topic ?? 'Geral';
@@ -336,96 +306,171 @@ function DeckTree({
   }, [decks]);
 
   const [openArea, setOpenArea] = useState<string | null>(null);
-  const [openTopic, setOpenTopic] = useState<string | null>(null);
+  const [openTopic, setOpenTopic] = useState<Set<string>>(new Set());
+  const [openSub, setOpenSub] = useState<Set<string>>(new Set());
+
+  function toggle(set: Set<string>, key: string): Set<string> {
+    const next = new Set(set);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    return next;
+  }
+
+  function totalCards(items: FlashcardDeckBrief[]): number {
+    return items.reduce((s, d) => s + d._count.flashcards, 0);
+  }
 
   return (
-    <div className="space-y-2">
-      {[...tree.entries()].map(([area, subjects]) => {
-        const areaCards = [...subjects.values()]
-          .flatMap((m) => [...m.values()].flat())
-          .reduce((s, d) => s + d._count.flashcards, 0);
-        const ak = areaKey(area);
-        const isOpen = openArea === area;
-        return (
-          <div key={area} className="overflow-hidden rounded-xl border border-line">
-            {/* Cabeçalho da área */}
-            <button
-              onClick={() => setOpenArea(isOpen ? null : area)}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2 ${AREA_BADGE[ak]}`}
-            >
-              <span className={`grid size-9 shrink-0 place-items-center rounded-lg`}>
+    <div className="card card-raised overflow-hidden p-2 sm:p-3">
+      <ul className="space-y-0.5">
+        {[...tree.entries()].map(([area, subjects]) => {
+          const areaDecks = [...subjects.values()]
+            .flatMap((m) => [...m.values()].flat());
+          const areaCards = totalCards(areaDecks);
+          const ak = areaKey(area);
+          const isAreaOpen = openArea === area;
+          return (
+            <li key={area}>
+              {/* Nível 1 — Área */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenArea(isAreaOpen ? null : area)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenArea(isAreaOpen ? null : area); }}
+                className={`group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-surface-2 ${isAreaOpen ? 'bg-surface-2/60' : ''}`}
+              >
                 <IconChevronDown
-                  width={18}
-                  height={18}
-                  className={isOpen ? '' : '-rotate-90 transition-transform'}
+                  width={14}
+                  height={14}
+                  className={`shrink-0 text-muted transition-transform ${isAreaOpen ? '' : '-rotate-90'}`}
                 />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-display font-bold">{area.replace(' e suas Tecnologias', '')}</p>
-                <p className="text-xs text-muted">
-                  {[...subjects.values()].flatMap((m) => [...m.values()].flat()).length}{' '}
-                  decks · {areaCards} cards
-                </p>
+                <span className={`grid size-7 shrink-0 place-items-center rounded-md text-xs ${AREA_BADGE[ak]}`}>
+                  <span className={`size-2.5 rounded-full ${AREA_DOT[ak]}`} />
+                </span>
+                <span className={`min-w-0 flex-1 truncate font-display text-sm font-bold ${AREA_TEXT[ak]}`}>
+                  {area.replace(' e suas Tecnologias', '')}
+                </span>
+                <span className="shrink-0 text-xs text-muted tabular-nums">{areaCards} cards</span>
+                <ScopeButton
+                  count={areaCards}
+                  area={ak}
+                  onStudy={() => onStudyScope({ subject: area })}
+                />
               </div>
-            </button>
 
-            {isOpen && (
-              <div className="border-t border-line bg-surface-2/40 px-3 py-3">
-                {[...subjects.entries()].map(([topic, subthemes]) => {
-                  const topicCards = [...subthemes.values()]
-                    .flat()
-                    .reduce((s, d) => s + d._count.flashcards, 0);
-                  const tk = areaKey(topic);
-                  const isTopicOpen = openTopic === `${area}/${topic}`;
-                  return (
-                    <div key={topic} className="ml-8 mb-2">
-                      <button
-                        onClick={() => setOpenTopic(isTopicOpen ? null : `${area}/${topic}`)}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-surface-2"
-                      >
-                        <span className={`size-2 rounded-full ${AREA_DOT[tk]}`} />
-                        <span className={`flex-1 truncate font-semibold ${AREA_TEXT[tk]}`}>
-                          {topic}
-                        </span>
-                        <span className="text-xs text-muted">{topicCards} cards</span>
-                        <IconChevronDown
-                          width={16}
-                          height={16}
-                          className={`text-muted transition-transform ${isTopicOpen ? '' : '-rotate-90'}`}
-                        />
-                      </button>
-
-                      {isTopicOpen && (
-                        <div className="ml-4 mt-1.5 space-y-1.5">
-                          {[...subthemes.entries()].map(([subtheme, dDecks]) => (
-                            <div key={subtheme}>
-                              {subthemes.size > 1 && (
-                                <p className="px-2 py-1 text-xs font-semibold text-muted">
-                                  {subtheme}
-                                </p>
-                              )}
-                              <ul className="ml-3 grid gap-2 sm:grid-cols-2">
-                                {dDecks.map((d) => (
-                                  <DeckLeaf
-                                    key={d.id}
-                                    deck={d}
-                                    onStudy={() => onStudy(d.id)}
-                                    onVote={(v) => onVote(d.id, v)}
-                                  />
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
+              {/* Nível 2 — Matérias */}
+              {isAreaOpen && (
+                <ul className="ml-3.5 space-y-0.5 border-l border-line pl-2.5">
+                  {[...subjects.entries()].map(([topic, subthemes]) => {
+                    const topicDecks = [...subthemes.values()].flat();
+                    const topicCards = totalCards(topicDecks);
+                    const tk = areaKey(topic);
+                    const tKey = `${area}/${topic}`;
+                    const isTopicOpen = openTopic.has(tKey);
+                    return (
+                      <li key={topic}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setOpenTopic((s) => toggle(s, tKey))}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenTopic((s) => toggle(s, tKey)); }}
+                          className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-2"
+                        >
+                          <IconChevronDown
+                            width={13}
+                            height={13}
+                            className={`shrink-0 text-muted transition-transform ${isTopicOpen ? '' : '-rotate-90'}`}
+                          />
+                          <span className={`size-2 shrink-0 rounded-full ${AREA_DOT[tk]}`} />
+                          <span className={`min-w-0 flex-1 truncate text-sm font-semibold ${AREA_TEXT[tk]}`}>
+                            {topic}
+                          </span>
+                          <span className="shrink-0 text-xs text-muted tabular-nums">{topicCards}</span>
+                          <ScopeButton
+                            count={topicCards}
+                            area={tk}
+                            onStudy={() => onStudyScope({ subject: area, topic })}
+                          />
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
+
+                        {/* Nível 3 — Subtemas */}
+                        {isTopicOpen && (
+                          <ul className="ml-3.5 space-y-0.5 border-l border-line pl-2.5">
+                            {[...subthemes.entries()].map(([subtheme, dDecks]) => {
+                              const subCards = totalCards(dDecks);
+                              const subKey = `${area}/${topic}/${subtheme}`;
+                              const isSubOpen = openSub.has(subKey);
+                              const sk = tk; // herda cor do tópico
+                              const showSubHeader = subthemes.size > 1 || subtheme !== 'Geral';
+                              return (
+                                <li key={subtheme}>
+                                  {showSubHeader && (
+                                    <div
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={() => setOpenSub((s) => toggle(s, subKey))}
+                                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSub((s) => toggle(s, subKey)); }}
+                                      className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-2"
+                                    >
+                                      <IconChevronDown
+                                        width={12}
+                                        height={12}
+                                        className={`shrink-0 text-muted transition-transform ${isSubOpen ? '' : '-rotate-90'}`}
+                                      />
+                                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">
+                                        {subtheme}
+                                      </span>
+                                      <span className="shrink-0 text-xs text-muted tabular-nums">{subCards}</span>
+                                      <ScopeButton
+                                        count={subCards}
+                                        area={sk}
+                                        onStudy={() => onStudyScope({ subject: area, topic, subtheme })}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Nível 4 — Decks individuais */}
+                                  {(isSubOpen || !showSubHeader) && (
+                                    <ul className={`${showSubHeader ? 'ml-3.5 border-l border-line pl-2.5' : ''} space-y-0.5`}>
+                                      {dDecks.map((d) => (
+                                        <li key={d.id}>
+                                          <div className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-2">
+                                            <span className="shrink-0 text-base leading-none">{d.icon}</span>
+                                            <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                                              {d.title}
+                                              {d.weight >= 4 && (
+                                                <span className="ml-1.5 inline-flex items-center rounded bg-hum/12 px-1 py-0.5 text-[0.6rem] font-semibold text-hum align-middle">
+                                                  P{d.weight}
+                                                </span>
+                                              )}
+                                            </span>
+                                            <span className="shrink-0 text-xs text-muted tabular-nums">{d._count.flashcards}</span>
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); onStudyScope({ subject: area, topic, subtheme }); }}
+                                              title={`Estudar ${d._count.flashcards} cards`}
+                                              className="shrink-0 text-xs font-semibold text-muted transition-colors hover:text-brand"
+                                            >
+                                              ▸
+                                            </button>
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -599,18 +644,27 @@ export default function Flashcards() {
     }
   }
 
-  // Iniciar estudo direto de um deck: filtra a fila para começar por seus cards.
-  function studyDeck(deck: FlashcardDeckBrief) {
-    const deckCards = queue.filter((c) => c.deckTitle === deck.title);
-    if (deckCards.length > 0) {
-      // Reordena: cards do deck clicado primeiro, depois o resto.
-      const reordered = [...deckCards, ...queue.filter((c) => c.deckTitle !== deck.title)];
-      setQueue(reordered);
+  // Iniciar estudo de um escopo da árvore (área/matéria/subtema): busca a fila
+  // filtrada no backend e abre a aba Estudar já posicionada no primeiro card.
+  async function studyScope(scope: {
+    subject?: string;
+    topic?: string;
+    subtheme?: string;
+  }) {
+    setLoading(true);
+    setError(null);
+    try {
+      const scoped = await api.studyQueue(60, scope);
+      setQueue(scoped);
       setQueueIdx(0);
-      setDone(false);
+      setDone(scoped.length === 0);
       setDoneCount(0);
+      setTab('study');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
+    } finally {
+      setLoading(false);
     }
-    setTab('study');
   }
 
   const overdueCount = queue.filter((c) => c.overdue).length;
@@ -704,13 +758,7 @@ export default function Flashcards() {
               ) : (
                 <DeckTree
                   decks={publicDecks}
-                  onStudy={(deckId) => {
-                    const deck = publicDecks.find((d) => d.id === deckId);
-                    if (deck) studyDeck(deck);
-                  }}
-                  onVote={(deckId, v) => {
-                    void api.voteDeck(deckId, v).then(load);
-                  }}
+                  onStudyScope={(scope) => { void studyScope(scope); }}
                 />
               )}
             </>
@@ -729,16 +777,10 @@ export default function Flashcards() {
                   tip="Comece com os decks prontos da aba ao lado"
                 />
               ) : (
-                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {myDecks.map((d) => (
-                    <DeckLeaf
-                      key={d.id}
-                      deck={d}
-                      onStudy={() => studyDeck(d)}
-                      onVote={() => {}}
-                    />
-                  ))}
-                </ul>
+                <DeckTree
+                  decks={myDecks}
+                  onStudyScope={(scope) => { void studyScope(scope); }}
+                />
               )}
             </>
           )}

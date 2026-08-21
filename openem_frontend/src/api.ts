@@ -585,8 +585,17 @@ export const api = {
     }),
   voteDeck: (deckId: string, vote: 'up' | 'down') =>
     request(`/flashcards/decks/${deckId}/vote`, { method: 'POST', body: { vote } }),
-  studyQueue: (limit = 20) =>
-    request<FlashcardItem[]>(`/flashcards/study/queue?limit=${limit}`),
+  studyQueue: (
+    limit = 30,
+    filters?: { subject?: string; topic?: string; subtheme?: string },
+  ) => {
+    const qs = new URLSearchParams();
+    qs.set('limit', String(limit));
+    if (filters?.subject) qs.set('subject', filters.subject);
+    if (filters?.topic) qs.set('topic', filters.topic);
+    if (filters?.subtheme) qs.set('subtheme', filters.subtheme);
+    return request<FlashcardItem[]>(`/flashcards/study/queue?${qs.toString()}`);
+  },
   reviewFlashcard: (flashcardId: string, quality: number) =>
     request<FlashcardReviewResult>(`/flashcards/flashcards/${flashcardId}/review`, {
       method: 'POST',
