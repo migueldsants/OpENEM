@@ -5,6 +5,7 @@ import {
   type AnswerResult,
   type GamificationDelta,
   type Question,
+  type QuestionNoteRef,
   type ReviewItem,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
@@ -12,6 +13,7 @@ import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
   IconCheck,
   IconClock,
+  IconNote,
   IconStack,
   IconX,
 } from '../components/icons';
@@ -40,14 +42,17 @@ function overdueLabel(dueAt: string): string {
 /** Card de prática de uma questão durante a revisão. */
 function PracticeCard({
   question,
+  note,
   onAwarded,
 }: {
   question: Question;
+  note: QuestionNoteRef | null;
   onAwarded: () => void;
 }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [sending, setSending] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
 
   async function send() {
     if (!chosen) return;
@@ -64,7 +69,27 @@ function PracticeCard({
   return (
     <div className="card card-raised overflow-hidden">
       <div className="p-4">
-        <p className="text-sm leading-relaxed">{question.statement}</p>
+        <div className="flex items-start gap-2">
+          <p className="min-w-0 flex-1 text-sm leading-relaxed">
+            {question.statement}
+          </p>
+          {note && (
+            <button
+              onClick={() => setNoteOpen((o) => !o)}
+              aria-label={noteOpen ? 'Ocultar anotação' : 'Ver anotação'}
+              title={noteOpen ? 'Ocultar anotação' : 'Ver anotação'}
+              className="grid size-8 shrink-0 place-items-center rounded-lg border border-hum/30 bg-hum/10 text-hum transition-colors hover:bg-hum/20"
+            >
+              <IconNote width={16} height={16} filled />
+            </button>
+          )}
+        </div>
+        {note && noteOpen && (
+          <div className="mt-3 rounded-lg border border-hum/20 bg-hum/5 px-3 py-2.5 text-sm text-fg">
+            <p className="eyebrow mb-1">Sua anotação</p>
+            <p className="whitespace-pre-wrap leading-relaxed">{note.content}</p>
+          </div>
+        )}
       </div>
       <div className="space-y-1.5 px-4 pb-4">
         {question.alternatives.map((alt, i) => {
@@ -153,6 +178,7 @@ function ReviewSession({
 }) {
   const { refresh } = useGamification();
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [notesMap, setNotesMap] = useState<Record<string, QuestionNoteRef>>({});
   const [loading, setLoading] = useState(true);
   const [grading, setGrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +190,15 @@ function ReviewSession({
       try {
         const res = await api.questions({ topicId: item.topic.id, limit: 5 });
         setQuestions(res.items);
+        // Busca anotações pessoais das questões carregadas (issue #39).
+        if (res.items.length > 0) {
+          const notes = await api.questionNotesForQuestions(
+            res.items.map((q) => q.id),
+          );
+          setNotesMap(
+            Object.fromEntries(notes.map((n) => [n.questionId, n])),
+          );
+        }
       } catch {
         setQuestions([]);
       } finally {
@@ -225,6 +260,7 @@ function ReviewSession({
             <PracticeCard
               key={q.id}
               question={q}
+              note={notesMap[q.id] ?? null}
               onAwarded={() => void refresh()}
             />
           ))}

@@ -12,6 +12,7 @@ import { GamesModule } from './games/games.module';
 import { HealthModule } from './health/health.module';
 import { PerformanceModule } from './performance/performance.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QuestionNotesModule } from './question-notes/question-notes.module';
 import { QuestionsModule } from './questions/questions.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { ReviewModule } from './review/review.module';
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     SubjectsModule,
     QuestionsModule,
+    QuestionNotesModule,
     AnswersModule,
     SimulationsModule,
     PerformanceModule,

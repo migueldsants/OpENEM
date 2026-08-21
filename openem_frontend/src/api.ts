@@ -293,6 +293,26 @@ export interface ReviewItem {
   dueAt: string;
   topic: TopicRef;
 }
+
+/** Anotação pessoal do usuário em uma questão (issue #39). */
+export interface QuestionNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  question: {
+    id: string;
+    statement: string;
+    difficulty: number;
+    topic: TopicRef;
+  };
+}
+/** Versão enxuta usada ao filtrar por questionIds (histórico). */
+export interface QuestionNoteRef {
+  questionId: string;
+  content: string;
+  updatedAt: string;
+}
 export interface Paginated<T> {
   items: T[];
   meta: { total: number; page: number; limit: number; pages: number };
@@ -483,6 +503,21 @@ export const api = {
     request('/favorites', { method: 'POST', body: { questionId } }),
   removeFavorite: (questionId: string) =>
     request(`/favorites/${questionId}`, { method: 'DELETE' }),
+
+  questionNotes: () => request<QuestionNote[]>('/question-notes'),
+  questionNoteFor: (questionId: string) =>
+    request<QuestionNote | null>(`/question-notes/${questionId}`),
+  questionNotesForQuestions: (questionIds: string[]) =>
+    request<QuestionNoteRef[]>(
+      `/question-notes?questionIds=${questionIds.join(',')}`,
+    ),
+  saveQuestionNote: (questionId: string, content: string) =>
+    request<QuestionNote>('/question-notes', {
+      method: 'PUT',
+      body: { questionId, content },
+    }),
+  removeQuestionNote: (questionId: string) =>
+    request(`/question-notes/${questionId}`, { method: 'DELETE' }),
 
   studyPlan: () => request<StudyPlan>('/study-plan'),
   generateStudyPlan: () =>
