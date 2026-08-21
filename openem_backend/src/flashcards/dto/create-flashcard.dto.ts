@@ -14,7 +14,11 @@ export class CreateFlashcardDto {
 }
 
 export class ReviewFlashcardDto {
-  @ApiProperty({ description: 'Qualidade da lembrança (0-5)', minimum: 0, maximum: 5 })
+  @ApiProperty({
+    description: 'Qualidade da lembrança (0-5)',
+    minimum: 0,
+    maximum: 5,
+  })
   @IsInt()
   @Min(0)
   @Max(5)

@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildStudyQueue, reviewFlashcard, type FlashcardQueueItem } from '../common/flashcard-queue';
+import {
+  buildStudyQueue,
+  reviewFlashcard,
+  type FlashcardQueueItem,
+} from '../common/flashcard-queue';
 import { CreateDeckDto } from './dto/create-deck.dto';
 import { CreateFlashcardDto } from './dto/create-flashcard.dto';
 
@@ -122,10 +130,7 @@ export class FlashcardsService {
     // Cards nunca vistos também entram na fila (novo = vencido por padrão).
     const allCards = await this.prisma.flashcard.findMany({
       where: {
-        OR: [
-          { deck: { userId } },
-          { deck: { isPublic: true } },
-        ],
+        OR: [{ deck: { userId } }, { deck: { isPublic: true } }],
       },
       select: {
         id: true,

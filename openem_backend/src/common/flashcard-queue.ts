@@ -52,7 +52,11 @@ export function reviewFlashcard(
   now: Date = new Date(),
 ) {
   return computeNextReview(
-    { easeFactor: item.easeFactor, intervalD: item.intervalD, repetition: item.repetition },
+    {
+      easeFactor: item.easeFactor,
+      intervalD: item.intervalD,
+      repetition: item.repetition,
+    },
     quality,
     now,
   );

@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateDeckDto } from './dto/create-deck.dto';
-import { CreateFlashcardDto, ReviewFlashcardDto, VoteDeckDto } from './dto/create-flashcard.dto';
+import {
+  CreateFlashcardDto,
+  ReviewFlashcardDto,
+  VoteDeckDto,
+} from './dto/create-flashcard.dto';
 import { FlashcardsService } from './flashcards.service';
 
 @ApiTags('flashcards')
@@ -18,7 +31,10 @@ export class FlashcardsController {
 
   @Post('decks')
   @ApiOperation({ summary: 'Cria um deck de flashcards' })
-  createDeck(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateDeckDto) {
+  createDeck(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateDeckDto,
+  ) {
     return this.flashcards.createDeck(user.userId, dto);
   }
 
@@ -29,14 +45,19 @@ export class FlashcardsController {
   }
 
   @Get('decks/public')
-  @ApiOperation({ summary: 'Decks públicos votados (opcionalmente por matéria)' })
+  @ApiOperation({
+    summary: 'Decks públicos votados (opcionalmente por matéria)',
+  })
   publicDecks(@Query('subject') subject?: string) {
     return this.flashcards.listPublicDecks(subject);
   }
 
   @Get('decks/:deckId')
   @ApiOperation({ summary: 'Detalhe de um deck (com flashcards)' })
-  getDeck(@CurrentUser() user: AuthenticatedUser, @Param('deckId') deckId: string) {
+  getDeck(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('deckId') deckId: string,
+  ) {
     return this.flashcards.getDeck(deckId, user.userId);
   }
 
@@ -60,7 +81,10 @@ export class FlashcardsController {
 
   @Delete('flashcards/:flashcardId')
   @ApiOperation({ summary: 'Remove um flashcard' })
-  removeFlashcard(@CurrentUser() user: AuthenticatedUser, @Param('flashcardId') flashcardId: string) {
+  removeFlashcard(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('flashcardId') flashcardId: string,
+  ) {
     return this.flashcards.removeFlashcard(user.userId, flashcardId);
   }
 
@@ -68,8 +92,14 @@ export class FlashcardsController {
 
   @Get('study/queue')
   @ApiOperation({ summary: 'Fila otimizada de estudo (SM-2 + Pareto)' })
-  studyQueue(@CurrentUser() user: AuthenticatedUser, @Query('limit') limit?: string) {
-    return this.flashcards.studyQueue(user.userId, limit ? parseInt(limit, 10) : 20);
+  studyQueue(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+  ) {
+    return this.flashcards.studyQueue(
+      user.userId,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   @Post('flashcards/:flashcardId/review')

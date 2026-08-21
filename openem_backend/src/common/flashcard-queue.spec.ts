@@ -25,8 +25,16 @@ describe('buildStudyQueue()', () => {
   it('vencidos vêm sempre à frente de não-vencidos, independente do peso', () => {
     const queue = buildStudyQueue(
       [
-        item({ weight: 5, overdue: false, dueAt: new Date(NOW.getTime() + DAY) }),
-        item({ weight: 1, overdue: true, dueAt: new Date(NOW.getTime() - DAY) }),
+        item({
+          weight: 5,
+          overdue: false,
+          dueAt: new Date(NOW.getTime() + DAY),
+        }),
+        item({
+          weight: 1,
+          overdue: true,
+          dueAt: new Date(NOW.getTime() - DAY),
+        }),
       ],
       20,
     );
@@ -52,8 +60,16 @@ describe('buildStudyQueue()', () => {
   it('entre mesmo peso, vencido há mais tempo vem primeiro', () => {
     const queue = buildStudyQueue(
       [
-        item({ flashcardId: 'newer', weight: 5, dueAt: new Date(NOW.getTime() - HOUR) }),
-        item({ flashcardId: 'older', weight: 5, dueAt: new Date(NOW.getTime() - 3 * DAY) }),
+        item({
+          flashcardId: 'newer',
+          weight: 5,
+          dueAt: new Date(NOW.getTime() - HOUR),
+        }),
+        item({
+          flashcardId: 'older',
+          weight: 5,
+          dueAt: new Date(NOW.getTime() - 3 * DAY),
+        }),
       ],
       10,
     );
@@ -74,8 +90,18 @@ describe('buildStudyQueue()', () => {
   it('não-vencidos preenchem a fila quando há menos vencidos que o limite', () => {
     const queue = buildStudyQueue(
       [
-        item({ flashcardId: 'overdue', weight: 3, overdue: true, dueAt: new Date(NOW.getTime() - DAY) }),
-        item({ flashcardId: 'future', weight: 3, overdue: false, dueAt: new Date(NOW.getTime() + DAY) }),
+        item({
+          flashcardId: 'overdue',
+          weight: 3,
+          overdue: true,
+          dueAt: new Date(NOW.getTime() - DAY),
+        }),
+        item({
+          flashcardId: 'future',
+          weight: 3,
+          overdue: false,
+          dueAt: new Date(NOW.getTime() + DAY),
+        }),
       ],
       5,
     );
@@ -87,14 +113,22 @@ describe('buildStudyQueue()', () => {
 
 describe('reviewFlashcard()', () => {
   it('SM-2: acerto (quality 5) cresce o intervalo', () => {
-    const next = reviewFlashcard({ easeFactor: 2.5, intervalD: 0, repetition: 0 }, 5, NOW);
+    const next = reviewFlashcard(
+      { easeFactor: 2.5, intervalD: 0, repetition: 0 },
+      5,
+      NOW,
+    );
     expect(next.intervalD).toBe(1);
     const next2 = reviewFlashcard(next, 5, NOW);
     expect(next2.intervalD).toBe(6);
   });
 
   it('SM-2: erro (quality 1) reinicia o ciclo com 1 dia', () => {
-    const next = reviewFlashcard({ easeFactor: 2.5, intervalD: 10, repetition: 4 }, 1, NOW);
+    const next = reviewFlashcard(
+      { easeFactor: 2.5, intervalD: 10, repetition: 4 },
+      1,
+      NOW,
+    );
     expect(next.repetition).toBe(0);
     expect(next.intervalD).toBe(1);
   });

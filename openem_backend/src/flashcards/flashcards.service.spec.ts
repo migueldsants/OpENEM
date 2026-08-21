@@ -33,7 +33,11 @@ describe('FlashcardsService', () => {
     it('define userId e isPublic=false por default', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.create.mockResolvedValue({ id: 'dk-1' });
-      await service.createDeck('u-1', { title: 'T', description: '', subject: 'Matemática e suas Tecnologias' });
+      await service.createDeck('u-1', {
+        title: 'T',
+        description: '',
+        subject: 'Matemática e suas Tecnologias',
+      });
       expect(prisma.flashcardDeck.create).toHaveBeenCalledWith({
         data: {
           title: 'T',
@@ -50,7 +54,11 @@ describe('FlashcardsService', () => {
     it('permite acesso a deck público', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.findUnique.mockResolvedValue({
-        id: 'dk-1', isPublic: true, userId: 'u-2', flashcards: [], _count: {},
+        id: 'dk-1',
+        isPublic: true,
+        userId: 'u-2',
+        flashcards: [],
+        _count: {},
       });
       const r = await service.getDeck('dk-1', 'u-1');
       expect(r.id).toBe('dk-1');
@@ -59,15 +67,21 @@ describe('FlashcardsService', () => {
     it('nega acesso a deck privado de outro usuário', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.findUnique.mockResolvedValue({
-        id: 'dk-1', isPublic: false, userId: 'u-2',
+        id: 'dk-1',
+        isPublic: false,
+        userId: 'u-2',
       });
-      await expect(service.getDeck('dk-1', 'u-1')).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.getDeck('dk-1', 'u-1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
     });
 
     it('permite o dono acessar deck privado', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.findUnique.mockResolvedValue({
-        id: 'dk-1', isPublic: false, userId: 'u-1',
+        id: 'dk-1',
+        isPublic: false,
+        userId: 'u-1',
       });
       await expect(service.getDeck('dk-1', 'u-1')).resolves.toBeDefined();
     });
@@ -75,7 +89,9 @@ describe('FlashcardsService', () => {
     it('404 para deck inexistente', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.findUnique.mockResolvedValue(null);
-      await expect(service.getDeck('dk-x', 'u-1')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getDeck('dk-x', 'u-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 
@@ -83,7 +99,8 @@ describe('FlashcardsService', () => {
     it('define a ordem como o próximo índice', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.findUnique.mockResolvedValue({
-        userId: 'u-1', _count: { flashcards: 3 },
+        userId: 'u-1',
+        _count: { flashcards: 3 },
       });
       prisma.flashcard.create.mockResolvedValue({ id: 'fc-1' });
       await service.addFlashcard('u-1', 'dk-1', { front: 'F', back: 'B' });
@@ -95,15 +112,20 @@ describe('FlashcardsService', () => {
     it('nega quando o deck é de outro usuário', async () => {
       const { service, prisma } = makeService();
       prisma.flashcardDeck.findUnique.mockResolvedValue({ userId: 'u-2' });
-      await expect(service.addFlashcard('u-1', 'dk-1', { front: 'F', back: 'B' }))
-        .rejects.toBeInstanceOf(ForbiddenException);
+      await expect(
+        service.addFlashcard('u-1', 'dk-1', { front: 'F', back: 'B' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 
   describe('voteDeck()', () => {
     it('incrementa upvotes', async () => {
       const { service, prisma } = makeService();
-      prisma.flashcardDeck.update.mockResolvedValue({ id: 'dk-1', upvotes: 1, downvotes: 0 });
+      prisma.flashcardDeck.update.mockResolvedValue({
+        id: 'dk-1',
+        upvotes: 1,
+        downvotes: 0,
+      });
       await service.voteDeck('dk-1', 'up');
       expect(prisma.flashcardDeck.update).toHaveBeenCalledWith({
         where: { id: 'dk-1' },
