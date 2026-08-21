@@ -42,10 +42,10 @@ import {
   Sparkle,
   Square,
   Star,
-  Sun,
-  Target,
+  Sun,  Target,
   TextT,
   Timer,
+  Trash,
   Trophy,
   User,
   X,
@@ -123,6 +123,8 @@ export const IconDiamond = shim(Diamond, 'duotone');
 export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
 export const IconSticky = shim(Note, 'duotone');
+export const IconNote = shim(NotePencil, 'duotone');
+export const IconTrash = shim(Trash, 'duotone');
 export const IconImage = shim(ImageIcon, 'duotone');
 export const IconEraser = shim(Eraser, 'duotone');
 export const IconHand = shim(Hand, 'duotone');

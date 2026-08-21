@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   api,
   type AnswerResult,
@@ -13,10 +14,12 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconFilter,
+  IconNote,
   IconStack,
   IconStar,
   IconX,
 } from '../components/icons';
+import { QuestNoteModal } from '../components/QuestNoteModal';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
@@ -39,16 +42,20 @@ function QuestionView({
   question,
   state,
   favorited,
+  hasNote,
   onChoose,
   onToggleFavorite,
   onAnnotate,
+  onNote,
 }: {
   question: Question;
   state: AnswerState;
   favorited: boolean;
+  hasNote: boolean;
   onChoose: (alternativeId: string) => void;
   onToggleFavorite: () => void;
   onAnnotate: () => void;
+  onNote: () => void;
 }) {
   const area = areaKey(question.topic.subject.name);
   const { chosen, result } = state;
@@ -71,8 +78,20 @@ function QuestionView({
         <div className="flex shrink-0 items-center gap-1.5">
           <span className="chip">nível {question.difficulty}</span>
           <button
+            onClick={onNote}
+            aria-label={hasNote ? 'Ver/editar anotação' : 'Anotar esta questão'}
+            title={hasNote ? 'Ver/editar anotação' : 'Adicionar nota'}
+            className={`grid size-9 place-items-center rounded-lg border transition-colors ${
+              hasNote
+                ? 'border-transparent bg-hum/15 text-hum'
+                : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
+            }`}
+          >
+            <IconNote width={18} height={18} filled={hasNote} />
+          </button>
+          <button
             onClick={onAnnotate}
-            aria-label="Anotar esta questão"
+            aria-label="Anotar no quadro"
             title="Anotar no quadro"
             className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg"
           >
@@ -194,7 +213,7 @@ function FilterDrawer({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-40">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
@@ -291,7 +310,8 @@ function FilterDrawer({
           </button>
         </footer>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -319,17 +339,26 @@ export default function Questoes() {
   // Estado de resposta por questão (preservado ao revisitar).
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
 
+  // Anotações pessoais (issue #39): questões com nota.
+  const [notedIds, setNotedIds] = useState<Set<string>>(new Set());
+  const [noteFor, setNoteFor] = useState<string | null>(null);
+
   // Overlay "Anotar" — board scratch vinculado à questão atual (issue #32).
   const [annotateFor, setAnnotateFor] = useState<string | null>(null);
 
-  // Catálogo de áreas e favoritos (uma vez).
+  // Catálogo de áreas, favoritos e anotações (uma vez).
   useEffect(() => {
     void (async () => {
       try {
-        const [subs, favs] = await Promise.all([api.subjects(), api.favorites()]);
+        const [subs, favs, notes] = await Promise.all([
+          api.subjects(),
+          api.favorites(),
+          api.questionNotes(),
+        ]);
         setSubjects(subs);
         setFavoritedIds(new Set(favs.map((f) => f.question.id)));
         setFavoriteQuestions(favs.map((f) => f.question));
+        setNotedIds(new Set(notes.map((n) => n.question.id)));
       } catch {
         /* silencioso: a busca de questões reporta erro se necessário */
       }
@@ -548,9 +577,11 @@ export default function Questoes() {
           question={current}
           state={state}
           favorited={favoritedIds.has(current.id)}
+          hasNote={notedIds.has(current.id)}
           onChoose={choose}
           onToggleFavorite={() => toggleFavorite(current)}
           onAnnotate={() => setAnnotateFor(current.id)}
+          onNote={() => setNoteFor(current.id)}
         />
       )}
 
@@ -624,6 +655,20 @@ export default function Questoes() {
             onClose={() => setAnnotateFor(null)}
           />
         </Suspense>
+      )}
+
+      {noteFor && (
+        <QuestNoteModal
+          questionId={noteFor}
+          questionStatement={current?.statement ?? 'Questão'}
+          onClose={() => {
+            setNoteFor(null);
+            // Recarrega o conjunto de notas para refletir salva/remoção.
+            void api.questionNotes().then((notes) =>
+              setNotedIds(new Set(notes.map((n) => n.question.id))),
+            );
+          }}
+        />
       )}
     </div>
   );

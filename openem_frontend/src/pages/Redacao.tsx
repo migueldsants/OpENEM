@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   api,
   type EssayAnnotation,
@@ -156,7 +157,7 @@ function DetailModal({
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/50 p-0 sm:p-4"
       onClick={onClose}
@@ -293,7 +294,8 @@ function DetailModal({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
