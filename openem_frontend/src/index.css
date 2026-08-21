@@ -406,6 +406,49 @@
     color: var(--muted);
   }
 
+  /* Markdown renderizado (flashcards): tipografia mínima coerente com o app. */
+  .flashcard-md {
+    line-height: 1.65;
+    color: var(--fg);
+  }
+  .flashcard-md p {
+    margin: 0.35em 0;
+  }
+  .flashcard-md p:first-child {
+    margin-top: 0;
+  }
+  .flashcard-md ul,
+  .flashcard-md ol {
+    margin: 0.5em 0;
+    padding-left: 1.35em;
+  }
+  .flashcard-md ul {
+    list-style: disc;
+  }
+  .flashcard-md ol {
+    list-style: decimal;
+  }
+  .flashcard-md li {
+    margin: 0.2em 0;
+  }
+  .flashcard-md strong {
+    font-weight: 650;
+  }
+  .flashcard-md em {
+    color: var(--muted);
+  }
+  .flashcard-md code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 0.35em;
+    padding: 0.1em 0.35em;
+    font-family: var(--font-mono);
+  }
+  .flashcard-md .katex-display {
+    margin: 0.6em 0;
+    overflow-x: auto;
+  }
+
   .input {
     width: 100%;
     background: var(--surface-2);

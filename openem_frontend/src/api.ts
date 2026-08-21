@@ -322,7 +322,9 @@ export interface FlashcardDeckBrief {
   description: string;
   subject: string;
   topic: string | null;
+  subtheme: string | null;
   icon: string;
+  weight: number;
   upvotes: number;
   downvotes: number;
   createdAt: string;
@@ -334,6 +336,8 @@ export interface FlashcardItem {
   back: string;
   deckTitle: string;
   deckIcon: string;
+  deckTopic?: string;
+  deckSubtheme?: string;
   weight: number;
   easeFactor: number;
   intervalD: number;

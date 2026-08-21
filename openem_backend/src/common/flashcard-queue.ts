@@ -6,6 +6,8 @@ export interface FlashcardQueueItem {
   back: string;
   deckTitle: string;
   deckIcon: string;
+  deckTopic?: string;
+  deckSubtheme?: string;
   /** 5 = maior prioridade (Peso 5), 1 = menor. */
   weight: number;
   easeFactor: number;

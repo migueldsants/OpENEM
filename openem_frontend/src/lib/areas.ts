@@ -57,3 +57,19 @@ export const AREAS: { key: AreaKey; label: string }[] = [
   { key: 'lin', label: 'Linguagens' },
   { key: 'red', label: 'Redação' },
 ];
+
+// Rótulo curto pelo nome completo do subject (ex.: "Matemática e suas Tecnologias").
+export function shortArea(subjectName?: string): string {
+  const key = areaKey(subjectName);
+  return AREAS.find((a) => a.key === key)?.label ?? 'Geral';
+}
+
+// Fundo de badge suave por área.
+export const AREA_BADGE: Record<AreaKey, string> = {
+  mat: 'bg-mat/12 text-mat',
+  nat: 'bg-nat/12 text-nat',
+  hum: 'bg-hum/12 text-hum',
+  lin: 'bg-lin/12 text-lin',
+  red: 'bg-red/12 text-red',
+  default: 'bg-brand/12 text-brand',
+};

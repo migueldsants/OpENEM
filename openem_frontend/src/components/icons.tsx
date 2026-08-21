@@ -8,6 +8,7 @@ import {
   CalendarBlank,
   CaretLeft,
   CaretRight,
+  CaretDown,
   ChatsCircle,
   Check,
   Circle,
@@ -96,6 +97,7 @@ export const IconCheck = shim(Check, 'bold');
 export const IconX = shim(X, 'bold');
 export const IconChevronLeft = shim(CaretLeft, 'bold');
 export const IconChevronRight = shim(CaretRight, 'bold');
+export const IconChevronDown = shim(CaretDown, 'bold');
 export const IconFilter = shim(SlidersHorizontal, 'bold');
 export const IconFlame = shim(Flame, 'fill');
 export const IconBolt = shim(Lightning, 'fill');

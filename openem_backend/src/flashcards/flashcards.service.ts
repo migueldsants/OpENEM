@@ -119,7 +119,7 @@ export class FlashcardsService {
             id: true,
             front: true,
             back: true,
-            deck: { select: { title: true, icon: true, topic: true } },
+            deck: { select: { title: true, icon: true, topic: true, subtheme: true, weight: true } },
           },
         },
       },
@@ -141,6 +141,8 @@ export class FlashcardsService {
             title: true,
             icon: true,
             topic: true,
+            subtheme: true,
+            weight: true,
             userId: true,
           },
         },
@@ -150,13 +152,15 @@ export class FlashcardsService {
     const now = new Date();
     const items: FlashcardQueueItem[] = allCards.map((c) => {
       const r = byCard.get(c.id);
-      const weight = 3; // todo: pesos por tópico via tabela de pesos canônica
+      const weight = c.deck.weight ?? 3;
       return {
         flashcardId: c.id,
         front: c.front,
         back: c.back,
         deckTitle: c.deck.title,
         deckIcon: c.deck.icon,
+        deckTopic: c.deck.topic ?? undefined,
+        deckSubtheme: c.deck.subtheme ?? undefined,
         weight,
         easeFactor: r?.easeFactor ?? 2.5,
         intervalD: r?.intervalD ?? 0,

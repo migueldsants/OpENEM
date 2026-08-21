@@ -360,9 +360,11 @@ model FlashcardDeck {
   title         String
   description   String
   isPublic      Boolean    @default(false)
-  // subject = nome do Subject; topic = nome do Topic (opcional); weight = peso Pareto 1..5
+  // subject = nome do Subject; topic = matéria; subtheme = subtema dentro da matéria
   subject       String
   topic         String?
+  subtheme      String?
+  weight        Int        @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
   icon          String      @default("📚")
   upvotes       Int         @default(0)
   downvotes     Int         @default(0)
