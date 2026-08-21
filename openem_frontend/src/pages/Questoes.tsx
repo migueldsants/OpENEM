@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   api,
   type AnswerResult,
@@ -212,7 +213,7 @@ function FilterDrawer({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-40">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
@@ -309,7 +310,8 @@ function FilterDrawer({
           </button>
         </footer>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

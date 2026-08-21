@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api, type QuestionNote } from '../api';
 import { IconCheck, IconTrash, IconX } from './icons';
 
@@ -77,7 +78,7 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') void save();
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] p-4 sm:items-center"
       onClick={onClose}
@@ -164,6 +165,7 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
           </button>
         </footer>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
