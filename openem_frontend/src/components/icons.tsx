@@ -42,9 +42,12 @@ import {
   Sparkle,
   Square,
   Star,
-  Sun,  Target,
+  Sun,
+  Plus,
+  Target,
   TextT,
   Timer,
+  ThumbsUp,
   Trash,
   Trophy,
   User,
@@ -108,6 +111,8 @@ export const IconSparkle = shim(Sparkle, 'fill');
 export const IconGame = shim(Lightning, 'duotone');
 export const IconBook = shim(BookOpen, 'duotone');
 export const IconQuestion = shim(Question, 'duotone');
+export const IconThumbsUp = shim(ThumbsUp, 'duotone');
+export const IconPlus = shim(Plus, 'bold');
 // Botão "Mais" na tabbar mobile (issue #21) — elipse universal de "more".
 export const IconMore = shim(DotsThree, 'bold');
 // Item "Quadro" de estudos (issue #32) e ícone do botão "Anotar".

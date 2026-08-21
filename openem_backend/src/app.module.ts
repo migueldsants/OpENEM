@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { CommunityModule } from './community/community.module';
 import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { FlashcardsModule } from './flashcards/flashcards.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { GamesModule } from './games/games.module';
 import { HealthModule } from './health/health.module';
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     PerformanceModule,
     ReviewModule,
     FavoritesModule,
+    FlashcardsModule,
     StudyPlanModule,
     EssaysModule,
     GamificationModule,

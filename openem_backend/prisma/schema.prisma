@@ -32,6 +32,8 @@ model User {
   forumPosts   ForumPost[]
   postLikes    ForumPostLike[]
   questionNotes QuestionNote[]
+  flashcardDecks FlashcardDeck[]
+  flashcardReviews FlashcardReview[]
 }
 
 model Profile {
@@ -346,6 +348,60 @@ model ForumPostLike {
 
   @@unique([postId, userId])
   @@index([postId])
+}
+
+// ---- Fase 3 (avançado) — Flashcards (issue #36) ----
+
+// Conjunto de flashcards (público ou privado do usuário).
+model FlashcardDeck {
+  id            String      @id @default(cuid())
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  isPublic      Boolean    @default(false)
+  // subject = nome do Subject; topic = nome do Topic (opcional); weight = peso Pareto 1..5
+  subject       String
+  topic         String?
+  icon          String      @default("📚")
+  upvotes       Int         @default(0)
+  downvotes     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  flashcards    Flashcard[]
+
+  @@index([isPublic, upvotes]) // ordenação por popularidade
+  @@index([subject])
+}
+
+model Flashcard {
+  id        String          @id @default(cuid())
+  deckId    String
+  deck      FlashcardDeck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  front     String          // Markdown (pergunta)
+  back      String          // Markdown (resposta)
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+  reviews   FlashcardReview[]
+
+  @@index([deckId, order])
+}
+
+// Estado SM-2 de revisão por flashcard por usuário (reutiliza common/spaced-repetition).
+model FlashcardReview {
+  id           String   @id @default(cuid())
+  flashcardId  String
+  flashcard    Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  easeFactor   Float    @default(2.5)
+  intervalD    Int      @default(0)
+  repetition   Int      @default(0)
+  dueAt        DateTime @default(now())
+  lastQuality  Int?     // última nota 0..5
+  reviewedAt   DateTime @default(now())
+
+  @@unique([userId, flashcardId])
+  @@index([userId, dueAt]) // fila "vencidos primeiro"
 }
 
 // ---- Fase 3 (avançado) — Games (issue #18) ----

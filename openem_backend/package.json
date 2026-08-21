@@ -22,7 +22,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:seed:flashcards": "ts-node prisma/seed-flashcards.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

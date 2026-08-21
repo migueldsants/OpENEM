@@ -313,6 +313,42 @@ export interface QuestionNoteRef {
   content: string;
   updatedAt: string;
 }
+
+// ---- Flashcards (issue #36) ----
+
+export interface FlashcardDeckBrief {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  topic: string | null;
+  icon: string;
+  upvotes: number;
+  downvotes: number;
+  createdAt: string;
+  _count: { flashcards: number };
+}
+export interface FlashcardItem {
+  flashcardId: string;
+  front: string;
+  back: string;
+  deckTitle: string;
+  deckIcon: string;
+  weight: number;
+  easeFactor: number;
+  intervalD: number;
+  repetition: number;
+  dueAt: string;
+  overdue: boolean;
+}
+export interface FlashcardReviewResult {
+  id: string;
+  easeFactor: number;
+  intervalD: number;
+  repetition: number;
+  dueAt: string;
+  lastQuality: number;
+}
 export interface Paginated<T> {
   items: T[];
   meta: { total: number; page: number; limit: number; pages: number };
@@ -518,6 +554,40 @@ export const api = {
     }),
   removeQuestionNote: (questionId: string) =>
     request(`/question-notes/${questionId}`, { method: 'DELETE' }),
+
+  // ---- Flashcards (issue #36) ----
+  flashcardDecksMine: () =>
+    request<FlashcardDeckBrief[]>('/flashcards/decks/mine'),
+  flashcardDecksPublic: (subject?: string) =>
+    request<FlashcardDeckBrief[]>(
+      `/flashcards/decks/public${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`,
+    ),
+  flashcardDeck: (deckId: string) =>
+    request<FlashcardDeckBrief & { flashcards: { id: string; front: string; back: string }[] }>(
+      `/flashcards/decks/${deckId}`,
+    ),
+  createDeck: (data: {
+    title: string;
+    description: string;
+    subject: string;
+    topic?: string;
+    icon?: string;
+    isPublic?: boolean;
+  }) => request<FlashcardDeckBrief>('/flashcards/decks', { method: 'POST', body: data }),
+  addFlashcard: (deckId: string, front: string, back: string) =>
+    request(`/flashcards/decks/${deckId}/flashcards`, {
+      method: 'POST',
+      body: { front, back },
+    }),
+  voteDeck: (deckId: string, vote: 'up' | 'down') =>
+    request(`/flashcards/decks/${deckId}/vote`, { method: 'POST', body: { vote } }),
+  studyQueue: (limit = 20) =>
+    request<FlashcardItem[]>(`/flashcards/study/queue?limit=${limit}`),
+  reviewFlashcard: (flashcardId: string, quality: number) =>
+    request<FlashcardReviewResult>(`/flashcards/flashcards/${flashcardId}/review`, {
+      method: 'POST',
+      body: { quality },
+    }),
 
   studyPlan: () => request<StudyPlan>('/study-plan'),
   generateStudyPlan: () =>
