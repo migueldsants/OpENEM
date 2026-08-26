@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { api, type FlashcardDeckBrief, type FlashcardItem } from '../api';
+import { api, type FlashcardDeckBrief, type FlashcardForecastDay, type FlashcardItem, type FlashcardPreview, type FlashcardStats } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { Markdown } from '../components/Markdown';
 import {
+  IconAtom,
+  IconBook,
   IconCheck,
   IconChevronDown,
   IconChevronRight,
+  IconFormula,
+  IconGlobe,
+  IconNote,
   IconPlus,
   IconStack,
   IconX,
@@ -15,12 +20,22 @@ import { SkeletonCard } from '../components/Skeleton';
 import {
   areaKey,
   shortArea,
-  areaEmoji,
   AREA_DOT,
   AREA_TEXT,
   AREA_BADGE,
   AREA_RING,
+  type AreaKey,
 } from '../lib/areas';
+
+// Ícone Phosphor por área do conhecimento.
+const AREA_ICON: Record<AreaKey, (props: { width?: number; height?: number; weight?: string }) => React.ReactElement> = {
+  mat: IconFormula as any,
+  nat: IconAtom as any,
+  hum: IconGlobe as any,
+  lin: IconBook as any,
+  red: IconNote as any,
+  default: IconStack as any,
+};
 
 const SUBJECT_AREAS = [
   'Matemática e suas Tecnologias',
@@ -46,6 +61,44 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 // =============================================================================
+// DASHBOARD — faixa compacta de estatísticas + mini previsão inline.
+// =============================================================================
+function StatPill({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
+  return (
+    <span className={`chip ${accent ?? 'text-muted'}`} title={label}>
+      <span className="opacity-70">{label}</span>
+      <span className="font-bold tabular-nums">{value}</span>
+    </span>
+  );
+}
+
+function StatsBar({ stats, forecast }: { stats: FlashcardStats | null; forecast: FlashcardForecastDay[] }) {
+  if (!stats || stats.total === 0) return null;
+  const maxFc = Math.max(...forecast.map((f) => f.count), 1);
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+      <StatPill label="Vencidos" value={stats.overdue} accent={stats.overdue > 0 ? 'text-red' : ''} />
+      <StatPill label="Streak" value={`${stats.streak}d`} accent="text-hum" />
+      <StatPill label="Retenção" value={`${stats.retention}%`} accent="text-nat" />
+      <StatPill label="Maduros" value={stats.mature} />
+      {/* Mini gráfico inline de 7 dias */}
+      {forecast.length > 0 && (
+        <div className="ml-auto flex items-end gap-0.5" title="Próximas revisões">
+          {forecast.map((f) => (
+            <div
+              key={f.day}
+              className={`w-1.5 rounded-full ${f.overdue ? 'bg-brand' : 'bg-brand/30'}`}
+              style={{ height: `${Math.max(6, Math.round((f.count / maxFc) * 20))}px` }}
+              title={`${f.label}: ${f.count} cards`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
 // ESTUDO — Card com frente/verso Markdown e avaliação SM-2.
 // =============================================================================
 function StudyCard({
@@ -61,23 +114,52 @@ function StudyCard({
 }) {
   const [flipped, setFlipped] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [gradeError, setGradeError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<FlashcardPreview | null>(null);
   const area = areaKey(card.deckTopic ?? card.deckTitle);
 
   useEffect(() => {
     setFlipped(false);
+    setPreview(null);
+    setGradeError(null);
   }, [card.flashcardId]);
+
+  // Ao virar o card, busca o preview de agendamento SM-2.
+  useEffect(() => {
+    if (flipped && !preview) {
+      void api.flashcardPreview(card.flashcardId).then(setPreview).catch(() => {});
+    }
+  }, [flipped, card.flashcardId, preview]);
 
   async function grade(q: number) {
     setSaving(true);
+    setGradeError(null);
     try {
       await api.reviewFlashcard(card.flashcardId, q);
+      onGraded(q);
+    } catch (e) {
+      // Não avança o card: erro de rede/API não pode fingir que a revisão foi salva.
+      setGradeError(
+        e instanceof Error ? e.message : 'Não foi possível salvar. Tente de novo.',
+      );
     } finally {
       setSaving(false);
-      onGraded(q);
     }
   }
 
   const pct = total > 0 ? Math.round((index / total) * 100) : 0;
+
+  // Formata intervalo em texto legível: "1 dia", "6 dias", "1 mês".
+  function fmtInterval(d: number): string {
+    if (d === 0) return 'hoje';
+    if (d === 1) return 'amanhã';
+    if (d < 30) return `${d} dias`;
+    const months = Math.round(d / 30);
+    return months === 1 ? '1 mês' : `${months} meses`;
+  }
+
+  // Mapa quality -> intervalo do preview.
+  const previewMap = new Map(preview?.previews.map((p) => [p.quality, p.intervalD]) ?? []);
 
   return (
     <div className="space-y-4">
@@ -101,7 +183,6 @@ function StudyCard({
       <div className="card card-raised overflow-hidden animate-rise">
         <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
           <span className={`h-7 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`} />
-          <span className="text-base">{card.deckIcon}</span>
           <div className="min-w-0 flex-1">
             <span className={`text-sm font-semibold ${AREA_TEXT[area]}`}>
               {shortArea(card.deckTopic)}
@@ -112,8 +193,10 @@ function StudyCard({
           </div>
           {card.overdue ? (
             <span className="chip text-red">atrasado</span>
+          ) : card.repetition === 0 ? (
+            <span className="chip text-brand">novo</span>
           ) : (
-            <span className="chip text-muted">hoje</span>
+            <span className="chip text-muted">revisão</span>
           )}
         </div>
 
@@ -154,17 +237,35 @@ function StudyCard({
             Sua resposta define quando este card volta para revisão.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {GRADES.map((g) => (
-              <button
-                key={g.quality}
-                onClick={() => void grade(g.quality)}
-                disabled={saving}
-                className={`rounded-lg border py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${g.cls}`}
-              >
-                {saving ? '…' : g.label}
-              </button>
-            ))}
+            {GRADES.map((g) => {
+              const interval = previewMap.get(g.quality);
+              return (
+                <button
+                  key={g.quality}
+                  onClick={() => void grade(g.quality)}
+                  disabled={saving}
+                  className={`flex flex-col items-center gap-0.5 rounded-lg border py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${g.cls}`}
+                >
+                  <span>{saving ? '…' : g.label}</span>
+                  {interval != null && !saving && (
+                    <span className="text-[0.65rem] font-normal opacity-70">
+                      {fmtInterval(interval)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+          {preview && preview.current.repetition > 0 && (
+            <p className="mt-2.5 text-center text-xs text-muted">
+              Repetição #{preview.current.repetition + 1} · facilidade {preview.current.easeFactor.toFixed(2)}
+            </p>
+          )}
+          {gradeError && (
+            <p className="mt-2.5 rounded-lg bg-red/10 px-3 py-2 text-center text-xs text-red">
+              {gradeError}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -196,6 +297,8 @@ function StudyPath({
 
   const current = queue[currentIdx];
   const doneCount = currentIdx;
+
+  if (!current) return null;
 
   return (
     <div className="space-y-5">
@@ -259,24 +362,49 @@ function StudyPath({
 // Cada nível tem botão "Estudar" que monta a fila filtrada por aquele escopo.
 // =============================================================================
 
-/** Botão "Estudar" que aparece no hover dos subníveis (discreto, cor primária). */
+/** Botão "Estudar" dos subníveis — sempre visível no mobile (touch não tem hover), reveal no hover do desktop. */
 function HoverStudyButton({ count, onStudy }: { count: number; onStudy: () => void }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onStudy(); }}
       title={`Estudar ${count} cards`}
-      className="btn btn-primary shrink-0 rounded-full px-2.5 py-0.5 text-[0.66rem] font-semibold opacity-0 transition-opacity group-hover:opacity-100"
+      className="btn btn-primary shrink-0 rounded-full px-2.5 py-0.5 text-[0.66rem] font-semibold transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
     >
-      Estudar {count}
+      Estudar
     </button>
+  );
+}
+
+/** Resumo de progresso: novos / vistos / revistos. */
+function ProgressHint({ progress }: { progress: { newCards: number; seen: number; reviewed: number } }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[0.68rem] tabular-nums">
+      {progress.newCards > 0 && (
+        <span className="text-brand" title={`${progress.newCards} novos`}>
+          {progress.newCards} novo{progress.newCards !== 1 ? 's' : ''}
+        </span>
+      )}
+      {progress.seen > progress.reviewed && (
+        <span className="text-hum" title={`${progress.seen - progress.reviewed} vistos 1x`}>
+          {progress.seen - progress.reviewed} visto{progress.seen - progress.reviewed !== 1 ? 's' : ''}
+        </span>
+      )}
+      {progress.reviewed > 0 && (
+        <span className="text-nat" title={`${progress.reviewed} revistos 2x+`}>
+          {progress.reviewed} revisado{progress.reviewed !== 1 ? 's' : ''}
+        </span>
+      )}
+    </span>
   );
 }
 
 function DeckTree({
   decks,
+  progressMap,
   onStudyScope,
 }: {
   decks: FlashcardDeckBrief[];
+  progressMap: Record<string, { total: number; newCards: number; seen: number; reviewed: number }>;
   onStudyScope: (
     scope: { subject?: string; topic?: string; subtheme?: string },
   ) => void;
@@ -305,6 +433,13 @@ function DeckTree({
   const [openTopic, setOpenTopic] = useState<Set<string>>(new Set());
   const [openSub, setOpenSub] = useState<Set<string>>(new Set());
 
+  // Accordion de área: só uma aberta por vez; ao trocar, reseta os sub-níveis.
+  function selectArea(area: string) {
+    setOpenArea((cur) => (cur === area ? null : area));
+    setOpenTopic(new Set());
+    setOpenSub(new Set());
+  }
+
   function toggle(set: Set<string>, key: string): Set<string> {
     const next = new Set(set);
     if (next.has(key)) next.delete(key);
@@ -316,14 +451,28 @@ function DeckTree({
     return items.reduce((s, d) => s + d._count.flashcards, 0);
   }
 
+  // Agrega progresso de um conjunto de decks.
+  function aggProgress(items: FlashcardDeckBrief[]) {
+    return items.reduce(
+      (acc, d) => {
+        const p = progressMap[d.id] ?? { total: d._count.flashcards, newCards: d._count.flashcards, seen: 0, reviewed: 0 };
+        acc.newCards += p.newCards;
+        acc.seen += p.seen;
+        acc.reviewed += p.reviewed;
+        return acc;
+      },
+      { newCards: 0, seen: 0, reviewed: 0 },
+    );
+  }
+
   const totalCount = totalCards(decks);
 
   return (
     <div className="space-y-4">
       {/* Banner "Revisar tudo" */}
       <div className="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-brand/12 to-brand/4 px-5 py-4 ring-1 ring-brand/20">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-brand/15 text-2xl">
-          🎯
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-brand/15">
+          <IconStack width={24} height={24} weight="duotone" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-display text-base font-bold text-fg">Revisar tudo</p>
@@ -339,8 +488,8 @@ function DeckTree({
         </button>
       </div>
 
-      {/* Cards de área (nível 1) */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Accordion vertical de áreas (uma aberta por vez) */}
+      <div className="space-y-2.5">
         {[...tree.entries()].map(([area, subjects]) => {
           const areaDecks = [...subjects.values()]
             .flatMap((m) => [...m.values()].flat());
@@ -354,19 +503,20 @@ function DeckTree({
             >
               {/* Cabeçalho da área — colorido com emoji */}
               <button
-                onClick={() => setOpenArea(isAreaOpen ? null : area)}
+                onClick={() => selectArea(area)}
                 className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${AREA_BADGE[ak]}`}
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface/60 text-2xl">
-                  {areaEmoji(area)}
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface/60">
+                  {(() => { const AreaIcon = AREA_ICON[ak]; return <AreaIcon width={24} height={24} weight="duotone" />; })()}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display text-sm font-bold">
                     {area.replace(' e suas Tecnologias', '')}
                   </p>
                   <p className="text-xs opacity-80">
-                    {areaDecks.length} decks · {areaCards} cards
+                    {areaDecks.length} decks
                   </p>
+                  <ProgressHint progress={aggProgress(areaDecks)} />
                 </div>
                 <IconChevronDown
                   width={18}
@@ -404,7 +554,7 @@ function DeckTree({
                             <span className={`min-w-0 flex-1 truncate text-sm font-semibold ${AREA_TEXT[tk]}`}>
                               {topic}
                             </span>
-                            <span className="shrink-0 text-xs text-muted tabular-nums">{topicCards}</span>
+                            <ProgressHint progress={aggProgress(topicDecks)} />
                             <HoverStudyButton
                               count={topicCards}
                               onStudy={() => onStudyScope({ subject: area, topic })}
@@ -437,7 +587,7 @@ function DeckTree({
                                         <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">
                                           {subtheme}
                                         </span>
-                                        <span className="shrink-0 text-xs text-muted tabular-nums">{subCards}</span>
+                                        <ProgressHint progress={aggProgress(dDecks)} />
                                         <HoverStudyButton
                                           count={subCards}
                                           onStudy={() => onStudyScope({ subject: area, topic, subtheme })}
@@ -450,7 +600,7 @@ function DeckTree({
                                       <ul className={`${showSubHeader ? 'ml-4' : ''} space-y-0.5`}>
                                         {dDecks.map((d) => (
                                           <li key={d.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-2">
-                                            <span className="shrink-0 text-base leading-none">{d.icon}</span>
+                                            <span className={`size-1.5 shrink-0 rounded-full ${AREA_DOT[tk]}`} />
                                             <span className="min-w-0 flex-1 truncate text-sm text-fg">
                                               {d.title}
                                               {d.weight >= 4 && (
@@ -459,7 +609,9 @@ function DeckTree({
                                                 </span>
                                               )}
                                             </span>
-                                            <span className="shrink-0 text-xs text-muted tabular-nums">{d._count.flashcards}</span>
+                                            <span className="shrink-0 text-xs text-muted tabular-nums">
+                                              {progressMap[d.id] ? `${progressMap[d.id].seen}/${d._count.flashcards}` : d._count.flashcards}
+                                            </span>
                                             <HoverStudyButton
                                               count={d._count.flashcards}
                                               onStudy={() => onStudyScope({ subject: area, topic, subtheme })}
@@ -629,15 +781,21 @@ export default function Flashcards() {
   const [createOpen, setCreateOpen] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
   const [done, setDone] = useState(false);
+  const [stats, setStats] = useState<FlashcardStats | null>(null);
+  const [forecast, setForecast] = useState<FlashcardForecastDay[]>([]);
+  const [deckProgress, setDeckProgress] = useState<Record<string, { total: number; newCards: number; seen: number; reviewed: number }>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [mine, pub, studyQueue] = await Promise.all([
+      const [mine, pub, studyQueue, st, fc, dp] = await Promise.all([
         api.flashcardDecksMine(),
         api.flashcardDecksPublic(),
-        api.studyQueue(30),
+        api.studyQueue(),
+        api.flashcardStats(),
+        api.flashcardForecast(7),
+        api.flashcardDeckProgress(),
       ]);
       setMyDecks(mine);
       setPublicDecks(pub);
@@ -645,6 +803,9 @@ export default function Flashcards() {
       setQueueIdx(0);
       setDone(studyQueue.length === 0);
       setDoneCount(0);
+      setStats(st);
+      setForecast(fc);
+      setDeckProgress(dp);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
     } finally {
@@ -675,7 +836,7 @@ export default function Flashcards() {
     setLoading(true);
     setError(null);
     try {
-      const scoped = await api.studyQueue(60, scope);
+      const scoped = await api.studyQueue(scope);
       setQueue(scoped);
       setQueueIdx(0);
       setDone(scoped.length === 0);
@@ -688,8 +849,6 @@ export default function Flashcards() {
     }
   }
 
-  const overdueCount = queue.filter((c) => c.overdue).length;
-
   return (
     <div className="space-y-5 pb-28 md:pb-24">
       <header className="flex items-end justify-between gap-3">
@@ -699,7 +858,7 @@ export default function Flashcards() {
             Flashcards
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Repetição espaçada com prioridade Pareto — mais atrasados primeiro.
+            Repetição espaçada com prioridade Pareto — vencidos primeiro, depois novos por peso.
           </p>
         </div>
         <button onClick={() => setCreateOpen(true)} className="btn btn-ghost shrink-0">
@@ -735,31 +894,39 @@ export default function Flashcards() {
         <>
           {tab === 'study' &&
             (done ? (
-              <EmptyState
-                icon={IconCheck}
-                title={doneCount > 0 ? 'Sessão concluída! 🎉' : 'Tudo em dia! 🎉'}
-                description={
-                  doneCount > 0
-                    ? `Você estudou ${doneCount} ${doneCount === 1 ? 'card' : 'cards'}. O SM-2 reagendou os próximos.`
-                    : 'Nenhum card vencido agora. Explore os decks prontos!'
-                }
-                tip="Flashcards com SM-2 fixam o conteúdo no longo prazo"
-              />
+              <>
+                {doneCount > 0 ? (
+                  /* Sessão concluída — resumo */
+                  <div className="card p-5 text-center animate-rise">
+                    <p className="font-display text-2xl font-bold text-nat">{doneCount}</p>
+                    <p className="text-sm text-muted">
+                      {doneCount === 1 ? 'card estudado' : 'cards estudados'} nesta sessão
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      O SM-2 reagendou cada um com base na sua avaliação.
+                    </p>
+                  </div>
+                ) : (
+                  /* Fila vazia — nada para revisar agora */
+                  <EmptyState
+                    icon={IconCheck}
+                    title="Tudo em dia!"
+                    description="Nenhum card vencido ou novo neste escopo agora. O SM-2 traz os próximos nas próximas horas/dias."
+                    action={{ label: 'Explorar decks prontos', onClick: () => setTab('tree') }}
+                    tip="Explore outros escopos na aba Decks Prontos"
+                  />
+                )}
+                <StatsBar stats={stats} forecast={forecast} />
+              </>
             ) : (
               <>
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <span className="chip">
-                    {queue.length} cards na sessão
-                  </span>
-                  {overdueCount > 0 && (
-                    <span className="chip text-red">{overdueCount} atrasados</span>
-                  )}
-                </div>
                 <StudyPath
                   queue={queue}
                   currentIdx={queueIdx}
                   onGraded={onGraded}
                 />
+                {/* Stats compactas abaixo do card de estudo */}
+                <StatsBar stats={stats} forecast={forecast} />
               </>
             ))}
 
@@ -779,6 +946,7 @@ export default function Flashcards() {
               ) : (
                 <DeckTree
                   decks={publicDecks}
+                  progressMap={deckProgress}
                   onStudyScope={(scope) => { void studyScope(scope); }}
                 />
               )}
@@ -800,6 +968,7 @@ export default function Flashcards() {
               ) : (
                 <DeckTree
                   decks={myDecks}
+                  progressMap={deckProgress}
                   onStudyScope={(scope) => { void studyScope(scope); }}
                 />
               )}

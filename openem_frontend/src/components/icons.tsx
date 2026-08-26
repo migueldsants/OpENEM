@@ -4,6 +4,7 @@
 import {
   Cursor,
   ArrowUpRight,
+  Atom,
   BookOpen,
   CalendarBlank,
   CaretLeft,
@@ -19,6 +20,7 @@ import {
   Exam,
   Flame,
   BoundingBox,
+  GlobeHemisphereWest,
   Hand,
   Heart,
   Highlighter,
@@ -129,6 +131,8 @@ export const IconArrow = shim(ArrowUpRight, 'duotone');
 export const IconDiamond = shim(Diamond, 'duotone');
 export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
+export const IconAtom = shim(Atom, 'duotone');
+export const IconGlobe = shim(GlobeHemisphereWest, 'duotone');
 export const IconSticky = shim(Note, 'duotone');
 export const IconNote = shim(NotePencil, 'duotone');
 export const IconTrash = shim(Trash, 'duotone');

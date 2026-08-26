@@ -353,6 +353,48 @@ export interface FlashcardReviewResult {
   dueAt: string;
   lastQuality: number;
 }
+
+/** Dashboard de revisão espaçada. */
+export interface FlashcardStats {
+  total: number;
+  overdue: number;
+  dueToday: number;
+  reviewedToday: number;
+  mature: number;
+  learning: number;
+  newCards: number;
+  streak: number;
+  avgEase: number;
+  retention: number;
+}
+
+/** Preview do próximo agendamento SM-2 antes de avaliar. */
+export interface FlashcardPreview {
+  current: { easeFactor: number; intervalD: number; repetition: number };
+  previews: {
+    quality: number;
+    label: string;
+    intervalD: number;
+    dueAt: string;
+  }[];
+}
+
+/** Previsão de carga de revisão por dia. */
+export interface FlashcardForecastDay {
+  day: string;
+  label: string;
+  count: number;
+  overdue: boolean;
+}
+
+/** Progresso de um deck: novos, vistos (≥1x) e revistos (≥2x). */
+export interface DeckProgress {
+  total: number;
+  newCards: number;
+  seen: number;
+  reviewed: number;
+}
+export type DeckProgressMap = Record<string, DeckProgress>;
 export interface Paginated<T> {
   items: T[];
   meta: { total: number; page: number; limit: number; pages: number };
@@ -586,11 +628,9 @@ export const api = {
   voteDeck: (deckId: string, vote: 'up' | 'down') =>
     request(`/flashcards/decks/${deckId}/vote`, { method: 'POST', body: { vote } }),
   studyQueue: (
-    limit = 30,
     filters?: { subject?: string; topic?: string; subtheme?: string },
   ) => {
     const qs = new URLSearchParams();
-    qs.set('limit', String(limit));
     if (filters?.subject) qs.set('subject', filters.subject);
     if (filters?.topic) qs.set('topic', filters.topic);
     if (filters?.subtheme) qs.set('subtheme', filters.subtheme);
@@ -601,6 +641,13 @@ export const api = {
       method: 'POST',
       body: { quality },
     }),
+  flashcardStats: () => request<FlashcardStats>('/flashcards/stats'),
+  flashcardPreview: (flashcardId: string) =>
+    request<FlashcardPreview>(`/flashcards/flashcards/${flashcardId}/preview`),
+  flashcardForecast: (days = 7) =>
+    request<FlashcardForecastDay[]>(`/flashcards/forecast?days=${days}`),
+  flashcardDeckProgress: () =>
+    request<DeckProgressMap>('/flashcards/decks/progress'),
 
   studyPlan: () => request<StudyPlan>('/study-plan'),
   generateStudyPlan: () =>

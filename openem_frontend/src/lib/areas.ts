@@ -50,24 +50,18 @@ export const AREA_SOFT: Record<AreaKey, string> = {
   default: 'bg-brand/12',
 };
 
-export const AREAS: { key: AreaKey; label: string; emoji: string }[] = [
-  { key: 'mat', label: 'Matemática', emoji: '🧮' },
-  { key: 'nat', label: 'Natureza', emoji: '🧪' },
-  { key: 'hum', label: 'Humanas', emoji: '🌍' },
-  { key: 'lin', label: 'Linguagens', emoji: '📖' },
-  { key: 'red', label: 'Redação', emoji: '✍️' },
+export const AREAS: { key: AreaKey; label: string }[] = [
+  { key: 'mat', label: 'Matemática' },
+  { key: 'nat', label: 'Natureza' },
+  { key: 'hum', label: 'Humanas' },
+  { key: 'lin', label: 'Linguagens' },
+  { key: 'red', label: 'Redação' },
 ];
 
 // Rótulo curto pelo nome completo do subject (ex.: "Matemática e suas Tecnologias").
 export function shortArea(subjectName?: string): string {
   const key = areaKey(subjectName);
   return AREAS.find((a) => a.key === key)?.label ?? 'Geral';
-}
-
-// Emoji da área pelo nome completo do subject.
-export function areaEmoji(subjectName?: string): string {
-  const key = areaKey(subjectName);
-  return AREAS.find((a) => a.key === key)?.emoji ?? '📚';
 }
 
 // Fundo de badge suave por área.
