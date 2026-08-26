@@ -149,9 +149,9 @@ function StudyCard({
 
   const pct = total > 0 ? Math.round((index / total) * 100) : 0;
 
-  // Formata intervalo em texto legível: "1 dia", "6 dias", "1 mês".
+  // Formata intervalo em texto legível: "agora", "1 dia", "3 dias".
   function fmtInterval(d: number): string {
-    if (d === 0) return 'hoje';
+    if (d === 0) return 'agora';
     if (d === 1) return 'amanhã';
     if (d < 30) return `${d} dias`;
     const months = Math.round(d / 30);
@@ -903,7 +903,7 @@ export default function Flashcards() {
                       {doneCount === 1 ? 'card estudado' : 'cards estudados'} nesta sessão
                     </p>
                     <p className="mt-1 text-xs text-muted">
-                      O SM-2 reagendou cada um com base na sua avaliação.
+                      Cada card foi reagendado: hoje, amanhã, em 3 ou em 7 dias, conforme sua avaliação.
                     </p>
                   </div>
                 ) : (
@@ -911,7 +911,7 @@ export default function Flashcards() {
                   <EmptyState
                     icon={IconCheck}
                     title="Tudo em dia!"
-                    description="Nenhum card vencido ou novo neste escopo agora. O SM-2 traz os próximos nas próximas horas/dias."
+                    description="Nenhum card vencido ou novo neste escopo agora. As próximas revisões chegam conforme o agendamento (hoje, 1, 3 ou 7 dias)."
                     action={{ label: 'Explorar decks prontos', onClick: () => setTab('tree') }}
                     tip="Explore outros escopos na aba Decks Prontos"
                   />

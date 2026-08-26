@@ -98,25 +98,58 @@ describe('buildStudyQueue()', () => {
   });
 });
 
-describe('reviewFlashcard()', () => {
-  it('SM-2: acerto (quality 5) cresce o intervalo', () => {
-    const next = reviewFlashcard(
+describe('reviewFlashcard() — intervalos fixos por nota', () => {
+  const base = { easeFactor: 2.5, intervalD: 10, repetition: 4 };
+
+  it('Esqueci (1) é imediato: vence hoje e reinicia a contagem', () => {
+    const next = reviewFlashcard(base, 1, NOW);
+    expect(next.intervalD).toBe(0);
+    expect(next.dueAt.getTime()).toBe(NOW.getTime());
+    expect(next.repetition).toBe(0);
+  });
+
+  it('Difícil (3) agenda para 1 dia', () => {
+    const next = reviewFlashcard(base, 3, NOW);
+    expect(next.intervalD).toBe(1);
+    expect(next.dueAt.getTime()).toBe(NOW.getTime() + DAY);
+  });
+
+  it('Bom (4) agenda para 3 dias', () => {
+    const next = reviewFlashcard(base, 4, NOW);
+    expect(next.intervalD).toBe(3);
+    expect(next.dueAt.getTime()).toBe(NOW.getTime() + 3 * DAY);
+  });
+
+  it('Fácil (5) agenda para 7 dias', () => {
+    const next = reviewFlashcard(base, 5, NOW);
+    expect(next.intervalD).toBe(7);
+    expect(next.dueAt.getTime()).toBe(NOW.getTime() + 7 * DAY);
+  });
+
+  it('intervalo não cresce com repetições (sempre fixo)', () => {
+    const first = reviewFlashcard(
       { easeFactor: 2.5, intervalD: 0, repetition: 0 },
       5,
       NOW,
     );
-    expect(next.intervalD).toBe(1);
-    const next2 = reviewFlashcard(next, 5, NOW);
-    expect(next2.intervalD).toBe(6);
+    const tenth = reviewFlashcard(
+      { easeFactor: 2.5, intervalD: 7, repetition: 10 },
+      5,
+      NOW,
+    );
+    expect(first.intervalD).toBe(7);
+    expect(tenth.intervalD).toBe(7);
+    expect(tenth.repetition).toBe(11);
   });
 
-  it('SM-2: erro (quality 1) reinicia o ciclo com 1 dia', () => {
-    const next = reviewFlashcard(
-      { easeFactor: 2.5, intervalD: 10, repetition: 4 },
+  it('easeFactor continua sendo ajustado (telemetria), com piso 1.3', () => {
+    const hard = reviewFlashcard(base, 1, NOW);
+    expect(hard.easeFactor).toBeLessThan(base.easeFactor);
+    const floored = reviewFlashcard(
+      { easeFactor: 1.3, intervalD: 0, repetition: 0 },
       1,
       NOW,
     );
-    expect(next.repetition).toBe(0);
-    expect(next.intervalD).toBe(1);
+    expect(floored.easeFactor).toBe(1.3);
   });
 });

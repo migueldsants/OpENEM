@@ -245,8 +245,12 @@ export class FlashcardsService {
       (r) => r.dueAt >= todayStart && r.dueAt <= now,
     ).length;
     const reviewedToday = reviews.filter((r) => r.reviewedAt >= todayStart).length;
-    const mature = reviews.filter((r) => r.intervalD >= 21).length;
-    const learning = reviews.filter((r) => r.intervalD < 21 && r.repetition > 0).length;
+    // Intervalos são fixos (máx 7d), então maturidade é medida por repetições:
+    // maduro = 3+ revisões seguidas de sucesso; aprendendo = 1-2.
+    const mature = reviews.filter((r) => r.repetition >= 3).length;
+    const learning = reviews.filter(
+      (r) => r.repetition >= 1 && r.repetition < 3,
+    ).length;
     const newCards = total - reviews.filter((r) => r.repetition > 0).length;
 
     // Streak: dias consecutivos com pelo menos 1 revisão.
