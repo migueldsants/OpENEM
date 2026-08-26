@@ -33,7 +33,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export function buildStudyQueue(
   items: FlashcardQueueItem[],
-  limit = 20,
 ): FlashcardQueueItem[] {
   return [...items]
     .sort((a, b) => {
@@ -43,8 +42,7 @@ export function buildStudyQueue(
       if (a.weight !== b.weight) return b.weight - a.weight;
       // 3. Mais antigo (venceu há mais tempo ou vence antes) à frente.
       return a.dueAt.getTime() - b.dueAt.getTime();
-    })
-    .slice(0, limit);
+    });
 }
 
 /** Aplica SM-2 a um flashcard da fila e devolve o novo estado. */

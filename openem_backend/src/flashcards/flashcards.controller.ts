@@ -52,6 +52,15 @@ export class FlashcardsController {
     return this.flashcards.listPublicDecks(subject);
   }
 
+  // Rotas estáticas ANTES de decks/:deckId (senão "progress" é confundido com :deckId).
+  @Get('decks/progress')
+  @ApiOperation({
+    summary: 'Progresso por deck para a árvore (novos, vistos, revistos)',
+  })
+  deckProgress(@CurrentUser() user: AuthenticatedUser) {
+    return this.flashcards.deckProgress(user.userId);
+  }
+
   @Get('decks/:deckId')
   @ApiOperation({ summary: 'Detalhe de um deck (com flashcards)' })
   getDeck(
@@ -120,5 +129,35 @@ export class FlashcardsController {
     @Body() dto: ReviewFlashcardDto,
   ) {
     return this.flashcards.review(user.userId, flashcardId, dto.quality);
+  }
+
+  // ---- Revisão espaçada: estatísticas & previsão ----
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Dashboard de revisão espaçada do usuário' })
+  stats(@CurrentUser() user: AuthenticatedUser) {
+    return this.flashcards.stats(user.userId);
+  }
+
+  @Get('flashcards/:flashcardId/preview')
+  @ApiOperation({
+    summary: 'Preview do próximo agendamento SM-2 sem salvar (antes de avaliar)',
+  })
+  previewReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('flashcardId') flashcardId: string,
+  ) {
+    return this.flashcards.previewReview(user.userId, flashcardId);
+  }
+
+  @Get('forecast')
+  @ApiOperation({
+    summary: 'Previsão de carga de revisão dos próximos dias',
+  })
+  dueForecast(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('days') days?: string,
+  ) {
+    return this.flashcards.dueForecast(user.userId, days ? parseInt(days, 10) : 7);
   }
 }
