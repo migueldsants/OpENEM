@@ -3,8 +3,28 @@
 
 export type AreaKey = 'mat' | 'nat' | 'hum' | 'lin' | 'red' | 'default';
 
+// Matérias canônicas (taxonomia: área → matéria → tópico) → área do conhecimento.
+// Estável por definição: espelha a seed do backend (prisma/seed.ts TAXONOMY).
+const SUBJECT_TO_AREA: Record<string, AreaKey> = {
+  matemática: 'mat',
+  biologia: 'nat',
+  física: 'nat',
+  química: 'nat',
+  história: 'hum',
+  geografia: 'hum',
+  filosofia: 'hum',
+  sociologia: 'hum',
+  'língua portuguesa': 'lin',
+  'língua estrangeira': 'lin',
+  literatura: 'lin',
+  artes: 'lin',
+  'educação física': 'lin',
+  redação: 'red',
+};
+
 export function areaKey(subjectName?: string): AreaKey {
-  const n = (subjectName ?? '').toLowerCase();
+  const n = (subjectName ?? '').toLowerCase().trim();
+  if (SUBJECT_TO_AREA[n]) return SUBJECT_TO_AREA[n];
   if (n.includes('matem')) return 'mat';
   if (n.includes('natureza')) return 'nat';
   if (n.includes('humanas')) return 'hum';

@@ -48,10 +48,21 @@ model Profile {
   onboarded     Boolean @default(false) // false até o 1º onboarding ser concluído
 }
 
+// Área do conhecimento ENEM (nível mais alto da taxonomia canônica).
+model SubjectArea {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  subjects Subject[]
+}
+
 model Subject {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  topics Topic[]
+  id            String      @id @default(cuid())
+  name          String      @unique
+  subjectAreaId String
+  subjectArea   SubjectArea @relation(fields: [subjectAreaId], references: [id], onDelete: Cascade)
+  topics        Topic[]
+
+  @@index([subjectAreaId])
 }
 
 model Topic {
@@ -59,6 +70,7 @@ model Topic {
   name          String
   subjectId     String
   subject       Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  weight        Int            @default(3) // peso Pareto 1..5 (incidência no ENEM)
   questions     Question[]
   reviewItems   ReviewItem[]
   studySessions StudySession[]
