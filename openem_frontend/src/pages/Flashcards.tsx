@@ -8,7 +8,6 @@ import {
   IconBook,
   IconCheck,
   IconChevronDown,
-  IconChevronRight,
   IconFormula,
   IconGlobe,
   IconNote,
@@ -273,78 +272,33 @@ function StudyCard({
 }
 
 // =============================================================================
-// CAMINHO — fila de estudo organizada por peso Pareto e vencimento SM-2.
+// FOCO — sessão de estudo ativa: só o card, centralizado, sem header/tabs.
 // =============================================================================
-function StudyPath({
+function StudyFocus({
   queue,
   currentIdx,
   onGraded,
+  onExit,
 }: {
   queue: FlashcardItem[];
   currentIdx: number;
   onGraded: (idx: number) => void;
+  onExit: () => void;
 }) {
-  // Agrupa a fila por matéria (topic) para mostrar o caminho.
-  const groups = useMemo(() => {
-    const map = new Map<string, FlashcardItem[]>();
-    for (const c of queue) {
-      const key = c.deckTopic ?? 'Geral';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(c);
-    }
-    return [...map.entries()];
-  }, [queue]);
-
   const current = queue[currentIdx];
-  const doneCount = currentIdx;
-
   if (!current) return null;
 
   return (
-    <div className="space-y-5">
-      {/* Trilho de matérias */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {groups.map(([topic, cards], gi) => {
-          const done = cards.every(
-            (c) => queue.indexOf(c) < currentIdx,
-          );
-          const groupStart = queue.indexOf(cards[0]);
-          const inProgress = !done && groupStart <= currentIdx;
-          const area = areaKey(topic);
-          return (
-            <div key={topic} className="flex items-center gap-1.5">
-              {gi > 0 && (
-                <IconChevronRight width={14} height={14} className="text-muted" />
-              )}
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-                  done
-                    ? `${AREA_BADGE[area]} opacity-60`
-                    : inProgress
-                      ? `${AREA_BADGE[area]} ring-1 ring-current`
-                      : 'bg-surface-2 text-muted'
-                }`}
-              >
-                {done ? (
-                  <IconCheck width={12} height={12} />
-                ) : (
-                  <span className={`size-1.5 rounded-full ${AREA_DOT[area]}`} />
-                )}
-                {topic.replace(' e suas Tecnologias', '')}
-                <span className="opacity-75">
-                  {Math.min(
-                    cards.length,
-                    Math.max(0, doneCount - groupStart),
-                  )}
-                  /{cards.length}
-                </span>
-              </span>
-            </div>
-          );
-        })}
+    <div className="mx-auto flex min-h-[calc(100dvh-11rem)] w-full max-w-xl flex-col justify-center">
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          onClick={onExit}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+        >
+          <IconX width={14} height={14} />
+          Encerrar sessão
+        </button>
       </div>
-
-      {/* Card atual */}
       <StudyCard
         key={current.flashcardId}
         card={current}
@@ -849,6 +803,31 @@ export default function Flashcards() {
     }
   }
 
+  // Sessão ativa: modo foco (sem header/tabs; card é o protagonista).
+  const studying = !loading && tab === 'study' && !done && queue.length > 0;
+
+  // Encerrar a sessão manualmente: mostra o resumo se já estudou algo.
+  function exitStudy() {
+    if (doneCount > 0) setDone(true);
+    else setTab('tree');
+  }
+
+  if (studying) {
+    return (
+      <div className="pb-28 md:pb-24">
+        {error && (
+          <p className="mb-3 rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        )}
+        <StudyFocus
+          queue={queue}
+          currentIdx={queueIdx}
+          onGraded={onGraded}
+          onExit={exitStudy}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 pb-28 md:pb-24">
       <header className="flex items-end justify-between gap-3">
@@ -918,17 +897,7 @@ export default function Flashcards() {
                 )}
                 <StatsBar stats={stats} forecast={forecast} />
               </>
-            ) : (
-              <>
-                <StudyPath
-                  queue={queue}
-                  currentIdx={queueIdx}
-                  onGraded={onGraded}
-                />
-                {/* Stats compactas abaixo do card de estudo */}
-                <StatsBar stats={stats} forecast={forecast} />
-              </>
-            ))}
+            ) : null /* sessão ativa é renderizada pelo modo foco acima */)}
 
           {tab === 'tree' && (
             <>
