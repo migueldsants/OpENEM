@@ -3,13 +3,33 @@
 
 export type AreaKey = 'mat' | 'nat' | 'hum' | 'lin' | 'red' | 'default';
 
+// Matérias canônicas (taxonomia: área → matéria → tópico) → área do conhecimento.
+// Estável por definição: espelha a seed do backend (prisma/seed.ts TAXONOMY).
+const SUBJECT_TO_AREA: Record<string, AreaKey> = {
+  matemática: 'mat',
+  biologia: 'nat',
+  física: 'nat',
+  química: 'nat',
+  história: 'hum',
+  geografia: 'hum',
+  filosofia: 'hum',
+  sociologia: 'hum',
+  'língua portuguesa': 'lin',
+  'língua estrangeira': 'lin',
+  literatura: 'lin',
+  artes: 'lin',
+  'educação física': 'lin',
+  redação: 'lin', // Redação vive dentro de Linguagens, não é área própria
+};
+
 export function areaKey(subjectName?: string): AreaKey {
-  const n = (subjectName ?? '').toLowerCase();
+  const n = (subjectName ?? '').toLowerCase().trim();
+  if (SUBJECT_TO_AREA[n]) return SUBJECT_TO_AREA[n];
   if (n.includes('matem')) return 'mat';
   if (n.includes('natureza')) return 'nat';
   if (n.includes('humanas')) return 'hum';
   if (n.includes('linguagens') || n.includes('linguagem')) return 'lin';
-  if (n.includes('redaç') || n.includes('redac')) return 'red';
+  if (n.includes('redaç') || n.includes('redac')) return 'lin';
   return 'default';
 }
 
@@ -50,10 +70,36 @@ export const AREA_SOFT: Record<AreaKey, string> = {
   default: 'bg-brand/12',
 };
 
+// Áreas exibidas em listas/filtros — Redação não é área separada (fica em Linguagens).
 export const AREAS: { key: AreaKey; label: string }[] = [
   { key: 'mat', label: 'Matemática' },
   { key: 'nat', label: 'Natureza' },
   { key: 'hum', label: 'Humanas' },
   { key: 'lin', label: 'Linguagens' },
-  { key: 'red', label: 'Redação' },
 ];
+
+// Rótulo curto pelo nome completo do subject (ex.: "Matemática e suas Tecnologias").
+export function shortArea(subjectName?: string): string {
+  const key = areaKey(subjectName);
+  return AREAS.find((a) => a.key === key)?.label ?? 'Geral';
+}
+
+// Fundo de badge suave por área.
+export const AREA_BADGE: Record<AreaKey, string> = {
+  mat: 'bg-mat/12 text-mat',
+  nat: 'bg-nat/12 text-nat',
+  hum: 'bg-hum/12 text-hum',
+  lin: 'bg-lin/12 text-lin',
+  red: 'bg-red/12 text-red',
+  default: 'bg-brand/12 text-brand',
+};
+
+// Borda colorida por área.
+export const AREA_RING: Record<AreaKey, string> = {
+  mat: 'ring-mat/30',
+  nat: 'ring-nat/30',
+  hum: 'ring-hum/30',
+  lin: 'ring-lin/30',
+  red: 'ring-red/30',
+  default: 'ring-brand/30',
+};

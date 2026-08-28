@@ -4,10 +4,12 @@
 import {
   Cursor,
   ArrowUpRight,
+  Atom,
   BookOpen,
   CalendarBlank,
   CaretLeft,
   CaretRight,
+  CaretDown,
   ChatsCircle,
   Check,
   Circle,
@@ -18,6 +20,7 @@ import {
   Exam,
   Flame,
   BoundingBox,
+  GlobeHemisphereWest,
   Hand,
   Heart,
   Highlighter,
@@ -42,9 +45,12 @@ import {
   Sparkle,
   Square,
   Star,
-  Sun,  Target,
+  Sun,
+  Plus,
+  Target,
   TextT,
   Timer,
+  ThumbsUp,
   Trash,
   Trophy,
   User,
@@ -93,6 +99,7 @@ export const IconCheck = shim(Check, 'bold');
 export const IconX = shim(X, 'bold');
 export const IconChevronLeft = shim(CaretLeft, 'bold');
 export const IconChevronRight = shim(CaretRight, 'bold');
+export const IconChevronDown = shim(CaretDown, 'bold');
 export const IconFilter = shim(SlidersHorizontal, 'bold');
 export const IconFlame = shim(Flame, 'fill');
 export const IconBolt = shim(Lightning, 'fill');
@@ -108,6 +115,8 @@ export const IconSparkle = shim(Sparkle, 'fill');
 export const IconGame = shim(Lightning, 'duotone');
 export const IconBook = shim(BookOpen, 'duotone');
 export const IconQuestion = shim(Question, 'duotone');
+export const IconThumbsUp = shim(ThumbsUp, 'duotone');
+export const IconPlus = shim(Plus, 'bold');
 // Botão "Mais" na tabbar mobile (issue #21) — elipse universal de "more".
 export const IconMore = shim(DotsThree, 'bold');
 // Item "Quadro" de estudos (issue #32) e ícone do botão "Anotar".
@@ -122,6 +131,8 @@ export const IconArrow = shim(ArrowUpRight, 'duotone');
 export const IconDiamond = shim(Diamond, 'duotone');
 export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
+export const IconAtom = shim(Atom, 'duotone');
+export const IconGlobe = shim(GlobeHemisphereWest, 'duotone');
 export const IconSticky = shim(Note, 'duotone');
 export const IconNote = shim(NotePencil, 'duotone');
 export const IconTrash = shim(Trash, 'duotone');

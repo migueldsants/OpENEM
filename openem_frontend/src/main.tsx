@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { AuthProvider } from './auth.tsx';
 import { GamificationProvider } from './gamification.tsx';
+import 'katex/dist/katex.min.css';
 import './index.css';
 import { ThemeProvider } from './theme.tsx';
 

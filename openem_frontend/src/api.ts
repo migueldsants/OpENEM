@@ -313,6 +313,89 @@ export interface QuestionNoteRef {
   content: string;
   updatedAt: string;
 }
+
+// ---- Flashcards (issue #36) ----
+
+export interface FlashcardDeckBrief {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  topic: string | null;
+  subtheme: string | null;
+  icon: string;
+  weight: number;
+  upvotes: number;
+  downvotes: number;
+  isPublic: boolean;
+  createdAt: string;
+  _count: { flashcards: number };
+}
+export interface FlashcardItem {
+  flashcardId: string;
+  front: string;
+  back: string;
+  deckTitle: string;
+  deckIcon: string;
+  deckTopic?: string;
+  deckSubtheme?: string;
+  weight: number;
+  easeFactor: number;
+  intervalD: number;
+  repetition: number;
+  dueAt: string;
+  overdue: boolean;
+}
+export interface FlashcardReviewResult {
+  id: string;
+  easeFactor: number;
+  intervalD: number;
+  repetition: number;
+  dueAt: string;
+  lastQuality: number;
+}
+
+/** Dashboard de revisão espaçada. */
+export interface FlashcardStats {
+  total: number;
+  overdue: number;
+  dueToday: number;
+  reviewedToday: number;
+  mature: number;
+  learning: number;
+  newCards: number;
+  streak: number;
+  avgEase: number;
+  retention: number;
+}
+
+/** Preview do próximo agendamento SM-2 antes de avaliar. */
+export interface FlashcardPreview {
+  current: { easeFactor: number; intervalD: number; repetition: number };
+  previews: {
+    quality: number;
+    label: string;
+    intervalD: number;
+    dueAt: string;
+  }[];
+}
+
+/** Previsão de carga de revisão por dia. */
+export interface FlashcardForecastDay {
+  day: string;
+  label: string;
+  count: number;
+  overdue: boolean;
+}
+
+/** Progresso de um deck: novos, vistos (≥1x) e revistos (≥2x). */
+export interface DeckProgress {
+  total: number;
+  newCards: number;
+  seen: number;
+  reviewed: number;
+}
+export type DeckProgressMap = Record<string, DeckProgress>;
 export interface Paginated<T> {
   items: T[];
   meta: { total: number; page: number; limit: number; pages: number };
@@ -518,6 +601,85 @@ export const api = {
     }),
   removeQuestionNote: (questionId: string) =>
     request(`/question-notes/${questionId}`, { method: 'DELETE' }),
+
+  // ---- Flashcards (issue #36) ----
+  flashcardDecksMine: () =>
+    request<FlashcardDeckBrief[]>('/flashcards/decks/mine'),
+  flashcardDecksPublic: (subject?: string) =>
+    request<FlashcardDeckBrief[]>(
+      `/flashcards/decks/public${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`,
+    ),
+  flashcardDeck: (deckId: string) =>
+    request<FlashcardDeckBrief & { flashcards: { id: string; front: string; back: string }[] }>(
+      `/flashcards/decks/${deckId}`,
+    ),
+  createDeck: (data: {
+    title: string;
+    description: string;
+    subject: string;
+    topic?: string;
+    subtheme?: string;
+    icon?: string;
+    isPublic?: boolean;
+  }) => request<FlashcardDeckBrief>('/flashcards/decks', { method: 'POST', body: data }),
+  updateDeck: (
+    deckId: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      subject: string;
+      topic: string;
+      subtheme: string;
+      icon: string;
+      isPublic: boolean;
+    }>,
+  ) =>
+    request<FlashcardDeckBrief>(`/flashcards/decks/${deckId}`, {
+      method: 'PATCH',
+      body: data,
+    }),
+  deleteDeck: (deckId: string) =>
+    request<{ removed: boolean }>(`/flashcards/decks/${deckId}`, {
+      method: 'DELETE',
+    }),
+  addFlashcard: (deckId: string, front: string, back: string) =>
+    request(`/flashcards/decks/${deckId}/flashcards`, {
+      method: 'POST',
+      body: { front, back },
+    }),
+  deleteFlashcard: (flashcardId: string) =>
+    request<{ removed: boolean }>(`/flashcards/flashcards/${flashcardId}`, {
+      method: 'DELETE',
+    }),
+  voteDeck: (deckId: string, vote: 'up' | 'down') =>
+    request(`/flashcards/decks/${deckId}/vote`, { method: 'POST', body: { vote } }),
+  studyQueue: (
+    filters?: {
+      subject?: string;
+      topic?: string;
+      subtheme?: string;
+      deckId?: string;
+    },
+  ) => {
+    const qs = new URLSearchParams();
+    if (filters?.subject) qs.set('subject', filters.subject);
+    if (filters?.topic) qs.set('topic', filters.topic);
+    if (filters?.subtheme) qs.set('subtheme', filters.subtheme);
+    if (filters?.deckId) qs.set('deckId', filters.deckId);
+    return request<FlashcardItem[]>(`/flashcards/study/queue?${qs.toString()}`);
+  },
+  reviewFlashcard: (flashcardId: string, quality: number) =>
+    request<FlashcardReviewResult>(`/flashcards/flashcards/${flashcardId}/review`, {
+      method: 'POST',
+      body: { quality },
+    }),
+  flashcardStats: () => request<FlashcardStats>('/flashcards/stats'),
+  flashcardPreview: (flashcardId: string) =>
+    request<FlashcardPreview>(`/flashcards/flashcards/${flashcardId}/preview`),
+  flashcardForecast: (days = 7) =>
+    request<FlashcardForecastDay[]>(`/flashcards/forecast?days=${days}`),
+  flashcardDeckProgress: () =>
+    request<DeckProgressMap>('/flashcards/decks/progress'),
 
   studyPlan: () => request<StudyPlan>('/study-plan'),
   generateStudyPlan: () =>

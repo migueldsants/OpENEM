@@ -64,6 +64,12 @@ Thumbs.db
 
 #AI temp
 references/
+shot_*.png
+shot_*.mjs
+diagarrow.*
+diagarrow.png
+openem_backend/prisma/check-tax.ts
+run.ps1
 
 # Docker
 docker-data/
