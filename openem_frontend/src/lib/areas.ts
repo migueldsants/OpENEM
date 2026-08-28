@@ -19,7 +19,7 @@ const SUBJECT_TO_AREA: Record<string, AreaKey> = {
   literatura: 'lin',
   artes: 'lin',
   'educação física': 'lin',
-  redação: 'red',
+  redação: 'lin', // Redação vive dentro de Linguagens, não é área própria
 };
 
 export function areaKey(subjectName?: string): AreaKey {
@@ -29,7 +29,7 @@ export function areaKey(subjectName?: string): AreaKey {
   if (n.includes('natureza')) return 'nat';
   if (n.includes('humanas')) return 'hum';
   if (n.includes('linguagens') || n.includes('linguagem')) return 'lin';
-  if (n.includes('redaç') || n.includes('redac')) return 'red';
+  if (n.includes('redaç') || n.includes('redac')) return 'lin';
   return 'default';
 }
 
@@ -70,12 +70,12 @@ export const AREA_SOFT: Record<AreaKey, string> = {
   default: 'bg-brand/12',
 };
 
+// Áreas exibidas em listas/filtros — Redação não é área separada (fica em Linguagens).
 export const AREAS: { key: AreaKey; label: string }[] = [
   { key: 'mat', label: 'Matemática' },
   { key: 'nat', label: 'Natureza' },
   { key: 'hum', label: 'Humanas' },
   { key: 'lin', label: 'Linguagens' },
-  { key: 'red', label: 'Redação' },
 ];
 
 // Rótulo curto pelo nome completo do subject (ex.: "Matemática e suas Tecnologias").

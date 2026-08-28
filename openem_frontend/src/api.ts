@@ -327,6 +327,7 @@ export interface FlashcardDeckBrief {
   weight: number;
   upvotes: number;
   downvotes: number;
+  isPublic: boolean;
   createdAt: string;
   _count: { flashcards: number };
 }
@@ -617,23 +618,54 @@ export const api = {
     description: string;
     subject: string;
     topic?: string;
+    subtheme?: string;
     icon?: string;
     isPublic?: boolean;
   }) => request<FlashcardDeckBrief>('/flashcards/decks', { method: 'POST', body: data }),
+  updateDeck: (
+    deckId: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      subject: string;
+      topic: string;
+      subtheme: string;
+      icon: string;
+      isPublic: boolean;
+    }>,
+  ) =>
+    request<FlashcardDeckBrief>(`/flashcards/decks/${deckId}`, {
+      method: 'PATCH',
+      body: data,
+    }),
+  deleteDeck: (deckId: string) =>
+    request<{ removed: boolean }>(`/flashcards/decks/${deckId}`, {
+      method: 'DELETE',
+    }),
   addFlashcard: (deckId: string, front: string, back: string) =>
     request(`/flashcards/decks/${deckId}/flashcards`, {
       method: 'POST',
       body: { front, back },
     }),
+  deleteFlashcard: (flashcardId: string) =>
+    request<{ removed: boolean }>(`/flashcards/flashcards/${flashcardId}`, {
+      method: 'DELETE',
+    }),
   voteDeck: (deckId: string, vote: 'up' | 'down') =>
     request(`/flashcards/decks/${deckId}/vote`, { method: 'POST', body: { vote } }),
   studyQueue: (
-    filters?: { subject?: string; topic?: string; subtheme?: string },
+    filters?: {
+      subject?: string;
+      topic?: string;
+      subtheme?: string;
+      deckId?: string;
+    },
   ) => {
     const qs = new URLSearchParams();
     if (filters?.subject) qs.set('subject', filters.subject);
     if (filters?.topic) qs.set('topic', filters.topic);
     if (filters?.subtheme) qs.set('subtheme', filters.subtheme);
+    if (filters?.deckId) qs.set('deckId', filters.deckId);
     return request<FlashcardItem[]>(`/flashcards/study/queue?${qs.toString()}`);
   },
   reviewFlashcard: (flashcardId: string, quality: number) =>

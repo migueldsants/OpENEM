@@ -22,13 +22,27 @@ async function main() {
   console.log(`🌱 Semeando ${decks.length} decks de flashcards (seed-flashcards)...`);
 
   let created = 0;
-  let skipped = 0;
+  let updated = 0;
   for (const deck of decks) {
     const existing = await prisma.flashcardDeck.findFirst({
       where: { title: deck.title, topic: deck.topic ?? undefined, subtheme: deck.subtheme ?? undefined },
       select: { id: true },
     });
-    if (existing) { skipped++; continue; }
+    if (existing) {
+      // Deck já existe — realinha a taxonomia (ex.: Redação migrou para Linguagens).
+      await prisma.flashcardDeck.update({
+        where: { id: existing.id },
+        data: {
+          subject: deck.subject,
+          topic: deck.topic,
+          subtheme: deck.subtheme,
+          icon: deck.icon,
+          weight: deck.weight,
+        },
+      });
+      updated++;
+      continue;
+    }
 
     await prisma.flashcardDeck.create({
       data: {
@@ -49,7 +63,7 @@ async function main() {
   }
 
   const total = await prisma.flashcard.count();
-  console.log(`  ✔ ${created} decks criados (${skipped} já existiam). Total: ${total} flashcards.`);
+  console.log(`  ✔ ${created} decks criados (${updated} realinhados). Total: ${total} flashcards.`);
 }
 
 main()

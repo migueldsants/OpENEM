@@ -93,6 +93,11 @@ const TAXONOMY: Record<string, Record<string, [string, number][]>> = {
       ['Intertextualidade', 3], ['Morfologia', 3], ['Ortografia', 3],
       ['Pontuação', 3], ['Regência', 3], ['Semântica', 3],
     ],
+    // Redação é avaliada junto de Linguagens no 1º dia — fica dentro desta área.
+    Redação: [
+      ['Argumentação', 5], ['Estrutura dissertativa', 5], ['Proposta de intervenção', 5],
+      ['Coesão e coerência', 4], ['Repertório sociocultural', 4],
+    ],
   },
   'Matemática e suas Tecnologias': {
     Matemática: [
@@ -107,12 +112,6 @@ const TAXONOMY: Record<string, Record<string, [string, number][]>> = {
       ['Geometria analítica', 3], ['Operações e propriedades', 3],
       ['Progressão aritmética', 3], ['Progressão geométrica', 3], ['Volumes', 3],
       ['Matrizes e determinantes', 2], ['Polinômios', 2], ['Números complexos', 1],
-    ],
-  },
-  'Redação': {
-    Redação: [
-      ['Argumentação', 5], ['Estrutura dissertativa', 5], ['Proposta de intervenção', 5],
-      ['Coesão e coerência', 4], ['Repertório sociocultural', 4],
     ],
   },
 };
@@ -142,6 +141,10 @@ async function main() {
       }
     }
   }
+  // Remove áreas que saíram da taxonomia (ex.: "Redação" migrou para Linguagens).
+  await prisma.subjectArea.deleteMany({
+    where: { name: { notIn: Object.keys(TAXONOMY) } },
+  });
 
   const math = await prisma.subject.findUniqueOrThrow({
     where: { name: 'Matemática' },

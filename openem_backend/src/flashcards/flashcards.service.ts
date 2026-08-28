@@ -10,6 +10,7 @@ import {
   type FlashcardQueueItem,
 } from '../common/flashcard-queue';
 import { CreateDeckDto } from './dto/create-deck.dto';
+import { UpdateDeckDto } from './dto/update-deck.dto';
 import { CreateFlashcardDto } from './dto/create-flashcard.dto';
 
 @Injectable()
@@ -40,6 +41,36 @@ export class FlashcardsService {
       orderBy: [{ upvotes: 'desc' }, { createdAt: 'desc' }],
       include: { _count: { select: { flashcards: true } } },
     });
+  }
+
+  async updateDeck(userId: string, deckId: string, dto: UpdateDeckDto) {
+    const deck = await this.prisma.flashcardDeck.findUnique({
+      where: { id: deckId },
+      select: { userId: true },
+    });
+    if (!deck) throw new NotFoundException('Deck não encontrado');
+    if (deck.userId !== userId) {
+      throw new ForbiddenException('Você não pode editar este deck');
+    }
+    return this.prisma.flashcardDeck.update({
+      where: { id: deckId },
+      data: dto,
+      include: { _count: { select: { flashcards: true } } },
+    });
+  }
+
+  async removeDeck(userId: string, deckId: string) {
+    const deck = await this.prisma.flashcardDeck.findUnique({
+      where: { id: deckId },
+      select: { userId: true },
+    });
+    if (!deck) throw new NotFoundException('Deck não encontrado');
+    if (deck.userId !== userId) {
+      throw new ForbiddenException('Você não pode remover este deck');
+    }
+    // Cascade: flashcards e reviews do deck são removidos junto.
+    await this.prisma.flashcardDeck.delete({ where: { id: deckId } });
+    return { removed: true };
   }
 
   async getDeck(deckId: string, userId: string) {
@@ -109,8 +140,13 @@ export class FlashcardsService {
    */
   async studyQueue(
     userId: string,
-    _limit?: number,
-    filters?: { subject?: string; topic?: string; subtheme?: string },
+    limit?: number,
+    filters?: {
+      subject?: string;
+      topic?: string;
+      subtheme?: string;
+      deckId?: string;
+    },
   ): Promise<FlashcardQueueItem[]> {
     const reviews = await this.prisma.flashcardReview.findMany({
       where: { userId },
@@ -137,10 +173,17 @@ export class FlashcardsService {
     const allCards = await this.prisma.flashcard.findMany({
       where: {
         OR: [{ deck: { userId } }, { deck: { isPublic: true } }],
+        ...(filters?.deckId ? { deckId: filters.deckId } : {}),
         deck: {
+          // 'Geral' é apenas rótulo de agrupamento do frontend (topic/subtheme
+          // nulos); nunca deve filtrar por esse valor literal.
           ...(filters?.subject ? { subject: filters.subject } : {}),
-          ...(filters?.topic ? { topic: filters.topic } : {}),
-          ...(filters?.subtheme ? { subtheme: filters.subtheme } : {}),
+          ...(filters?.topic && filters.topic !== 'Geral'
+            ? { topic: filters.topic }
+            : {}),
+          ...(filters?.subtheme && filters.subtheme !== 'Geral'
+            ? { subtheme: filters.subtheme }
+            : {}),
         },
       },
       select: {
@@ -183,7 +226,11 @@ export class FlashcardsService {
       };
     });
 
-    return buildStudyQueue(items);
+    const queue = buildStudyQueue(items);
+
+    // Limite a sessão: vencidos primeiro (a ordenação da fila já garante isso),
+    // então truncar é seguro. 0/negativo = sem limite.
+    return limit && limit > 0 ? queue.slice(0, limit) : queue;
   }
 
   /** Registra a nota SM-2 (0..5) de um flashcard e devolve o novo estado. */
@@ -379,7 +426,9 @@ export class FlashcardsService {
    */
   async deckProgress(userId: string) {
     const decks = await this.prisma.flashcardDeck.findMany({
-      where: { isPublic: true },
+      // Progresso é usado na árvore de decks públicos E em "Meus Decks":
+      // precisa cobrir decks do próprio usuário também.
+      where: { OR: [{ isPublic: true }, { userId }] },
       select: { id: true, _count: { select: { flashcards: true } } },
     });
 

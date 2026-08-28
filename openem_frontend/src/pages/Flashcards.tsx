@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, type FlashcardDeckBrief, type FlashcardForecastDay, type FlashcardItem, type FlashcardPreview, type FlashcardStats } from '../api';
 import { EmptyState } from '../components/EmptyState';
@@ -10,9 +10,11 @@ import {
   IconChevronDown,
   IconFormula,
   IconGlobe,
+  IconMore,
   IconNote,
   IconPlus,
   IconStack,
+  IconTrash,
   IconX,
 } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
@@ -41,7 +43,6 @@ const SUBJECT_AREAS = [
   'Ciências da Natureza e suas Tecnologias',
   'Ciências Humanas e suas Tecnologias',
   'Linguagens, Códigos e suas Tecnologias',
-  'Redação',
 ];
 
 const GRADES = [
@@ -146,15 +147,16 @@ function StudyCard({
     }
   }
 
-  const pct = total > 0 ? Math.round((index / total) * 100) : 0;
+  // Progresso conta o card atual como em andamento: no último card a barra
+  // chega a 100% (antes ele terminava em (n-1)/n).
+  const pct = total > 0 ? Math.round(((index + 1) / total) * 100) : 0;
 
-  // Formata intervalo em texto legível: "agora", "1 dia", "3 dias".
+  // Formata intervalo em texto legível: "agora", "amanhã", "3 dias".
+  // Intervalos são fixos (máx. 7 dias), então não há caso de meses.
   function fmtInterval(d: number): string {
     if (d === 0) return 'agora';
     if (d === 1) return 'amanhã';
-    if (d < 30) return `${d} dias`;
-    const months = Math.round(d / 30);
-    return months === 1 ? '1 mês' : `${months} meses`;
+    return `${d} dias`;
   }
 
   // Mapa quality -> intervalo do preview.
@@ -329,6 +331,35 @@ function HoverStudyButton({ count, onStudy }: { count: number; onStudy: () => vo
   );
 }
 
+/** Voto (up/down) compacto para decks públicos — alimenta a ordenação por relevância. */
+function VoteButtons({
+  deck,
+  onVote,
+}: {
+  deck: FlashcardDeckBrief;
+  onVote: (vote: 'up' | 'down') => void;
+}) {
+  return (
+    <span className="inline-flex shrink-0 items-center overflow-hidden rounded-full border border-line text-[0.66rem] font-semibold tabular-nums">
+      <button
+        onClick={(e) => { e.stopPropagation(); onVote('up'); }}
+        title={`Upvote (${deck.upvotes})`}
+        className="px-1.5 py-0.5 text-nat transition-colors hover:bg-nat/10"
+      >
+        ▲ {deck.upvotes}
+      </button>
+      <span className="h-3 w-px bg-line" />
+      <button
+        onClick={(e) => { e.stopPropagation(); onVote('down'); }}
+        title={`Downvote (${deck.downvotes})`}
+        className="px-1.5 py-0.5 text-red transition-colors hover:bg-red/10"
+      >
+        ▼
+      </button>
+    </span>
+  );
+}
+
 /** Resumo de progresso: novos / vistos / revistos. */
 function ProgressHint({ progress }: { progress: { newCards: number; seen: number; reviewed: number } }) {
   return (
@@ -356,12 +387,21 @@ function DeckTree({
   decks,
   progressMap,
   onStudyScope,
+  onStudyDeck,
+  onVote,
+  renderDeckMenu,
 }: {
   decks: FlashcardDeckBrief[];
   progressMap: Record<string, { total: number; newCards: number; seen: number; reviewed: number }>;
   onStudyScope: (
     scope: { subject?: string; topic?: string; subtheme?: string },
   ) => void;
+  /** Estuda um deck específico (fila só daquele deck). */
+  onStudyDeck?: (deck: FlashcardDeckBrief) => void;
+  /** Voto em deck público (aba Decks Prontos). */
+  onVote?: (deck: FlashcardDeckBrief, vote: 'up' | 'down') => void;
+  /** Quando presente (Meus Decks), cada deck ganha o menu "⋯" de ações. */
+  renderDeckMenu?: (deck: FlashcardDeckBrief) => React.ReactNode;
 }) {
   // Agrupa: área (subject) → matéria (topic) → subtema (subtheme) → decks.
   const tree = useMemo(() => {
@@ -511,7 +551,10 @@ function DeckTree({
                             <ProgressHint progress={aggProgress(topicDecks)} />
                             <HoverStudyButton
                               count={topicCards}
-                              onStudy={() => onStudyScope({ subject: area, topic })}
+                              onStudy={() => onStudyScope({
+                                subject: area,
+                                ...(topic !== 'Geral' ? { topic } : {}),
+                              })}
                             />
                           </div>
 
@@ -544,7 +587,11 @@ function DeckTree({
                                         <ProgressHint progress={aggProgress(dDecks)} />
                                         <HoverStudyButton
                                           count={subCards}
-                                          onStudy={() => onStudyScope({ subject: area, topic, subtheme })}
+                                          onStudy={() => onStudyScope({
+                                            subject: area,
+                                            ...(topic !== 'Geral' ? { topic } : {}),
+                                            ...(subtheme !== 'Geral' ? { subtheme } : {}),
+                                          })}
                                         />
                                       </div>
                                     )}
@@ -566,10 +613,23 @@ function DeckTree({
                                             <span className="shrink-0 text-xs text-muted tabular-nums">
                                               {progressMap[d.id] ? `${progressMap[d.id].seen}/${d._count.flashcards}` : d._count.flashcards}
                                             </span>
-                                            <HoverStudyButton
-                                              count={d._count.flashcards}
-                                              onStudy={() => onStudyScope({ subject: area, topic, subtheme })}
-                                            />
+                                            {onVote && <VoteButtons deck={d} onVote={(v) => onVote(d, v)} />}
+                                            {renderDeckMenu && renderDeckMenu(d)}
+                                            {onStudyDeck ? (
+                                              <HoverStudyButton
+                                                count={d._count.flashcards}
+                                                onStudy={() => onStudyDeck(d)}
+                                              />
+                                            ) : (
+                                              <HoverStudyButton
+                                                count={subCards}
+                                                onStudy={() => onStudyScope({
+                                                  subject: area,
+                                                  ...(topic !== 'Geral' ? { topic } : {}),
+                                                  ...(subtheme !== 'Geral' ? { subtheme } : {}),
+                                                })}
+                                              />
+                                            )}
                                           </li>
                                         ))}
                                       </ul>
@@ -605,35 +665,73 @@ function DeckTree({
 // =============================================================================
 // MEUS DECKS — grid + modal de criação.
 // =============================================================================
+
+/** Fecha no Escape — usado pelos modais e pelo menu de deck. */
+function useOnEscape(active: boolean, onEscape: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onEscape();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [active, onEscape]);
+}
+
 function CreateDeckModal({
   onClose,
   onCreated,
+  editDeck,
 }: {
   onClose: () => void;
   onCreated: () => void;
+  /** Quando presente, o modal edita este deck (PATCH) em vez de criar (POST). */
+  editDeck?: FlashcardDeckBrief;
 }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState(SUBJECT_AREAS[0]);
-  const [isPublic, setIsPublic] = useState(false);
+  // Se editDeck veio, o modal edita; senão, cria.
+  const [title, setTitle] = useState(editDeck?.title ?? '');
+  const [description, setDescription] = useState(editDeck?.description ?? '');
+  const [subject, setSubject] = useState(editDeck?.subject ?? SUBJECT_AREAS[0]);
+  const [topic, setTopic] = useState(editDeck?.topic ?? '');
+  const [subtheme, setSubtheme] = useState(editDeck?.subtheme ?? '');
+  const [isPublic, setIsPublic] = useState(editDeck?.isPublic ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  useOnEscape(true, onClose);
+
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
 
   async function save() {
     if (!title.trim()) return;
     setSaving(true);
     setError(null);
     try {
-      await api.createDeck({
+      const payload = {
         title: title.trim(),
         description: description.trim(),
         subject,
+        topic: topic.trim() || undefined,
+        subtheme: subtheme.trim() || undefined,
         isPublic,
-      });
+      };
+      if (editDeck) {
+        await api.updateDeck(editDeck.id, payload);
+      } else {
+        await api.createDeck(payload);
+      }
       onCreated();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Não foi possível criar o deck.');
+      setError(
+        e instanceof Error
+          ? e.message
+          : editDeck
+            ? 'Não foi possível salvar as alterações.'
+            : 'Não foi possível criar o deck.',
+      );
       setSaving(false);
     }
   }
@@ -644,14 +742,16 @@ function CreateDeckModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Novo deck"
+      aria-label={editDeck ? 'Editar deck' : 'Novo deck'}
     >
       <div
         className="card card-raised w-full max-w-md animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="font-display text-lg font-bold">Novo deck</h2>
+          <h2 className="font-display text-lg font-bold">
+            {editDeck ? 'Editar deck' : 'Novo deck'}
+          </h2>
           <button
             onClick={onClose}
             aria-label="Fechar"
@@ -664,6 +764,7 @@ function CreateDeckModal({
           <div>
             <label className="eyebrow mb-1.5 block">Título</label>
             <input
+              ref={titleRef}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Fórmulas de Trigonometria"
@@ -693,6 +794,26 @@ function CreateDeckModal({
               ))}
             </select>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="eyebrow mb-1.5 block">Matéria (opcional)</label>
+              <input
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Ex: Biologia"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-fg placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+            </div>
+            <div>
+              <label className="eyebrow mb-1.5 block">Subtema (opcional)</label>
+              <input
+                value={subtheme}
+                onChange={(e) => setSubtheme(e.target.value)}
+                placeholder="Ex: Ecologia"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-fg placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+            </div>
+          </div>
           <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"
@@ -712,12 +833,336 @@ function CreateDeckModal({
             disabled={saving || !title.trim()}
             className="btn btn-primary w-full"
           >
-            {saving ? 'Criando…' : 'Criar deck'}
+            {saving
+              ? editDeck
+                ? 'Salvando…'
+                : 'Criando…'
+              : editDeck
+                ? 'Salvar alterações'
+                : 'Criar deck'}
           </button>
         </footer>
       </div>
     </div>,
     document.body,
+  );
+}
+
+// =============================================================================
+// GERENCIAR CARDS — só decks próprios (backend valida posse no add/delete).
+// =============================================================================
+function ManageDeckModal({
+  deck,
+  onClose,
+  onChanged,
+}: {
+  deck: FlashcardDeckBrief;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  type Card = { id: string; front: string; back: string };
+  const [cards, setCards] = useState<Card[] | null>(null);
+  const [front, setFront] = useState('');
+  const [back, setBack] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const frontRef = useRef<HTMLInputElement>(null);
+  useOnEscape(true, onClose);
+
+  useEffect(() => {
+    frontRef.current?.focus();
+  }, []);
+
+  const refresh = useCallback(async () => {
+    try {
+      const d = await api.flashcardDeck(deck.id);
+      setCards(d.flashcards);
+      setError(null);
+    } catch {
+      setError('Não foi possível carregar os cards.');
+    }
+  }, [deck.id]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  async function add() {
+    if (!front.trim() || !back.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.addFlashcard(deck.id, front.trim(), back.trim());
+      setFront('');
+      setBack('');
+      await refresh();
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não foi possível adicionar.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: string) {
+    // Primeiro clique pede confirmação; segundo apaga de fato.
+    if (confirmDelete !== id) {
+      setConfirmDelete(id);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.deleteFlashcard(id);
+      setConfirmDelete(null);
+      await refresh();
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não foi possível apagar.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] p-4 sm:items-center"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Gerenciar cards de ${deck.title}`}
+    >
+      <div
+        className="card card-raised flex max-h-[85vh] w-full max-w-lg flex-col animate-rise"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-line px-5 py-4">
+          <div className="min-w-0">
+            <h2 className="truncate font-display text-lg font-bold">{deck.title}</h2>
+            <p className="text-xs text-muted">
+              {cards ? `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}` : 'Carregando…'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="grid size-9 shrink-0 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            <IconX width={18} height={18} />
+          </button>
+        </header>
+
+        {/* Adicionar card */}
+        <div className="space-y-2 border-b border-line px-5 py-4">
+          <input
+            ref={frontRef}
+            value={front}
+            onChange={(e) => setFront(e.target.value)}
+            placeholder="Frente (pergunta)"
+            className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <textarea
+            value={back}
+            onChange={(e) => setBack(e.target.value)}
+            placeholder="Verso (resposta) — aceita Markdown"
+            rows={2}
+            className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <button
+            onClick={() => void add()}
+            disabled={busy || !front.trim() || !back.trim()}
+            className="btn btn-primary w-full"
+          >
+            {busy ? 'Salvando…' : 'Adicionar card'}
+          </button>
+          {error && (
+            <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+          )}
+        </div>
+
+        {/* Lista de cards */}
+        <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto px-5">
+          {cards === null ? (
+            <li className="py-6 text-center text-sm text-muted">Carregando…</li>
+          ) : cards.length === 0 ? (
+            <li className="py-6 text-center text-sm text-muted">
+              Deck vazio — adicione o primeiro card acima.
+            </li>
+          ) : (
+            cards.map((c) => (
+              <li key={c.id} className="flex items-start gap-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-fg">{c.front}</p>
+                  <p className="truncate text-xs text-muted">{c.back}</p>
+                </div>
+                <button
+                  onClick={() => void remove(c.id)}
+                  disabled={busy}
+                  className={`shrink-0 rounded-lg border px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    confirmDelete === c.id
+                      ? 'border-red/50 bg-red/10 text-red'
+                      : 'border-line text-muted hover:border-red/40 hover:text-red'
+                  }`}
+                >
+                  {confirmDelete === c.id ? 'Confirmar?' : 'Apagar'}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// =============================================================================
+// MENU DO DECK — dropdown "⋯" na linha de um deck próprio (Meus Decks).
+// =============================================================================
+function DeckMenu({
+  deck,
+  onStudy,
+  onManageCards,
+  onEdit,
+  onDeleted,
+}: {
+  deck: FlashcardDeckBrief;
+  onStudy: () => void;
+  onManageCards: () => void;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  useOnEscape(pos !== null, close);
+
+  function toggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (pos) {
+      close();
+      return;
+    }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    setConfirming(false);
+    setError(null);
+  }
+
+  function close() {
+    setPos(null);
+    setConfirming(false);
+  }
+
+  async function remove() {
+    // Primeiro clique pede confirmação; segundo apaga de fato.
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.deleteDeck(deck.id);
+      close();
+      onDeleted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não foi possível apagar o deck.');
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
+  const itemCls =
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-fg transition-colors hover:bg-surface-2';
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        title="Opções do deck"
+        aria-haspopup="menu"
+        aria-expanded={pos !== null}
+        className={`grid size-7 shrink-0 place-items-center rounded-lg border transition-colors ${
+          pos
+            ? 'border-brand/40 bg-brand/10 text-brand'
+            : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
+        }`}
+      >
+        <IconMore width={16} height={16} />
+      </button>
+      {pos &&
+        createPortal(
+          <>
+            {/* Backdrop invisível fecha o menu ao clicar fora */}
+            <div className="fixed inset-0 z-40" onClick={close} />
+            <div
+              role="menu"
+              className="card card-raised fixed z-50 w-56 animate-rise p-1.5"
+              style={{ top: pos.top, right: pos.right }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                role="menuitem"
+                className={itemCls}
+                onClick={() => {
+                  close();
+                  onStudy();
+                }}
+              >
+                <IconStack width={16} height={16} className="text-brand" weight="duotone" />
+                Estudar este deck
+              </button>
+              <button
+                role="menuitem"
+                className={itemCls}
+                onClick={() => {
+                  close();
+                  onManageCards();
+                }}
+              >
+                <IconPlus width={16} height={16} className="text-brand" />
+                Criar / apagar cards
+              </button>
+              <button
+                role="menuitem"
+                className={itemCls}
+                onClick={() => {
+                  close();
+                  onEdit();
+                }}
+              >
+                <IconNote width={16} height={16} className="text-brand" />
+                Editar deck
+              </button>
+              <div className="my-1 border-t border-line" />
+              <button
+                role="menuitem"
+                disabled={busy}
+                onClick={() => void remove()}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors disabled:opacity-60 ${
+                  confirming ? 'bg-red/10 text-red' : 'text-red hover:bg-red/10'
+                }`}
+              >
+                <IconTrash width={16} height={16} />
+                {busy
+                  ? 'Apagando…'
+                  : confirming
+                    ? `Confirmar? Apaga o deck e seus ${deck._count.flashcards} cards`
+                    : 'Deletar deck'}
+              </button>
+              {error && (
+                <p className="mt-1 rounded-lg bg-red/10 px-2.5 py-1.5 text-xs text-red">{error}</p>
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -738,34 +1183,48 @@ export default function Flashcards() {
   const [stats, setStats] = useState<FlashcardStats | null>(null);
   const [forecast, setForecast] = useState<FlashcardForecastDay[]>([]);
   const [deckProgress, setDeckProgress] = useState<Record<string, { total: number; newCards: number; seen: number; reviewed: number }>>({});
+  // Sessão de estudo só entra em modo foco quando o usuário a inicia de fato.
+  const [sessionActive, setSessionActive] = useState(false);
+  const [manageDeck, setManageDeck] = useState<FlashcardDeckBrief | null>(null);
+  const [editDeck, setEditDeck] = useState<FlashcardDeckBrief | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  /** Refresh leve (sem skeleton): decks + stats + forecast + progresso. */
+  const refreshMeta = useCallback(async () => {
     try {
-      const [mine, pub, studyQueue, st, fc, dp] = await Promise.all([
+      const [mine, pub, st, fc, dp] = await Promise.all([
         api.flashcardDecksMine(),
         api.flashcardDecksPublic(),
-        api.studyQueue(),
         api.flashcardStats(),
         api.flashcardForecast(7),
         api.flashcardDeckProgress(),
       ]);
       setMyDecks(mine);
       setPublicDecks(pub);
+      setStats(st);
+      setForecast(fc);
+      setDeckProgress(dp);
+    } catch {
+      /* silencioso: mantém o que está na tela */
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const studyQueue = await api.studyQueue();
       setQueue(studyQueue);
       setQueueIdx(0);
       setDone(studyQueue.length === 0);
       setDoneCount(0);
-      setStats(st);
-      setForecast(fc);
-      setDeckProgress(dp);
+      setSessionActive(false);
+      await refreshMeta();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshMeta]);
 
   useEffect(() => {
     void load();
@@ -775,19 +1234,36 @@ export default function Flashcards() {
     setDoneCount((c) => c + 1);
     if (next >= queue.length) {
       setDone(true);
+      setSessionActive(false);
+      void refreshMeta(); // streak/stats/forecast atualizados no resumo
     } else {
       setQueueIdx(next);
     }
   }
 
-  // Iniciar estudo de um escopo da árvore (área/matéria/subtema): busca a fila
-  // filtrada no backend e abre a aba Estudar já posicionada no primeiro card.
+  /** Começa a sessão com a fila geral (launcher da aba Estudar). */
+  async function startSession() {
+    setError(null);
+    try {
+      const q = await api.studyQueue();
+      setQueue(q);
+      setQueueIdx(0);
+      setDoneCount(0);
+      setDone(q.length === 0);
+      setSessionActive(q.length > 0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
+    }
+  }
+
+  // Iniciar estudo de um escopo da árvore (área/matéria/subtema/deck):
+  // busca a fila filtrada no backend e entra em modo foco no primeiro card.
   async function studyScope(scope: {
     subject?: string;
     topic?: string;
     subtheme?: string;
+    deckId?: string;
   }) {
-    setLoading(true);
     setError(null);
     try {
       const scoped = await api.studyQueue(scope);
@@ -796,20 +1272,36 @@ export default function Flashcards() {
       setDone(scoped.length === 0);
       setDoneCount(0);
       setTab('study');
+      setSessionActive(scoped.length > 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
-    } finally {
-      setLoading(false);
+    }
+  }
+
+  // Voto (up/down) em deck público — atualização otimista do deck votado.
+  async function vote(deck: FlashcardDeckBrief, v: 'up' | 'down') {
+    const field = v === 'up' ? 'upvotes' : 'downvotes';
+    const bump = (d: FlashcardDeckBrief) =>
+      d.id === deck.id ? { ...d, [field]: d[field] + 1 } : d;
+    setPublicDecks((cur) => cur.map(bump));
+    try {
+      await api.voteDeck(deck.id, v);
+    } catch {
+      // Reverte em caso de erro (rede/permissão).
+      setPublicDecks((cur) =>
+        cur.map((d) => (d.id === deck.id ? { ...d, [field]: d[field] - 1 } : d)),
+      );
     }
   }
 
   // Sessão ativa: modo foco (sem header/tabs; card é o protagonista).
-  const studying = !loading && tab === 'study' && !done && queue.length > 0;
+  const studying = sessionActive && !done && queue.length > 0;
 
-  // Encerrar a sessão manualmente: mostra o resumo se já estudou algo.
+  // Encerrar a sessão manualmente: volta ao launcher/resumo da aba Estudar.
   function exitStudy() {
+    setSessionActive(false);
     if (doneCount > 0) setDone(true);
-    else setTab('tree');
+    void refreshMeta();
   }
 
   if (studying) {
@@ -871,33 +1363,66 @@ export default function Flashcards() {
         </div>
       ) : (
         <>
-          {tab === 'study' &&
-            (done ? (
+          {tab === 'study' && (
+            done && doneCount > 0 ? (
+              /* Sessão concluída — resumo */
               <>
-                {doneCount > 0 ? (
-                  /* Sessão concluída — resumo */
-                  <div className="card p-5 text-center animate-rise">
-                    <p className="font-display text-2xl font-bold text-nat">{doneCount}</p>
-                    <p className="text-sm text-muted">
-                      {doneCount === 1 ? 'card estudado' : 'cards estudados'} nesta sessão
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      Cada card foi reagendado: hoje, amanhã, em 3 ou em 7 dias, conforme sua avaliação.
-                    </p>
-                  </div>
-                ) : (
-                  /* Fila vazia — nada para revisar agora */
-                  <EmptyState
-                    icon={IconCheck}
-                    title="Tudo em dia!"
-                    description="Nenhum card vencido ou novo neste escopo agora. As próximas revisões chegam conforme o agendamento (hoje, 1, 3 ou 7 dias)."
-                    action={{ label: 'Explorar decks prontos', onClick: () => setTab('tree') }}
-                    tip="Explore outros escopos na aba Decks Prontos"
-                  />
-                )}
+                <div className="card p-6 text-center animate-rise">
+                  <p className="font-display text-2xl font-bold text-nat">{doneCount}</p>
+                  <p className="text-sm text-muted">
+                    {doneCount === 1 ? 'card estudado' : 'cards estudados'} nesta sessão
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Cada card foi reagendado: hoje, amanhã, em 3 ou em 7 dias, conforme sua avaliação.
+                  </p>
+                  <button
+                    onClick={() => void startSession()}
+                    className="btn btn-primary mt-4"
+                  >
+                    Começar nova sessão
+                  </button>
+                </div>
                 <StatsBar stats={stats} forecast={forecast} />
               </>
-            ) : null /* sessão ativa é renderizada pelo modo foco acima */)}
+            ) : queue.length === 0 ? (
+              /* Fila vazia — nada para revisar agora */
+              <>
+                <EmptyState
+                  icon={IconCheck}
+                  title="Tudo em dia!"
+                  description="Nenhum card vencido ou novo agora. As próximas revisões chegam conforme o agendamento (hoje, 1, 3 ou 7 dias)."
+                  action={{ label: 'Explorar decks prontos', onClick: () => setTab('tree') }}
+                  tip="Explore outros escopos na aba Decks Prontos"
+                />
+                <StatsBar stats={stats} forecast={forecast} />
+              </>
+            ) : (
+              /* Launcher — o modo foco só entra quando o usuário começa a sessão */
+              <>
+                <div className="card card-raised p-6 text-center animate-rise">
+                  <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand/12 text-brand">
+                    <IconStack width={28} height={28} weight="duotone" />
+                  </span>
+                  <p className="mt-3 font-display text-lg font-bold">
+                    {queue.length} {queue.length === 1 ? 'card' : 'cards'} na sua fila
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    Vencidos primeiro, depois novos por peso Pareto.
+                  </p>
+                  <button
+                    onClick={() => void startSession()}
+                    className="btn btn-primary mt-4 w-full sm:w-auto"
+                  >
+                    Começar sessão
+                  </button>
+                  <p className="mt-2.5 text-xs text-muted">
+                    Ou escolha um escopo específico na aba Decks Prontos
+                  </p>
+                </div>
+                <StatsBar stats={stats} forecast={forecast} />
+              </>
+            )
+          )}
 
           {tab === 'tree' && (
             <>
@@ -917,6 +1442,8 @@ export default function Flashcards() {
                   decks={publicDecks}
                   progressMap={deckProgress}
                   onStudyScope={(scope) => { void studyScope(scope); }}
+                  onStudyDeck={(d) => { void studyScope({ deckId: d.id }); }}
+                  onVote={(d, v) => { void vote(d, v); }}
                 />
               )}
             </>
@@ -939,6 +1466,16 @@ export default function Flashcards() {
                   decks={myDecks}
                   progressMap={deckProgress}
                   onStudyScope={(scope) => { void studyScope(scope); }}
+                  onStudyDeck={(d) => { void studyScope({ deckId: d.id }); }}
+                  renderDeckMenu={(d) => (
+                    <DeckMenu
+                      deck={d}
+                      onStudy={() => { void studyScope({ deckId: d.id }); }}
+                      onManageCards={() => setManageDeck(d)}
+                      onEdit={() => setEditDeck(d)}
+                      onDeleted={() => { void refreshMeta(); }}
+                    />
+                  )}
                 />
               )}
             </>
@@ -947,7 +1484,24 @@ export default function Flashcards() {
       )}
 
       {createOpen && (
-        <CreateDeckModal onClose={() => setCreateOpen(false)} onCreated={load} />
+        <CreateDeckModal
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => { void refreshMeta(); }}
+        />
+      )}
+      {manageDeck && (
+        <ManageDeckModal
+          deck={manageDeck}
+          onClose={() => setManageDeck(null)}
+          onChanged={() => { void refreshMeta(); }}
+        />
+      )}
+      {editDeck && (
+        <CreateDeckModal
+          editDeck={editDeck}
+          onClose={() => setEditDeck(null)}
+          onCreated={() => { void refreshMeta(); }}
+        />
       )}
     </div>
   );

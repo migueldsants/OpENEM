@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -13,6 +14,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateDeckDto } from './dto/create-deck.dto';
+import { UpdateDeckDto } from './dto/update-deck.dto';
 import {
   CreateFlashcardDto,
   ReviewFlashcardDto,
@@ -76,6 +78,25 @@ export class FlashcardsController {
     return this.flashcards.voteDeck(deckId, dto.vote);
   }
 
+  @Patch('decks/:deckId')
+  @ApiOperation({ summary: 'Atualiza um deck (apenas o dono)' })
+  updateDeck(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('deckId') deckId: string,
+    @Body() dto: UpdateDeckDto,
+  ) {
+    return this.flashcards.updateDeck(user.userId, deckId, dto);
+  }
+
+  @Delete('decks/:deckId')
+  @ApiOperation({ summary: 'Remove um deck com seus cards (apenas o dono)' })
+  removeDeck(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('deckId') deckId: string,
+  ) {
+    return this.flashcards.removeDeck(user.userId, deckId);
+  }
+
   // ---- Flashcards ----
 
   @Post('decks/:deckId/flashcards')
@@ -109,6 +130,7 @@ export class FlashcardsController {
     @Query('subject') subject?: string,
     @Query('topic') topic?: string,
     @Query('subtheme') subtheme?: string,
+    @Query('deckId') deckId?: string,
   ) {
     return this.flashcards.studyQueue(
       user.userId,
@@ -117,6 +139,7 @@ export class FlashcardsController {
         subject: subject || undefined,
         topic: topic || undefined,
         subtheme: subtheme || undefined,
+        deckId: deckId || undefined,
       },
     );
   }

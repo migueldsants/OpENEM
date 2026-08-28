@@ -36,6 +36,14 @@ export class CreateDeckDto {
   topic?: string;
 
   @ApiProperty({
+    description: 'Subtema dentro do tópico (opcional)',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  subtheme?: string;
+
+  @ApiProperty({
     description: 'Ícone do deck (emoji)',
     default: '📚',
     required: false,
