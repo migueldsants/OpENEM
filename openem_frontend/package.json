@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
     "lint": "eslint \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {

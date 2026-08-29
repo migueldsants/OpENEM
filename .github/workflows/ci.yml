@@ -45,6 +45,10 @@ jobs:
       - name: Testes unitários
         run: npm test
 
+      # Coverage thresholds (issue #47): falha se a cobertura regredir.
+      - name: Testes com coverage (thresholds)
+        run: npm run test:cov
+
       - name: Testes e2e
         run: npm run test:e2e
 
@@ -71,6 +75,10 @@ jobs:
 
       - name: Testes unitários
         run: npm test
+
+      # Coverage thresholds (issue #47): falha se a cobertura regredir.
+      - name: Testes com coverage (thresholds)
+        run: npm run test:cov
 
       - name: Build
         run: npm run build
