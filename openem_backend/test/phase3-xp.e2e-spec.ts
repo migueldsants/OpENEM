@@ -1,4 +1,4 @@
-import {
+﻿import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
+describe('Fase 3 â€” XP em todas as aÃ§Ãµes (issue #17, e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -20,6 +20,8 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Hooks de shutdown: limpa os timers do ThrottlerStorage no close().
+    app.enableShutdownHooks();
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -87,7 +89,7 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
     );
   });
 
-  it('enviar uma redação concede XP e registra no histórico', async () => {
+  it('enviar uma redaÃ§Ã£o concede XP e registra no histÃ³rico', async () => {
     const prompts = await request(app.getHttpServer())
       .get('/api/v1/essays/prompts')
       .set(auth())
@@ -97,7 +99,7 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
       .set(auth())
       .send({
         promptId: prompts.body[0].id,
-        content: 'Redação de teste para XP.',
+        content: 'RedaÃ§Ã£o de teste para XP.',
       })
       .expect(201);
     const g = sub.body.gamification;
@@ -108,7 +110,7 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
     );
   });
 
-  it('marcar uma sessão do cronograma como concluída concede XP', async () => {
+  it('marcar uma sessÃ£o do cronograma como concluÃ­da concede XP', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/study-plan/generate')
       .set(auth())
@@ -131,7 +133,7 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
       'FIRST_SESSION',
     );
 
-    // Desmarcar não dá XP novamente.
+    // Desmarcar nÃ£o dÃ¡ XP novamente.
     const undo = await request(app.getHttpServer())
       .patch(`/api/v1/study-plan/sessions/${sessionId}`)
       .set(auth())

@@ -9,6 +9,7 @@ import {
   type ReviewItem,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
   IconCheck,
@@ -199,7 +200,13 @@ function ReviewSession({
             Object.fromEntries(notes.map((n) => [n.questionId, n])),
           );
         }
-      } catch {
+      } catch (err) {
+        // Antes engolido (issue #49): falha deixava a sessão vazia sem causa.
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar as questões de revisão.',
+        );
         setQuestions([]);
       } finally {
         setLoading(false);
@@ -345,9 +352,7 @@ export default function Revisao() {
         </p>
       </header>
 
-      {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {loading ? (
         <div className="space-y-3" aria-busy>

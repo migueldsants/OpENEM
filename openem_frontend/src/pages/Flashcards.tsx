@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, type FlashcardDeckBrief, type FlashcardForecastDay, type FlashcardItem, type FlashcardPreview, type FlashcardStats } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { Markdown } from '../components/Markdown';
 import {
   IconAtom,
@@ -263,9 +264,9 @@ function StudyCard({
             </p>
           )}
           {gradeError && (
-            <p className="mt-2.5 rounded-lg bg-red/10 px-3 py-2 text-center text-xs text-red">
-              {gradeError}
-            </p>
+            <div className="mt-2.5">
+              <ErrorBanner message={gradeError} />
+            </div>
           )}
         </div>
       )}
@@ -824,7 +825,7 @@ function CreateDeckModal({
             <span className="text-sm">Deck público (visível para todos)</span>
           </label>
           {error && (
-            <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+            <ErrorBanner message={error} />
           )}
         </div>
         <footer className="border-t border-line px-5 py-4">
@@ -977,7 +978,7 @@ function ManageDeckModal({
             {busy ? 'Salvando…' : 'Adicionar card'}
           </button>
           {error && (
-            <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+            <ErrorBanner message={error} />
           )}
         </div>
 
@@ -1156,7 +1157,9 @@ function DeckMenu({
                     : 'Deletar deck'}
               </button>
               {error && (
-                <p className="mt-1 rounded-lg bg-red/10 px-2.5 py-1.5 text-xs text-red">{error}</p>
+                <div className="mt-1">
+                  <ErrorBanner message={error} />
+                </div>
               )}
             </div>
           </>,
@@ -1308,7 +1311,7 @@ export default function Flashcards() {
     return (
       <div className="pb-28 md:pb-24">
         {error && (
-          <p className="mb-3 rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+          <ErrorBanner message={error} />
         )}
         <StudyFocus
           queue={queue}
@@ -1352,7 +1355,7 @@ export default function Flashcards() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {loading ? (

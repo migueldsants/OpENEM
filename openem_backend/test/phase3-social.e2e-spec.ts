@@ -1,4 +1,4 @@
-import {
+﻿import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,9 +8,9 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-// Issue #19 (social): likes em posts do fórum, perfil público (sem PII) e
+// Issue #19 (social): likes em posts do fÃ³rum, perfil pÃºblico (sem PII) e
 // ranking de XP (global e por liga). Cobre os 3 endpoints novos + toggle.
-describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)', () => {
+describe('Fase 3 â€” social: likes, perfil pÃºblico e ranking (issue #19, e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
   let otherToken: string;
@@ -27,6 +27,8 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Hooks de shutdown: limpa os timers do ThrottlerStorage no close().
+    app.enableShutdownHooks();
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -75,11 +77,11 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     await app.close();
   });
 
-  it('cria um tópico e uma resposta para exercitar likes', async () => {
+  it('cria um tÃ³pico e uma resposta para exercitar likes', async () => {
     const thread = await request(app.getHttpServer())
       .post('/api/v1/community/threads')
       .set(auth())
-      .send({ title: 'Tópico social #19', body: 'corpo do tópico' })
+      .send({ title: 'TÃ³pico social #19', body: 'corpo do tÃ³pico' })
       .expect(201);
     threadId = thread.body.id;
 
@@ -101,7 +103,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     expect(res.body.liked).toBe(true);
     expect(res.body.likes).toBe(1);
 
-    // getThread reflete o like do usuário corrente
+    // getThread reflete o like do usuÃ¡rio corrente
     const detail = await request(app.getHttpServer())
       .get(`/api/v1/community/threads/${threadId}`)
       .set(auth())
@@ -126,7 +128,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
       .expect(404);
   });
 
-  it('GET /users/:id/profile expõe perfil público sem e-mail (PII)', async () => {
+  it('GET /users/:id/profile expÃµe perfil pÃºblico sem e-mail (PII)', async () => {
     const res = await request(app.getHttpServer())
       .get(`/api/v1/users/${userId}/profile`)
       .set(auth())
@@ -138,12 +140,12 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     expect(res.body).toHaveProperty('league');
     expect(res.body).toHaveProperty('currentStreak');
     expect(res.body).toHaveProperty('featuredAchievements');
-    // NUNCA expõe e-mail ou passwordHash
+    // NUNCA expÃµe e-mail ou passwordHash
     expect(res.body).not.toHaveProperty('email');
     expect(res.body).not.toHaveProperty('passwordHash');
   });
 
-  it('GET /users/:id/profile 404 para usuário inexistente', async () => {
+  it('GET /users/:id/profile 404 para usuÃ¡rio inexistente', async () => {
     await request(app.getHttpServer())
       .get('/api/v1/users/nao-existe/profile')
       .set(auth())

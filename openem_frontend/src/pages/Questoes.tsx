@@ -7,6 +7,7 @@ import {
   type Subject,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
   IconBoard,
@@ -320,6 +321,7 @@ export default function Questoes() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [favoriteQuestions, setFavoriteQuestions] = useState<Question[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   // Filtros aplicados (o drawer faz o staging e confirma no Aplicar).
   const [subjectId, setSubjectId] = useState('');
@@ -359,8 +361,13 @@ export default function Questoes() {
         setFavoritedIds(new Set(favs.map((f) => f.question.id)));
         setFavoriteQuestions(favs.map((f) => f.question));
         setNotedIds(new Set(notes.map((n) => n.question.id)));
-      } catch {
-        /* silencioso: a busca de questões reporta erro se necessário */
+      } catch (err) {
+        // Antes silencioso (issue #49): sem catálogo os filtros somem sem causa.
+        setCatalogError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar matérias e favoritos.',
+        );
       }
     })();
   }, []);
@@ -537,9 +544,9 @@ export default function Questoes() {
         </div>
       )}
 
-      {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
-      )}
+      {error && <ErrorBanner message={error} />}
+
+      {!error && catalogError && <ErrorBanner message={catalogError} />}
 
       {!current ? (
         loading ? (

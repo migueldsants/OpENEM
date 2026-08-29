@@ -9,6 +9,7 @@ import {
   type GamificationDelta,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconPen, IconSparkle } from '../components/icons';
 import { useGamification } from '../gamification';
@@ -400,7 +401,7 @@ export default function Redacao() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       <form onSubmit={submit} className="card card-raised space-y-3 p-4">

@@ -6,6 +6,7 @@ import {
   type ForumThreadSummary,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { IconChat, IconHeart, IconQuestion } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
@@ -142,9 +143,7 @@ function ThreadView({
         <button onClick={onBack} className="btn btn-ghost">
           Voltar
         </button>
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
-          {error ?? 'Tópico não encontrado.'}
-        </p>
+        <ErrorBanner message={error ?? 'Tópico não encontrado.'} />
       </div>
     );
   }
@@ -372,7 +371,7 @@ export default function Comunidade() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {loading ? (

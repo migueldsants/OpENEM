@@ -1,4 +1,4 @@
-import {
+﻿import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Fase 3 — gamificação (e2e)', () => {
+describe('Fase 3 â€” gamificaÃ§Ã£o (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -20,6 +20,8 @@ describe('Fase 3 — gamificação (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Hooks de shutdown: limpa os timers do ThrottlerStorage no close().
+    app.enableShutdownHooks();
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -60,7 +62,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
     return correct.id;
   }
 
-  it('responder uma questão dá XP (com bônus diário), nível e a conquista inicial', async () => {
+  it('responder uma questÃ£o dÃ¡ XP (com bÃ´nus diÃ¡rio), nÃ­vel e a conquista inicial', async () => {
     const list = await request(app.getHttpServer())
       .get('/api/v1/questions?limit=1')
       .set(auth())
@@ -77,7 +79,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
     const g = ans.body.gamification;
     expect(g).toBeDefined();
     expect(g.xpGained).toBeGreaterThan(0);
-    // 1ª atividade do dia: XP = base × combo (1×) + bônus diário.
+    // 1Âª atividade do dia: XP = base Ã— combo (1Ã—) + bÃ´nus diÃ¡rio.
     expect(g.breakdown.base).toBe(10);
     expect(g.breakdown.comboMultiplier).toBe(1);
     expect(g.breakdown.dailyBonus).toBeGreaterThan(0);
@@ -90,7 +92,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
     );
   });
 
-  it('GET /gamification/me reflete XP, nível e liga acumulados', async () => {
+  it('GET /gamification/me reflete XP, nÃ­vel e liga acumulados', async () => {
     const me = await request(app.getHttpServer())
       .get('/api/v1/gamification/me')
       .set(auth())
@@ -106,7 +108,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
     expect(me.body.achievementsTotal).toBeGreaterThan(0);
   });
 
-  it('GET /gamification/achievements lista o catálogo com status', async () => {
+  it('GET /gamification/achievements lista o catÃ¡logo com status', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/gamification/achievements')
       .set(auth())
@@ -119,7 +121,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
     expect(res.body.some((a: { unlocked: boolean }) => !a.unlocked)).toBe(true);
   });
 
-  it('o toggle gamificationEnabled silencia a gamificação', async () => {
+  it('o toggle gamificationEnabled silencia a gamificaÃ§Ã£o', async () => {
     await request(app.getHttpServer())
       .put('/api/v1/users/me/profile')
       .set(auth())

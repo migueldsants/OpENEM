@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import ThemeCustomizer from '../components/ThemeCustomizer';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { FAMILIES, useTheme } from '../theme';
 
 const GOALS = [
@@ -92,7 +93,7 @@ export default function Perfil() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       <div className="card card-raised p-4">

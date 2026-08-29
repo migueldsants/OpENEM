@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReviewService } from '../review/review.service';
 import {
@@ -34,6 +39,24 @@ export class AnswersService {
     });
     if (!question) {
       throw new NotFoundException('Questão não encontrada');
+    }
+
+    // Validação de posse do simulado (issue #49): sem isso qualquer usuário
+    // poderia contaminar as métricas de um simulado alheio (ou inexistente).
+    if (dto.simulationId) {
+      const simulation = await this.prisma.simulation.findUnique({
+        where: { id: dto.simulationId },
+        select: { userId: true, finishedAt: true },
+      });
+      if (!simulation) {
+        throw new NotFoundException('Simulado não encontrado');
+      }
+      if (simulation.userId !== userId) {
+        throw new ForbiddenException();
+      }
+      if (simulation.finishedAt) {
+        throw new BadRequestException('Simulado já finalizado');
+      }
     }
 
     const correct = question.alternatives.find((a) => a.isCorrect) ?? null;

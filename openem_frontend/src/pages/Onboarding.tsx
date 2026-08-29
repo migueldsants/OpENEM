@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { IconCheck, IconSparkle, IconStar, IconTarget, IconTimer } from '../components/icons';
 
 const GOALS = [
@@ -104,9 +105,9 @@ export default function Onboarding() {
       </div>
 
       {error && (
-        <p className="mb-4 rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
-          {error}
-        </p>
+        <div className="mb-4">
+          <ErrorBanner message={error} />
+        </div>
       )}
 
       {step === 0 && (

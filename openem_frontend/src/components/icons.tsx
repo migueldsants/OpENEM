@@ -54,6 +54,7 @@ import {
   Trash,
   Trophy,
   User,
+  Warning,
   X,
 } from '@phosphor-icons/react';
 
@@ -143,3 +144,5 @@ export const IconMinus = shim(Minus, 'bold');
 export const IconZoomIn = shim(MagnifyingGlassPlus, 'bold');
 export const IconZoomOut = shim(MagnifyingGlassMinus, 'bold');
 export const IconFit = shim(BoundingBox, 'bold');
+// Banner de erro (issue #49).
+export const IconAlert = shim(Warning, 'fill');

@@ -15,6 +15,7 @@ import {
   levelFromXp,
   pointsForAnswer,
   updateStreak,
+  xpToReachLevel,
 } from '../common/gamification';
 
 /** Chaves de ação registradas no XpLog (issue #17). */
@@ -345,18 +346,28 @@ export class GamificationService {
       }
 
       // Marca o resgate; o índice único garante uma vez por dia.
+      // Captura apenas a violação de unicidade (P2002) = "já resgatado";
+      // qualquer outro erro do banco é propagado em vez de mascarado (issue #49).
       try {
         await tx.dailyChallengeLog.create({
           data: { userId, day: spec.day },
         });
-      } catch {
-        return {
-          ...dailyChallengeStatus(spec, answeredToday, true),
-          enabled: true as const,
-          claimed: true as const,
-          xpAwarded: 0,
-          reason: 'ja_resgatado' as const,
-        };
+      } catch (err) {
+        if (
+          (err as { code?: string }).code === 'P2002' ||
+          (
+            err as { clientVersion?: string; message?: string }
+          )?.message?.includes('UNIQUE constraint failed')
+        ) {
+          return {
+            ...dailyChallengeStatus(spec, answeredToday, true),
+            enabled: true as const,
+            claimed: true as const,
+            xpAwarded: 0,
+            reason: 'ja_resgatado' as const,
+          };
+        }
+        throw err;
       }
 
       const stat = await tx.gamificationStat.upsert({
@@ -427,12 +438,28 @@ export class GamificationService {
       : null;
     const maxLevelExclusive = nextLeague ? nextLeague.minLevel : Infinity;
 
-    // Buscamos mais registros que o necessário para derivar o nível e filtrar
-    // por liga no código (SQLite não computa levelFromXp em SQL). Para a maioria
-    // dos casos o volume de usuários com XP é pequeno.
+    // Busca no máximo o necessário (issue #49): para o escopo global, `take`
+    // direto; para o escopo de liga, filtra no banco pela faixa exata de XP
+    // que cobre os níveis da liga (level L começa em xpToReachLevel(L), logo
+    // `gte`/`lt` batem exatamente com minLevel/maxLevelExclusive).
+    const minLeagueXp = leagueKey ? xpToReachLevel(minLevel) : 0;
+    const maxLeagueXp =
+      leagueKey && Number.isFinite(maxLevelExclusive)
+        ? xpToReachLevel(maxLevelExclusive)
+        : null;
+
     const stats = await this.prisma.gamificationStat.findMany({
       orderBy: { points: 'desc' },
       select: { userId: true, points: true },
+      take: leagueKey ? undefined : cap,
+      where: leagueKey
+        ? {
+            points: {
+              gte: minLeagueXp,
+              ...(maxLeagueXp != null ? { lt: maxLeagueXp } : {}),
+            },
+          }
+        : undefined,
     });
 
     const enriched = stats.map((s) => ({

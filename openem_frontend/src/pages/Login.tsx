@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { ErrorBanner } from '../components/ErrorBanner';
 import ThemeToggle from '../components/ThemeToggle';
 import { AREAS, AREA_DOT } from '../lib/areas';
 
@@ -184,9 +185,9 @@ export default function Login() {
             </form>
 
             {message && (
-              <p className="mt-4 rounded-lg bg-red/10 px-3 py-2 text-center text-sm text-red">
-                {message}
-              </p>
+              <div className="mt-4">
+                <ErrorBanner message={message} />
+              </div>
             )}
           </div>
           <p className="mt-4 text-center text-xs text-muted">

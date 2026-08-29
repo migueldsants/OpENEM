@@ -8,7 +8,10 @@ services:
     environment:
       - DATABASE_URL=file:/data/prod.db
       - PORT=3000
-      - JWT_SECRET=${JWT_SECRET:-dev-insecure-secret}
+      - NODE_ENV=production
+      # Obrigatório: sem JWT_SECRET a API falha a inicialização em produção.
+      # Gere um segredo forte (ex.: `openssl rand -hex 32`) e exporte antes do up.
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no .env (openssl rand -hex 32)}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       # Correção de redação por IA (Fase 3) — opcionais. Sem nenhuma chave
       # configurada a correção por IA fica indisponível e o app recai na rubrica

@@ -437,33 +437,37 @@ function LeaderboardSection() {
       ) : (
         <ol className="mt-3 space-y-1.5">
           {board.entries.map((e, i) => (
-            <li
-              key={e.userId}
-              className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2"
-              onClick={() => navigate(`/usuarios/${e.userId}`)}
-            >
-              <span
-                className={`grid size-7 shrink-0 place-items-center rounded-md text-xs font-bold tabular-nums ${
-                  i === 0
-                    ? 'bg-mat/15 text-mat'
-                    : i === 1
-                      ? 'bg-surface-2 text-muted'
-                      : i === 2
-                        ? 'bg-hum/15 text-hum'
-                        : 'bg-surface-2 text-muted'
-                }`}
+            <li key={e.userId}>
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left text-sm hover:bg-surface-2"
+                onClick={() => navigate(`/usuarios/${e.userId}`)}
               >
-                {i + 1}
-              </span>
-              <span className="min-w-0 flex-1 truncate font-medium">
-                {e.displayName}
-              </span>
-              <span className="shrink-0 text-xs text-muted">
-                Nv {e.level}
-              </span>
-              <span className="shrink-0 font-display font-bold tabular-nums text-brand">
-                {e.xp.toLocaleString('pt-BR')}
-              </span>
+                <span
+                  aria-hidden
+                  className={`grid size-7 shrink-0 place-items-center rounded-md text-xs font-bold tabular-nums ${
+                    i === 0
+                      ? 'bg-mat/15 text-mat'
+                      : i === 1
+                        ? 'bg-surface-2 text-muted'
+                        : i === 2
+                          ? 'bg-hum/15 text-hum'
+                          : 'bg-surface-2 text-muted'
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {e.displayName}
+                </span>
+                <span className="shrink-0 text-xs text-muted">
+                  Nv {e.level}
+                </span>
+                <span className="shrink-0 font-display font-bold tabular-nums text-brand">
+                  {e.xp.toLocaleString('pt-BR')}
+                </span>
+                <span className="sr-only">— ver perfil</span>
+              </button>
             </li>
           ))}
         </ol>

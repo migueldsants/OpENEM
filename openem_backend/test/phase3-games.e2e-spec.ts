@@ -1,4 +1,4 @@
-import {
+﻿import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Fase 3 — Games (issue #18, e2e)', () => {
+describe('Fase 3 â€” Games (issue #18, e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -20,6 +20,8 @@ describe('Fase 3 — Games (issue #18, e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Hooks de shutdown: limpa os timers do ThrottlerStorage no close().
+    app.enableShutdownHooks();
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -49,7 +51,7 @@ describe('Fase 3 — Games (issue #18, e2e)', () => {
     await app.close();
   });
 
-  it('GET /games lista o catálogo com Cálculo Mental', async () => {
+  it('GET /games lista o catÃ¡logo com CÃ¡lculo Mental', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/games')
       .set(auth())
@@ -59,7 +61,7 @@ describe('Fase 3 — Games (issue #18, e2e)', () => {
     expect(res.body[0]).toHaveProperty('levels');
   });
 
-  it('POST /games/scores registra pontuação e concede XP', async () => {
+  it('POST /games/scores registra pontuaÃ§Ã£o e concede XP', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/games/scores')
       .set(auth())
