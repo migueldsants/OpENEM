@@ -40,7 +40,7 @@ npm run lint           # ESLint with --fix over {src,apps,libs,test}
 npm run format         # Prettier over src and test
 npm test               # Jest unit tests (*.spec.ts under src/)
 npm run test:e2e       # e2e tests (creates an isolated SQLite test db, runs migrations)
-npm run test:cov       # unit tests with coverage
+npm run test:cov       # unit tests with coverage — FAILS below thresholds (issue #47)
 npx prisma migrate dev # create/apply a migration against the dev SQLite db
 npx prisma generate    # regenerate the Prisma client after editing schema.prisma
 npm run db:seed        # seed demo data (prisma/seed.ts)
@@ -54,7 +54,11 @@ npm install            # install dependencies
 npm run dev            # Vite dev server (proxies /api and /health to :3000)
 npm run build          # typecheck + production build (generates the PWA service worker)
 npm run preview        # serve the production build locally
+npm test               # Vitest unit/component tests
+npm run test:cov       # same with coverage — FAILS below thresholds (issue #47)
 ```
+
+Coverage thresholds (issue #47, enforced in CI): new PRs must not reduce coverage below the floor — backend and frontend each run `npm run test:cov` in CI. Current floors: backend 40/35/40/40, frontend 25/20/18/25 (stmts/branches/funcs/lines); raise them gradually toward 80% as suites grow.
 
 Whole stack: `docker compose up --build` from the repo root.
 
