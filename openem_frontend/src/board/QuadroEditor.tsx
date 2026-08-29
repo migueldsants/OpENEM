@@ -1189,6 +1189,7 @@ export function QuadroEditor({
               key={t}
               type="button"
               title={label}
+              aria-label={label}
               data-active={tool === t}
               onClick={() => {
                 setTool(t);
@@ -1197,7 +1198,7 @@ export function QuadroEditor({
               }}
               className="grid size-8 place-items-center"
             >
-              <Icon width={18} height={18} weight={tool === t ? 'fill' : 'duotone'} />
+              <Icon width={18} height={18} weight={tool === t ? 'fill' : 'duotone'} aria-hidden />
             </button>
           ))}
         </div>
@@ -1209,6 +1210,7 @@ export function QuadroEditor({
               key={c}
               type="button"
               title="Cor"
+              aria-label={`Cor ${c}`}
               onClick={() => {
                 setColor(c);
                 const patch: Partial<BoardElement> = { color: c };
@@ -1268,6 +1270,7 @@ export function QuadroEditor({
                 key={c}
                 type="button"
                 title="Cor do texto"
+                aria-label={`Cor do texto ${c}`}
                 onClick={() => applyStyle({ textColor: c })}
                 className={`size-4 rounded-full border ${
                   (selectedSingle.textColor ?? '#5a4a1a') === c ? 'ring-2 ring-brand' : 'border-line'
@@ -1499,14 +1502,16 @@ export function QuadroEditor({
           <button
             type="button"
             title="Aproximar"
+            aria-label="Aproximar"
             onClick={() => zoomBy(1.2)}
             className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
           >
-            <IconZoomIn width={18} height={18} />
+            <IconZoomIn width={18} height={18} aria-hidden />
           </button>
           <button
             type="button"
             title="Restaurar 100%"
+            aria-label={`Restaurar zoom para 100% (atual ${Math.round(zoom * 100)}%)`}
             onClick={() => {
               setZoom(1);
               setPan({ x: 0, y: 0 });
@@ -1518,19 +1523,21 @@ export function QuadroEditor({
           <button
             type="button"
             title="Afastar"
+            aria-label="Afastar"
             onClick={() => zoomBy(1 / 1.2)}
             className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
           >
-            <IconZoomOut width={18} height={18} />
+            <IconZoomOut width={18} height={18} aria-hidden />
           </button>
           <div className="my-0.5 h-px w-6 bg-line" />
           <button
             type="button"
             title="Ajustar à tela"
+            aria-label="Ajustar à tela"
             onClick={fitToContent}
             className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
           >
-            <IconFit width={18} height={18} />
+            <IconFit width={18} height={18} aria-hidden />
           </button>
         </div>
 
@@ -1808,6 +1815,7 @@ function TipSelector({
           key={t}
           type="button"
           title={t}
+          aria-label={`Ponta ${label}: ${t}`}
           data-active={value === t}
           onClick={() => onChange(t)}
           className="px-1.5 text-xs"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, type PublicProfile } from '../api';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { IconBolt, IconCheck, IconFlame, IconTrophy } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { leagueStyle } from '../lib/gamification';
@@ -46,9 +47,7 @@ export default function PerfilPublico() {
   if (!profile) {
     return (
       <div className="space-y-4">
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
-          {error ?? 'Perfil não encontrado.'}
-        </p>
+        <ErrorBanner message={error ?? 'Perfil não encontrado.'} />
       </div>
     );
   }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { api, type Performance, type PerformancePoint } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { IconTrophy } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
@@ -241,7 +242,7 @@ export default function Desempenho() {
 
   if (error) {
     return (
-      <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+      <ErrorBanner message={error} />
     );
   }
 

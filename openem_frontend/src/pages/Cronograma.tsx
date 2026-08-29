@@ -7,6 +7,7 @@ import {
 } from '../api';
 import { useAuth } from '../auth';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCalendar, IconCheck } from '../components/icons';
 import { useGamification } from '../gamification';
@@ -136,7 +137,7 @@ export default function Cronograma() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {award && (

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { POINTS } from '../common/gamification';
 import {
   GamificationDelta,
@@ -32,13 +33,22 @@ export class ReviewService {
     private readonly gamification: GamificationService,
   ) {}
 
-  /** Atualiza (ou cria) o item de revisão de um assunto após uma tentativa. */
+  /**
+   * Atualiza (ou cria) o item de revisão de um assunto após uma tentativa.
+   * Aceita um client transacional para compor transações maiores (issue #49).
+   */
   async recordOutcome(
     userId: string,
     topicId: string,
     isCorrect: boolean,
+    tx?: Prisma.TransactionClient,
   ): Promise<void> {
-    await this.reschedule(userId, topicId, qualityFromCorrectness(isCorrect));
+    await this.reschedule(
+      userId,
+      topicId,
+      qualityFromCorrectness(isCorrect),
+      tx,
+    );
   }
 
   /** Fila de revisão: assuntos com revisão vencida, do mais atrasado ao mais recente. */
@@ -130,8 +140,14 @@ export class ReviewService {
     return { ...updated, ...(gamification ? { gamification } : {}) };
   }
 
-  private async reschedule(userId: string, topicId: string, quality: number) {
-    const existing = await this.prisma.reviewItem.findUnique({
+  private async reschedule(
+    userId: string,
+    topicId: string,
+    quality: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx ?? this.prisma;
+    const existing = await db.reviewItem.findUnique({
       where: { userId_topicId: { userId, topicId } },
     });
     const next = computeNextReview(
@@ -144,7 +160,7 @@ export class ReviewService {
         : { easeFactor: 2.5, intervalD: 0, repetition: 0 },
       quality,
     );
-    await this.prisma.reviewItem.upsert({
+    await db.reviewItem.upsert({
       where: { userId_topicId: { userId, topicId } },
       create: {
         userId,

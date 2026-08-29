@@ -7,6 +7,7 @@ import {
   type Question,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck, IconStar, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
@@ -184,7 +185,7 @@ export default function Favoritos() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {loading ? (

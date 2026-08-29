@@ -1,4 +1,4 @@
-import {
+﻿import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Fase 1 — fluxo MVP (e2e)', () => {
+describe('Fase 1 â€” fluxo MVP (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -20,6 +20,8 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Hooks de shutdown: limpa os timers do ThrottlerStorage no close().
+    app.enableShutdownHooks();
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -60,7 +62,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     return correct.id;
   }
 
-  it('lista as áreas do conhecimento', async () => {
+  it('lista as Ã¡reas do conhecimento', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/subjects')
       .set(auth())
@@ -69,7 +71,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(res.body[0]).toHaveProperty('topics');
   });
 
-  it('busca questões com paginação e não revela o gabarito na listagem', async () => {
+  it('busca questÃµes com paginaÃ§Ã£o e nÃ£o revela o gabarito na listagem', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/questions?limit=50')
       .set(auth())
@@ -79,7 +81,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(res.body.items[0].alternatives[0]).not.toHaveProperty('isCorrect');
   });
 
-  it('filtra questões por nível de dificuldade', async () => {
+  it('filtra questÃµes por nÃ­vel de dificuldade', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/questions?difficulty=1')
       .set(auth())
@@ -117,7 +119,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(bad.body.isCorrect).toBe(false);
   });
 
-  it('lista os templates de simulado disponíveis', async () => {
+  it('lista os templates de simulado disponÃ­veis', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/simulations/templates')
       .set(auth())
@@ -139,7 +141,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
       .send({ templateId: 'seed-template-math' })
       .expect(201);
     expect(start.body.questions.length).toBeGreaterThan(0);
-    // Questões do simulado não trazem o gabarito.
+    // QuestÃµes do simulado nÃ£o trazem o gabarito.
     expect(start.body.questions[0].alternatives[0]).not.toHaveProperty(
       'isCorrect',
     );
@@ -176,7 +178,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
       .expect(400);
   });
 
-  it('expõe o desempenho agregado por área e assunto', async () => {
+  it('expÃµe o desempenho agregado por Ã¡rea e assunto', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/performance')
       .set(auth())
@@ -184,14 +186,14 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
     expect(res.body.overall.total).toBeGreaterThan(0);
     expect(res.body.bySubject.length).toBeGreaterThan(0);
     expect(res.body.bySubject[0]).toHaveProperty('accuracy');
-    // Série temporal para o gráfico de evolução.
+    // SÃ©rie temporal para o grÃ¡fico de evoluÃ§Ã£o.
     expect(Array.isArray(res.body.timeline)).toBe(true);
     expect(res.body.timeline.length).toBeGreaterThan(0);
     expect(res.body.timeline[0]).toHaveProperty('date');
     expect(res.body.timeline[0]).toHaveProperty('accuracy');
   });
 
-  it('retorna a fila de revisão (array) e 404 para item inexistente', async () => {
+  it('retorna a fila de revisÃ£o (array) e 404 para item inexistente', async () => {
     const queue = await request(app.getHttpServer())
       .get('/api/v1/review/queue')
       .set(auth())

@@ -1,4 +1,4 @@
-import {
+﻿import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Fase 2 — pós-MVP (e2e)', () => {
+describe('Fase 2 â€” pÃ³s-MVP (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -20,6 +20,8 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Hooks de shutdown: limpa os timers do ThrottlerStorage no close().
+    app.enableShutdownHooks();
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -60,7 +62,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     return correct.id;
   }
 
-  it('favorita, lista e remove uma questão', async () => {
+  it('favorita, lista e remove uma questÃ£o', async () => {
     const list = await request(app.getHttpServer())
       .get('/api/v1/questions?limit=1')
       .set(auth())
@@ -72,7 +74,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
       .set(auth())
       .send({ questionId })
       .expect(201);
-    // Idempotente: favoritar de novo não falha.
+    // Idempotente: favoritar de novo nÃ£o falha.
     await request(app.getHttpServer())
       .post('/api/v1/favorites')
       .set(auth())
@@ -98,7 +100,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     expect(after.body).toHaveLength(0);
   });
 
-  it('favoritar questão inexistente retorna 404', async () => {
+  it('favoritar questÃ£o inexistente retorna 404', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/favorites')
       .set(auth())
@@ -106,7 +108,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
       .expect(404);
   });
 
-  it('gera o cronograma e marca uma sessão como concluída', async () => {
+  it('gera o cronograma e marca uma sessÃ£o como concluÃ­da', async () => {
     const gen = await request(app.getHttpServer())
       .post('/api/v1/study-plan/generate')
       .set(auth())
@@ -128,7 +130,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     expect(updated.body.done).toBe(true);
   });
 
-  it('envia uma redação, corrige por rubrica e lê a nota', async () => {
+  it('envia uma redaÃ§Ã£o, corrige por rubrica e lÃª a nota', async () => {
     const prompts = await request(app.getHttpServer())
       .get('/api/v1/essays/prompts')
       .set(auth())
@@ -150,14 +152,14 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
       .expect(201);
     expect(evalRes.body.total).toBe(760);
 
-    // Dupla avaliação é bloqueada.
+    // Dupla avaliaÃ§Ã£o Ã© bloqueada.
     await request(app.getHttpServer())
       .post(`/api/v1/essays/submissions/${submissionId}/evaluation`)
       .set(auth())
       .send({ c1: 0, c2: 0, c3: 0, c4: 0, c5: 0 })
       .expect(409);
 
-    // Competência fora da escala é rejeitada.
+    // CompetÃªncia fora da escala Ã© rejeitada.
     const sub2 = await request(app.getHttpServer())
       .post('/api/v1/essays/submissions')
       .set(auth())
@@ -176,7 +178,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     expect(detail.body.evaluation.total).toBe(760);
   });
 
-  it('finaliza um simulado de questões calibradas e calcula a nota TRI', async () => {
+  it('finaliza um simulado de questÃµes calibradas e calcula a nota TRI', async () => {
     const start = await request(app.getHttpServer())
       .post('/api/v1/simulations')
       .set(auth())
@@ -199,11 +201,11 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     expect(typeof finish.body.triScore).toBe('number');
     expect(finish.body.triScore).toBeGreaterThanOrEqual(0);
     expect(finish.body.triScore).toBeLessThanOrEqual(1000);
-    // Acertar tudo deve render uma nota acima da média (500).
+    // Acertar tudo deve render uma nota acima da mÃ©dia (500).
     expect(finish.body.triScore).toBeGreaterThan(500);
   });
 
-  it('deduplica respostas repetidas da mesma questão ao finalizar', async () => {
+  it('deduplica respostas repetidas da mesma questÃ£o ao finalizar', async () => {
     const start = await request(app.getHttpServer())
       .post('/api/v1/simulations')
       .set(auth())
@@ -212,7 +214,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     const q = start.body.questions[0];
     const chosenId = await correctAlternativeId(q.id);
 
-    // Mesma questão três vezes: deve contar como uma só.
+    // Mesma questÃ£o trÃªs vezes: deve contar como uma sÃ³.
     const finish = await request(app.getHttpServer())
       .post(`/api/v1/simulations/${start.body.id}/finish`)
       .set(auth())
@@ -228,7 +230,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
     expect(finish.body.correct).toBe(1);
   });
 
-  it('ativa o modo sem distrações no perfil', async () => {
+  it('ativa o modo sem distraÃ§Ãµes no perfil', async () => {
     const res = await request(app.getHttpServer())
       .put('/api/v1/users/me/profile')
       .set(auth())

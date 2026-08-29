@@ -11,6 +11,7 @@ import {
 } from '../api';
 import { useAuth } from '../auth';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import {
   IconCalendar,
   IconChat,
@@ -166,16 +167,25 @@ export default function Home() {
   const [nextReview, setNextReview] = useState<ReviewItem | null>(null);
   const [threads, setThreads] = useState<ForumThreadSummary[]>([]);
   const [claiming, setClaiming] = useState(false);
+  // Erro de carregamento (issue #49): distingue falha de API de "sem dados" —
+  // sem isso, erro deixava skeleton infinito indistinguível de loading.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    void api.performance().then(setPerf).catch(() => setPerf(null));
-    void api.reviewQueue().then(setReview).catch(() => setReview([]));
-    void api.gamification().then(setGame).catch(() => setGame(null));
-    void api.dailyChallenge().then(setDaily).catch(() => setDaily(null));
-    void api.recommendations(3).then(setRecs).catch(() => setRecs([]));
-    void api.reviewNext().then(setNextReview).catch(() => setNextReview(null));
-    void api.forumThreads().then(setThreads).catch(() => setThreads([]));
-  }, []);
+    setLoadError(null);
+    const fail = () =>
+      setLoadError(
+        'Não foi possível carregar seu painel. Verifique sua conexão.',
+      );
+    void api.performance().then(setPerf).catch(fail);
+    void api.reviewQueue().then(setReview).catch(fail);
+    void api.gamification().then(setGame).catch(fail);
+    void api.dailyChallenge().then(setDaily).catch(fail);
+    void api.recommendations(3).then(setRecs).catch(fail);
+    void api.reviewNext().then(setNextReview).catch(fail);
+    void api.forumThreads().then(setThreads).catch(fail);
+  }, [reloadKey]);
 
   async function claimDaily() {
     setClaiming(true);
@@ -184,7 +194,7 @@ export default function Home() {
       setDaily(await api.dailyChallenge());
       setGame(await api.gamification());
     } catch {
-      /* silencioso */
+      /* silencioso: o card continua mostrando o estado anterior */
     } finally {
       setClaiming(false);
     }
@@ -215,6 +225,11 @@ export default function Home() {
             : 'Responda algumas questões para começar a ver seu desempenho aqui.'}
         </p>
       </header>
+
+      <ErrorBanner
+        message={loadError}
+        onRetry={() => setReloadKey((k) => k + 1)}
+      />
 
       {game?.enabled && <ProgressWidget data={game} />}
 

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { IconBoard, IconImage as ImageIcon } from '../components/icons';
 import { BoardSVG } from '../board/render';
 import { boardsBBox } from '../board/transform';
@@ -204,7 +205,7 @@ export default function Quadro() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {loading ? (

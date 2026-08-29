@@ -193,70 +193,94 @@ export class SimulationsService {
     });
     const byId = new Map(questions.map((q) => [q.id, q]));
 
-    let correctCount = 0;
-    const details: {
-      questionId: string;
-      isCorrect: boolean;
-      chosenId: string | null;
-      correctAlternativeId: string | null;
-      explanation: string;
-    }[] = [];
-    const irtItems: CalibratedItem[] = [];
-    let allCalibrated = true;
-
-    for (const answer of answers) {
-      const question = byId.get(answer.questionId);
-      if (!question) continue;
-      const correct = question.alternatives.find((a) => a.isCorrect) ?? null;
-      const isCorrect = !!answer.chosenId && answer.chosenId === correct?.id;
-      if (isCorrect) correctCount += 1;
-
-      await this.prisma.answer.create({
-        data: {
-          userId,
-          questionId: question.id,
-          chosenId: answer.chosenId,
-          isCorrect,
-          timeSpentSec: answer.timeSpentSec,
-          simulationId: id,
-        },
+    // Persistência atômica (issue #49): respostas, itens de revisão e o update
+    // do simulado em uma única transação — uma falha no meio não deixa estado
+    // parcial, e um reenvio concorrente não duplica respostas/XP.
+    const finishedAt = new Date();
+    const txResult = await this.prisma.$transaction(async (tx) => {
+      // Re-checa dentro da transação: outro request pode ter finalizado entre
+      // a leitura inicial e agora.
+      const fresh = await tx.simulation.findUnique({
+        where: { id },
+        select: { finishedAt: true },
       });
-      await this.review.recordOutcome(userId, question.topicId, isCorrect);
-
-      // Coleta os parâmetros TRI; basta uma questão sem calibração para anular a nota.
-      if (
-        question.discrimination !== null &&
-        question.irtDifficulty !== null &&
-        question.guessing !== null
-      ) {
-        irtItems.push({
-          a: question.discrimination,
-          b: question.irtDifficulty,
-          c: question.guessing,
-          correct: isCorrect,
-        });
-      } else {
-        allCalibrated = false;
+      if (fresh?.finishedAt) {
+        throw new BadRequestException('Simulado já finalizado');
       }
 
-      details.push({
-        questionId: question.id,
-        isCorrect,
-        chosenId: answer.chosenId ?? null,
-        correctAlternativeId: correct?.id ?? null,
-        explanation: question.explanation,
+      let correctCount = 0;
+      const details: {
+        questionId: string;
+        isCorrect: boolean;
+        chosenId: string | null;
+        correctAlternativeId: string | null;
+        explanation: string;
+      }[] = [];
+      const irtItems: CalibratedItem[] = [];
+      let allCalibrated = true;
+
+      for (const answer of answers) {
+        const question = byId.get(answer.questionId);
+        if (!question) continue;
+        const correct = question.alternatives.find((a) => a.isCorrect) ?? null;
+        const isCorrect = !!answer.chosenId && answer.chosenId === correct?.id;
+        if (isCorrect) correctCount += 1;
+
+        await tx.answer.create({
+          data: {
+            userId,
+            questionId: question.id,
+            chosenId: answer.chosenId,
+            isCorrect,
+            timeSpentSec: answer.timeSpentSec,
+            simulationId: id,
+          },
+        });
+        await this.review.recordOutcome(
+          userId,
+          question.topicId,
+          isCorrect,
+          tx,
+        );
+
+        // Coleta os parâmetros TRI; basta uma questão sem calibração para anular a nota.
+        if (
+          question.discrimination !== null &&
+          question.irtDifficulty !== null &&
+          question.guessing !== null
+        ) {
+          irtItems.push({
+            a: question.discrimination,
+            b: question.irtDifficulty,
+            c: question.guessing,
+            correct: isCorrect,
+          });
+        } else {
+          allCalibrated = false;
+        }
+
+        details.push({
+          questionId: question.id,
+          isCorrect,
+          chosenId: answer.chosenId ?? null,
+          correctAlternativeId: correct?.id ?? null,
+          explanation: question.explanation,
+        });
+      }
+
+      const total = details.length;
+      const triScore =
+        total > 0 && allCalibrated ? triScoreFromItems(irtItems) : null;
+
+      await tx.simulation.update({
+        where: { id },
+        data: { finishedAt, rawScore: correctCount, triScore },
       });
-    }
 
-    const total = details.length;
-    const triScore =
-      total > 0 && allCalibrated ? triScoreFromItems(irtItems) : null;
-
-    const finishedAt = new Date();
-    await this.prisma.simulation.update({
-      where: { id },
-      data: { finishedAt, rawScore: correctCount, triScore },
+      return { total, correctCount, triScore, details };
     });
+
+    const { total, correctCount, triScore, details } = txResult;
 
     // XP por simulado concluído (issue #17): base + por acerto + bônus de velocidade.
     const limitMin = simulation.template.timeLimitMin;

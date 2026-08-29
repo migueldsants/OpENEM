@@ -8,6 +8,7 @@ import {
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconBolt, IconClock, IconGame, IconTarget } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { useGamification } from '../gamification';
 
 type Phase = 'menu' | 'playing' | 'over';
@@ -414,7 +415,7 @@ export default function Games() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {phase === 'over' && (

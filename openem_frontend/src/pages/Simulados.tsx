@@ -6,6 +6,7 @@ import {
   type SimulationTemplate,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconBook, IconCheck, IconClock, IconStack, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
@@ -123,7 +124,7 @@ function TemplateList({
       )}
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {loading ? (
@@ -366,7 +367,7 @@ function Player({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
+        <ErrorBanner message={error} />
       )}
 
       {/* Navegação */}

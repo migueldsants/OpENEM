@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { AnswersModule } from './answers/answers.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -25,6 +28,19 @@ import { UsersModule } from './users/users.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Rate limiting global (issue #49): 100 req/min por IP por padrão.
+    // Endpoints sensíveis (auth) têm limites próprios via @Throttle.
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: config.get('THROTTLE_TTL_MS', 60_000),
+            limit: config.get('THROTTLE_LIMIT', 100),
+          },
+        ],
+      }),
+    }),
     PrismaModule,
     HealthModule,
     AuthModule,
@@ -46,6 +62,10 @@ import { UsersModule } from './users/users.module';
     GamesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Guard global de rate limiting — todos os endpoints contam no limite.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
