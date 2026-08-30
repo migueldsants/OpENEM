@@ -92,10 +92,21 @@ export interface Achievement {
   code: string;
   name: string;
   description: string;
+  /** XP bônus creditado ao desbloquear (issue #48). */
+  xp: number;
+  /** Emoji temático (issue #48). */
+  icon: string;
+  /** Classe Tailwind de destaque (issue #48). */
+  color: string;
 }
 export interface GamificationDelta {
   xpGained: number;
-  breakdown: { base: number; comboMultiplier: number; dailyBonus: number };
+  breakdown: {
+    base: number;
+    comboMultiplier: number;
+    dailyBonus: number;
+    achievementXp: number;
+  };
   xp: number;
   level: number;
   leveledUp: boolean;
@@ -135,6 +146,8 @@ export type GamificationSummary =
 export interface AchievementView extends Achievement {
   unlocked: boolean;
   unlockedAt: string | null;
+  /** Progresso 0..1 para as ainda travadas (issue #48). */
+  progress: number;
 }
 export type DailyChallenge =
   | { enabled: false }

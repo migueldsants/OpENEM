@@ -7,9 +7,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   ACHIEVEMENTS,
   AchievementDef,
+  achievementProgress,
   comboMultiplierForStreak,
   dailyBonusXp,
   evaluateAchievements,
+  GamificationSnapshot,
   LEAGUES,
   leagueForLevel,
   levelFromXp,
@@ -26,12 +28,19 @@ export type XpAction =
   | 'REVIEW'
   | 'STUDY_SESSION'
   | 'GAME'
-  | 'DAILY_CHALLENGE';
+  | 'DAILY_CHALLENGE'
+  | 'ACHIEVEMENT';
 
 /** Variação aplicada após uma atividade — surge na resposta da questão. */
 export interface GamificationDelta {
   xpGained: number;
-  breakdown: { base: number; comboMultiplier: number; dailyBonus: number };
+  breakdown: {
+    base: number;
+    comboMultiplier: number;
+    dailyBonus: number;
+    /** XP bônus das conquistas desbloqueadas nesta atividade (issue #48). */
+    achievementXp: number;
+  };
   xp: number;
   level: number;
   leveledUp: boolean;
@@ -125,9 +134,9 @@ export class GamificationService {
       const dailyBonus = streak.incremented
         ? dailyBonusXp(streak.currentStreak)
         : 0;
-      const xpGained = Math.round(basePoints * comboMultiplier) + dailyBonus;
+      const activityXp = Math.round(basePoints * comboMultiplier) + dailyBonus;
 
-      const xp = stat.points + xpGained;
+      const xp = stat.points + activityXp;
       const next: Counters = {
         answersCount: stat.answersCount + (counters.answersCount ?? 0),
         correctCount: stat.correctCount + (counters.correctCount ?? 0),
@@ -140,9 +149,6 @@ export class GamificationService {
       };
 
       const before = levelFromXp(stat.points);
-      const after = levelFromXp(xp);
-      const leagueBefore = leagueForLevel(before.level);
-      const leagueAfter = leagueForLevel(after.level);
 
       const unlocked = await tx.userAchievement.findMany({
         where: { userId },
@@ -163,10 +169,23 @@ export class GamificationService {
         unlocked.map((u) => u.code),
       );
 
+      // XP bônus das conquistas desbloqueadas (issue #48): some ao total —
+      // conquistas de nível podem empurrar um level acima, então `after`
+      // considera o total.
+      const byCode = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
+      const achievementXp = newCodes.reduce(
+        (sum, code) => sum + (byCode.get(code)?.xp ?? 0),
+        0,
+      );
+      const xpTotal = xp + achievementXp;
+      const after = levelFromXp(xpTotal);
+      const leagueBefore = leagueForLevel(before.level);
+      const leagueAfter = leagueForLevel(after.level);
+
       await tx.gamificationStat.update({
         where: { userId },
         data: {
-          points: xp,
+          points: xpTotal,
           currentStreak: streak.currentStreak,
           longestStreak: streak.longestStreak,
           lastActivityOn: streak.lastActivityOn,
@@ -186,18 +205,35 @@ export class GamificationService {
         });
       }
 
-      // Histórico de XP (issue #17): um log por ação.
+      // Histórico de XP (issue #17): um log por ação. O bônus de conquistas
+      // ganha um log próprio com action ACHIEVEMENT (issue #48).
       const detailStr =
         detail == null ? null : typeof detail === 'string' ? detail : null;
       await tx.xpLog.create({
-        data: { userId, action, xpGained, detail: detailStr },
+        data: { userId, action, xpGained: activityXp, detail: detailStr },
       });
+      if (achievementXp > 0) {
+        await tx.xpLog.create({
+          data: {
+            userId,
+            action: 'ACHIEVEMENT',
+            xpGained: achievementXp,
+            detail: `Conquistas: ${newCodes
+              .map((c) => byCode.get(c)?.name ?? c)
+              .join(', ')}`,
+          },
+        });
+      }
 
-      const byCode = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
       return {
-        xpGained,
-        breakdown: { base: basePoints, comboMultiplier, dailyBonus },
-        xp,
+        xpGained: activityXp + achievementXp,
+        breakdown: {
+          base: basePoints,
+          comboMultiplier,
+          dailyBonus,
+          achievementXp,
+        },
+        xp: xpTotal,
         level: after.level,
         leveledUp: after.level > before.level,
         league: { key: leagueAfter.key, name: leagueAfter.name },
@@ -388,17 +424,35 @@ export class GamificationService {
     });
   }
 
-  /** Catálogo de conquistas com a data de desbloqueio (null se ainda travada). */
+  /**
+   * Catálogo de conquistas com data de desbloqueio e progresso atual (0..1)
+   * de cada uma ainda travada (issue #48) — todas com barra visível.
+   */
   async listAchievements(userId: string) {
-    const unlocked = await this.prisma.userAchievement.findMany({
-      where: { userId },
-      select: { code: true, unlockedAt: true },
-    });
+    const [unlocked, stat] = await Promise.all([
+      this.prisma.userAchievement.findMany({
+        where: { userId },
+        select: { code: true, unlockedAt: true },
+      }),
+      this.prisma.gamificationStat.findUnique({ where: { userId } }),
+    ]);
     const byCode = new Map(unlocked.map((u) => [u.code, u.unlockedAt]));
+    const snapshot: GamificationSnapshot = {
+      points: stat?.points ?? 0,
+      currentStreak: stat?.currentStreak ?? 0,
+      answersCount: stat?.answersCount ?? 0,
+      correctCount: stat?.correctCount ?? 0,
+      simulationsCount: stat?.simulationsCount ?? 0,
+      essaysCount: stat?.essaysCount ?? 0,
+      highScoreEssays: stat?.highScoreEssays ?? 0,
+      reviewsCount: stat?.reviewsCount ?? 0,
+      sessionsDone: stat?.sessionsDone ?? 0,
+    };
     return ACHIEVEMENTS.map((a) => ({
       ...a,
       unlocked: byCode.has(a.code),
       unlockedAt: byCode.get(a.code) ?? null,
+      progress: byCode.has(a.code) ? 1 : achievementProgress(a.code, snapshot),
     }));
   }
 

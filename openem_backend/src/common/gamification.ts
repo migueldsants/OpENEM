@@ -194,6 +194,12 @@ export interface AchievementDef {
   code: string;
   name: string;
   description: string;
+  /** XP bônus creditado ao desbloquear (issue #48). */
+  xp: number;
+  /** Emoji temático exibido nos cards/toasts (issue #48). */
+  icon: string;
+  /** Classe Tailwind de destaque (issue #48). */
+  color: string;
 }
 
 /** Catálogo (fonte da verdade). Persistimos só o que cada usuário desbloqueou. */
@@ -202,102 +208,162 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     code: 'FIRST_ANSWER',
     name: 'Primeiro passo',
     description: 'Responda sua primeira questão.',
+    xp: 50,
+    icon: '📝',
+    color: 'text-brand',
   },
   {
     code: 'TEN_ANSWERS',
     name: 'Aquecendo',
     description: 'Responda 10 questões.',
+    xp: 100,
+    icon: '🎯',
+    color: 'text-brand',
   },
   {
     code: 'HUNDRED_ANSWERS',
     name: 'Maratonista',
     description: 'Responda 100 questões.',
+    xp: 300,
+    icon: '💯',
+    color: 'text-mat',
   },
   {
     code: 'TEN_CORRECT',
     name: 'Na mira',
     description: 'Acerte 10 questões.',
+    xp: 100,
+    icon: '🎯',
+    color: 'text-brand',
   },
   {
     code: 'STREAK_3',
     name: 'Pegando o ritmo',
     description: 'Estude 3 dias seguidos.',
+    xp: 75,
+    icon: '🔥',
+    color: 'text-red',
   },
   {
     code: 'STREAK_7',
     name: 'Semana cheia',
     description: 'Estude 7 dias seguidos.',
+    xp: 200,
+    icon: '🌋',
+    color: 'text-red',
   },
   {
     code: 'STREAK_30',
     name: 'Disciplina de ferro',
     description: 'Estude 30 dias seguidos.',
+    xp: 500,
+    icon: '🏆',
+    color: 'text-red',
   },
   {
     code: 'POINTS_500',
     name: 'Meio milhar',
     description: 'Acumule 500 de XP.',
+    xp: 50,
+    icon: '⭐',
+    color: 'text-brand',
   },
   {
     code: 'POINTS_2000',
     name: 'Veterano',
     description: 'Acumule 2000 de XP.',
+    xp: 150,
+    icon: '💫',
+    color: 'text-brand',
   },
   {
     code: 'REACH_LEVEL_5',
     name: 'Subindo de liga',
     description: 'Chegue ao nível 5 (liga Prata).',
+    xp: 100,
+    icon: '⭐',
+    color: 'text-brand',
   },
   {
     code: 'REACH_LEVEL_10',
     name: 'Ouro puro',
     description: 'Chegue ao nível 10 (liga Ouro).',
+    xp: 250,
+    icon: '💫',
+    color: 'text-nat',
   },
   {
     code: 'REACH_LEVEL_20',
     name: 'Elite',
     description: 'Chegue ao nível 20 (liga Platina).',
+    xp: 1000,
+    icon: '👑',
+    color: 'text-brand',
   },
   // ---- Ações além de questões (issue #17) ----
   {
     code: 'FIRST_SIMULATION',
     name: 'Prova de fogo',
     description: 'Conclua seu primeiro simulado.',
+    xp: 100,
+    icon: '📋',
+    color: 'text-lin',
   },
   {
     code: 'FIVE_SIMULATIONS',
     name: 'Simulador dedicado',
     description: 'Conclua 5 simulados.',
+    xp: 300,
+    icon: '🏅',
+    color: 'text-lin',
   },
   {
     code: 'FIRST_ESSAY',
     name: 'Primeira redação',
     description: 'Envie sua primeira redação.',
+    xp: 100,
+    icon: '✍️',
+    color: 'text-hum',
   },
   {
     code: 'HIGH_SCORE_ESSAY',
     name: 'Tirou onda',
     description: 'Tire 800+ em uma redação.',
+    xp: 400,
+    icon: '🎖️',
+    color: 'text-hum',
   },
   {
     code: 'FIRST_REVIEW',
     name: 'Revisão ativa',
     description: 'Faça sua primeira autoavaliação de revisão.',
+    xp: 50,
+    icon: '🔄',
+    color: 'text-nat',
   },
   {
     code: 'TEN_REVIEWS',
     name: 'Memória de elefante',
     description: 'Faça 10 autoavaliações de revisão.',
+    xp: 200,
+    icon: '📚',
+    color: 'text-nat',
   },
   {
     code: 'FIRST_SESSION',
     name: 'No cronograma',
     description: 'Conclua sua primeira sessão de estudo.',
+    xp: 50,
+    icon: '⏱️',
+    color: 'text-mat',
   },
   {
     code: 'TEN_SESSIONS',
     name: 'Constância',
     description: 'Conclua 10 sessões de estudo.',
+    xp: 200,
+    icon: '🏃',
+    color: 'text-mat',
   },
 ] as const;
 
@@ -349,4 +415,63 @@ export function evaluateAchievements(
   return ACHIEVEMENTS.filter(
     (a) => !have.has(a.code) && ACHIEVEMENT_RULES[a.code]?.(snapshot),
   ).map((a) => a.code);
+}
+
+/**
+ * Progresso (0..1) de uma conquista ainda não desbloqueada (issue #48): todas
+ * têm barra visível. Conquistas de contagem usam atual/alvo; binárias são 0 ou
+ * ~1 (nunca "meio termo"); as de nível derivam o progresso do nível atual.
+ */
+export function achievementProgress(
+  code: string,
+  snapshot: GamificationSnapshot,
+): number {
+  const thresholds: Record<string, number> = {
+    FIRST_ANSWER: 1,
+    TEN_ANSWERS: 10,
+    HUNDRED_ANSWERS: 100,
+    TEN_CORRECT: 10,
+    STREAK_3: 3,
+    STREAK_7: 7,
+    STREAK_30: 30,
+    FIRST_SIMULATION: 1,
+    FIVE_SIMULATIONS: 5,
+    FIRST_ESSAY: 1,
+    HIGH_SCORE_ESSAY: 1,
+    FIRST_REVIEW: 1,
+    TEN_REVIEWS: 10,
+    FIRST_SESSION: 1,
+    TEN_SESSIONS: 10,
+  };
+  const counters: Record<string, number> = {
+    FIRST_ANSWER: snapshot.answersCount,
+    TEN_ANSWERS: snapshot.answersCount,
+    HUNDRED_ANSWERS: snapshot.answersCount,
+    TEN_CORRECT: snapshot.correctCount,
+    STREAK_3: snapshot.currentStreak,
+    STREAK_7: snapshot.currentStreak,
+    STREAK_30: snapshot.currentStreak,
+    FIRST_SIMULATION: snapshot.simulationsCount,
+    FIVE_SIMULATIONS: snapshot.simulationsCount,
+    FIRST_ESSAY: snapshot.essaysCount,
+    HIGH_SCORE_ESSAY: snapshot.highScoreEssays,
+    FIRST_REVIEW: snapshot.reviewsCount,
+    TEN_REVIEWS: snapshot.reviewsCount,
+    FIRST_SESSION: snapshot.sessionsDone,
+    TEN_SESSIONS: snapshot.sessionsDone,
+  };
+  // Conquistas de XP: progresso linear até o alvo.
+  if (code === 'POINTS_500') return Math.min(1, snapshot.points / 500);
+  if (code === 'POINTS_2000') return Math.min(1, snapshot.points / 2000);
+  // Conquistas de nível: fração do caminho de nível 1 ao alvo.
+  if (code === 'REACH_LEVEL_5')
+    return Math.min(1, (levelFromXp(snapshot.points).level - 1) / (5 - 1));
+  if (code === 'REACH_LEVEL_10')
+    return Math.min(1, (levelFromXp(snapshot.points).level - 1) / (10 - 1));
+  if (code === 'REACH_LEVEL_20')
+    return Math.min(1, (levelFromXp(snapshot.points).level - 1) / (20 - 1));
+
+  const target = thresholds[code];
+  if (target === undefined) return 0;
+  return Math.min(1, counters[code] / target);
 }

@@ -78,21 +78,34 @@ describe('GamificationService', () => {
         new Date('2026-08-29T12:00:00Z'),
       );
 
-      // 10 XP base * combo 1.0 + bônus diário 15 (streak 1) = 25.
-      expect(delta!.xpGained).toBe(25);
+      // Atividade: 10 * 1.0 + bônus 15 = 25; + FIRST_ANSWER (50 XP, issue
+      // #48) desbloqueada na 1ª resposta = 75.
       expect(delta!.breakdown).toEqual({
         base: 10,
         comboMultiplier: 1,
         dailyBonus: 15,
+        achievementXp: 50,
       });
+      expect(delta!.xpGained).toBe(75);
+      expect(delta!.newAchievements.map((a) => a.code)).toContain(
+        'FIRST_ANSWER',
+      );
       expect(delta!.streakIncremented).toBe(true);
       expect(delta!.currentStreak).toBe(1);
       expect(tx.gamificationStat.update).toHaveBeenCalledWith({
         where: { userId: 'u1' },
-        data: expect.objectContaining({ points: 25, currentStreak: 1 }),
+        data: expect.objectContaining({ points: 75, currentStreak: 1 }),
       });
       expect(tx.xpLog.create).toHaveBeenCalledWith({
         data: { userId: 'u1', action: 'ANSWER', xpGained: 25, detail: null },
+      });
+      // O bônus de conquista ganha um log ACHIEVEMENT próprio (issue #48).
+      expect(tx.xpLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: 'ACHIEVEMENT',
+          xpGained: 50,
+          detail: expect.stringContaining('Primeiro passo'),
+        }),
       });
     });
 
@@ -120,7 +133,8 @@ describe('GamificationService', () => {
       prisma.profile.findUnique.mockResolvedValue({
         gamificationEnabled: true,
       });
-      // Streak 5 -> combo 1.4; mesmo dia (sem bônus).
+      // Streak 5 -> combo 1.4; mesmo dia (sem bônus). Conquistas de contagem
+      // já desbloqueadas — isola o teste do bônus de conquista.
       tx.gamificationStat.upsert.mockResolvedValue({
         ...STAT,
         points: 400,
@@ -130,6 +144,15 @@ describe('GamificationService', () => {
         answersCount: 10,
         correctCount: 10,
       });
+      tx.userAchievement.findMany.mockResolvedValue([
+        { code: 'FIRST_ANSWER' },
+        { code: 'TEN_ANSWERS' },
+        { code: 'TEN_CORRECT' },
+        { code: 'STREAK_3' },
+        { code: 'STREAK_7' },
+        { code: 'POINTS_500' },
+        { code: 'REACH_LEVEL_5' },
+      ]);
 
       const delta = await service.recordAnswer(
         'u1',
@@ -137,8 +160,9 @@ describe('GamificationService', () => {
         new Date('2026-08-29T15:00:00Z'),
       );
 
-      // 10 * 1.4 = 14 (arredondado).
+      // Atividade: 10 * 1.4 = 14; sem novas conquistas.
       expect(delta!.xpGained).toBe(14);
+      expect(delta!.breakdown.achievementXp).toBe(0);
       expect(delta!.streakIncremented).toBe(false);
       expect(delta!.currentStreak).toBe(5);
     });

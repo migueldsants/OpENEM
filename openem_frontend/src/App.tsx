@@ -25,6 +25,7 @@ import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
 import { leagueStyle } from './lib/gamification';
 import Comunidade from './pages/Comunidade';
+import Conquistas from './pages/Conquistas';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
@@ -56,6 +57,7 @@ const NAV: NavItem[] = [
   { to: '/games', label: 'Games', Icon: IconGame, mobile: 'primary' },
   { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more' },
   { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: 'more' },
+  { to: '/conquistas', label: 'Conquistas', Icon: IconStar, mobile: 'more' },
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more' },
   { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
@@ -247,6 +249,7 @@ export default function App() {
       <Route path="/desempenho" element={<Desempenho />} />
       <Route path="/revisao" element={<Revisao />} />
       <Route path="/progresso" element={<Progresso />} />
+      <Route path="/conquistas" element={<Conquistas />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/redacao" element={<Redacao />} />
       <Route path="/games" element={<Games />} />
