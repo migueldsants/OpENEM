@@ -1,8 +1,10 @@
 import {
   ACHIEVEMENTS,
+  achievementProgress,
   comboMultiplierForStreak,
   dailyBonusXp,
   evaluateAchievements,
+  type GamificationSnapshot,
   leagueForLevel,
   levelFromXp,
   pointsForAnswer,
@@ -263,5 +265,84 @@ describe('evaluateAchievements', () => {
       [],
     );
     expect(all.sort()).toEqual(ACHIEVEMENTS.map((a) => a.code).sort());
+  });
+});
+
+describe('catálogo de conquistas (issue #48)', () => {
+  it('todas têm xp positivo, ícone e cor', () => {
+    for (const a of ACHIEVEMENTS) {
+      expect(a.xp).toBeGreaterThan(0);
+      expect(a.icon.length).toBeGreaterThan(0);
+      expect(a.color).toMatch(/^text-/);
+    }
+  });
+
+  it('conquistas mais difíceis valem mais XP', () => {
+    const byCode = new Map(ACHIEVEMENTS.map((a) => [a.code, a]));
+    expect(byCode.get('STREAK_30')!.xp).toBeGreaterThan(
+      byCode.get('STREAK_3')!.xp,
+    );
+    expect(byCode.get('REACH_LEVEL_20')!.xp).toBeGreaterThan(
+      byCode.get('REACH_LEVEL_5')!.xp,
+    );
+    expect(byCode.get('HUNDRED_ANSWERS')!.xp).toBeGreaterThan(
+      byCode.get('TEN_ANSWERS')!.xp,
+    );
+  });
+});
+
+describe('achievementProgress (issue #48)', () => {
+  const SNAP = (
+    over: Partial<GamificationSnapshot> = {},
+  ): GamificationSnapshot => ({
+    points: 0,
+    currentStreak: 0,
+    answersCount: 0,
+    correctCount: 0,
+    simulationsCount: 0,
+    essaysCount: 0,
+    highScoreEssays: 0,
+    reviewsCount: 0,
+    sessionsDone: 0,
+    ...over,
+  });
+
+  it('contadores: fração atual/alvo', () => {
+    expect(achievementProgress('TEN_ANSWERS', SNAP({ answersCount: 4 }))).toBe(
+      0.4,
+    );
+    expect(
+      achievementProgress('HUNDRED_ANSWERS', SNAP({ answersCount: 50 })),
+    ).toBe(0.5);
+    expect(
+      achievementProgress('TEN_SESSIONS', SNAP({ sessionsDone: 10 })),
+    ).toBe(1);
+  });
+
+  it('binárias: 0 ou 1, sem meio termo', () => {
+    expect(achievementProgress('FIRST_ANSWER', SNAP())).toBe(0);
+    expect(achievementProgress('FIRST_ANSWER', SNAP({ answersCount: 1 }))).toBe(
+      1,
+    );
+    expect(achievementProgress('HIGH_SCORE_ESSAY', SNAP())).toBe(0);
+    expect(
+      achievementProgress('HIGH_SCORE_ESSAY', SNAP({ highScoreEssays: 1 })),
+    ).toBe(1);
+  });
+
+  it('XP: progresso linear até o alvo (com teto)', () => {
+    expect(achievementProgress('POINTS_500', SNAP({ points: 250 }))).toBe(0.5);
+    expect(achievementProgress('POINTS_2000', SNAP({ points: 9999 }))).toBe(1);
+  });
+
+  it('níveis: fração do nível atual sobre o alvo', () => {
+    // Nível 3 de 5: (3-1)/(5-1) = 0.5 — 400 XP = nível 5, 225 XP = nível 4.
+    expect(achievementProgress('REACH_LEVEL_5', SNAP({ points: 225 }))).toBe(
+      0.75,
+    );
+    expect(achievementProgress('REACH_LEVEL_20', SNAP({ points: 0 }))).toBe(0);
+    expect(
+      achievementProgress('REACH_LEVEL_10', SNAP({ points: 999999 })),
+    ).toBe(1);
   });
 });

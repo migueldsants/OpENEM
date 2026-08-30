@@ -9,7 +9,6 @@ import {
 } from '../api';
 import {
   IconBolt,
-  IconCheck,
   IconFlame,
   IconLock,
   IconSparkle,
@@ -19,28 +18,6 @@ import { EmptyState } from '../components/EmptyState';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { leagueStyle } from '../lib/gamification';
-
-/**
- * Mapeia um código de conquista para o progresso atual (atual/total) quando
- * possível. Conquistas puramente binárias (ex.: FIRST_ANSWER) não têm barra —
- * só travado/desbloqueado.
- */
-const ACHIEVEMENT_THRESHOLDS: Record<
-  string,
-  { current: (s: SummaryData) => number; total: number }
-> = {
-  TEN_ANSWERS: { total: 10, current: (s) => s.answersCount },
-  HUNDRED_ANSWERS: { total: 100, current: (s) => s.answersCount },
-  TEN_CORRECT: { total: 10, current: (s) => s.correctCount },
-  STREAK_3: { total: 3, current: (s) => s.currentStreak },
-  STREAK_7: { total: 7, current: (s) => s.currentStreak },
-  STREAK_30: { total: 30, current: (s) => s.currentStreak },
-  POINTS_500: { total: 500, current: (s) => s.xp },
-  POINTS_2000: { total: 2000, current: (s) => s.xp },
-  FIVE_SIMULATIONS: { total: 5, current: (s) => s.simulationsCount },
-  TEN_REVIEWS: { total: 10, current: (s) => s.reviewsCount },
-  TEN_SESSIONS: { total: 10, current: (s) => s.sessionsDone },
-};
 
 type SummaryData = Extract<GamificationSummary, { enabled: true }> & {
   nextLevelXp: number;
@@ -218,55 +195,97 @@ function XpHistoryChart({ history }: { history: XpHistory }) {
   );
 }
 
-function AchievementProgress({
-  item,
-  data,
-}: {
-  item: AchievementView;
-  data: SummaryData;
-}) {
-  const rule = ACHIEVEMENT_THRESHOLDS[item.code];
-  if (!rule) return null;
-  const current = Math.min(rule.current(data), rule.total);
-  const pct = Math.round((current / rule.total) * 100);
+/** Barra de progresso da conquista (API: progress 0..1, issue #48). */
+function AchievementProgressBar({ item }: { item: AchievementView }) {
+  const pct = Math.round(item.progress * 100);
   return (
     <span className="mt-1.5 block">
       <span className="flex items-center justify-between text-[0.68rem] text-muted">
-        <span>
-          {current}/{rule.total}
-        </span>
-        {!item.unlocked && <span>{pct}%</span>}
+        <span>{item.unlocked ? 'Desbloqueada' : `${pct}%`}</span>
+        <span className="font-semibold text-brand">+{item.xp} XP</span>
       </span>
       <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-2">
         <span
           className="block h-full rounded-full bg-brand transition-[width]"
-          style={{ width: `${pct}%` }}
+          style={{ width: `${item.unlocked ? 100 : pct}%` }}
         />
       </span>
     </span>
   );
 }
 
+/** Card de conquista — emoji temático + cor própria (issue #48). */
+export function AchievementCard({
+  a,
+  compact = false,
+}: {
+  a: AchievementView;
+  compact?: boolean;
+}) {
+  const fresh =
+    a.unlockedAt &&
+    Date.now() - new Date(a.unlockedAt).getTime() < 24 * 60 * 60 * 1000;
+  return (
+    <li
+      title={
+        a.unlocked && a.unlockedAt
+          ? `Desbloqueada em ${new Date(a.unlockedAt).toLocaleDateString('pt-BR')}`
+          : undefined
+      }
+      className={`flex flex-col rounded-xl border p-3 transition-all ${
+        a.unlocked
+          ? 'border-brand/30 bg-brand/5'
+          : 'border-line opacity-80 grayscale'
+      } ${fresh ? 'ring-2 ring-brand/40' : ''}`}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className={`grid ${compact ? 'size-8' : 'size-11'} shrink-0 place-items-center rounded-lg ${
+            a.unlocked ? 'bg-brand/15' : 'bg-surface-2'
+          } ${compact ? 'text-lg' : 'text-2xl'}`}
+          aria-hidden
+        >
+          {a.icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-medium ${a.unlocked ? a.color : ''}`}>
+            {a.name}
+          </p>
+          <p className="text-xs text-muted">{a.description}</p>
+          {a.unlocked && a.unlockedAt && !compact && (
+            <p className="mt-0.5 text-[0.65rem] text-muted">
+              Desbloqueada{' '}
+              {new Date(a.unlockedAt).toLocaleDateString('pt-BR')}
+            </p>
+          )}
+        </div>
+        <span
+          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[0.65rem] font-bold ${
+            a.unlocked ? 'bg-brand/12 text-brand' : 'bg-surface-2 text-muted'
+          }`}
+        >
+          +{a.xp}
+        </span>
+      </div>
+      <AchievementProgressBar item={a} />
+    </li>
+  );
+}
+
 function AchievementsGrid({
   items,
-  data,
 }: {
   items: AchievementView[];
-  data: SummaryData;
 }) {
-  // Próxima conquista: a travada com maior progresso percentual.
+  // Próxima conquista: a travada com maior progresso (todas, issue #48).
   const next = useMemo(() => {
     const locked = items.filter((a) => !a.unlocked);
     if (locked.length === 0) return null;
-    let best: { item: AchievementView; pct: number } | null = null;
-    for (const item of locked) {
-      const rule = ACHIEVEMENT_THRESHOLDS[item.code];
-      if (!rule) continue;
-      const pct = rule.current(data) / rule.total;
-      if (!best || pct > best.pct) best = { item, pct };
-    }
-    return best;
-  }, [items, data]);
+    return locked.reduce<AchievementView>(
+      (best, item) => (item.progress > best.progress ? item : best),
+      locked[0],
+    );
+  }, [items]);
 
   return (
     <section className="space-y-3">
@@ -274,50 +293,32 @@ function AchievementsGrid({
         <div className="card card-raised border-l-4 border-brand p-4">
           <p className="eyebrow">Próxima conquista</p>
           <div className="mt-1 flex items-center gap-2">
-            <IconTrophy width={18} height={18} className="text-brand" />
-            <p className="font-display text-sm font-bold">{next.item.name}</p>
+            <span className="text-xl" aria-hidden>
+              {next.icon}
+            </span>
+            <p className="font-display text-sm font-bold">{next.name}</p>
           </div>
-          <p className="mt-0.5 text-xs text-muted">{next.item.description}</p>
-          <AchievementProgress item={next.item} data={data} />
+          <p className="mt-0.5 text-xs text-muted">{next.description}</p>
+          <AchievementProgressBar item={next} />
         </div>
       )}
 
       <section className="card p-5">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-lg font-bold">Conquistas</h2>
-          <span className="text-xs text-muted">
-            {items.filter((a) => a.unlocked).length}/{items.length}
-          </span>
+          <NavLink
+            to="/conquistas"
+            className="text-xs font-medium text-brand"
+          >
+            Ver todas →
+          </NavLink>
         </div>
+        <p className="mt-0.5 text-xs text-muted">
+          {items.filter((a) => a.unlocked).length}/{items.length} desbloqueadas
+        </p>
         <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
-          {items.map((a) => (
-            <li
-              key={a.code}
-              className={`flex flex-col rounded-xl border p-3 ${
-                a.unlocked
-                  ? 'border-brand/30 bg-brand/5'
-                  : 'border-line opacity-80'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <span
-                  className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${
-                    a.unlocked ? 'bg-brand/15 text-brand' : 'bg-surface-2 text-muted'
-                  }`}
-                >
-                  {a.unlocked ? (
-                    <IconCheck width={16} height={16} />
-                  ) : (
-                    <IconLock width={15} height={15} />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{a.name}</p>
-                  <p className="text-xs text-muted">{a.description}</p>
-                </div>
-              </div>
-              <AchievementProgress item={a} data={data} />
-            </li>
+          {items.slice(0, 6).map((a) => (
+            <AchievementCard key={a.code} a={a} compact />
           ))}
         </ul>
       </section>
@@ -550,7 +551,7 @@ export default function Progresso() {
           <StreakRow current={data.currentStreak} longest={data.longestStreak} />
           <LeaderboardSection />
           {history && <XpHistoryChart history={history} />}
-          <AchievementsGrid items={achievements} data={data} />
+          <AchievementsGrid items={achievements} />
           {history && <ActivityFeed history={history} />}
         </>
       ) : (
