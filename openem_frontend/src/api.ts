@@ -583,10 +583,18 @@ export const api = {
 
   simulationTemplates: () =>
     request<SimulationTemplate[]>('/simulations/templates'),
-  startSimulation: (templateId: string) =>
+  startSimulation: (
+    templateId: string,
+    filters?: {
+      subjectId?: string;
+      topicId?: string;
+      questionCount?: number;
+      pareto?: boolean;
+    },
+  ) =>
     request<SimulationStart>('/simulations', {
       method: 'POST',
-      body: { templateId },
+      body: { templateId, ...filters },
     }),
   finishSimulation: (id: string, answers: SimulationAnswerInput[]) =>
     request<SimulationResult>(`/simulations/${id}/finish`, {

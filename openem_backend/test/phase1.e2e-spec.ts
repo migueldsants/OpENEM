@@ -134,6 +134,46 @@ describe('Fase 1 â€” fluxo MVP (e2e)', () => {
     expect(t.subject).toHaveProperty('name');
   });
 
+  it('inicia simulado personalizado com filtros e contagem (issue #40)', async () => {
+    // Matéria com questões no seed (Matemática).
+    const subs = await request(app.getHttpServer())
+      .get('/api/v1/subjects')
+      .set(auth())
+      .expect(200);
+    const matematica = subs.body.find(
+      (s: { name: string }) => s.name.includes('Matem'),
+    );
+
+    const start = await request(app.getHttpServer())
+      .post('/api/v1/simulations')
+      .set(auth())
+      .send({
+        templateId: 'seed-template-custom',
+        subjectId: matematica.id,
+        questionCount: 3,
+        pareto: true,
+      })
+      .expect(201);
+    expect(start.body.questions.length).toBeLessThanOrEqual(3);
+    // Todas as questões são da matéria pedida.
+    for (const q of start.body.questions) {
+      expect(q.topic.subject.id).toBe(matematica.id);
+    }
+    // Tempo proporcional: >= 3 min/questão, nunca abaixo de 5.
+    expect(start.body.timeLimitMin).toBeGreaterThanOrEqual(5);
+  });
+
+  it('rejeita simulado personalizado com matéria inexistente (issue #40)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/simulations')
+      .set(auth())
+      .send({
+        templateId: 'seed-template-custom',
+        subjectId: 'nao-existe',
+      })
+      .expect(400);
+  });
+
   it('inicia e finaliza um simulado, corrigindo tudo certo = 100%', async () => {
     const start = await request(app.getHttpServer())
       .post('/api/v1/simulations')

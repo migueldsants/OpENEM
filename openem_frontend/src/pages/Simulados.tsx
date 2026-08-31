@@ -4,11 +4,12 @@ import {
   type SimulationResult,
   type SimulationStart,
   type SimulationTemplate,
+  type Subject,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconBook, IconCheck, IconClock, IconStack, IconX } from '../components/icons';
+import { IconBook, IconCheck, IconClock, IconFilter, IconStack, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
@@ -48,6 +49,189 @@ function formatClock(totalSec: number): string {
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
+/** Filtros do simulado personalizado (issue #40). */
+interface SimulationFilters {
+  subjectId?: string;
+  topicId?: string;
+  questionCount?: number;
+  pareto?: boolean;
+}
+
+const QUICK_COUNTS = [5, 10, 15, 20, 30];
+const CUSTOM_TEMPLATE_ID = 'seed-template-custom';
+
+/**
+ * Builder de simulado personalizado (issue #40): matéria > tópico,
+ * quantidade (rápido 5–10 vs completo) e ordenação por frequência ENEM.
+ */
+function CustomBuilder({
+  onStart,
+  starting,
+}: {
+  onStart: (filters: SimulationFilters) => void;
+  starting: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [subjects, setSubjects] = useState<Subject[] | null>(null);
+  const [subjectId, setSubjectId] = useState('');
+  const [topicId, setTopicId] = useState('');
+  const [count, setCount] = useState(10);
+  const [pareto, setPareto] = useState(true);
+
+  useEffect(() => {
+    if (!open || subjects !== null) return;
+    void api
+      .subjects()
+      .then(setSubjects)
+      .catch(() => setSubjects([]));
+  }, [open, subjects]);
+
+  const topics =
+    subjects?.find((s) => s.id === subjectId)?.topics ?? [];
+
+  return (
+    <div className="card card-raised overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-surface-2"
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand/12 text-brand">
+          <IconFilter width={20} height={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">
+            Simulado personalizado
+          </span>
+          <span className="block text-xs text-muted">
+            Escolha matéria, assunto e quantas questões quer
+          </span>
+        </span>
+        <span className="btn btn-primary shrink-0">
+          {open ? 'Fechar' : 'Montar'}
+        </span>
+      </button>
+
+      {open && (
+        <div className="space-y-4 border-t border-line p-4">
+          {subjects === null ? (
+            <p className="text-xs text-muted" aria-busy>
+              Carregando matérias…
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs font-medium text-muted">
+                  Matéria
+                  <select
+                    value={subjectId}
+                    onChange={(e) => {
+                      setSubjectId(e.target.value);
+                      setTopicId(''); // tópico depende da matéria
+                    }}
+                    className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg"
+                  >
+                    <option value="">Todas as matérias</option>
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block text-xs font-medium text-muted">
+                  Assunto (opcional)
+                  <select
+                    value={topicId}
+                    onChange={(e) => setTopicId(e.target.value)}
+                    disabled={!subjectId}
+                    className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg disabled:opacity-50"
+                  >
+                    <option value="">
+                      {subjectId ? 'Todos os assuntos' : 'Escolha uma matéria'}
+                    </option>
+                    {topics.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div>
+                <span className="block text-xs font-medium text-muted">
+                  Quantidade de questões
+                </span>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {QUICK_COUNTS.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setCount(n)}
+                      data-active={count === n}
+                      className="chip"
+                    >
+                      {n}
+                      {n <= 10 && (
+                        <span className="text-[0.6rem] text-muted">rápido</span>
+                      )}
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    min={3}
+                    max={90}
+                    value={count}
+                    onChange={(e) =>
+                      setCount(
+                        Math.min(
+                          90,
+                          Math.max(3, Number(e.target.value) || 3),
+                        ),
+                      )
+                    }
+                    aria-label="Quantidade de questões"
+                    className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-center text-sm font-data tabular-nums"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={pareto}
+                  onChange={(e) => setPareto(e.target.checked)}
+                  className="size-4 accent-[var(--color-brand)]"
+                />
+                Priorizar assuntos mais frequentes no ENEM (Pareto)
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onStart({
+                    subjectId: subjectId || undefined,
+                    topicId: topicId || undefined,
+                    questionCount: count,
+                    pareto,
+                  })
+                }
+                disabled={starting}
+                className="btn btn-primary w-full"
+              >
+                {starting ? 'Iniciando…' : `Iniciar com ${count} questões`}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Lista de templates disponíveis para iniciar um simulado. */
 function TemplateList({
   resumeAvailable,
@@ -56,11 +240,15 @@ function TemplateList({
 }: {
   resumeAvailable: boolean;
   onResume: () => void;
-  onStart: (template: SimulationTemplate) => void;
+  onStart: (
+    template: SimulationTemplate,
+    filters?: SimulationFilters,
+  ) => void | Promise<void>;
 }) {
   const [templates, setTemplates] = useState<SimulationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState<string | null>(null);
+  const [customStarting, setCustomStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,10 +271,26 @@ function TemplateList({
     setStarting(template.id);
     setError(null);
     try {
-      onStart(template);
+      await onStart(template);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível iniciar.');
+    } finally {
       setStarting(null);
+    }
+  }
+
+  async function startCustom(filters: SimulationFilters) {
+    setCustomStarting(true);
+    setError(null);
+    try {
+      await onStart(
+        { id: CUSTOM_TEMPLATE_ID } as SimulationTemplate,
+        filters,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível iniciar.');
+    } finally {
+      setCustomStarting(false);
     }
   }
 
@@ -127,6 +331,12 @@ function TemplateList({
         <ErrorBanner message={error} />
       )}
 
+      {/* Simulado personalizado (issue #40): matéria/tópico + quantidade. */}
+      <CustomBuilder
+        onStart={(f) => void startCustom(f)}
+        starting={customStarting}
+      />
+
       {loading ? (
         <div className="space-y-3" aria-busy>
           <SkeletonCard lines={2} />
@@ -141,7 +351,9 @@ function TemplateList({
         />
       ) : (
         <ul className="space-y-3">
-          {templates.map((t) => {
+          {templates
+            .filter((t) => t.id !== CUSTOM_TEMPLATE_ID)
+            .map((t) => {
             const area = t.subject ? areaKey(t.subject.name) : null;
             return (
               <li key={t.id} className="card card-raised overflow-hidden">
@@ -587,8 +799,11 @@ export default function Simulados() {
     saveActive(next);
   }
 
-  async function handleStart(template: SimulationTemplate) {
-    const start = await api.startSimulation(template.id);
+  async function handleStart(
+    template: SimulationTemplate,
+    filters?: SimulationFilters,
+  ) {
+    const start = await api.startSimulation(template.id, filters);
     const state: ActiveState = { start, answers: {}, timeSpent: {} };
     saveActive(state);
     setActive(state);
@@ -645,7 +860,7 @@ export default function Simulados() {
     <TemplateList
       resumeAvailable={resumeAvailable}
       onResume={handleResume}
-      onStart={(t) => void handleStart(t)}
+      onStart={(t, f) => handleStart(t, f)}
     />
   );
 }
