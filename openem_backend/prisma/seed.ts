@@ -283,6 +283,18 @@ async function main() {
       timeLimitMin: 60,
     },
   });
+  // Template para simulados personalizados (issue #40): matéria/tópico e
+  // contagem vêm por DTO no start; o template só carrega o nome/rótulo.
+  await prisma.simulationTemplate.upsert({
+    where: { id: 'seed-template-custom' },
+    update: {},
+    create: {
+      id: 'seed-template-custom',
+      name: 'Personalizado',
+      scope: 'FULL',
+      questionCount: 10,
+    },
+  });
 
   // Tema de redação (Fase 2).
   await prisma.essayPrompt.upsert({

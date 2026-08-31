@@ -75,22 +75,58 @@ export class SimulationsService {
       throw new NotFoundException('Template de simulado não encontrado');
     }
 
-    const where: Prisma.QuestionWhereInput =
+    // Filtros (issue #40): template por área OU filtros customizados do DTO
+    // (matéria/tópico + contagem). Os customizados valem para qualquer
+    // template — na prática o frontend usa o template "custom" semeado.
+    let where: Prisma.QuestionWhereInput =
       template.scope === 'AREA' && template.subjectId
         ? { topic: { subjectId: template.subjectId } }
         : {};
+    let questionCount = template.questionCount;
 
+    if (dto.subjectId || dto.topicId || dto.questionCount) {
+      if (dto.topicId) {
+        where = { topicId: dto.topicId };
+      } else if (dto.subjectId) {
+        where = { topic: { subjectId: dto.subjectId } };
+      }
+      if (dto.questionCount) questionCount = dto.questionCount;
+    }
+
+    if (dto.subjectId || dto.topicId) {
+      const subjectExists = await this.prisma.subject.count({
+        where: dto.topicId
+          ? { topics: { some: { id: dto.topicId } } }
+          : { id: dto.subjectId },
+      });
+      if (subjectExists === 0) {
+        throw new BadRequestException('Matéria ou assunto não encontrado');
+      }
+    }
+
+    // Pool com o peso Pareto do tópico (issue #40): permite ordenar por
+    // frequência no ENEM em vez de sorteio puro.
     const pool = await this.prisma.question.findMany({
       where,
-      select: { id: true },
+      select: { id: true, topic: { select: { weight: true } } },
     });
     if (pool.length === 0) {
       throw new BadRequestException(
         'Não há questões disponíveis para este simulado',
       );
     }
-    const selectedIds = shuffle(pool)
-      .slice(0, template.questionCount)
+
+    // Ordenação Pareto: embaralha primeiro (desempate dentro do mesmo peso)
+    // e ordena por peso decrescente — os tópicos mais frequentes no ENEM
+    // entram primeiro. Sem pareto, permanece sorteio uniforme.
+    const shuffled = shuffle(pool);
+    const ranked = dto.pareto
+      ? [...shuffled].sort(
+          (a, b) => (b.topic?.weight ?? 1) - (a.topic?.weight ?? 1),
+        )
+      : shuffled;
+    const selectedIds = ranked
+      .slice(0, questionCount)
       .map((q) => q.id);
 
     const simulation = await this.prisma.simulation.create({
@@ -115,10 +151,21 @@ export class SimulationsService {
       },
     });
 
+    // Limite de tempo proporcional ao nº de questões (issue #40): 3 min/questão
+    // quando o simulado é customizado e o template não define tempo (ou o nº
+    // difere do padrão do template).
+    let timeLimitMin = template.timeLimitMin;
+    if (
+      (dto.subjectId || dto.topicId || dto.questionCount) &&
+      (timeLimitMin == null || dto.questionCount)
+    ) {
+      timeLimitMin = Math.max(5, Math.round(questions.length * 3));
+    }
+
     return {
       id: simulation.id,
       startedAt: simulation.startedAt,
-      timeLimitMin: template.timeLimitMin,
+      timeLimitMin,
       questionCount: questions.length,
       questions,
     };
