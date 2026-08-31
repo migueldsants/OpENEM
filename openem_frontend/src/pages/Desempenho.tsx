@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { api, type Performance, type PerformancePoint } from '../api';
+import {
+  api,
+  type HeatmapArea,
+  type Performance,
+  type PerformancePoint,
+} from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { IconTrophy } from '../components/icons';
+import { TopicHeatmap } from '../components/performance/TopicHeatmap';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 
@@ -195,6 +201,12 @@ export default function Desempenho() {
   const [topicSort, setTopicSort] = useState<TopicSort>('weakest');
   const [period, setPeriod] = useState<Period>('30d');
 
+  // Mapa de calor (issue #43): carregado on-demand ao abrir a seção.
+  const [heatmapOpen, setHeatmapOpen] = useState(false);
+  const [heatmapAreas, setHeatmapAreas] = useState<HeatmapArea[] | null>(null);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [heatmapError, setHeatmapError] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -217,6 +229,30 @@ export default function Desempenho() {
       cancelled = true;
     };
   }, [period]);
+
+  async function loadHeatmap() {
+    setHeatmapLoading(true);
+    setHeatmapError(null);
+    try {
+      setHeatmapAreas(await api.performanceHeatmap());
+    } catch (err) {
+      setHeatmapError(
+        err instanceof Error
+          ? err.message
+          : 'Não foi possível carregar o mapa de calor.',
+      );
+    } finally {
+      setHeatmapLoading(false);
+    }
+  }
+
+  function toggleHeatmap() {
+    const next = !heatmapOpen;
+    setHeatmapOpen(next);
+    // Primeira abertura: busca os dados (não refaz em aberturas seguintes
+    // a menos que tenha dado erro).
+    if (next && (heatmapAreas === null || heatmapError)) void loadHeatmap();
+  }
 
   const sortedTopics = useMemo(() => {
     if (!perf) return [];
@@ -410,6 +446,38 @@ export default function Desempenho() {
             );
           })}
         </ul>
+      </section>
+
+      {/* Mapa de calor por tópico (issue #43) — grid da taxonomia completa. */}
+      <section className="card p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-display text-lg font-bold">
+              Mapa de calor por tópico
+            </h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Todos os assuntos da taxonomia — clique num tópico para praticar.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleHeatmap}
+            aria-expanded={heatmapOpen}
+            className="btn btn-ghost shrink-0"
+          >
+            {heatmapOpen ? 'Fechar' : 'Abrir'}
+          </button>
+        </div>
+        {heatmapOpen && (
+          <div className="mt-4">
+            <TopicHeatmap
+              areas={heatmapAreas}
+              loading={heatmapLoading}
+              error={heatmapError}
+              onRetry={() => void loadHeatmap()}
+            />
+          </div>
+        )}
       </section>
     </div>
   );
