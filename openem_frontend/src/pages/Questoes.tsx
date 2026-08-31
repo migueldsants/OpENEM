@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   api,
   type AnswerResult,
@@ -318,13 +319,16 @@ function FilterDrawer({
 
 export default function Questoes() {
   const { refresh } = useGamification();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [favoriteQuestions, setFavoriteQuestions] = useState<Question[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   // Filtros aplicados (o drawer faz o staging e confirma no Aplicar).
+  // topicId vem do deep-link do mapa de calor (issue #43).
   const [subjectId, setSubjectId] = useState('');
+  const [topicId, setTopicId] = useState(() => searchParams.get('topicId') ?? '');
   const [difficulty, setDifficulty] = useState(0);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -379,6 +383,7 @@ export default function Questoes() {
       try {
         const res = await api.questions({
           subjectId: subjectId || undefined,
+          topicId: topicId || undefined,
           difficulty: difficulty || undefined,
           page: nextPage,
           limit: 10,
@@ -397,7 +402,7 @@ export default function Questoes() {
         setLoading(false);
       }
     },
-    [subjectId, difficulty],
+    [subjectId, topicId, difficulty],
   );
 
   // Favoritas: derivadas em memória (refletem toggles ao vivo, sem refetch).
@@ -437,7 +442,30 @@ export default function Questoes() {
   );
 
   const activeFilters =
-    (subjectId ? 1 : 0) + (difficulty ? 1 : 0) + (onlyFavorites ? 1 : 0);
+    (subjectId ? 1 : 0) +
+    (topicId ? 1 : 0) +
+    (difficulty ? 1 : 0) +
+    (onlyFavorites ? 1 : 0);
+
+  /** Nome do tópico filtrado (deep-link do heatmap, issue #43). */
+  const topicName = useMemo(() => {
+    if (!topicId) return null;
+    for (const s of subjects) {
+      const t = s.topics.find((x) => x.id === topicId);
+      if (t) return t.name;
+    }
+    return null;
+  }, [subjects, topicId]);
+
+  function clearTopicFilter() {
+    setTopicId('');
+    // Remove o query param do deep-link para não re-aplicar no próximo mount.
+    setSearchParams((cur) => {
+      const next = new URLSearchParams(cur);
+      next.delete('topicId');
+      return next;
+    });
+  }
 
   async function goNext() {
     if (idx < items.length - 1) {
@@ -529,11 +557,24 @@ export default function Questoes() {
                 ?.name.replace(' e suas Tecnologias', '')}
             </span>
           )}
+          {topicId && (
+            <span className="chip">
+              🎯 {topicName ?? 'Assunto'}
+              <button
+                onClick={clearTopicFilter}
+                aria-label="Remover filtro de assunto"
+                className="ml-0.5 text-muted hover:text-red"
+              >
+                ×
+              </button>
+            </span>
+          )}
           {difficulty > 0 && <span className="chip">Nível {difficulty}</span>}
           {onlyFavorites && <span className="chip">Favoritas</span>}
           <button
             onClick={() => {
               setSubjectId('');
+              if (topicId) clearTopicFilter();
               setDifficulty(0);
               setOnlyFavorites(false);
             }}

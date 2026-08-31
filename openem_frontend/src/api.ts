@@ -301,6 +301,26 @@ export interface Performance {
   weakestTopics: (AreaPerformance & { subjectName?: string })[];
   timeline: PerformancePoint[];
 }
+
+/** Mapa de calor por tópico (issue #43): taxonomia completa. */
+export interface HeatmapTopic {
+  id: string;
+  name: string;
+  weight: number;
+  total: number;
+  correct: number;
+  accuracy: number;
+}
+export interface HeatmapSubject {
+  id: string;
+  name: string;
+  topics: HeatmapTopic[];
+}
+export interface HeatmapArea {
+  id: string;
+  name: string;
+  subjects: HeatmapSubject[];
+}
 export interface ReviewItem {
   id: string;
   dueAt: string;
@@ -576,6 +596,8 @@ export const api = {
     }),
   performance: (period: '7d' | '30d' | 'all' = '30d') =>
     request<Performance>(`/performance?period=${period}`),
+  performanceHeatmap: () =>
+    request<HeatmapArea[]>('/performance/heatmap'),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
   reviewNext: () => request<ReviewItem | null>('/review/next'),
   gradeReview: (id: string, quality: number) =>

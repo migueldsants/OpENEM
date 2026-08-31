@@ -87,4 +87,36 @@ describe('Performance â€” filtro de perÃ­odo (issue #20, e2e)', () => {
       .expect(200);
     expect(res.body.overall).toBeDefined();
   });
+
+  it('GET /performance/heatmap devolve a taxonomia completa (issue #43)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/performance/heatmap')
+      .set(auth())
+      .expect(200);
+    // 4 áreas canônicas da seed (Redação vive dentro de Linguagens).
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(4);
+    const area = res.body[0];
+    expect(area).toHaveProperty('subjects');
+    expect(area.subjects[0]).toHaveProperty('topics');
+    // Cada tópico carrega o desempenho do usuário (0 sem respostas).
+    const topic = area.subjects[0].topics[0];
+    expect(topic).toMatchObject({
+      id: expect.any(String),
+      name: expect.any(String),
+      weight: expect.any(Number),
+      total: expect.any(Number),
+      correct: expect.any(Number),
+      accuracy: expect.any(Number),
+    });
+    // Usuário novo: nenhum tópico respondido.
+    expect(topic.total).toBe(0);
+    expect(topic.accuracy).toBe(0);
+  });
+
+  it('GET /performance/heatmap sem token retorna 401', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/performance/heatmap')
+      .expect(401);
+  });
 });

@@ -125,9 +125,7 @@ export class SimulationsService {
           (a, b) => (b.topic?.weight ?? 1) - (a.topic?.weight ?? 1),
         )
       : shuffled;
-    const selectedIds = ranked
-      .slice(0, questionCount)
-      .map((q) => q.id);
+    const selectedIds = ranked.slice(0, questionCount).map((q) => q.id);
 
     const simulation = await this.prisma.simulation.create({
       data: { userId, templateId: template.id },

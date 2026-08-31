@@ -38,7 +38,8 @@ export class StartSimulationDto {
   questionCount?: number;
 
   @ApiPropertyOptional({
-    description: 'Ordenar por peso de frequência no ENEM (Pareto) em vez de aleatório',
+    description:
+      'Ordenar por peso de frequência no ENEM (Pareto) em vez de aleatório',
   })
   @IsOptional()
   @IsBoolean()

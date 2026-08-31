@@ -140,8 +140,8 @@ describe('Fase 1 â€” fluxo MVP (e2e)', () => {
       .get('/api/v1/subjects')
       .set(auth())
       .expect(200);
-    const matematica = subs.body.find(
-      (s: { name: string }) => s.name.includes('Matem'),
+    const matematica = subs.body.find((s: { name: string }) =>
+      s.name.includes('Matem'),
     );
 
     const start = await request(app.getHttpServer())
