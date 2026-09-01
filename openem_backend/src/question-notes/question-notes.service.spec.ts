@@ -30,7 +30,11 @@ describe('QuestionNotesService', () => {
 
       expect(prisma.questionNote.upsert).toHaveBeenCalledWith({
         where: { userId_questionId: { userId: 'u-1', questionId: 'q-1' } },
-        create: { userId: 'u-1', questionId: 'q-1', content: 'Revisar fórmula da área' },
+        create: {
+          userId: 'u-1',
+          questionId: 'q-1',
+          content: 'Revisar fórmula da área',
+        },
         update: { content: 'Revisar fórmula da área' },
       });
     });

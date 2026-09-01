@@ -8,6 +8,7 @@ import {
   IconCalendar,
   IconChat,
   IconFlame,
+  IconFormula,
   IconGame,
   IconHome,
   IconLogout,
@@ -30,6 +31,7 @@ import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
 import Flashcards from './pages/Flashcards';
+import Formulas from './pages/Formulas';
 import Games from './pages/Games';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -62,6 +64,7 @@ const NAV: NavItem[] = [
   { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
   { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more' },
+  { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more' },
   { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more' },
   { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'primary' },
 ];
@@ -258,6 +261,7 @@ export default function App() {
       <Route path="/usuarios/:id" element={<PerfilPublico />} />
       <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/flashcards" element={<Flashcards />} />
+      <Route path="/formulas" element={<Formulas />} />
       <Route path="/quadro" element={<Quadro />} />
       <Route
         path="/quadro"

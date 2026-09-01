@@ -1,6 +1,13 @@
 /** Intervalos fixos por nota (decisão de produto): Esqueci = imediato (hoje),
  *  Difícil = 1 dia, Bom = 3 dias, Fácil = 7 dias. Sem crescimento por repetição. */
-const FIXED_INTERVAL_D: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 3, 5: 7 };
+const FIXED_INTERVAL_D: Record<number, number> = {
+  0: 0,
+  1: 0,
+  2: 0,
+  3: 1,
+  4: 3,
+  5: 7,
+};
 
 export interface FlashcardQueueItem {
   flashcardId: string;
@@ -36,15 +43,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function buildStudyQueue(
   items: FlashcardQueueItem[],
 ): FlashcardQueueItem[] {
-  return [...items]
-    .sort((a, b) => {
-      // 1. Vencidos à frente.
-      if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
-      // 2. Maior peso (Pareto) à frente.
-      if (a.weight !== b.weight) return b.weight - a.weight;
-      // 3. Mais antigo (venceu há mais tempo ou vence antes) à frente.
-      return a.dueAt.getTime() - b.dueAt.getTime();
-    });
+  return [...items].sort((a, b) => {
+    // 1. Vencidos à frente.
+    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+    // 2. Maior peso (Pareto) à frente.
+    if (a.weight !== b.weight) return b.weight - a.weight;
+    // 3. Mais antigo (venceu há mais tempo ou vence antes) à frente.
+    return a.dueAt.getTime() - b.dueAt.getTime();
+  });
 }
 
 /**

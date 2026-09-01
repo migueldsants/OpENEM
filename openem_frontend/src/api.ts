@@ -338,6 +338,20 @@ export interface WeeklyGoal {
   questionsDone: number;
   completed: boolean;
 }
+
+/** Fórmula do cheat sheet (issue #38). */
+export interface Formula {
+  id: string;
+  title: string;
+  latex: string;
+  description: string | null;
+  subjectId: string;
+  subjectName: string;
+  topicId: string | null;
+  topicName: string | null;
+  isBuiltIn: boolean;
+  favorited: boolean;
+}
 export interface ReviewItem {
   id: string;
   dueAt: string;
@@ -633,6 +647,25 @@ export const api = {
   deleteWeeklyGoal: (id: string) =>
     request<{ removed: boolean }>(`/weekly-goals/${id}`, {
       method: 'DELETE',
+    }),
+
+  formulas: (params?: {
+    q?: string;
+    subjectId?: string;
+    topicId?: string;
+    onlyFavorites?: boolean;
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.q) search.set('q', params.q);
+    if (params?.subjectId) search.set('subjectId', params.subjectId);
+    if (params?.topicId) search.set('topicId', params.topicId);
+    if (params?.onlyFavorites) search.set('onlyFavorites', 'true');
+    const qs = search.toString();
+    return request<Formula[]>(`/formulas${qs ? `?${qs}` : ''}`);
+  },
+  toggleFormulaFavorite: (id: string) =>
+    request<{ favorited: boolean }>(`/formulas/${id}/favorite`, {
+      method: 'POST',
     }),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
   reviewNext: () => request<ReviewItem | null>('/review/next'),
