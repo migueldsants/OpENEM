@@ -102,6 +102,20 @@ export default function Cronograma() {
   const done = plan?.sessions.filter((s) => s.done).length ?? 0;
   const total = plan?.sessions.length ?? 0;
 
+  /** Sessões de hoje (issue #46): "Hoje: [Matéria]". */
+  const todaySessions = useMemo(() => {
+    if (!plan) return [];
+    const planStart = startOfDay(new Date(plan.createdAt));
+    const today = startOfDay(new Date());
+    const dayIndex = Math.round(
+      (today.getTime() - planStart.getTime()) / 86_400_000,
+    );
+    if (dayIndex < 0) return [];
+    return plan.sessions.filter((s) => s.dayIndex === dayIndex);
+  }, [plan]);
+  const todaySubject = dominantSubject(todaySessions);
+  const todayDone = todaySessions.every((s) => s.done) && todaySessions.length > 0;
+
   return (
     <div className="space-y-5">
       <header className="space-y-4">
@@ -156,6 +170,39 @@ export default function Cronograma() {
         />
       ) : (
         <>
+          {/* Matéria de hoje (issue #46) — visão canônica por matéria. */}
+          {todaySubject && (
+            <div className="card card-raised flex items-center gap-3 p-4 ring-1 ring-brand/30">
+              <span
+                className={`grid size-11 shrink-0 place-items-center rounded-xl ${
+                  AREA_DOT[areaKey(todaySubject)]
+                } opacity-90`}
+                aria-hidden
+              >
+                <IconCalendar width={20} height={20} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="eyebrow">Hoje</p>
+                <p className="mt-0.5 font-display text-lg font-bold">
+                  Dia de{' '}
+                  <span className={AREA_TEXT[areaKey(todaySubject)]}>
+                    {shortSubject(todaySubject)}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {todaySessions.length}{' '}
+                  {todaySessions.length === 1 ? 'sessão' : 'sessões'} ·{' '}
+                  {todaySessions.reduce((sum, s) => sum + s.minutes, 0)} min
+                </p>
+              </div>
+              {todayDone && (
+                <span className="chip shrink-0 bg-nat/12 text-nat">
+                  <IconCheck width={13} height={13} /> concluído
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="card card-raised flex items-center gap-4 p-4">
             <div>
               <p className="font-display text-2xl font-extrabold tabular-nums">
@@ -182,6 +229,22 @@ export default function Cronograma() {
       )}
     </div>
   );
+}
+
+/** Matéria dominante do dia (issue #46): a de maior minutagem no dia. */
+function dominantSubject(sessions: StudySession[]): string | null {
+  if (sessions.length === 0) return null;
+  const bySubject = new Map<string, number>();
+  for (const s of sessions) {
+    const name = s.topic.subject.name;
+    bySubject.set(name, (bySubject.get(name) ?? 0) + s.minutes);
+  }
+  return [...bySubject.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+/** Rótulo curto da matéria ("Matemática e suas Tecnologias" → "Matemática"). */
+function shortSubject(name: string): string {
+  return name.replace(' e suas Tecnologias', '');
 }
 
 /** Calendário visual semanal do cronograma — cada dia num grid Seg–Dom. */
@@ -252,6 +315,8 @@ function WeeklyCalendar({
               }
               const isToday = sameDay(cell.date, today);
               const hasSessions = cell.sessions.length > 0;
+              const daySubject = dominantSubject(cell.sessions);
+              const dayArea = daySubject ? areaKey(daySubject) : null;
               return (
                 <div
                   key={c}
@@ -269,6 +334,14 @@ function WeeklyCalendar({
                       </span>
                     )}
                   </div>
+                  {/* Matéria dominante do dia (issue #46). */}
+                  {daySubject && dayArea && (
+                    <p
+                      className={`mt-0.5 truncate text-[10px] font-bold ${AREA_TEXT[dayArea]}`}
+                    >
+                      {shortSubject(daySubject)}
+                    </p>
+                  )}
                   <ul className="mt-1 space-y-0.5">
                     {cell.sessions.map((s) => {
                       const area = areaKey(s.topic.subject.name);
