@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { seedFormulas } from './seed-formulas-lib';
 
 const prisma = new PrismaClient();
 
@@ -366,6 +367,10 @@ async function main() {
       create: { id, title, theme, instructions: INSTRUCOES_ENEM, year },
     });
   }
+
+  // Fórmulas essenciais (issue #38) — catálogo compartilhado com o
+  // seed-formulas.ts (executável isolado). Semeia por upsert, idempotente.
+  await seedFormulas(prisma);
 
   console.log(`Seed concluído. (${temasEnem.length} temas ENEM)`);
 }

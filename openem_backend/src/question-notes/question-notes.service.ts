@@ -67,7 +67,9 @@ export class QuestionNotesService {
 
   /** Remove a nota (idempotente). */
   async remove(userId: string, questionId: string) {
-    await this.prisma.questionNote.deleteMany({ where: { userId, questionId } });
+    await this.prisma.questionNote.deleteMany({
+      where: { userId, questionId },
+    });
     return { removed: true };
   }
 }

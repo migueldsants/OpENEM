@@ -57,9 +57,7 @@ export function buildStudyPlan(
     bySubject.set(s, [...(bySubject.get(s) ?? []), t]);
   }
   // Cursor de tópico por matéria (avança conforme a matéria é usada).
-  const cursorBySubject = new Map<string, number>(
-    subjects.map((s) => [s, 0]),
-  );
+  const cursorBySubject = new Map<string, number>(subjects.map((s) => [s, 0]));
 
   const sessions: PlanSession[] = [];
   for (let day = 0; day < days; day++) {

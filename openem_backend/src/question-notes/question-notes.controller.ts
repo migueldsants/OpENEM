@@ -23,14 +23,20 @@ export class QuestionNotesController {
   constructor(private readonly notes: QuestionNotesService) {}
 
   @Put()
-  @ApiOperation({ summary: 'Cria ou atualiza uma anotação pessoal em uma questão' })
-  upsert(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpsertQuestionNoteDto) {
+  @ApiOperation({
+    summary: 'Cria ou atualiza uma anotação pessoal em uma questão',
+  })
+  upsert(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpsertQuestionNoteDto,
+  ) {
     return this.notes.upsert(user.userId, dto.questionId, dto.content);
   }
 
   @Get()
   @ApiOperation({
-    summary: 'Lista as anotações do usuário (todas, ou filtradas por questionIds)',
+    summary:
+      'Lista as anotações do usuário (todas, ou filtradas por questionIds)',
   })
   list(
     @CurrentUser() user: AuthenticatedUser,

@@ -164,7 +164,8 @@ export class FlashcardsController {
 
   @Get('flashcards/:flashcardId/preview')
   @ApiOperation({
-    summary: 'Preview do próximo agendamento SM-2 sem salvar (antes de avaliar)',
+    summary:
+      'Preview do próximo agendamento SM-2 sem salvar (antes de avaliar)',
   })
   previewReview(
     @CurrentUser() user: AuthenticatedUser,
@@ -181,6 +182,9 @@ export class FlashcardsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('days') days?: string,
   ) {
-    return this.flashcards.dueForecast(user.userId, days ? parseInt(days, 10) : 7);
+    return this.flashcards.dueForecast(
+      user.userId,
+      days ? parseInt(days, 10) : 7,
+    );
   }
 }

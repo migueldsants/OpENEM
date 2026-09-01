@@ -161,7 +161,15 @@ export class FlashcardsService {
             id: true,
             front: true,
             back: true,
-            deck: { select: { title: true, icon: true, topic: true, subtheme: true, weight: true } },
+            deck: {
+              select: {
+                title: true,
+                icon: true,
+                topic: true,
+                subtheme: true,
+                weight: true,
+              },
+            },
           },
         },
       },
@@ -284,14 +292,20 @@ export class FlashcardsService {
     });
 
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
 
     const total = reviews.length;
     const overdue = reviews.filter((r) => r.dueAt <= now).length;
     const dueToday = reviews.filter(
       (r) => r.dueAt >= todayStart && r.dueAt <= now,
     ).length;
-    const reviewedToday = reviews.filter((r) => r.reviewedAt >= todayStart).length;
+    const reviewedToday = reviews.filter(
+      (r) => r.reviewedAt >= todayStart,
+    ).length;
     // Intervalos são fixos (máx 7d), então maturidade é medida por repetições:
     // maduro = 3+ revisões seguidas de sucesso; aprendendo = 1-2.
     const mature = reviews.filter((r) => r.repetition >= 3).length;
@@ -312,16 +326,20 @@ export class FlashcardsService {
     }
 
     // Facilidade média (easeFactor médio dos cards já vistos).
-    const seenEase = reviews.filter((r) => r.repetition > 0).map((r) => r.easeFactor);
-    const avgEase = seenEase.length > 0
-      ? seenEase.reduce((s, e) => s + e, 0) / seenEase.length
-      : 2.5;
+    const seenEase = reviews
+      .filter((r) => r.repetition > 0)
+      .map((r) => r.easeFactor);
+    const avgEase =
+      seenEase.length > 0
+        ? seenEase.reduce((s, e) => s + e, 0) / seenEase.length
+        : 2.5;
 
     // Retenção: proporção de reviews com quality >= 3.
     const graded = reviews.filter((r) => r.lastQuality != null);
-    const retention = graded.length > 0
-      ? graded.filter((r) => (r.lastQuality ?? 0) >= 3).length / graded.length
-      : 0;
+    const retention =
+      graded.length > 0
+        ? graded.filter((r) => (r.lastQuality ?? 0) >= 3).length / graded.length
+        : 0;
 
     return {
       total,
@@ -348,7 +366,12 @@ export class FlashcardsService {
 
     const base = review ?? { easeFactor: 2.5, intervalD: 0, repetition: 0 };
     const qualities = [1, 3, 4, 5];
-    const labels: Record<number, string> = { 1: 'Esqueci', 3: 'Difícil', 4: 'Bom', 5: 'Fácil' };
+    const labels: Record<number, string> = {
+      1: 'Esqueci',
+      3: 'Difícil',
+      4: 'Bom',
+      5: 'Fácil',
+    };
 
     const previews = qualities.map((q) => {
       const next = reviewFlashcard(base, q);
@@ -387,10 +410,19 @@ export class FlashcardsService {
     const unseenCount = totalCards - reviews.length;
 
     const now = new Date();
-    const forecast: { day: string; label: string; count: number; overdue: boolean }[] = [];
+    const forecast: {
+      day: string;
+      label: string;
+      count: number;
+      overdue: boolean;
+    }[] = [];
 
     for (let i = 0; i < days; i++) {
-      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const dayStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + i,
+      );
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
@@ -403,11 +435,12 @@ export class FlashcardsService {
         count += unseenCount + reviews.filter((r) => r.dueAt < dayStart).length;
       }
 
-      const label = i === 0
-        ? 'Hoje'
-        : i === 1
-          ? 'Amanhã'
-          : dayStart.toLocaleDateString('pt-BR', { weekday: 'short' });
+      const label =
+        i === 0
+          ? 'Hoje'
+          : i === 1
+            ? 'Amanhã'
+            : dayStart.toLocaleDateString('pt-BR', { weekday: 'short' });
 
       forecast.push({
         day: dayStart.toISOString().slice(0, 10),
@@ -436,7 +469,9 @@ export class FlashcardsService {
       where: { userId },
       select: { flashcardId: true, repetition: true },
     });
-    const reviewByCard = new Map(allReviews.map((r) => [r.flashcardId, r.repetition]));
+    const reviewByCard = new Map(
+      allReviews.map((r) => [r.flashcardId, r.repetition]),
+    );
 
     const cardsByDeck = await this.prisma.flashcard.findMany({
       select: { id: true, deckId: true },
@@ -447,7 +482,10 @@ export class FlashcardsService {
       cardsInDeck.get(c.deckId)!.push(c.id);
     }
 
-    const progress: Record<string, { total: number; newCards: number; seen: number; reviewed: number }> = {};
+    const progress: Record<
+      string,
+      { total: number; newCards: number; seen: number; reviewed: number }
+    > = {};
     for (const deck of decks) {
       const cardIds = cardsInDeck.get(deck.id) ?? [];
       let seen = 0;

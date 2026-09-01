@@ -35,6 +35,7 @@ model User {
   flashcardDecks FlashcardDeck[]
   flashcardReviews FlashcardReview[]
   weeklyGoals WeeklyGoal[]
+  formulaFavorites UserFormula[]
 }
 
 model Profile {
@@ -64,6 +65,7 @@ model Subject {
   subjectArea   SubjectArea @relation(fields: [subjectAreaId], references: [id], onDelete: Cascade)
   topics        Topic[]
   weeklyGoals   WeeklyGoal[]
+  formulas      Formula[]
 
   @@index([subjectAreaId])
 }
@@ -78,6 +80,7 @@ model Topic {
   reviewItems   ReviewItem[]
   studySessions StudySession[]
   weeklyGoals   WeeklyGoal[]
+  formulas      Formula[]
 
   @@unique([subjectId, name])
 }
@@ -243,6 +246,39 @@ model WeeklyGoal {
   createdAt      DateTime @default(now())
 
   @@index([userId, weekStart])
+}
+
+// ---- Fórmulas / cheat sheet (issue #38) ----
+
+// Fórmula essencial catalogada (a maioria é builtIn, via seed). `latex`
+// guarda a expressão em LaTeX para renderizar no MathLive/KaTeX.
+model Formula {
+  id          String        @id @default(cuid())
+  title       String        @unique
+  latex       String
+  description String?
+  subjectId   String
+  subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topicId     String?
+  topic       Topic?        @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  isBuiltIn   Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  favoritedBy UserFormula[]
+
+  @@index([subjectId])
+  @@index([title])
+}
+
+// Favorito de fórmula (many-to-many usuário ↔ fórmula).
+model UserFormula {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  formulaId String
+  formula   Formula  @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, formulaId])
 }
 
 model EssayPrompt {
