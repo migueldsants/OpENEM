@@ -25,6 +25,7 @@ import {
   IconTrophy,
 } from '../components/icons';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
+import { WeeklyGoalsCard } from '../components/WeeklyGoalsCard';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { leagueStyle } from '../lib/gamification';
 
@@ -244,6 +245,8 @@ export default function Home() {
           />
         )
       )}
+
+      <WeeklyGoalsCard />
 
       <div className="grid grid-cols-3 gap-3">
         {loadingPerf ? (

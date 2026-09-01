@@ -321,6 +321,23 @@ export interface HeatmapArea {
   name: string;
   subjects: HeatmapSubject[];
 }
+
+/** Meta semanal (issue #44) com progresso calculado. */
+export interface WeeklyGoal {
+  id: string;
+  subjectAreaId: string | null;
+  subjectAreaName: string | null;
+  subjectId: string | null;
+  subjectName: string | null;
+  topicId: string | null;
+  topicName: string | null;
+  targetMinutes: number;
+  targetQuestions: number;
+  weekStart: string;
+  minutesDone: number;
+  questionsDone: number;
+  completed: boolean;
+}
 export interface ReviewItem {
   id: string;
   dueAt: string;
@@ -598,6 +615,25 @@ export const api = {
     request<Performance>(`/performance?period=${period}`),
   performanceHeatmap: () =>
     request<HeatmapArea[]>('/performance/heatmap'),
+
+  weeklyGoals: () => request<WeeklyGoal[]>('/weekly-goals'),
+  createWeeklyGoal: (goal: {
+    subjectAreaId?: string;
+    subjectId?: string;
+    topicId?: string;
+    targetMinutes?: number;
+    targetQuestions?: number;
+  }) =>
+    request<WeeklyGoal>('/weekly-goals', { method: 'POST', body: goal }),
+  updateWeeklyGoal: (id: string, targets: { targetMinutes?: number; targetQuestions?: number }) =>
+    request<WeeklyGoal>(`/weekly-goals/${id}`, {
+      method: 'PATCH',
+      body: targets,
+    }),
+  deleteWeeklyGoal: (id: string) =>
+    request<{ removed: boolean }>(`/weekly-goals/${id}`, {
+      method: 'DELETE',
+    }),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
   reviewNext: () => request<ReviewItem | null>('/review/next'),
   gradeReview: (id: string, quality: number) =>
