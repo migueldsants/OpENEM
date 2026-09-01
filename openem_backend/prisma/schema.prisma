@@ -34,6 +34,7 @@ model User {
   questionNotes QuestionNote[]
   flashcardDecks FlashcardDeck[]
   flashcardReviews FlashcardReview[]
+  weeklyGoals WeeklyGoal[]
 }
 
 model Profile {
@@ -53,6 +54,7 @@ model SubjectArea {
   id       String    @id @default(cuid())
   name     String    @unique
   subjects Subject[]
+  weeklyGoals WeeklyGoal[]
 }
 
 model Subject {
@@ -61,6 +63,7 @@ model Subject {
   subjectAreaId String
   subjectArea   SubjectArea @relation(fields: [subjectAreaId], references: [id], onDelete: Cascade)
   topics        Topic[]
+  weeklyGoals   WeeklyGoal[]
 
   @@index([subjectAreaId])
 }
@@ -74,6 +77,7 @@ model Topic {
   questions     Question[]
   reviewItems   ReviewItem[]
   studySessions StudySession[]
+  weeklyGoals   WeeklyGoal[]
 
   @@unique([subjectId, name])
 }
@@ -215,6 +219,30 @@ model StudySession {
   done     Boolean   @default(false)
 
   @@index([planId, dayIndex])
+}
+
+// ---- Metas semanais (issue #44) ----
+
+// Meta de estudo da semana: "estudar X min de Biologia" ou "resolver Y
+// questões de Matemática". weekStart é a segunda-feira (00:00 UTC) da semana;
+// `completed` é recalculado a cada leitura a partir do progresso real.
+model WeeklyGoal {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Escopo opcional da meta (null = meta geral da semana).
+  subjectAreaId  String?
+  subjectArea    SubjectArea? @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
+  subjectId      String?
+  subject        Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  topicId        String?
+  topic          Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  targetMinutes  Int      @default(0) // meta de tempo (0 = sem meta de tempo)
+  targetQuestions Int     @default(0) // meta de questões (0 = sem meta de questões)
+  weekStart      DateTime // segunda-feira 00:00 UTC da semana da meta
+  createdAt      DateTime @default(now())
+
+  @@index([userId, weekStart])
 }
 
 model EssayPrompt {

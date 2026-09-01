@@ -24,6 +24,7 @@ import { SimulationsModule } from './simulations/simulations.module';
 import { StudyPlanModule } from './study-plan/study-plan.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { UsersModule } from './users/users.module';
+import { WeeklyGoalsModule } from './weekly-goals/weekly-goals.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { UsersModule } from './users/users.module';
     RecommendationModule,
     CommunityModule,
     GamesModule,
+    WeeklyGoalsModule,
   ],
   controllers: [AppController],
   providers: [
