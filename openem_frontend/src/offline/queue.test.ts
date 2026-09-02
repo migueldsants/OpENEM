@@ -1,5 +1,4 @@
-// Testes da fila offline (issue #42) — fake-indexeddb (IDB completo em memória).
-import 'fake-indexeddb/auto';
+// Testes da fila offline (issue #42) — fake-indexeddb (registrado no setup).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   enqueue,
