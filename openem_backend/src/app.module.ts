@@ -27,6 +27,7 @@ import { UsersModule } from './users/users.module';
 import { WeeklyGoalsModule } from './weekly-goals/weekly-goals.module';
 import { FormulasModule } from './formulas/formulas.module';
 import { PomodoroModule } from './pomodoro/pomodoro.module';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { PomodoroModule } from './pomodoro/pomodoro.module';
     WeeklyGoalsModule,
     FormulasModule,
     PomodoroModule,
+    VideosModule,
   ],
   controllers: [AppController],
   providers: [

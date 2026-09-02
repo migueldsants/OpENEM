@@ -37,6 +37,8 @@ model User {
   weeklyGoals WeeklyGoal[]
   formulaFavorites UserFormula[]
   focusSessions FocusSession[]
+  videos Video[]
+  videoNotes VideoNote[]
 }
 
 model Profile {
@@ -68,6 +70,7 @@ model Subject {
   weeklyGoals   WeeklyGoal[]
   formulas      Formula[]
   focusSessions FocusSession[]
+  videos        Video[]
 
   @@index([subjectAreaId])
 }
@@ -298,6 +301,41 @@ model FocusSession {
   completedAt  DateTime  @default(now())
 
   @@index([userId, completedAt])
+}
+
+// ---- Videoteca (issue #37) ----
+
+// Vídeo de estudo salvo pelo usuário (link do YouTube). Metadados (título/
+// thumbnail) vêm do oEmbed público do YouTube no momento do save.
+model Video {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  youtubeId   String
+  title       String
+  thumbnail   String?
+  subjectId   String?
+  subject     Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  watched     Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  notes       VideoNote[]
+
+  @@index([userId, subjectId])
+  @@index([youtubeId])
+}
+
+// Nota vinculada a um instante do vídeo (timestamp clicável no player).
+model VideoNote {
+  id              String   @id @default(cuid())
+  videoId         String
+  video           Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestampSec    Int
+  content         String
+  createdAt       DateTime @default(now())
+
+  @@index([videoId, timestampSec])
 }
 
 model EssayPrompt {
