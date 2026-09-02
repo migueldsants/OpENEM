@@ -36,6 +36,7 @@ model User {
   flashcardReviews FlashcardReview[]
   weeklyGoals WeeklyGoal[]
   formulaFavorites UserFormula[]
+  focusSessions FocusSession[]
 }
 
 model Profile {
@@ -66,6 +67,7 @@ model Subject {
   topics        Topic[]
   weeklyGoals   WeeklyGoal[]
   formulas      Formula[]
+  focusSessions FocusSession[]
 
   @@index([subjectAreaId])
 }
@@ -279,6 +281,23 @@ model UserFormula {
   createdAt DateTime @default(now())
 
   @@unique([userId, formulaId])
+}
+
+// ---- Modo Foco / Pomodoro (issue #41) ----
+
+// Sessão de foco concluída (Pomodoro 25/5 ou tempo livre). O registro é
+// criado apenas quando a sessão termina — timers em andamento vivem no cliente.
+model FocusSession {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjectId    String?
+  subject      Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  durationSec  Int
+  startedAt    DateTime
+  completedAt  DateTime  @default(now())
+
+  @@index([userId, completedAt])
 }
 
 model EssayPrompt {

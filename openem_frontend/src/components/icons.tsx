@@ -37,8 +37,10 @@ import {
   Moon,
   Note,
   NotePencil,
+  Pause,
   Pi,
   PencilRuler,
+  Play,
   Question,
   SignOut,
   SlidersHorizontal,
@@ -146,3 +148,6 @@ export const IconZoomOut = shim(MagnifyingGlassMinus, 'bold');
 export const IconFit = shim(BoundingBox, 'bold');
 // Banner de erro (issue #49).
 export const IconAlert = shim(Warning, 'fill');
+// Modo Foco / Pomodoro (issue #41).
+export const IconPlay = shim(Play, 'fill');
+export const IconPause = shim(Pause, 'fill');

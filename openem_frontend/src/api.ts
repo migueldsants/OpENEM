@@ -352,6 +352,25 @@ export interface Formula {
   isBuiltIn: boolean;
   favorited: boolean;
 }
+
+/** Sessão de foco (Pomodoro) registrada (issue #41). */
+export interface FocusSession {
+  id: string;
+  subjectId: string | null;
+  subjectName: string | null;
+  durationSec: number;
+  startedAt: string;
+  completedAt: string;
+}
+export interface FocusHistory {
+  sessions: FocusSession[];
+  totalMinutes: number;
+}
+export interface FocusMinutesBySubject {
+  subjectId: string | null;
+  subjectName: string;
+  minutes: number;
+}
 export interface ReviewItem {
   id: string;
   dueAt: string;
@@ -667,6 +686,21 @@ export const api = {
     request<{ favorited: boolean }>(`/formulas/${id}/favorite`, {
       method: 'POST',
     }),
+
+  completeFocusSession: (input: {
+    durationSec: number;
+    startedAt: string;
+    subjectId?: string;
+  }) =>
+    request<FocusSession & { gamification?: GamificationDelta }>(
+      '/pomodoro/sessions',
+      { method: 'POST', body: input },
+    ),
+  focusHistory: (days = 30) =>
+    request<FocusHistory>(`/pomodoro/history?days=${days}`),
+  focusBySubject: (days = 30) =>
+    request<FocusMinutesBySubject[]>(`/pomodoro/by-subject?days=${days}`),
+  focusToday: () => request<{ minutes: number }>('/pomodoro/today'),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
   reviewNext: () => request<ReviewItem | null>('/review/next'),
   gradeReview: (id: string, quality: number) =>
