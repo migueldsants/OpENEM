@@ -22,6 +22,7 @@ import {
   IconUser,
 } from './components/icons';
 import { MoreSheet, type NavItem } from './components/MoreSheet';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import RouteTransition from './components/RouteTransition';
 import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
@@ -320,6 +321,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-bg text-fg md:flex">
+      <OfflineIndicator />
       <Sidebar email={me?.email} onLogout={logout} />
 
       <div className="flex min-h-screen flex-1 flex-col">

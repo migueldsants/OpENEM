@@ -27,6 +27,31 @@ export default defineConfig({
           },
         ],
       },
+      workbox: {
+        // App shell offline: navegações caem no index.html mesmo sem rede.
+        navigateFallback: 'index.html',
+        // Cache das respostas da API (issue #42): network-first com fallback
+        // ao cache — dados atualizados quando há rede, última versão quando
+        // não há. Só GETs de leitura; mutações passam pela fila offline.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url, request }) =>
+              request.method === 'GET' &&
+              (url.pathname.startsWith('/api/') ||
+                url.pathname.startsWith('/health')),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 dias
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
     }),
   ],
   server: {
