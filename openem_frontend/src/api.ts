@@ -1,6 +1,12 @@
 // Cliente de API. Em dev, o Vite faz proxy de /api e /health para o backend.
+import { enqueue } from './offline/queue';
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 const TOKEN_KEY = 'openem.token';
+
+/** Distingue falha de rede (fetch lança TypeError) de erro HTTP (HttpError). */
+function isNetworkError(err: unknown): boolean {
+  return err instanceof TypeError;
+}
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -121,6 +127,8 @@ export interface AnswerResult {
   correctAlternativeId: string | null;
   explanation: string;
   gamification?: GamificationDelta;
+  /** true quando a resposta foi enfileirada offline (issue #42). */
+  offlineQueued?: boolean;
 }
 export type GamificationSummary =
   | { enabled: false }
@@ -658,11 +666,32 @@ export const api = {
     qs.set('limit', String(params.limit ?? 10));
     return request<Paginated<Question>>(`/questions?${qs.toString()}`);
   },
-  answer: (questionId: string, chosenId: string) =>
-    request<AnswerResult>('/answers', {
-      method: 'POST',
-      body: { questionId, chosenId },
-    }),
+  answer: async (questionId: string, chosenId: string) => {
+    try {
+      return await request<AnswerResult>('/answers', {
+        method: 'POST',
+        body: { questionId, chosenId },
+      });
+    } catch (err) {
+      // Erro de rede (não HTTP): enfileira para sincronizar ao reconectar
+      // (issue #42). A UI recebe um resultado "em branco" com pending=true.
+      if (isNetworkError(err)) {
+        await enqueue({
+          kind: 'answer',
+          key: `answer:${questionId}:${Date.now()}`,
+          questionId,
+          chosenId,
+        });
+        return {
+          isCorrect: false,
+          correctAlternativeId: null,
+          explanation: '',
+          offlineQueued: true,
+        } as AnswerResult;
+      }
+      throw err;
+    }
+  },
   performance: (period: '7d' | '30d' | 'all' = '30d') =>
     request<Performance>(`/performance?period=${period}`),
   performanceHeatmap: () =>
@@ -750,8 +779,25 @@ export const api = {
     }),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
   reviewNext: () => request<ReviewItem | null>('/review/next'),
-  gradeReview: (id: string, quality: number) =>
-    request(`/review/${id}`, { method: 'POST', body: { quality } }),
+  gradeReview: async (id: string, quality: number) => {
+    try {
+      return await request(`/review/${id}`, {
+        method: 'POST',
+        body: { quality },
+      });
+    } catch (err) {
+      if (isNetworkError(err)) {
+        await enqueue({
+          kind: 'review',
+          key: `review:${id}:${Date.now()}`,
+          reviewItemId: id,
+          quality,
+        });
+        return { offlineQueued: true };
+      }
+      throw err;
+    }
+  },
 
   simulationTemplates: () =>
     request<SimulationTemplate[]>('/simulations/templates'),
