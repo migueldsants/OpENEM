@@ -14,6 +14,7 @@ import {
   IconLogout,
   IconMore,
   IconPen,
+  IconPlay,
   IconStack,
   IconStar,
   IconTimer,
@@ -44,6 +45,7 @@ import Quadro from './pages/Quadro';
 import Redacao from './pages/Redacao';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
+import Videos from './pages/Videos';
 
 // Editor do Quadro é lazy: mantém mathlive+katex num chunk separado (issue #32).
 const QuadroEditorPage = lazy(() => import('./pages/QuadroEditorPage'));
@@ -65,6 +67,7 @@ const NAV: NavItem[] = [
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
   { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more' },
   { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more' },
+  { to: '/videos', label: 'Vídeos', Icon: IconPlay, mobile: 'more' },
   { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more' },
   { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'primary' },
 ];
@@ -262,6 +265,7 @@ export default function App() {
       <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/flashcards" element={<Flashcards />} />
       <Route path="/formulas" element={<Formulas />} />
+      <Route path="/videos" element={<Videos />} />
       <Route path="/quadro" element={<Quadro />} />
       <Route
         path="/quadro"

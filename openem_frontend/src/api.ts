@@ -371,6 +371,25 @@ export interface FocusMinutesBySubject {
   subjectName: string;
   minutes: number;
 }
+
+/** Vídeo da biblioteca pessoal (issue #37). */
+export interface VideoNote {
+  id: string;
+  timestampSec: number;
+  content: string;
+  createdAt: string;
+}
+export interface Video {
+  id: string;
+  youtubeId: string;
+  title: string;
+  thumbnail: string | null;
+  subjectId: string | null;
+  subjectName: string | null;
+  watched: boolean;
+  createdAt: string;
+  notes: VideoNote[];
+}
 export interface ReviewItem {
   id: string;
   dueAt: string;
@@ -701,6 +720,34 @@ export const api = {
   focusBySubject: (days = 30) =>
     request<FocusMinutesBySubject[]>(`/pomodoro/by-subject?days=${days}`),
   focusToday: () => request<{ minutes: number }>('/pomodoro/today'),
+
+  videos: (subjectId?: string) =>
+    request<Video[]>(
+      `/videos${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
+    ),
+  addVideo: (url: string, subjectId?: string) =>
+    request<Video>('/videos', {
+      method: 'POST',
+      body: { url, ...(subjectId ? { subjectId } : {}) },
+    }),
+  updateVideoSubject: (id: string, subjectId: string | null) =>
+    request<Video>(`/videos/${id}`, {
+      method: 'PATCH',
+      body: { subjectId },
+    }),
+  toggleVideoWatched: (id: string) =>
+    request<Video>(`/videos/${id}/watched`, { method: 'POST' }),
+  deleteVideo: (id: string) =>
+    request<{ removed: boolean }>(`/videos/${id}`, { method: 'DELETE' }),
+  addVideoNote: (id: string, timestampSec: number, content: string) =>
+    request<VideoNote>(`/videos/${id}/notes`, {
+      method: 'POST',
+      body: { timestampSec, content },
+    }),
+  deleteVideoNote: (noteId: string) =>
+    request<{ removed: boolean }>(`/videos/notes/${noteId}`, {
+      method: 'DELETE',
+    }),
   reviewQueue: () => request<ReviewItem[]>('/review/queue'),
   reviewNext: () => request<ReviewItem | null>('/review/next'),
   gradeReview: (id: string, quality: number) =>
