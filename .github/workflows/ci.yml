@@ -52,6 +52,18 @@ jobs:
       - name: Testes e2e
         run: npm run test:e2e
 
+      # Mutation testing incremental (issue #47): cache do arquivo
+      # incremental faz o Stryker rodar só mutantes novos/alterados.
+      - name: Restaurar cache do Stryker
+        uses: actions/cache@v4
+        with:
+          path: openem_backend/reports/stryker-incremental-backend.json
+          key: stryker-backend-${{ github.ref }}-${{ github.sha }}
+          restore-keys: stryker-backend-${{ github.ref }}-
+
+      - name: Mutation testing (Stryker, incremental)
+        run: npm run test:mutation
+
   frontend:
     name: Frontend (lint, test, build)
     runs-on: ubuntu-latest
@@ -79,6 +91,17 @@ jobs:
       # Coverage thresholds (issue #47): falha se a cobertura regredir.
       - name: Testes com coverage (thresholds)
         run: npm run test:cov
+
+      # Mutation testing incremental (issue #47) — cache entre builds.
+      - name: Restaurar cache do Stryker
+        uses: actions/cache@v4
+        with:
+          path: openem_frontend/reports/stryker-incremental-frontend.json
+          key: stryker-frontend-${{ github.ref }}-${{ github.sha }}
+          restore-keys: stryker-frontend-${{ github.ref }}-
+
+      - name: Mutation testing (Stryker, incremental)
+        run: npm run test:mutation
 
       - name: Build
         run: npm run build
