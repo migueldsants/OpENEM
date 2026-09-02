@@ -25,6 +25,7 @@ import {
   IconTrophy,
 } from '../components/icons';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
+import { PomodoroTimer } from '../components/PomodoroTimer';
 import { WeeklyGoalsCard } from '../components/WeeklyGoalsCard';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { leagueStyle } from '../lib/gamification';
@@ -245,6 +246,8 @@ export default function Home() {
           />
         )
       )}
+
+      <PomodoroTimer />
 
       <WeeklyGoalsCard />
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   api,
+  type FocusMinutesBySubject,
   type HeatmapArea,
   type Performance,
   type PerformancePoint,
@@ -207,6 +208,11 @@ export default function Desempenho() {
   const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [heatmapError, setHeatmapError] = useState<string | null>(null);
 
+  // Modo Foco (issue #41): minutos por matéria, carregados junto do heatmap.
+  const [focusBySubject, setFocusBySubject] = useState<
+    FocusMinutesBySubject[] | null
+  >(null);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -234,7 +240,12 @@ export default function Desempenho() {
     setHeatmapLoading(true);
     setHeatmapError(null);
     try {
-      setHeatmapAreas(await api.performanceHeatmap());
+      const [areas, focus] = await Promise.all([
+        api.performanceHeatmap(),
+        api.focusBySubject(30).catch(() => null), // foco é opcional
+      ]);
+      setHeatmapAreas(areas);
+      if (focus) setFocusBySubject(focus);
     } catch (err) {
       setHeatmapError(
         err instanceof Error
@@ -468,6 +479,36 @@ export default function Desempenho() {
             {heatmapOpen ? 'Fechar' : 'Abrir'}
           </button>
         </div>
+
+        {/* Horas de foco por matéria (issue #41). */}
+        {heatmapOpen && focusBySubject && focusBySubject.length > 0 && (
+          <div className="mt-4 rounded-xl border border-line p-3">
+            <p className="eyebrow">Modo Foco — últimos 30 dias</p>
+            <ul className="mt-2 space-y-2">
+              {focusBySubject.slice(0, 5).map((f) => {
+                const max = Math.max(...focusBySubject.map((x) => x.minutes));
+                const area = areaKey(f.subjectName);
+                return (
+                  <li key={f.subjectId ?? 'geral'}>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium">{f.subjectName}</span>
+                      <span className="tabular-nums text-muted">
+                        {f.minutes} min
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                      <div
+                        className={`h-full rounded-full ${AREA_DOT[area]}`}
+                        style={{ width: `${(f.minutes / max) * 100}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         {heatmapOpen && (
           <div className="mt-4">
             <TopicHeatmap
