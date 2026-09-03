@@ -129,7 +129,10 @@ describe('ReviewService.grade()', () => {
 
   it('retorna 403 para item de outro usuário', async () => {
     const { service, prisma } = makeService();
-    prisma.reviewItem.findUnique.mockResolvedValue({ ...ITEM, userId: 'outro' });
+    prisma.reviewItem.findUnique.mockResolvedValue({
+      ...ITEM,
+      userId: 'outro',
+    });
     await expect(service.grade('u-1', 'r-1', 4)).rejects.toBeInstanceOf(
       ForbiddenException,
     );

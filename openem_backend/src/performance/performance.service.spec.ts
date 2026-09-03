@@ -59,11 +59,7 @@ describe('PerformanceService.overview() — filtro de período', () => {
   const TOPIC = { id: 't1', name: 'Funções', subject: SUBJECT };
   const TOPIC2 = { id: 't2', name: 'Probabilidade', subject: SUBJECT };
 
-  function answer(
-    correct: boolean,
-    topic: typeof TOPIC,
-    iso: string,
-  ) {
+  function answer(correct: boolean, topic: typeof TOPIC, iso: string) {
     return {
       isCorrect: correct,
       createdAt: new Date(iso),
