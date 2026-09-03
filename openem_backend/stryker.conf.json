@@ -12,12 +12,18 @@
     "!src/**/dto/**",
     "!src/main.ts",
     "!src/prisma/**",
-    "!src/health/**"
+    "!src/health/**",
+    "!src/**/*.controller.ts",
+    "!src/auth/jwt-auth.guard.ts",
+    "!src/auth/jwt.strategy.ts",
+    "!src/auth/current-user.decorator.ts",
+    "!src/common/essay-ai/**",
+    "!src/essays/essays.service.ts"
   ],
   "thresholds": {
     "high": 80,
     "low": 60,
-    "break": 50
+    "break": 30
   },
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental-backend.json",

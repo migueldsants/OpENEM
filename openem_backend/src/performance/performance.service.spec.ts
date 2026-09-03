@@ -52,4 +52,72 @@ describe('PerformanceService.overview() — filtro de período', () => {
     expect(result.bySubject).toEqual([]);
     expect(result.timeline).toEqual([]);
   });
+
+  // ---- Agregação (issue #47: mata mutantes do sumarizador) ----
+
+  const SUBJECT = { id: 's1', name: 'Matemática' };
+  const TOPIC = { id: 't1', name: 'Funções', subject: SUBJECT };
+  const TOPIC2 = { id: 't2', name: 'Probabilidade', subject: SUBJECT };
+
+  function answer(
+    correct: boolean,
+    topic: typeof TOPIC,
+    iso: string,
+  ) {
+    return {
+      isCorrect: correct,
+      createdAt: new Date(iso),
+      question: { topic },
+    };
+  }
+
+  it('agrega overall/bySubject/byTopic com precisão arredondada', async () => {
+    const { service, prisma } = makeService();
+    prisma.answer.findMany.mockResolvedValue([
+      answer(true, TOPIC, '2026-09-01T10:00:00Z'),
+      answer(true, TOPIC, '2026-09-01T11:00:00Z'),
+      answer(false, TOPIC2, '2026-09-01T12:00:00Z'),
+      answer(false, TOPIC2, '2026-09-01T12:30:00Z'),
+    ]);
+
+    const res = await service.overview('u-1', 'all');
+    // Overall: 2/4 = 50%.
+    expect(res.overall).toEqual({ total: 4, correct: 2, accuracy: 50 });
+    // Matéria: 2/4 = 50%.
+    expect(res.bySubject).toEqual([
+      { id: 's1', name: 'Matemática', total: 4, correct: 2, accuracy: 50 },
+    ]);
+    // Tópicos: Funções 100%, Probabilidade 0%.
+    const funcoes = res.byTopic.find((t) => t.id === 't1');
+    const prob = res.byTopic.find((t) => t.id === 't2');
+    expect(funcoes).toMatchObject({ total: 2, correct: 2, accuracy: 100 });
+    expect(prob).toMatchObject({ total: 2, correct: 0, accuracy: 0 });
+    // Weakest: o de menor precisão primeiro.
+    expect(res.weakestTopics[0].id).toBe('t2');
+    expect(res.weakestTopics).toHaveLength(2);
+    // Recent (últimas 20): todas as 4.
+    expect(res.recent).toEqual({ total: 4, correct: 2, accuracy: 50 });
+  });
+
+  it('timeline agrupa por dia com precisão diária', async () => {
+    const { service, prisma } = makeService();
+    prisma.answer.findMany.mockResolvedValue([
+      answer(true, TOPIC, '2026-09-01T10:00:00Z'),
+      answer(false, TOPIC, '2026-09-01T20:00:00Z'),
+      answer(true, TOPIC, '2026-09-02T10:00:00Z'),
+    ]);
+
+    const res = await service.overview('u-1', 'all');
+    expect(res.timeline).toEqual([
+      { date: '2026-09-01', total: 2, correct: 1, accuracy: 50 },
+      { date: '2026-09-02', total: 1, correct: 1, accuracy: 100 },
+    ]);
+  });
+
+  it('accuracy com 0 tentativas é 0 (sem divisão por zero)', async () => {
+    const { service } = makeService();
+    const res = await service.overview('u-1', 'all');
+    expect(res.overall.accuracy).toBe(0);
+    expect(res.recent.accuracy).toBe(0);
+  });
 });
