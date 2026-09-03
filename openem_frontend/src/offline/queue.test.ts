@@ -70,6 +70,23 @@ describe('fila offline (issue #42)', () => {
     expect(calls[1][0]).toBe('/api/v1/review/r1');
     const headers = (calls[0][1] as RequestInit).headers as Record<string, string>;
     expect(headers.Authorization).toBe('Bearer tok');
+    // Corpo da avaliação com a qualidade.
+    const reviewBody = JSON.parse((calls[1][1] as RequestInit).body as string);
+    expect(reviewBody).toEqual({ quality: 4 });
+  });
+
+  it('sync envia review com falha HTTP e a mantém na fila (cobertura do throw)', async () => {
+    await enqueue({
+      kind: 'review',
+      key: 'review:r2:1',
+      reviewItemId: 'r2',
+      quality: 2,
+    });
+    vi.mocked(fetch).mockResolvedValue(new Response('{}', { status: 404 }));
+
+    const synced = await syncPending();
+    expect(synced).toBe(0);
+    expect(await countPending()).toBe(1);
   });
 
   it('sync para na primeira falha de rede e mantém a ação na fila', async () => {

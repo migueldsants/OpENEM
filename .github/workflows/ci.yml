@@ -52,6 +52,10 @@ jobs:
       - name: Testes e2e
         run: npm run test:e2e
 
+      # Mutation testing (issue #47) NÃO roda no CI: um run full leva
+      # 45-80 min por job. Use `npm run test:mutation` localmente
+      # (incremental) antes de PRs que mexam em lógica de domínio.
+
   frontend:
     name: Frontend (lint, test, build)
     runs-on: ubuntu-latest
@@ -79,6 +83,9 @@ jobs:
       # Coverage thresholds (issue #47): falha se a cobertura regredir.
       - name: Testes com coverage (thresholds)
         run: npm run test:cov
+
+      # Mutation testing (issue #47) NÃO roda no CI (full = ~80 min):
+      # use `npm run test:mutation` localmente (incremental).
 
       - name: Build
         run: npm run build

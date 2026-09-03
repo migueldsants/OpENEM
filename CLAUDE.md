@@ -60,6 +60,8 @@ npm run test:cov       # same with coverage — FAILS below thresholds (issue #4
 
 Coverage thresholds (issue #47, enforced in CI): new PRs must not reduce coverage below the floor — backend and frontend each run `npm run test:cov` in CI. Current floors: backend 40/35/40/40, frontend 25/20/18/25 (stmts/branches/funcs/lines); raise them gradually toward 80% as suites grow.
 
+Mutation testing (issue #47, part 2): `npm run test:mutation` (Stryker) runs in both jobs with **incremental** files cached in CI (only new/changed mutants run). Break threshold 50% — mutate lists exclude bootstrap, DTOs, modules, visual-style catalogs (lib/areas, lib/gamification, theme) and the board (canvas, low logic value). Raise `break` gradually as suites improve.
+
 Whole stack: `docker compose up --build` from the repo root.
 
 ## Runtime

@@ -11,6 +11,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Ignora sandboxes do Stryker e dist.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.stryker-tmp/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

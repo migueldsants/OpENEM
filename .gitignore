@@ -80,3 +80,7 @@ docker-compose.override.yml
 *.db-journal
 prisma/*.db
 prisma/*.db-journal
+
+# Stryker (mutation testing)
+reports/
+.stryker-tmp/
