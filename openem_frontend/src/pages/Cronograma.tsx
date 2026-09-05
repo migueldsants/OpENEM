@@ -12,13 +12,23 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCalendar, IconCheck } from '../components/icons';
 import { useGamification } from '../gamification';
-import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
+import Reveal from '../components/Reveal';
+import {
+  areaKey,
+  AREA_BORDER,
+  AREA_DOT,
+  AREA_SOFT,
+  AREA_TEXT,
+  shortSubject,
+} from '../lib/areas';
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
 
 /** Faixa aceita pelo backend (UpdateProfileDto: Min(5) / Max(1440)). */
 const MIN_MINUTES = 5;
 const MAX_MINUTES = 1440;
+/** Atalhos de tempo diário — o campo numérico continua livre. */
+const MINUTE_PRESETS = [30, 60, 90, 120] as const;
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -175,59 +185,83 @@ export default function Cronograma() {
 
   return (
     <div className="space-y-5">
-      <header className="space-y-4">
+      <header className="space-y-5">
         <div>
           <p className="eyebrow">Plano de estudos</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
             Cronograma
           </h1>
+          <p className="mt-2 max-w-md text-sm text-muted text-pretty">
+            Um plano de 7 dias montado sobre os assuntos em que você mais erra.
+          </p>
         </div>
-        <div className="card flex flex-wrap items-end gap-4 p-4">
-          <label className="block">
-            <span className="eyebrow">Tempo por dia</span>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input
-                type="number"
-                min={MIN_MINUTES}
-                max={MAX_MINUTES}
-                step={1}
-                value={minutes}
-                onChange={(e) => setMinutes(e.target.value)}
-                aria-invalid={!minutesValid}
-                aria-describedby={minutesValid ? undefined : 'minutes-hint'}
-                className="input w-24"
-              />
-              <span className="text-sm text-muted">min</span>
-            </div>
-            {!minutesValid && (
-              <span id="minutes-hint" className="mt-1 block text-xs text-red">
-                Entre {MIN_MINUTES} e {MAX_MINUTES} minutos.
+
+        <div className="card card-raised p-4">
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+            <div>
+              <span className="eyebrow" id="minutes-label">
+                Tempo por dia
               </span>
-            )}
-          </label>
-          <div className="ml-auto flex items-center gap-2">
-            {confirmingRegen && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={MIN_MINUTES}
+                  max={MAX_MINUTES}
+                  step={1}
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                  aria-labelledby="minutes-label"
+                  aria-invalid={!minutesValid}
+                  aria-describedby={minutesValid ? undefined : 'minutes-hint'}
+                  className="input w-20 text-center font-data tabular-nums"
+                />
+                <span className="text-sm text-muted">min</span>
+                {/* Atalhos: quase ninguém quer digitar o número. */}
+                <div className="seg ml-1" role="group" aria-label="Tempo sugerido">
+                  {MINUTE_PRESETS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      data-active={minutesValue === m}
+                      aria-pressed={minutesValue === m}
+                      onClick={() => setMinutes(String(m))}
+                      className="font-data"
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              {confirmingRegen && (
+                <button
+                  onClick={() => setConfirmingRegen(false)}
+                  className="btn btn-ghost"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
-                onClick={() => setConfirmingRegen(false)}
-                className="btn btn-ghost"
+                // Regenerar apaga o plano atual no backend (deleteMany), então
+                // um plano existente exige confirmação em dois passos.
+                onClick={() =>
+                  plan && !confirmingRegen
+                    ? setConfirmingRegen(true)
+                    : void generate()
+                }
+                disabled={loading || !minutesValid}
+                className={`btn ${confirmingRegen ? 'btn-ghost text-red' : 'btn-primary'}`}
               >
-                Cancelar
+                {generateLabel}
               </button>
-            )}
-            <button
-              // Regenerar apaga o plano atual no backend (deleteMany), então
-              // um plano existente exige confirmação em dois passos.
-              onClick={() =>
-                plan && !confirmingRegen
-                  ? setConfirmingRegen(true)
-                  : void generate()
-              }
-              disabled={loading || !minutesValid}
-              className={`btn ${confirmingRegen ? 'btn-ghost text-red' : 'btn-primary'}`}
-            >
-              {generateLabel}
-            </button>
+            </div>
           </div>
+          {!minutesValid && (
+            <p id="minutes-hint" className="mt-2 text-xs text-red">
+              Entre {MIN_MINUTES} e {MAX_MINUTES} minutos.
+            </p>
+          )}
         </div>
       </header>
 
@@ -275,64 +309,91 @@ export default function Cronograma() {
         )
       ) : (
         <>
-          {/* Matéria de hoje (issue #46) — visão canônica por matéria. */}
+          {/* Hoje é o herói da tela: identifica a matéria e já traz as
+              sessões do dia, sem obrigar a caçar a célula no calendário. */}
           {todaySubject && (
-            <div className="card card-raised flex items-center gap-3 p-4 ring-1 ring-brand/30">
-              <span
-                className={`grid size-11 shrink-0 place-items-center rounded-xl ${
-                  AREA_DOT[areaKey(todaySubject)]
-                } opacity-90`}
-                aria-hidden
+            <Reveal as="section" className="card card-raised overflow-hidden">
+              <div
+                className={`flex items-center gap-3.5 p-5 ${
+                  AREA_SOFT[areaKey(todaySubject)]
+                }`}
               >
-                <IconCalendar width={20} height={20} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="eyebrow">Hoje</p>
-                <p className="mt-0.5 font-display text-lg font-bold">
-                  Dia de{' '}
-                  <span className={AREA_TEXT[areaKey(todaySubject)]}>
-                    {shortSubject(todaySubject)}
-                  </span>
-                </p>
-                <p className="mt-0.5 text-xs text-muted">
-                  {todaySessions.length}{' '}
-                  {todaySessions.length === 1 ? 'sessão' : 'sessões'} ·{' '}
-                  {todaySessions.reduce((sum, s) => sum + s.minutes, 0)} min
-                </p>
-              </div>
-              {todayDone && (
-                <span className="chip shrink-0 bg-nat/12 text-nat">
-                  <IconCheck width={13} height={13} /> concluído
+                <span
+                  className={`grid size-12 shrink-0 place-items-center rounded-2xl text-white ${
+                    AREA_DOT[areaKey(todaySubject)]
+                  }`}
+                  aria-hidden
+                >
+                  <IconCalendar width={22} height={22} />
                 </span>
-              )}
-            </div>
+                <div className="min-w-0 flex-1">
+                  <p className="eyebrow">Hoje</p>
+                  <p className="mt-0.5 font-display text-xl font-extrabold tracking-tight">
+                    Dia de{' '}
+                    <span className={AREA_TEXT[areaKey(todaySubject)]}>
+                      {shortSubject(todaySubject)}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {todaySessions.length}{' '}
+                    {todaySessions.length === 1 ? 'sessão' : 'sessões'} ·{' '}
+                    {todaySessions.reduce((sum, s) => sum + s.minutes, 0)} min
+                  </p>
+                </div>
+                {todayDone && (
+                  <span className="chip shrink-0 bg-nat/12 text-nat">
+                    <IconCheck width={13} height={13} /> concluído
+                  </span>
+                )}
+              </div>
+              <ul className="divide-y divide-line border-t border-line">
+                {todaySessions.map((s) => (
+                  <li key={s.id} className="px-3 py-1">
+                    <SessionToggle
+                      session={s}
+                      onToggle={toggleDone}
+                      compact={false}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
           )}
 
-          <div className="card card-raised flex items-center gap-4 p-4">
-            <div>
+          {/* Números do plano em tiles, no lugar de um bloco largo só. */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="card p-4">
               <p className="font-display text-2xl font-extrabold tabular-nums">
                 {done}
                 <span className="text-muted">/{total}</span>
               </p>
-              <p className="text-xs text-muted">sessões concluídas</p>
-            </div>
-            <div className="flex-1">
+              <p className="mt-0.5 text-xs text-muted">sessões feitas</p>
               <div
                 role="progressbar"
                 aria-valuenow={done}
                 aria-valuemin={0}
                 aria-valuemax={total}
                 aria-label="Sessões concluídas"
-                className="h-2 overflow-hidden rounded-full bg-surface-2"
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2"
               >
                 <div
-                  className="h-full rounded-full bg-brand transition-all"
+                  className="h-full rounded-full bg-brand transition-all duration-500"
                   style={{ width: `${total ? (done / total) * 100 : 0}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-xs text-muted">
-                {plan.minutesPerDay} min por dia
+            </div>
+            <div className="card p-4">
+              <p className="font-display text-2xl font-extrabold tabular-nums">
+                {plan.minutesPerDay}
               </p>
+              <p className="mt-0.5 text-xs text-muted">min por dia</p>
+            </div>
+            <div className="card p-4">
+              <p className="font-display text-2xl font-extrabold tabular-nums">
+                {Math.min(todayIndex + 1, planDays)}
+                <span className="text-muted">/{planDays}</span>
+              </p>
+              <p className="mt-0.5 text-xs text-muted">dia do plano</p>
             </div>
           </div>
 
@@ -450,6 +511,11 @@ function PlanDays({
   }, [plan]);
 
   const today = startOfDay(new Date());
+  // Escala da barra de carga: o dia mais cheio do plano vale 100%.
+  const maxDayMinutes = Math.max(
+    1,
+    ...days.map((d) => d.sessions.reduce((sum, s) => sum + s.minutes, 0)),
+  );
 
   return (
     <>
@@ -462,10 +528,14 @@ function PlanDays({
           return (
             <section
               key={day.dayIndex}
-              className={`card p-3 ${isToday ? 'ring-1 ring-brand' : ''}`}
+              className={`card border-l-4 p-3 ${
+                dayArea ? AREA_BORDER[dayArea] : 'border-l-line'
+              } ${isToday ? 'ring-1 ring-brand' : ''} ${
+                day.date < today ? 'opacity-70' : ''
+              }`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold tabular-nums text-muted">
+                <span className="font-data text-xs font-semibold tabular-nums text-muted">
                   {WEEKDAYS[(day.date.getDay() + 6) % 7]} {fmtDay(day.date)}
                 </span>
                 {isToday && (
@@ -517,27 +587,28 @@ function PlanDays({
           {rows.map((row, w) => (
             <div key={w} className="grid grid-cols-7 gap-1.5">
               {row.map((cell, c) => {
-                if (cell === null) {
-                  return (
-                    <div
-                      key={c}
-                      className="min-h-[88px] rounded-lg border border-line/30 opacity-40"
-                    />
-                  );
-                }
+                // Dias fora do plano: espaço vazio, sem moldura — antes
+                // pareciam dias reais sem sessão.
+                if (cell === null) return <div key={c} aria-hidden />;
                 const isToday = sameDay(cell.date, today);
                 const hasSessions = cell.sessions.length > 0;
                 const daySubject = dominantSubject(cell.sessions);
                 const dayArea = daySubject ? areaKey(daySubject) : null;
+                const dayMinutes = cell.sessions.reduce(
+                  (sum, x) => sum + x.minutes,
+                  0,
+                );
                 return (
                   <div
                     key={c}
-                    className={`min-h-[88px] rounded-lg border p-1.5 ${
+                    className={`flex min-h-[96px] flex-col rounded-lg border p-1.5 transition-opacity ${
                       hasSessions ? 'border-line bg-surface' : 'border-line/50'
-                    } ${isToday ? 'ring-1 ring-brand' : ''}`}
+                    } ${isToday ? 'ring-1 ring-brand' : ''} ${
+                      cell.date < today && !isToday ? 'opacity-55' : ''
+                    }`}
                   >
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-[10px] font-semibold tabular-nums text-muted">
+                      <span className="font-data text-[10px] font-semibold tabular-nums text-muted">
                         {fmtDay(cell.date)}
                       </span>
                       {isToday && (
@@ -565,6 +636,20 @@ function PlanDays({
                         </li>
                       ))}
                     </ul>
+                    {/* Carga do dia: dá leitura de volume sem abrir a célula. */}
+                    {hasSessions && dayArea && (
+                      <div
+                        className="mt-auto h-1 overflow-hidden rounded-full bg-surface-2"
+                        title={`${dayMinutes} min`}
+                      >
+                        <div
+                          className={`h-full rounded-full ${AREA_DOT[dayArea]} opacity-70`}
+                          style={{
+                            width: `${(dayMinutes / maxDayMinutes) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}

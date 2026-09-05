@@ -14,7 +14,8 @@ import {
   IconX,
 } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
-import { areaKey, AREA_TEXT, shortSubject } from '../lib/areas';
+import Reveal from '../components/Reveal';
+import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
 import { embedUrl, fmtTimestamp, parseTimestamp } from '../lib/video';
 
 /** Player + notas com timestamp clicável (issue #37). */
@@ -255,6 +256,101 @@ function buildMarkdown(video: Video): string {
   return lines.join('\n');
 }
 
+/** Card de um vídeo: a capa 16:9 é o elemento âncora, não uma miniatura. */
+function VideoCard({
+  video,
+  onOpen,
+  onToggleWatched,
+  onRemove,
+}: {
+  video: Video;
+  onOpen: () => void;
+  onToggleWatched: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <li className="card lift flex flex-col overflow-hidden">
+      <div className="relative">
+      <button
+        onClick={onOpen}
+        aria-label={`Assistir ${video.title}`}
+        className="group block aspect-video w-full overflow-hidden bg-surface-2"
+      >
+        {video.thumbnail ? (
+          <img
+            src={video.thumbnail}
+            alt=""
+            loading="lazy"
+            className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] ${
+              video.watched ? 'opacity-60 saturate-50' : ''
+            }`}
+          />
+        ) : (
+          // Sem thumb (oEmbed falhou / vídeo privado): placeholder com
+          // identidade, em vez de um retângulo vazio.
+          <span className="bubble-field grid h-full place-items-center bg-surface-2">
+            <span className="grid size-12 place-items-center rounded-full bg-brand/12 text-brand">
+              <IconPlay width={22} height={22} />
+            </span>
+          </span>
+        )}
+        {/* Alvo de play que aparece no hover/foco. */}
+        <span
+          className="absolute inset-0 grid place-items-center bg-black/25 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          aria-hidden
+        >
+          <span className="grid size-11 place-items-center rounded-full bg-white/90 pl-0.5 text-black shadow">
+            <IconPlay width={20} height={20} />
+          </span>
+        </span>
+      </button>
+      {/* Selos ficam fora do botão: dentro dele o aria-label os esconderia. */}
+      {video.watched && (
+        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-nat px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+          <IconCheck width={11} height={11} aria-hidden /> Assistido
+        </span>
+      )}
+      {video.notes.length > 0 && (
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-black/65 px-2 py-0.5 font-data text-[10px] font-semibold text-white">
+          {video.notes.length} {video.notes.length === 1 ? 'nota' : 'notas'}
+        </span>
+      )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-3">
+        <p className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug text-pretty">
+          {video.title}
+        </p>
+        <div className="mt-auto flex items-center gap-1 border-t border-line pt-2">
+          <button
+            onClick={onToggleWatched}
+            aria-label={
+              video.watched
+                ? 'Marcar como não assistido'
+                : 'Marcar como assistido'
+            }
+            aria-pressed={video.watched}
+            className={`grid size-8 place-items-center rounded-lg transition-colors ${
+              video.watched
+                ? 'bg-nat/12 text-nat'
+                : 'text-muted hover:bg-surface-2 hover:text-nat'
+            }`}
+          >
+            <IconCheck width={15} height={15} />
+          </button>
+          <button
+            onClick={onRemove}
+            aria-label={`Remover ${video.title}`}
+            className="grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-red/10 hover:text-red"
+          >
+            <IconTrash width={15} height={15} />
+          </button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 /** Biblioteca de vídeos de estudo (issue #37). */
 export default function Videos() {
   const [videos, setVideos] = useState<Video[] | null>(null);
@@ -338,6 +434,8 @@ export default function Videos() {
     setVideos((cur) => cur?.map((x) => (x.id === v.id ? v : x)) ?? cur);
   }
 
+  const watchedCount = videos?.filter((v) => v.watched).length ?? 0;
+
   const bySubject = useMemo(() => {
     const map = new Map<string, Video[]>();
     for (const v of videos ?? []) {
@@ -350,13 +448,13 @@ export default function Videos() {
   }, [videos]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <p className="eyebrow">Videoteca</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           Vídeos
         </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
           Cole links de aulas do YouTube, organize por matéria e anote
           instantes importantes.
         </p>
@@ -365,61 +463,50 @@ export default function Videos() {
       <ErrorBanner message={error} onRetry={() => void load()} />
 
       {/* Novo vídeo: a matéria escolhida aqui classifica só o vídeo salvo. */}
-      <div className="card flex flex-wrap items-center gap-2 p-4">
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void add()}
-          placeholder="Cole o link do YouTube…"
-          aria-label="Link do YouTube"
-          className="input min-w-0 flex-1"
-        />
-        <select
-          value={newSubjectId}
-          onChange={(e) => setNewSubjectId(e.target.value)}
-          aria-label="Matéria do novo vídeo"
-          className="input w-44 shrink-0"
-        >
-          <option value="">Sem matéria</option>
-          {subjects.map((s) => (
-            <option key={s.id} value={s.id}>
-              {shortSubject(s.name)}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => void add()}
-          disabled={!url.trim()}
-          className="btn btn-primary shrink-0"
-        >
-          Salvar
-        </button>
-      </div>
-
-      {/* Filtro da lista — independente da classificação acima. */}
-      {!selected && (
-        <div className="flex items-center gap-2">
-          <label htmlFor="video-filter" className="eyebrow shrink-0">
-            Filtrar
-          </label>
+      <section className="card card-raised p-4">
+        <p className="eyebrow">Adicionar aula</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-0 basis-full sm:basis-0 sm:flex-1">
+            <IconPlay
+              width={15}
+              height={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              aria-hidden
+            />
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void add()}
+              placeholder="Cole o link do YouTube…"
+              aria-label="Link do YouTube"
+              className="input w-full pl-9"
+            />
+          </div>
           <select
-            id="video-filter"
-            value={filterSubjectId}
-            onChange={(e) => setFilterSubjectId(e.target.value)}
-            className="input w-56"
+            value={newSubjectId}
+            onChange={(e) => setNewSubjectId(e.target.value)}
+            aria-label="Matéria do novo vídeo"
+            className="input min-w-0 flex-1 sm:w-40 sm:flex-none"
           >
-            <option value="">Todas as matérias</option>
+            <option value="">Sem matéria</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {shortSubject(s.name)}
               </option>
             ))}
           </select>
+          <button
+            onClick={() => void add()}
+            disabled={!url.trim()}
+            className="btn btn-primary shrink-0"
+          >
+            Salvar
+          </button>
         </div>
-      )}
+      </section>
 
       {videos === null ? (
-        <div className="space-y-3" aria-busy>
+        <div className="grid gap-3 sm:grid-cols-2" aria-busy>
           <SkeletonCard lines={2} />
           <SkeletonCard lines={2} />
         </div>
@@ -430,95 +517,94 @@ export default function Videos() {
           onClose={() => setSelected(null)}
           onChange={applyChange}
         />
-      ) : videos.length === 0 ? (
-        <EmptyState
-          icon={IconPlay}
-          title={
-            filterSubjectId
-              ? 'Nenhum vídeo nesta matéria'
-              : 'Sua videoteca está vazia'
-          }
-          description={
-            filterSubjectId
-              ? 'Remova o filtro para ver todos os seus vídeos.'
-              : 'Cole o link de uma aula do YouTube acima para começar.'
-          }
-          action={
-            filterSubjectId
-              ? { onClick: () => setFilterSubjectId(''), label: 'Ver todos' }
-              : undefined
-          }
-          tip="Os metadados (título e capa) vêm direto do YouTube"
-        />
       ) : (
-        bySubject.map(([subjectName, list]) => (
-          <section key={subjectName} className="card p-5">
-            <h2
-              className={`font-display text-lg font-bold ${
-                AREA_TEXT[areaKey(subjectName)]
-              }`}
+        <>
+          {/* Filtro da lista — independente da classificação acima. */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="video-filter" className="eyebrow shrink-0">
+              Filtrar
+            </label>
+            <select
+              id="video-filter"
+              value={filterSubjectId}
+              onChange={(e) => setFilterSubjectId(e.target.value)}
+              className="input w-52"
             >
-              {shortSubject(subjectName)}
-            </h2>
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-              {list.map((v) => (
-                <li key={v.id} className="card flex gap-3 overflow-hidden p-3">
-                  <button
-                    onClick={() => setSelected(v)}
-                    className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-surface-2"
-                    aria-label={`Assistir ${v.title}`}
-                  >
-                    {v.thumbnail ? (
-                      <img
-                        src={v.thumbnail}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="grid h-full place-items-center text-muted">
-                        <IconPlay width={22} height={22} />
-                      </span>
-                    )}
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <p className="line-clamp-2 text-sm font-semibold">
-                      {v.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted">
-                      {v.notes.length} {v.notes.length === 1 ? 'nota' : 'notas'}
-                    </p>
-                    <div className="mt-auto flex items-center gap-1 pt-1">
-                      <button
-                        onClick={() => void toggleWatched(v)}
-                        aria-label={
-                          v.watched
-                            ? 'Marcar como não assistido'
-                            : 'Marcar como assistido'
-                        }
-                        aria-pressed={v.watched}
-                        className={`grid size-7 place-items-center rounded-md transition-colors ${
-                          v.watched
-                            ? 'bg-nat/12 text-nat'
-                            : 'text-muted hover:bg-surface-2'
-                        }`}
-                      >
-                        <IconCheck width={14} height={14} />
-                      </button>
-                      <button
-                        onClick={() => void remove(v)}
-                        aria-label={`Remover ${v.title}`}
-                        className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-red/10 hover:text-red"
-                      >
-                        <IconTrash width={14} height={14} />
-                      </button>
-                    </div>
-                  </div>
-                </li>
+              <option value="">Todas as matérias</option>
+              {subjects.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {shortSubject(s.name)}
+                </option>
               ))}
-            </ul>
-          </section>
-        ))
+            </select>
+            {videos.length > 0 && (
+              <span className="ml-auto shrink-0 font-data text-xs text-muted">
+                {watchedCount}/{videos.length} assistidos
+              </span>
+            )}
+          </div>
+
+          {videos.length === 0 ? (
+            <EmptyState
+              icon={IconPlay}
+              title={
+                filterSubjectId
+                  ? 'Nenhum vídeo nesta matéria'
+                  : 'Sua videoteca está vazia'
+              }
+              description={
+                filterSubjectId
+                  ? 'Remova o filtro para ver todos os seus vídeos.'
+                  : 'Cole o link de uma aula do YouTube acima para começar.'
+              }
+              action={
+                filterSubjectId
+                  ? { onClick: () => setFilterSubjectId(''), label: 'Ver todos' }
+                  : undefined
+              }
+              tip="Os metadados (título e capa) vêm direto do YouTube"
+            />
+          ) : (
+            <div className="space-y-7">
+              {bySubject.map(([subjectName, list], i) => {
+                const area = areaKey(subjectName);
+                return (
+                  <Reveal as="section" key={subjectName} delay={i * 60}>
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`size-2.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
+                        aria-hidden
+                      />
+                      <h2
+                        className={`font-display text-lg font-bold ${AREA_TEXT[area]}`}
+                      >
+                        {shortSubject(subjectName)}
+                      </h2>
+                      <span
+                        className={`rule-area h-px flex-1 opacity-25 ${AREA_TEXT[area]}`}
+                        aria-hidden
+                      />
+                      <span className="shrink-0 font-data text-xs text-muted">
+                        {list.length}
+                      </span>
+                    </div>
+                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {list.map((v) => (
+                        <VideoCard
+                          key={v.id}
+                          video={v}
+                          onOpen={() => setSelected(v)}
+                          onToggleWatched={() => void toggleWatched(v)}
+                          onRemove={() => void remove(v)}
+                        />
+                      ))}
+                    </ul>
+                  </Reveal>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

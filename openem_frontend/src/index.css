@@ -372,7 +372,8 @@
     transition:
       background-color 0.25s ease,
       border-color 0.25s ease,
-      color 0.25s ease;
+      color 0.25s ease,
+      transform 0.12s ease;
   }
   ::selection {
     background: color-mix(in oklab, var(--brand) 28%, transparent);
@@ -483,6 +484,9 @@
   .btn:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
   }
   .btn-primary {
     background: var(--brand);
@@ -658,6 +662,32 @@
   }
   .lift:hover {
     transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .lift:active {
+    transform: translateY(0);
+  }
+
+  /* Régua de seção tingida pela área do conhecimento (currentColor). */
+  .rule-area {
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  /* Barra de filtros que acompanha a rolagem (busca é a ação principal). */
+  .filterbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in oklab, var(--bg) 82%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Superfície de destaque para conteúdo-herói (LaTeX, enunciado do jogo). */
+  .slab {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 0.85rem;
   }
 
   /* Textura do cartão-resposta: grade de bolhas bem suave (camada decorativa). */

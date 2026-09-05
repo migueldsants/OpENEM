@@ -6,9 +6,19 @@ import {
   type LeaderboardEntry,
 } from '../api';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconBolt, IconClock, IconGame, IconTarget } from '../components/icons';
+import {
+  IconBolt,
+  IconClock,
+  IconFlame,
+  IconGame,
+  IconHeart,
+  IconTarget,
+  IconTrophy,
+} from '../components/icons';
+import Reveal from '../components/Reveal';
 import { SkeletonCard } from '../components/Skeleton';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { useAuth } from '../auth';
 import { useGamification } from '../gamification';
 
 type Phase = 'menu' | 'playing' | 'over';
@@ -181,27 +191,19 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
         >
           Encerrar
         </button>
-        <div className="min-w-0 flex-1 text-center">
-          <p className="font-display text-sm font-bold tabular-nums">
-            {score}
-            <span className="text-muted"> pts</span>
-          </p>
-          <p className="text-[0.68rem] text-muted">
-            combo ×{combo} · {lives} vidas
-          </p>
-        </div>
         <span
           role="timer"
           aria-label={`${timeLeft} segundos restantes`}
-          className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 font-display text-sm font-bold tabular-nums ${
+          className={`ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 font-display text-lg font-extrabold tabular-nums transition-colors ${
             timeLeft <= 2 ? 'bg-red/12 text-red' : 'bg-surface-2 text-fg'
           }`}
         >
-          <IconClock width={16} height={16} aria-hidden />
+          <IconClock width={18} height={18} aria-hidden />
           {timeLeft}s
         </span>
       </div>
 
+      {/* Barra do tempo: fina, colada ao HUD, vira vermelha nos 2s finais. */}
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
         <div
           className={`h-full rounded-full transition-[width] duration-1000 linear ${
@@ -211,8 +213,45 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
         />
       </div>
 
+      {/* Placar em tiles: pontos, combo e vidas legíveis de relance. */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="card px-3 py-2 text-center">
+          <p className="font-display text-xl font-extrabold tabular-nums">
+            {score}
+          </p>
+          <p className="eyebrow mt-0.5">pontos</p>
+        </div>
+        <div className="card px-3 py-2 text-center">
+          <p
+            className={`inline-flex items-center gap-1 font-display text-xl font-extrabold tabular-nums ${
+              combo >= 3 ? 'text-hum' : ''
+            }`}
+          >
+            {combo >= 3 && <IconFlame width={16} height={16} filled aria-hidden />}
+            ×{combo}
+          </p>
+          <p className="eyebrow mt-0.5">combo</p>
+        </div>
+        <div className="card px-3 py-2 text-center">
+          <p className="flex items-center justify-center gap-1">
+            <span className="sr-only">{lives} vidas</span>
+            {[0, 1, 2].map((i) => (
+              <IconHeart
+                key={i}
+                width={17}
+                height={17}
+                filled={i < lives}
+                aria-hidden
+                className={i < lives ? 'text-red' : 'text-line'}
+              />
+            ))}
+          </p>
+          <p className="eyebrow mt-0.5">vidas</p>
+        </div>
+      </div>
+
       <div
-        className={`card card-raised p-8 text-center transition-colors ${
+        className={`card card-raised relative overflow-hidden p-8 text-center transition-colors sm:p-10 ${
           feedback === 'ok'
             ? 'bg-nat/10'
             : feedback === 'no'
@@ -220,10 +259,21 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
               : ''
         }`}
       >
-        <p className="font-display text-4xl font-extrabold tabular-nums sm:text-5xl">
-          {problem.a} {problem.op} {problem.b}
+        {/* Textura de gabarito — decorativa, dá matéria ao fundo do card. */}
+        <span
+          className="bubble-field pointer-events-none absolute inset-0 opacity-[0.18]"
+          aria-hidden
+        />
+        <div className="relative">
+        <p
+          role="math"
+          aria-label={`${problem.a} ${problem.op} ${problem.b}`}
+          className="font-display text-5xl font-extrabold tabular-nums tracking-tight sm:text-6xl"
+        >
+          {problem.a} <span className="text-muted">{problem.op}</span>{' '}
+          {problem.b}
         </p>
-        <p className="mt-1 text-xs text-muted">= ?</p>
+        <p className="mt-1 font-data text-xs text-muted">= ?</p>
 
         <form onSubmit={submit} className="mt-5">
           <input
@@ -257,6 +307,7 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
             </p>
           )}
         </div>
+        </div>
       </div>
 
       <p className="text-center text-xs text-muted">
@@ -283,28 +334,43 @@ const GAME_COMPONENTS: Record<
 function GameCard({
   game,
   playable,
+  record,
   onPlay,
 }: {
   game: GameCatalogItem;
   playable: boolean;
+  record: number | null;
   onPlay: (levelKey: string) => void;
 }) {
   const [selected, setSelected] = useState(game.levels[0]?.key ?? '');
   return (
     <li className="card card-raised overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
-            <IconGame width={22} height={22} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-display font-bold">{game.name}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted">
-              {game.description}
+      <div className="flex items-start gap-3.5 p-5">
+        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand/12 text-brand">
+          <IconGame width={28} height={28} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg font-bold leading-tight">
+            {game.name}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-muted text-pretty">
+            {game.description}
+          </p>
+          {record !== null && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted">
+              <IconTrophy width={13} height={13} className="text-mat" aria-hidden />
+              Melhor marca:{' '}
+              <span className="font-data font-semibold text-fg">
+                {record} pts
+              </span>
             </p>
-          </div>
+          )}
         </div>
-        <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">
+      </div>
+
+      {/* Rodapé de ação, separado do conteúdo por uma superfície mais funda. */}
+      <div className="border-t border-line bg-surface-2/60 p-4">
+        <p className="text-xs leading-relaxed text-muted text-pretty">
           {game.scoring}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -335,51 +401,69 @@ function GameCard({
   );
 }
 
+// Pódio com os gradientes de liga que o design system já define.
+const MEDAL = ['league-ouro', 'league-prata', 'league-bronze'];
+
 function Leaderboard({
   title,
   entries,
   unit = 'pontos',
+  meId,
 }: {
   title: string;
   entries: LeaderboardEntry[];
   unit?: string;
+  meId?: string;
 }) {
   return (
     <section className="card p-5">
-      <h2 className="font-display text-lg font-bold">{title}</h2>
+      <h2 className="flex items-center gap-2 font-display text-base font-bold">
+        <IconTrophy width={16} height={16} className="text-muted" aria-hidden />
+        {title}
+      </h2>
       {entries.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
-          Nenhum resultado ainda. Seja o primeiro a jogar!
+          Nenhum resultado ainda. Seja o primeiro a jogar.
         </p>
       ) : (
-        <ol className="mt-3 space-y-1.5">
-          {entries.map((e, i) => (
+        <ol className="mt-3 space-y-0.5">
+          {entries.map((e, i) => {
+            const isMe = meId !== undefined && e.userId === meId;
+            return (
             <li
               key={e.userId}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2"
+              className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors ${
+                isMe
+                  ? 'bg-brand/10 ring-1 ring-brand/25'
+                  : 'hover:bg-surface-2'
+              }`}
             >
               <span
-                className={`grid size-7 shrink-0 place-items-center rounded-md text-xs font-bold tabular-nums ${
-                  i === 0
-                    ? 'bg-mat/15 text-mat'
-                    : i === 1
-                      ? 'bg-surface-2 text-muted'
-                      : i === 2
-                        ? 'bg-hum/15 text-hum'
-                        : 'bg-surface-2 text-muted'
+                className={`grid size-7 shrink-0 place-items-center rounded-lg font-data text-xs font-bold tabular-nums ${
+                  MEDAL[i] ? `${MEDAL[i]} text-white` : 'text-muted'
                 }`}
               >
                 {i + 1}
               </span>
-              <span className="min-w-0 flex-1 truncate font-medium">
+              <span
+                className={`min-w-0 flex-1 truncate ${
+                  i === 0 || isMe ? 'font-semibold' : 'font-medium'
+                }`}
+              >
                 {e.displayName}
+                {isMe && (
+                  <span className="ml-1.5 text-xs font-medium text-brand">
+                    você
+                  </span>
+                )}
               </span>
-              <span className="shrink-0 font-display font-bold tabular-nums text-brand">
+              <span className="shrink-0 font-data font-bold tabular-nums text-brand">
                 {e.bestScore}{' '}
                 <span className="text-xs font-medium text-muted">{unit}</span>
               </span>
             </li>
-          ))}
+            );
+          })}
         </ol>
       )}
     </section>
@@ -387,6 +471,7 @@ function Leaderboard({
 }
 
 export default function Games() {
+  const { me } = useAuth();
   const { refresh } = useGamification();
   const [games, setGames] = useState<GameCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -467,13 +552,13 @@ export default function Games() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <p className="eyebrow">Minigames</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           Games
         </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
           Treine o raciocínio rápido e ganhe XP jogando.
         </p>
       </header>
@@ -481,10 +566,12 @@ export default function Games() {
       <ErrorBanner message={error} onRetry={() => void load()} />
 
       {phase === 'over' && (
-        <div className="card card-raised p-5">
-          <div className="flex items-center gap-2">
-            <IconBolt width={20} height={20} className="text-brand" filled />
-            <p className="font-display text-lg font-bold">Partida concluída!</p>
+        <div className="card card-raised card-glow p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
+              <IconBolt width={20} height={20} filled />
+            </span>
+            <p className="font-display text-lg font-bold">Partida concluída</p>
           </div>
           <p className="mt-1 text-sm text-muted">
             {lastScore > 0
@@ -515,12 +602,13 @@ export default function Games() {
           <SkeletonCard lines={3} />
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {games.map((g) => (
             <GameCard
               key={g.key}
               game={g}
               playable={g.key in GAME_COMPONENTS}
+              record={boards[g.key]?.[0]?.bestScore ?? null}
               onPlay={(levelKey) => {
                 setAward(null);
                 setActiveGame(g);
@@ -532,14 +620,22 @@ export default function Games() {
         </ul>
       )}
 
-      {games.map((g) => (
+      <Reveal className="grid gap-3 sm:grid-cols-2">
+        {games.map((g) => (
+          <Leaderboard
+            key={g.key}
+            title={`Ranking — ${g.name}`}
+            entries={boards[g.key] ?? []}
+            meId={me?.id}
+          />
+        ))}
         <Leaderboard
-          key={g.key}
-          title={`Ranking — ${g.name}`}
-          entries={boards[g.key] ?? []}
+          title="Ranking geral (XP)"
+          entries={globalBoard}
+          unit="XP"
+          meId={me?.id}
         />
-      ))}
-      <Leaderboard title="Ranking geral (XP)" entries={globalBoard} unit="XP" />
+      </Reveal>
     </div>
   );
 }

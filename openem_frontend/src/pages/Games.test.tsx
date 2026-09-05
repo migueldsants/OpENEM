@@ -18,6 +18,9 @@ vi.mock('../api', () => ({
 vi.mock('../gamification', () => ({
   useGamification: () => ({ refresh: vi.fn() }),
 }));
+vi.mock('../auth', () => ({
+  useAuth: () => ({ me: { id: 'u1' } }),
+}));
 
 const CALC: GameCatalogItem = {
   key: 'calculo-mental',
@@ -94,7 +97,7 @@ describe('Games (issue #18)', () => {
     render(<Games />);
     await startGame();
 
-    expect(await screen.findByText(/1 \+ 1/)).toBeInTheDocument();
+    expect(await screen.findByLabelText('1 + 1')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Sua resposta'), {
       target: { value: '2' },
     });
