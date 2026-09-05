@@ -269,9 +269,28 @@ model Formula {
   isBuiltIn   Boolean       @default(true)
   createdAt   DateTime      @default(now())
   favoritedBy UserFormula[]
+  symbols     FormulaSymbol[]
 
   @@index([subjectId])
   @@index([title])
+}
+
+// Legenda de uma fórmula: o que cada símbolo/letra representa e em que
+// unidade. Sem isso a cola só serve para quem já sabe ler a expressão.
+model FormulaSymbol {
+  id        String  @id @default(cuid())
+  formulaId String
+  formula   Formula @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+  /// Símbolo em LaTeX, ex.: "\Delta s".
+  symbol    String
+  /// Significado em português, ex.: "deslocamento".
+  meaning   String
+  /// Unidade no SI quando faz sentido, ex.: "m/s". Nulo para adimensionais.
+  unit      String?
+  /// Ordem de exibição dentro da fórmula.
+  position  Int     @default(0)
+
+  @@index([formulaId])
 }
 
 // Favorito de fórmula (many-to-many usuário ↔ fórmula).

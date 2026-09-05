@@ -1,6 +1,6 @@
 // Testes da tela Fórmulas (issue #38).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Formulas from './Formulas';
 import { api } from '../api';
@@ -29,6 +29,11 @@ const BHASKARA: Formula = {
   topicName: 'Funções',
   isBuiltIn: true,
   favorited: false,
+  symbols: [
+    { symbol: 'x', meaning: 'raízes da equação', unit: null },
+    { symbol: 'a', meaning: 'coeficiente de x²', unit: null },
+    { symbol: '\\Delta', meaning: 'discriminante', unit: 'u.a.' },
+  ],
 };
 
 const OHM: Formula = {
@@ -41,6 +46,7 @@ const OHM: Formula = {
   subjectName: 'Física',
   topicId: null,
   topicName: null,
+  symbols: [],
 };
 
 function renderPage() {
@@ -198,5 +204,54 @@ describe('Formulas (issue #38)', () => {
       expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument(),
     );
     expect(screen.getByText(/Lei de Ohm/)).toBeInTheDocument();
+  });
+  it('abre o detalhe da fórmula pela expressão', async () => {
+    renderPage();
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `Abrir ${BHASKARA.title}`,
+      }),
+    );
+
+    const dialog = await screen.findByRole('dialog', {
+      name: `Fórmula: ${BHASKARA.title}`,
+    });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('Legenda')).toBeInTheDocument();
+  });
+
+  it('lista o significado e a unidade de cada símbolo', async () => {
+    renderPage();
+    fireEvent.click((await screen.findAllByText('Expandir'))[0]);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/raízes da equação/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/coeficiente de x²/)).toBeInTheDocument();
+    // Unidade aparece ao lado do significado quando existe.
+    expect(within(dialog).getByText('[u.a.]')).toBeInTheDocument();
+  });
+
+  it('fórmula sem legenda abre o detalhe e explica a ausência', async () => {
+    renderPage();
+    await screen.findByText(/Lei de Ohm/);
+
+    fireEvent.click(screen.getByRole('button', { name: `Abrir ${OHM.title}` }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(/ainda não tem legenda cadastrada/),
+    ).toBeInTheDocument();
+  });
+
+  it('fecha o detalhe com Esc', async () => {
+    renderPage();
+    fireEvent.click(
+      await screen.findByRole('button', { name: `Abrir ${BHASKARA.title}` }),
+    );
+    await screen.findByRole('dialog');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
   });
 });

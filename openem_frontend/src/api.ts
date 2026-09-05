@@ -347,6 +347,13 @@ export interface WeeklyGoal {
   completed: boolean;
 }
 
+/** Uma linha da legenda: o que o símbolo representa e em que unidade. */
+export interface FormulaSymbol {
+  symbol: string;
+  meaning: string;
+  unit: string | null;
+}
+
 /** Fórmula do cheat sheet (issue #38). */
 export interface Formula {
   id: string;
@@ -359,6 +366,8 @@ export interface Formula {
   topicName: string | null;
   isBuiltIn: boolean;
   favorited: boolean;
+  /** Legenda dos símbolos, na ordem em que aparecem na expressão. */
+  symbols: FormulaSymbol[];
 }
 
 /** Sessão de foco (Pomodoro) registrada (issue #41). */

@@ -7,7 +7,14 @@ import {
 import { Katex } from '../board/Katex';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconCheck, IconCopy, IconFormula, IconStar } from '../components/icons';
+import { FormulaSheet } from '../components/FormulaSheet';
+import {
+  IconCheck,
+  IconCopy,
+  IconExpand,
+  IconFormula,
+  IconStar,
+} from '../components/icons';
 import Reveal from '../components/Reveal';
 import { SkeletonCard } from '../components/Skeleton';
 import {
@@ -17,50 +24,40 @@ import {
   shortSubject,
 } from '../lib/areas';
 
-/** Botão de copiar o LaTeX da fórmula (com confirmação efêmera). */
-function CopyLatex({ formula }: { formula: Formula }) {
-  const [copied, setCopied] = useState(false);
+/** Copia um LaTeX e sinaliza o sucesso por ~1,5s. */
+function useCopyLatex(): [string | null, (f: Formula) => void] {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 1500);
+    if (!copiedId) return;
+    const t = setTimeout(() => setCopiedId(null), 1500);
     return () => clearTimeout(t);
-  }, [copied]);
+  }, [copiedId]);
 
-  async function copy() {
-    try {
-      await navigator.clipboard?.writeText(formula.latex);
-      setCopied(true);
-    } catch {
-      /* clipboard indisponível (http, permissão negada): silencioso */
-    }
-  }
+  const copy = useCallback((f: Formula) => {
+    navigator.clipboard
+      ?.writeText(f.latex)
+      .then(() => setCopiedId(f.id))
+      // clipboard indisponível (http, permissão negada): silencioso.
+      .catch(() => {});
+  }, []);
 
-  return (
-    <button
-      type="button"
-      onClick={() => void copy()}
-      aria-label={`Copiar LaTeX de ${formula.title}`}
-      className={`grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
-        copied ? 'bg-nat/12 text-nat' : 'text-muted hover:bg-surface-2 hover:text-fg'
-      }`}
-    >
-      {copied ? (
-        <IconCheck width={16} height={16} />
-      ) : (
-        <IconCopy width={16} height={16} />
-      )}
-    </button>
-  );
+  return [copiedId, copy];
 }
 
 /** Card de uma fórmula: a expressão é o conteúdo-herói, não o título. */
 function FormulaCard({
   formula,
+  copied,
+  onCopy,
+  onOpen,
   onToggleFavorite,
 }: {
   formula: Formula;
-  onToggleFavorite: (f: Formula) => void;
+  copied: boolean;
+  onCopy: () => void;
+  onOpen: () => void;
+  onToggleFavorite: () => void;
 }) {
   return (
     <li className="card lift flex flex-col p-3.5">
@@ -68,10 +65,23 @@ function FormulaCard({
         <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-pretty">
           {formula.title}
         </p>
-        <CopyLatex formula={formula} />
         <button
           type="button"
-          onClick={() => onToggleFavorite(formula)}
+          onClick={onCopy}
+          aria-label={`Copiar LaTeX de ${formula.title}`}
+          className={`grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
+            copied ? 'bg-nat/12 text-nat' : 'text-muted hover:bg-surface-2 hover:text-fg'
+          }`}
+        >
+          {copied ? (
+            <IconCheck width={16} height={16} />
+          ) : (
+            <IconCopy width={16} height={16} />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onToggleFavorite}
           aria-label={
             formula.favorited
               ? `Remover ${formula.title} dos favoritos`
@@ -88,26 +98,34 @@ function FormulaCard({
         </button>
       </div>
 
-      {/* A expressão ganha superfície própria e o maior peso visual do card. */}
-      <div
-        className="slab mt-2.5 min-h-14 overflow-x-auto px-3 py-2.5 text-center text-lg"
-        aria-label={`Fórmula: ${formula.title}`}
+      {/* A expressão abre o detalhe com a legenda dos símbolos. */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Abrir ${formula.title}`}
+        className="slab mt-2.5 min-h-14 w-full overflow-x-auto px-3 py-2.5 text-center text-lg transition-colors hover:border-brand/40 hover:bg-surface"
       >
         <span className="inline-block whitespace-nowrap">
           <Katex latex={formula.latex} />
         </span>
-      </div>
+      </button>
 
       {formula.description && (
         <p className="mt-2 text-xs leading-relaxed text-muted text-pretty">
           {formula.description}
         </p>
       )}
-      {formula.topicName && (
-        <p className="mt-auto pt-2 text-[0.65rem] text-muted">
-          Assunto: {formula.topicName}
-        </p>
-      )}
+      <div className="mt-auto flex items-center gap-2 pt-2.5">
+        <button type="button" onClick={onOpen} className="chip shrink-0">
+          <IconExpand width={12} height={12} />
+          Expandir
+        </button>
+        {formula.topicName && (
+          <span className="ml-auto min-w-0 truncate text-[0.65rem] text-muted">
+            Assunto: {formula.topicName}
+          </span>
+        )}
+      </div>
     </li>
   );
 }
@@ -126,6 +144,8 @@ export default function Formulas() {
   const [subjectId, setSubjectId] = useState('');
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [copiedId, copyLatex] = useCopyLatex();
   // Descarta respostas de buscas antigas que cheguem fora de ordem.
   const requestIdRef = useRef(0);
 
@@ -199,6 +219,7 @@ export default function Formulas() {
     return [...map.entries()];
   }, [formulas]);
 
+  const open = formulas?.find((f) => f.id === openId) ?? null;
   const total = formulas?.length ?? 0;
   const hasFilters = q !== '' || subjectId !== '' || onlyFavorites;
 
@@ -317,7 +338,10 @@ export default function Formulas() {
                     <FormulaCard
                       key={f.id}
                       formula={f}
-                      onToggleFavorite={(x) => void toggleFavorite(x)}
+                      copied={copiedId === f.id}
+                      onCopy={() => copyLatex(f)}
+                      onOpen={() => setOpenId(f.id)}
+                      onToggleFavorite={() => void toggleFavorite(f)}
                     />
                   ))}
                 </ul>
@@ -325,6 +349,16 @@ export default function Formulas() {
             );
           })}
         </div>
+      )}
+
+      {open && (
+        <FormulaSheet
+          formula={open}
+          copied={copiedId === open.id}
+          onCopy={() => copyLatex(open)}
+          onToggleFavorite={() => void toggleFavorite(open)}
+          onClose={() => setOpenId(null)}
+        />
       )}
     </div>
   );
