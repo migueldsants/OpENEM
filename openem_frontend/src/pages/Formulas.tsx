@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   api,
   type Formula,
@@ -7,9 +7,46 @@ import {
 import { Katex } from '../board/Katex';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconFormula, IconStar } from '../components/icons';
+import { IconCheck, IconCopy, IconFormula, IconStar } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
-import { areaKey, AREA_TEXT } from '../lib/areas';
+import { areaKey, AREA_TEXT, shortSubject } from '../lib/areas';
+
+/** Botão de copiar o LaTeX da fórmula (com confirmação efêmera). */
+function CopyLatex({ formula }: { formula: Formula }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  async function copy() {
+    try {
+      await navigator.clipboard?.writeText(formula.latex);
+      setCopied(true);
+    } catch {
+      /* clipboard indisponível (http, permissão negada): silencioso */
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void copy()}
+      aria-label={`Copiar LaTeX de ${formula.title}`}
+      className={`grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
+        copied ? 'bg-nat/12 text-nat' : 'text-muted hover:bg-surface-2 hover:text-fg'
+      }`}
+    >
+      {copied ? (
+        <IconCheck width={16} height={16} />
+      ) : (
+        <IconCopy width={16} height={16} />
+      )}
+    </button>
+  );
+}
 
 /**
  * Cheat sheet de fórmulas (issue #38): busca por texto, filtro por matéria,
@@ -19,9 +56,14 @@ export default function Formulas() {
   const [formulas, setFormulas] = useState<Formula[] | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [q, setQ] = useState('');
+  // Só a digitação precisa de debounce; selecionar matéria ou alternar
+  // "Favoritas" respondia com 250ms de atraso sem motivo.
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Descarta respostas de buscas antigas que cheguem fora de ordem.
+  const requestIdRef = useRef(0);
 
   // Catálogo de matérias (uma vez).
   useEffect(() => {
@@ -31,17 +73,24 @@ export default function Formulas() {
       .catch(() => setSubjects([]));
   }, []);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setError(null);
     try {
-      setFormulas(
-        await api.formulas({
-          q: q || undefined,
-          subjectId: subjectId || undefined,
-          onlyFavorites,
-        }),
-      );
+      const data = await api.formulas({
+        q: debouncedQ || undefined,
+        subjectId: subjectId || undefined,
+        onlyFavorites,
+      });
+      if (requestId !== requestIdRef.current) return; // resposta obsoleta
+      setFormulas(data);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       setError(
         err instanceof Error
           ? err.message
@@ -49,21 +98,25 @@ export default function Formulas() {
       );
       setFormulas([]);
     }
-  }, [q, subjectId, onlyFavorites]);
+  }, [debouncedQ, subjectId, onlyFavorites]);
 
-  // Recarrega (com debounce da digitação) quando os filtros mudam.
   useEffect(() => {
-    const t = setTimeout(() => void load(), 250);
-    return () => clearTimeout(t);
+    void load();
   }, [load]);
 
   async function toggleFavorite(f: Formula) {
-    // Otimista: inverte já, corrige em falha.
-    setFormulas((cur) =>
-      cur?.map((x) =>
-        x.id === f.id ? { ...x, favorited: !x.favorited } : x,
-      ) ?? cur,
-    );
+    const nextFavorited = !f.favorited;
+    // Otimista: inverte já, corrige em falha. No modo "só favoritas", a linha
+    // sai da lista — antes ficava com a estrela vazia até um reload.
+    setFormulas((cur) => {
+      if (!cur) return cur;
+      if (onlyFavorites && !nextFavorited) {
+        return cur.filter((x) => x.id !== f.id);
+      }
+      return cur.map((x) =>
+        x.id === f.id ? { ...x, favorited: nextFavorited } : x,
+      );
+    });
     try {
       await api.toggleFormulaFavorite(f.id);
     } catch {
@@ -81,6 +134,14 @@ export default function Formulas() {
     }
     return [...map.entries()];
   }, [formulas]);
+
+  const hasFilters = q !== '' || subjectId !== '' || onlyFavorites;
+
+  function clearFilters() {
+    setQ('');
+    setSubjectId('');
+    setOnlyFavorites(false);
+  }
 
   return (
     <div className="space-y-5">
@@ -132,7 +193,7 @@ export default function Formulas() {
         </div>
       </div>
 
-      <ErrorBanner message={error} />
+      <ErrorBanner message={error} onRetry={() => void load()} />
 
       {formulas === null ? (
         <div className="space-y-3" aria-busy>
@@ -149,6 +210,11 @@ export default function Formulas() {
               ? 'Toque na estrela de uma fórmula para guardá-la aqui.'
               : 'Tente outro termo ou remova os filtros de matéria.'
           }
+          action={
+            hasFilters
+              ? { onClick: clearFilters, label: 'Limpar filtros' }
+              : undefined
+          }
           tip="Busque por nome do conteúdo (ex.: Bhaskara) ou pela expressão"
         />
       ) : (
@@ -159,7 +225,7 @@ export default function Formulas() {
                 AREA_TEXT[areaKey(subjectName)]
               }`}
             >
-              {subjectName.replace(' e suas Tecnologias', '')}
+              {shortSubject(subjectName)}
             </h2>
             <ul className="mt-3 space-y-2.5">
               {list.map((f) => (
@@ -169,8 +235,9 @@ export default function Formulas() {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{f.title}</p>
+                    {/* min-h reserva a linha enquanto o KaTeX carrega. */}
                     <p
-                      className="mt-1.5 overflow-x-auto whitespace-nowrap py-0.5 text-base"
+                      className="mt-1.5 min-h-6 overflow-x-auto whitespace-nowrap py-0.5 text-base"
                       aria-label={`Fórmula: ${f.title}`}
                     >
                       <Katex latex={f.latex} />
@@ -184,6 +251,7 @@ export default function Formulas() {
                       </p>
                     )}
                   </div>
+                  <CopyLatex formula={f} />
                   <button
                     type="button"
                     onClick={() => void toggleFavorite(f)}

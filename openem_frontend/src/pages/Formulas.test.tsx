@@ -133,4 +133,70 @@ describe('Formulas (issue #38)', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Falha na rede');
   });
+  it('o chip "Favoritas" expõe o estado ativo', async () => {
+    renderPage();
+    const chip = await screen.findByRole('button', { name: /Favoritas/ });
+    expect(chip).toHaveAttribute('data-active', 'false');
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('data-active', 'true');
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('desfavoritar no modo "só favoritas" tira a fórmula da lista', async () => {
+    vi.mocked(api.toggleFormulaFavorite).mockResolvedValue({ favorited: false });
+    vi.mocked(api.formulas).mockResolvedValue([
+      { ...BHASKARA, favorited: true },
+    ]);
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Favoritas/ }));
+    const star = await screen.findByRole('button', {
+      name: /Remover .* dos favoritos/,
+    });
+    fireEvent.click(star);
+
+    // Antes ficava na lista com a estrela vazia até um reload.
+    await waitFor(() =>
+      expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument(),
+    );
+  });
+
+  it('copia o LaTeX da fórmula', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `Copiar LaTeX de ${BHASKARA.title}`,
+      }),
+    );
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(BHASKARA.latex));
+  });
+
+  it('descarta a resposta de uma busca antiga que chegue depois', async () => {
+    let resolveSlow: (v: unknown) => void = () => {};
+    vi.mocked(api.formulas)
+      // 1ª chamada (montagem) fica pendente de propósito.
+      .mockImplementationOnce(
+        () => new Promise((r) => { resolveSlow = r as (v: unknown) => void; }),
+      )
+      .mockResolvedValue([OHM]);
+
+    renderPage();
+    fireEvent.change(await screen.findByLabelText('Buscar fórmulas'), {
+      target: { value: 'ohm' },
+    });
+
+    // A busca nova responde primeiro...
+    expect(await screen.findByText(/Lei de Ohm/)).toBeInTheDocument();
+    // ...e a antiga, ao chegar atrasada, não pode sobrescrever a tela.
+    resolveSlow([BHASKARA]);
+    await waitFor(() =>
+      expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Lei de Ohm/)).toBeInTheDocument();
+  });
 });
