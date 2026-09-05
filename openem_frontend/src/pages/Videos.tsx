@@ -14,41 +14,49 @@ import {
   IconX,
 } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
-import { areaKey, AREA_TEXT } from '../lib/areas';
-
-function fmtTimestamp(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { areaKey, AREA_TEXT, shortSubject } from '../lib/areas';
+import { embedUrl, fmtTimestamp, parseTimestamp } from '../lib/video';
 
 /** Player + notas com timestamp clicável (issue #37). */
 function VideoDetail({
   video,
+  subjects,
   onClose,
   onChange,
 }: {
   video: Video;
+  subjects: Subject[];
   onClose: () => void;
   onChange: (v: Video) => void;
 }) {
   const [noteText, setNoteText] = useState('');
   const [noteTs, setNoteTs] = useState('');
   const [seekTo, setSeekTo] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function addNote() {
     if (!noteText.trim()) return;
-    // Formatos aceitos: "90" (segundos) ou "1:30" (mm:ss).
-    const parts = noteTs.split(':').map((p) => Number(p) || 0);
-    const ts =
-      parts.length > 1
-        ? parts[0] * 60 + parts[1]
-        : Number(noteTs.replace(',', '.').split('.')[0] ?? 0) || 0;
-    if (Number.isNaN(ts) || ts < 0) return;
-    const note = await api.addVideoNote(video.id, ts, noteText.trim());
-    onChange({ ...video, notes: [...video.notes, note].sort((a, b) => a.timestampSec - b.timestampSec) });
-    setNoteText('');
-    setNoteTs('');
+    const ts = parseTimestamp(noteTs);
+    if (ts === null) {
+      setError('Instante inválido — use 90, 1:30 ou 1:30:00 (máx. 24h).');
+      return;
+    }
+    setError(null);
+    try {
+      const note = await api.addVideoNote(video.id, ts, noteText.trim());
+      onChange({
+        ...video,
+        notes: [...video.notes, note].sort(
+          (a, b) => a.timestampSec - b.timestampSec,
+        ),
+      });
+      setNoteText('');
+      setNoteTs('');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível salvar a nota.',
+      );
+    }
   }
 
   async function removeNote(note: VideoNote) {
@@ -59,16 +67,41 @@ function VideoDetail({
     try {
       await api.deleteVideoNote(note.id);
     } catch {
-      onChange({ ...video, notes: [...video.notes, note] }); // rollback
+      // Rollback preservando a ordem cronológica das notas.
+      onChange({
+        ...video,
+        notes: [...video.notes, note].sort(
+          (a, b) => a.timestampSec - b.timestampSec,
+        ),
+      });
+      setError('Não foi possível remover a nota.');
     }
   }
 
   async function toggleWatched() {
-    const updated = await api.toggleVideoWatched(video.id);
-    onChange(updated);
+    try {
+      onChange(await api.toggleVideoWatched(video.id));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível atualizar.',
+      );
+    }
   }
 
-  async function exportMd() {
+  /** Re-classifica a matéria do vídeo já salvo (PATCH /videos/:id). */
+  async function changeSubject(subjectId: string) {
+    try {
+      onChange(await api.updateVideoSubject(video.id, subjectId || null));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Não foi possível mudar a matéria.',
+      );
+    }
+  }
+
+  function exportMd() {
     const blob = new Blob([buildMarkdown(video)], {
       type: 'text/markdown;charset=utf-8',
     });
@@ -77,7 +110,8 @@ function VideoDetail({
     a.href = url;
     a.download = `${video.title.slice(0, 60)}.md`;
     a.click();
-    URL.revokeObjectURL(url);
+    // Revogar de imediato aborta o download em Firefox/Safari.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   return (
@@ -89,20 +123,26 @@ function VideoDetail({
           </h2>
           {video.subjectName && (
             <p className={`text-xs ${AREA_TEXT[areaKey(video.subjectName)]}`}>
-              {video.subjectName.replace(' e suas Tecnologias', '')}
+              {shortSubject(video.subjectName)}
             </p>
           )}
         </div>
-        <button onClick={onClose} aria-label="Fechar vídeo" className="btn btn-ghost shrink-0">
+        <button
+          onClick={onClose}
+          aria-label="Fechar vídeo"
+          className="btn btn-ghost shrink-0"
+        >
           <IconX width={16} height={16} />
         </button>
       </div>
 
-      {/* Player embed — ?start= pula para o timestamp da nota clicada. */}
+      <ErrorBanner message={error} />
+
+      {/* Player embed — `start` pula para o timestamp da nota clicada. */}
       <div className="aspect-video w-full overflow-hidden rounded-xl border border-line bg-black">
         <iframe
           key={seekTo ?? 'start'}
-          src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}${seekTo ? `?start=${seekTo}` : ''}&autoplay=${seekTo ? 1 : 0}`}
+          src={embedUrl(video.youtubeId, seekTo)}
           title={video.title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
           allowFullScreen
@@ -120,8 +160,21 @@ function VideoDetail({
           />
           {video.watched ? 'Assistido' : 'Marcar assistido'}
         </button>
+        <select
+          value={video.subjectId ?? ''}
+          onChange={(e) => void changeSubject(e.target.value)}
+          aria-label="Matéria deste vídeo"
+          className="input w-44 shrink-0"
+        >
+          <option value="">Sem matéria</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {shortSubject(s.name)}
+            </option>
+          ))}
+        </select>
         {video.notes.length > 0 && (
-          <button onClick={() => void exportMd()} className="btn btn-ghost">
+          <button onClick={exportMd} className="btn btn-ghost">
             Exportar notas (.md)
           </button>
         )}
@@ -165,7 +218,7 @@ function VideoDetail({
             onChange={(e) => setNoteTs(e.target.value)}
             placeholder="1:30"
             aria-label="Instante da nota"
-            className="input w-20 shrink-0 text-center font-data tabular-nums"
+            className="input w-24 shrink-0 text-center font-data tabular-nums"
           />
           <input
             value={noteText}
@@ -206,14 +259,19 @@ function buildMarkdown(video: Video): string {
 export default function Videos() {
   const [videos, setVideos] = useState<Video[] | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectId, setSubjectId] = useState('');
+  // Filtrar a lista e classificar o vídeo novo são coisas distintas: um único
+  // `subjectId` para as duas fazia o filtro esconder a lista ao classificar
+  // (e classificar sem querer ao filtrar).
+  const [filterSubjectId, setFilterSubjectId] = useState('');
+  const [newSubjectId, setNewSubjectId] = useState('');
   const [url, setUrl] = useState('');
   const [selected, setSelected] = useState<Video | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setVideos(await api.videos(subjectId || undefined));
+      setVideos(await api.videos(filterSubjectId || undefined));
+      setError(null);
     } catch (err) {
       setError(
         err instanceof Error
@@ -222,7 +280,7 @@ export default function Videos() {
       );
       setVideos([]);
     }
-  }, [subjectId]);
+  }, [filterSubjectId]);
 
   useEffect(() => {
     void load();
@@ -239,8 +297,11 @@ export default function Videos() {
     if (!url.trim()) return;
     setError(null);
     try {
-      const created = await api.addVideo(url.trim(), subjectId || undefined);
-      setVideos((cur) => [created, ...(cur ?? [])]);
+      const created = await api.addVideo(url.trim(), newSubjectId || undefined);
+      // Com um filtro ativo, o vídeo novo pode não pertencer à visão atual.
+      if (!filterSubjectId || filterSubjectId === created.subjectId) {
+        setVideos((cur) => [created, ...(cur ?? [])]);
+      }
       setUrl('');
     } catch (err) {
       setError(
@@ -252,12 +313,12 @@ export default function Videos() {
   async function toggleWatched(v: Video) {
     try {
       const updated = await api.toggleVideoWatched(v.id);
-      setVideos((cur) =>
-        cur?.map((x) => (x.id === v.id ? updated : x)) ?? cur,
-      );
+      setVideos((cur) => cur?.map((x) => (x.id === v.id ? updated : x)) ?? cur);
       if (selected?.id === v.id) setSelected(updated);
-    } catch {
-      /* silencioso */
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível atualizar.',
+      );
     }
   }
 
@@ -269,6 +330,12 @@ export default function Videos() {
     } catch {
       void load();
     }
+  }
+
+  /** Reflete no detalhe e na lista a mesma versão do vídeo. */
+  function applyChange(v: Video) {
+    setSelected(v);
+    setVideos((cur) => cur?.map((x) => (x.id === v.id ? v : x)) ?? cur);
   }
 
   const bySubject = useMemo(() => {
@@ -295,9 +362,9 @@ export default function Videos() {
         </p>
       </header>
 
-      <ErrorBanner message={error} />
+      <ErrorBanner message={error} onRetry={() => void load()} />
 
-      {/* Input de novo vídeo */}
+      {/* Novo vídeo: a matéria escolhida aqui classifica só o vídeo salvo. */}
       <div className="card flex flex-wrap items-center gap-2 p-4">
         <input
           value={url}
@@ -308,15 +375,15 @@ export default function Videos() {
           className="input min-w-0 flex-1"
         />
         <select
-          value={subjectId}
-          onChange={(e) => setSubjectId(e.target.value)}
-          aria-label="Matéria do vídeo"
+          value={newSubjectId}
+          onChange={(e) => setNewSubjectId(e.target.value)}
+          aria-label="Matéria do novo vídeo"
           className="input w-44 shrink-0"
         >
           <option value="">Sem matéria</option>
           {subjects.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name.replace(' e suas Tecnologias', '')}
+              {shortSubject(s.name)}
             </option>
           ))}
         </select>
@@ -329,6 +396,28 @@ export default function Videos() {
         </button>
       </div>
 
+      {/* Filtro da lista — independente da classificação acima. */}
+      {!selected && (
+        <div className="flex items-center gap-2">
+          <label htmlFor="video-filter" className="eyebrow shrink-0">
+            Filtrar
+          </label>
+          <select
+            id="video-filter"
+            value={filterSubjectId}
+            onChange={(e) => setFilterSubjectId(e.target.value)}
+            className="input w-56"
+          >
+            <option value="">Todas as matérias</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {shortSubject(s.name)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {videos === null ? (
         <div className="space-y-3" aria-busy>
           <SkeletonCard lines={2} />
@@ -337,19 +426,28 @@ export default function Videos() {
       ) : selected ? (
         <VideoDetail
           video={selected}
+          subjects={subjects}
           onClose={() => setSelected(null)}
-          onChange={(v) => {
-            setSelected(v);
-            setVideos((cur) =>
-              cur?.map((x) => (x.id === v.id ? v : x)) ?? cur,
-            );
-          }}
+          onChange={applyChange}
         />
       ) : videos.length === 0 ? (
         <EmptyState
           icon={IconPlay}
-          title="Sua videoteca está vazia"
-          description="Cole o link de uma aula do YouTube acima para começar."
+          title={
+            filterSubjectId
+              ? 'Nenhum vídeo nesta matéria'
+              : 'Sua videoteca está vazia'
+          }
+          description={
+            filterSubjectId
+              ? 'Remova o filtro para ver todos os seus vídeos.'
+              : 'Cole o link de uma aula do YouTube acima para começar.'
+          }
+          action={
+            filterSubjectId
+              ? { onClick: () => setFilterSubjectId(''), label: 'Ver todos' }
+              : undefined
+          }
           tip="Os metadados (título e capa) vêm direto do YouTube"
         />
       ) : (
@@ -360,7 +458,7 @@ export default function Videos() {
                 AREA_TEXT[areaKey(subjectName)]
               }`}
             >
-              {subjectName.replace(' e suas Tecnologias', '')}
+              {shortSubject(subjectName)}
             </h2>
             <ul className="mt-3 grid gap-3 sm:grid-cols-2">
               {list.map((v) => (
@@ -388,13 +486,16 @@ export default function Videos() {
                       {v.title}
                     </p>
                     <p className="mt-0.5 text-xs text-muted">
-                      {v.notes.length}{' '}
-                      {v.notes.length === 1 ? 'nota' : 'notas'}
+                      {v.notes.length} {v.notes.length === 1 ? 'nota' : 'notas'}
                     </p>
                     <div className="mt-auto flex items-center gap-1 pt-1">
                       <button
                         onClick={() => void toggleWatched(v)}
-                        aria-label={v.watched ? 'Marcar como não assistido' : 'Marcar como assistido'}
+                        aria-label={
+                          v.watched
+                            ? 'Marcar como não assistido'
+                            : 'Marcar como assistido'
+                        }
                         aria-pressed={v.watched}
                         className={`grid size-7 place-items-center rounded-md transition-colors ${
                           v.watched

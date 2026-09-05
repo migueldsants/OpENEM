@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Videos from './Videos';
+import { embedUrl, parseTimestamp } from '../lib/video';
 import { api } from '../api';
 import type { Video } from '../api';
 
@@ -15,6 +16,7 @@ vi.mock('../api', () => ({
     deleteVideo: vi.fn(),
     addVideoNote: vi.fn(),
     deleteVideoNote: vi.fn(),
+    updateVideoSubject: vi.fn(),
   },
 }));
 
@@ -51,7 +53,7 @@ describe('Videos (issue #37)', () => {
 
   it('lista vídeos agrupados por matéria com contagem de notas', async () => {
     renderPage();
-    expect(await screen.findByText(/Aula de Funções|T/)).toBeInTheDocument();
+    expect(await screen.findByText('Aula de Funções')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Matemática' })).toBeInTheDocument();
     expect(screen.getByText('1 nota')).toBeInTheDocument();
   });
@@ -169,5 +171,110 @@ describe('Videos (issue #37)', () => {
     renderPage();
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Falha na rede');
+  });
+  it('o player abre com uma URL de embed válida (sem & antes do ?)', async () => {
+    renderPage();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Assistir Aula de Funções' }),
+    );
+
+    const player = (await screen.findByTitle(
+      'Aula de Funções',
+    )) as HTMLIFrameElement;
+    // Sem o `?`, o `&autoplay=0` virava parte do ID e o YouTube recusava o embed.
+    expect(player.src).toContain('/embed/dQw4w9WgXcQ?');
+    expect(player.src).not.toContain('dQw4w9WgXcQ&');
+  });
+
+  it('filtrar a lista não classifica o vídeo novo', async () => {
+    vi.mocked(api.addVideo).mockResolvedValue({ ...VIDEO, id: 'v9' });
+    renderPage();
+
+    // Filtra por Matemática...
+    fireEvent.change(await screen.findByLabelText('Filtrar'), {
+      target: { value: 's1' },
+    });
+    await waitFor(() => expect(api.videos).toHaveBeenCalledWith('s1'));
+
+    // ...e salva um link: a matéria do vídeo continua sendo a do outro select.
+    fireEvent.change(screen.getByLabelText('Link do YouTube'), {
+      target: { value: 'https://youtu.be/abc12345678' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
+
+    await waitFor(() =>
+      expect(api.addVideo).toHaveBeenCalledWith(
+        'https://youtu.be/abc12345678',
+        undefined,
+      ),
+    );
+  });
+
+  it('erro ao salvar nota aparece na tela em vez de sumir', async () => {
+    vi.mocked(api.addVideoNote).mockRejectedValue(new Error('Nota inválida'));
+    renderPage();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Assistir Aula de Funções' }),
+    );
+
+    fireEvent.change(await screen.findByLabelText('Conteúdo da nota'), {
+      target: { value: 'oi' },
+    });
+    fireEvent.click(screen.getByText('Anotar'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nota inválida');
+  });
+
+  it('instante inválido é recusado antes de chamar a API', async () => {
+    renderPage();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Assistir Aula de Funções' }),
+    );
+
+    fireEvent.change(await screen.findByLabelText('Instante da nota'), {
+      target: { value: 'abc' },
+    });
+    fireEvent.change(screen.getByLabelText('Conteúdo da nota'), {
+      target: { value: 'oi' },
+    });
+    fireEvent.click(screen.getByText('Anotar'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Instante inválido/,
+    );
+    expect(api.addVideoNote).not.toHaveBeenCalled();
+  });
+});
+
+describe('parseTimestamp', () => {
+  it('aceita segundos, mm:ss e h:mm:ss', () => {
+    expect(parseTimestamp('90')).toBe(90);
+    expect(parseTimestamp('1:30')).toBe(90);
+    // Antes as horas eram descartadas e isto virava 90.
+    expect(parseTimestamp('1:30:00')).toBe(5400);
+    expect(parseTimestamp('')).toBe(0);
+  });
+
+  it('recusa texto inválido e valores acima de 24h', () => {
+    expect(parseTimestamp('abc')).toBeNull();
+    expect(parseTimestamp('1:2:3:4')).toBeNull();
+    expect(parseTimestamp('-5')).toBeNull();
+    expect(parseTimestamp('25:00:00')).toBeNull();
+  });
+});
+
+describe('embedUrl', () => {
+  it('monta a query com ? e só inclui start quando há seek', () => {
+    expect(embedUrl('abc12345678', null)).toBe(
+      'https://www.youtube-nocookie.com/embed/abc12345678?autoplay=0',
+    );
+    expect(embedUrl('abc12345678', 90)).toBe(
+      'https://www.youtube-nocookie.com/embed/abc12345678?autoplay=1&start=90',
+    );
+  });
+
+  it('trata o instante 0 como um seek de verdade', () => {
+    // `seekTo && ...` tratava 0 como "sem seek".
+    expect(embedUrl('abc12345678', 0)).toContain('start=0');
   });
 });
