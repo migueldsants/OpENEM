@@ -78,6 +78,12 @@ export const AREAS: { key: AreaKey; label: string }[] = [
   { key: 'lin', label: 'Linguagens' },
 ];
 
+// Nome curto da matéria: "Matemática e suas Tecnologias" -> "Matemática".
+// Usado em Cronograma, Fórmulas e Vídeos (antes duplicado como .replace inline).
+export function shortSubject(subjectName?: string): string {
+  return (subjectName ?? '').replace(' e suas Tecnologias', '');
+}
+
 // Rótulo curto pelo nome completo do subject (ex.: "Matemática e suas Tecnologias").
 export function shortArea(subjectName?: string): string {
   const key = areaKey(subjectName);

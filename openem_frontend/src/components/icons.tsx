@@ -14,6 +14,7 @@ import {
   Check,
   Circle,
   Clock,
+  Copy,
   Diamond,
   DotsThree,
   Eraser,
@@ -141,6 +142,8 @@ export const IconNote = shim(NotePencil, 'duotone');
 export const IconTrash = shim(Trash, 'duotone');
 export const IconImage = shim(ImageIcon, 'duotone');
 export const IconEraser = shim(Eraser, 'duotone');
+// Copiar LaTeX no cheat sheet de fórmulas (issue #38).
+export const IconCopy = shim(Copy, 'duotone');
 export const IconHand = shim(Hand, 'duotone');
 export const IconMinus = shim(Minus, 'bold');
 export const IconZoomIn = shim(MagnifyingGlassPlus, 'bold');

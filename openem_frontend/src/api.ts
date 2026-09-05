@@ -518,6 +518,16 @@ export interface StudySession {
   topic: TopicRef;
   gamification?: GamificationDelta;
 }
+/** Retorno do PATCH /study-plan/sessions/:id — sem `topic` (StudySessionResult). */
+export interface StudySessionUpdate {
+  id: string;
+  planId: string;
+  topicId: string;
+  dayIndex: number;
+  minutes: number;
+  done: boolean;
+  gamification?: GamificationDelta;
+}
 export interface StudyPlan {
   id: string;
   minutesPerDay: number;
@@ -924,7 +934,7 @@ export const api = {
   generateStudyPlan: () =>
     request<StudyPlan>('/study-plan/generate', { method: 'POST' }),
   setSessionDone: (id: string, done: boolean) =>
-    request<StudySession>(`/study-plan/sessions/${id}`, {
+    request<StudySessionUpdate>(`/study-plan/sessions/${id}`, {
       method: 'PATCH',
       body: { done },
     }),

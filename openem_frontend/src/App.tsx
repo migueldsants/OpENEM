@@ -267,7 +267,6 @@ export default function App() {
       <Route path="/flashcards" element={<Flashcards />} />
       <Route path="/formulas" element={<Formulas />} />
       <Route path="/videos" element={<Videos />} />
-      <Route path="/quadro" element={<Quadro />} />
       <Route
         path="/quadro"
         element={

@@ -511,6 +511,13 @@
     background: var(--surface-2);
     border: 1px solid var(--line);
   }
+  /* Chip usado como filtro on/off (ex.: "Favoritas" nas Fórmulas). */
+  .chip[data-active='true'] {
+    background: color-mix(in oklab, var(--brand) 14%, transparent);
+    border-color: color-mix(in oklab, var(--brand) 40%, transparent);
+    color: var(--brand);
+    font-weight: 600;
+  }
 
   /* Grupo de botões segmentado (abas Entrar/Criar conta, Banco/Favoritos). */
   .seg {
