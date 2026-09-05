@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   api,
+  HttpError,
   type GamificationDelta,
   type StudyPlan,
   type StudySession,
@@ -11,9 +12,13 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCalendar, IconCheck } from '../components/icons';
 import { useGamification } from '../gamification';
-import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
+
+/** Faixa aceita pelo backend (UpdateProfileDto: Min(5) / Max(1440)). */
+const MIN_MINUTES = 5;
+const MAX_MINUTES = 1440;
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -41,20 +46,48 @@ function fmtDay(d: Date): string {
   ).padStart(2, '0')}`;
 }
 
+/** Índice do dia de hoje dentro do plano (negativo = plano começa no futuro). */
+function dayIndexOf(plan: StudyPlan, today = new Date()): number {
+  const planStart = startOfDay(new Date(plan.createdAt));
+  return Math.round(
+    (startOfDay(today).getTime() - planStart.getTime()) / 86_400_000,
+  );
+}
+
 export default function Cronograma() {
   const { me, refreshMe } = useAuth();
   const { refresh } = useGamification();
   const [plan, setPlan] = useState<StudyPlan | null>(null);
-  const [minutes, setMinutes] = useState(me?.profile?.minutesPerDay ?? 60);
+  // String para permitir o campo vazio enquanto o usuário digita — com Number()
+  // direto, apagar o campo virava 0 e o ajuste era descartado em silêncio.
+  const [minutes, setMinutes] = useState(
+    String(me?.profile?.minutesPerDay ?? 60),
+  );
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [award, setAward] = useState<GamificationDelta | null>(null);
+  const [confirmingRegen, setConfirmingRegen] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setPlan(await api.studyPlan());
-    } catch {
-      setPlan(null); // ainda não há cronograma gerado
+      setLoadFailed(false);
+      setError(null);
+    } catch (err) {
+      setPlan(null);
+      // 404 = ainda não há cronograma gerado; o resto é falha de verdade e
+      // não pode se disfarçar de "sem cronograma ainda".
+      if (err instanceof HttpError && err.status === 404) {
+        setLoadFailed(false);
+      } else {
+        setLoadFailed(true);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar o cronograma.',
+        );
+      }
     }
   }, []);
 
@@ -63,19 +96,33 @@ export default function Cronograma() {
   }, [load]);
 
   useEffect(() => {
-    if (me?.profile?.minutesPerDay) setMinutes(me.profile.minutesPerDay);
+    if (me?.profile?.minutesPerDay) setMinutes(String(me.profile.minutesPerDay));
   }, [me?.profile?.minutesPerDay]);
 
+  const minutesValue = Number(minutes);
+  const minutesValid =
+    Number.isInteger(minutesValue) &&
+    minutesValue >= MIN_MINUTES &&
+    minutesValue <= MAX_MINUTES;
+
   async function generate() {
+    if (!minutesValid) {
+      setError(
+        `Informe um número inteiro de minutos entre ${MIN_MINUTES} e ${MAX_MINUTES}.`,
+      );
+      return;
+    }
+    setConfirmingRegen(false);
     setLoading(true);
     setError(null);
     try {
       // O cronograma usa o tempo do perfil — salva o ajuste antes de gerar.
-      if (minutes && minutes !== me?.profile?.minutesPerDay) {
-        await api.updateProfile({ minutesPerDay: minutes });
+      if (minutesValue !== me?.profile?.minutesPerDay) {
+        await api.updateProfile({ minutesPerDay: minutesValue });
         await refreshMe();
       }
       setPlan(await api.generateStudyPlan());
+      setLoadFailed(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível gerar.');
     } finally {
@@ -102,19 +149,29 @@ export default function Cronograma() {
   const done = plan?.sessions.filter((s) => s.done).length ?? 0;
   const total = plan?.sessions.length ?? 0;
 
+  /** Horizonte do plano em dias e se ele já terminou. */
+  const { todayIndex, planDays } = useMemo(() => {
+    if (!plan) return { todayIndex: -1, planDays: 0 };
+    const maxDay = plan.sessions.reduce((m, s) => Math.max(m, s.dayIndex), -1);
+    return { todayIndex: dayIndexOf(plan), planDays: maxDay + 1 };
+  }, [plan]);
+  const expired = plan !== null && planDays > 0 && todayIndex >= planDays;
+
   /** Sessões de hoje (issue #46): "Hoje: [Matéria]". */
   const todaySessions = useMemo(() => {
-    if (!plan) return [];
-    const planStart = startOfDay(new Date(plan.createdAt));
-    const today = startOfDay(new Date());
-    const dayIndex = Math.round(
-      (today.getTime() - planStart.getTime()) / 86_400_000,
-    );
-    if (dayIndex < 0) return [];
-    return plan.sessions.filter((s) => s.dayIndex === dayIndex);
-  }, [plan]);
+    if (!plan || todayIndex < 0) return [];
+    return plan.sessions.filter((s) => s.dayIndex === todayIndex);
+  }, [plan, todayIndex]);
   const todaySubject = dominantSubject(todaySessions);
   const todayDone = todaySessions.every((s) => s.done) && todaySessions.length > 0;
+
+  const generateLabel = loading
+    ? 'Montando…'
+    : confirmingRegen
+      ? 'Confirmar — apaga o progresso'
+      : plan
+        ? 'Regenerar plano'
+        : 'Gerar cronograma';
 
   return (
     <div className="space-y-5">
@@ -131,28 +188,53 @@ export default function Cronograma() {
             <div className="mt-1.5 flex items-center gap-2">
               <input
                 type="number"
-                min={5}
-                max={1440}
+                min={MIN_MINUTES}
+                max={MAX_MINUTES}
+                step={1}
                 value={minutes}
-                onChange={(e) => setMinutes(Number(e.target.value))}
+                onChange={(e) => setMinutes(e.target.value)}
+                aria-invalid={!minutesValid}
+                aria-describedby={minutesValid ? undefined : 'minutes-hint'}
                 className="input w-24"
               />
               <span className="text-sm text-muted">min</span>
             </div>
+            {!minutesValid && (
+              <span id="minutes-hint" className="mt-1 block text-xs text-red">
+                Entre {MIN_MINUTES} e {MAX_MINUTES} minutos.
+              </span>
+            )}
           </label>
-          <button
-            onClick={generate}
-            disabled={loading}
-            className="btn btn-primary ml-auto"
-          >
-            {loading ? 'Montando…' : plan ? 'Regenerar plano' : 'Gerar cronograma'}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {confirmingRegen && (
+              <button
+                onClick={() => setConfirmingRegen(false)}
+                className="btn btn-ghost"
+              >
+                Cancelar
+              </button>
+            )}
+            <button
+              // Regenerar apaga o plano atual no backend (deleteMany), então
+              // um plano existente exige confirmação em dois passos.
+              onClick={() =>
+                plan && !confirmingRegen
+                  ? setConfirmingRegen(true)
+                  : void generate()
+              }
+              disabled={loading || !minutesValid}
+              className={`btn ${confirmingRegen ? 'btn-ghost text-red' : 'btn-primary'}`}
+            >
+              {generateLabel}
+            </button>
+          </div>
         </div>
       </header>
 
-      {error && (
-        <ErrorBanner message={error} />
-      )}
+      <ErrorBanner
+        message={error}
+        onRetry={loadFailed ? () => void load() : undefined}
+      />
 
       {award && (
         <div className="card card-raised p-4">
@@ -160,14 +242,37 @@ export default function Cronograma() {
         </div>
       )}
 
+      {expired && (
+        <div className="card flex flex-wrap items-center gap-3 p-4 ring-1 ring-hum/30">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-sm font-bold">
+              Este cronograma já terminou
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              Ele cobria {planDays} {planDays === 1 ? 'dia' : 'dias'} a partir de{' '}
+              {fmtDay(new Date(plan.createdAt))}. Gere um novo para continuar.
+            </p>
+          </div>
+          <button
+            onClick={() => void generate()}
+            disabled={loading || !minutesValid}
+            className="btn btn-primary shrink-0"
+          >
+            Gerar novo
+          </button>
+        </div>
+      )}
+
       {!plan ? (
-        <EmptyState
-          icon={IconCalendar}
-          title="Sem cronograma ainda"
-          description="Gere um plano adaptado ao seu tempo disponível."
-          action={{ onClick: generate, label: 'Gerar cronograma' }}
-          tip="Priorizamos os assuntos em que você mais erra"
-        />
+        loadFailed ? null : (
+          <EmptyState
+            icon={IconCalendar}
+            title="Sem cronograma ainda"
+            description="Gere um plano adaptado ao seu tempo disponível."
+            action={{ onClick: () => void generate(), label: 'Gerar cronograma' }}
+            tip="Priorizamos os assuntos em que você mais erra"
+          />
+        )
       ) : (
         <>
           {/* Matéria de hoje (issue #46) — visão canônica por matéria. */}
@@ -212,7 +317,14 @@ export default function Cronograma() {
               <p className="text-xs text-muted">sessões concluídas</p>
             </div>
             <div className="flex-1">
-              <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+              <div
+                role="progressbar"
+                aria-valuenow={done}
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-label="Sessões concluídas"
+                className="h-2 overflow-hidden rounded-full bg-surface-2"
+              >
                 <div
                   className="h-full rounded-full bg-brand transition-all"
                   style={{ width: `${total ? (done / total) * 100 : 0}%` }}
@@ -224,7 +336,7 @@ export default function Cronograma() {
             </div>
           </div>
 
-          <WeeklyCalendar plan={plan} onToggle={toggleDone} />
+          <PlanDays plan={plan} onToggle={toggleDone} />
         </>
       )}
     </div>
@@ -242,147 +354,224 @@ function dominantSubject(sessions: StudySession[]): string | null {
   return [...bySubject.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
-/** Rótulo curto da matéria ("Matemática e suas Tecnologias" → "Matemática"). */
-function shortSubject(name: string): string {
-  return name.replace(' e suas Tecnologias', '');
+interface PlanDay {
+  date: Date;
+  dayIndex: number;
+  sessions: StudySession[];
 }
 
-/** Calendário visual semanal do cronograma — cada dia num grid Seg–Dom. */
-function WeeklyCalendar({
+/** Botão de uma sessão (marca/desmarca a conclusão). */
+function SessionToggle({
+  session,
+  onToggle,
+  compact,
+}: {
+  session: StudySession;
+  onToggle: (s: StudySession) => void;
+  compact: boolean;
+}) {
+  const area = areaKey(session.topic.subject.name);
+  return (
+    <button
+      onClick={() => onToggle(session)}
+      aria-pressed={session.done}
+      className={`flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-surface-2 ${
+        compact ? 'text-[10px]' : 'gap-2 py-1.5 text-sm'
+      }`}
+    >
+      <span
+        className={`grid shrink-0 place-items-center rounded border ${
+          compact ? 'size-3.5' : 'size-4'
+        } ${
+          session.done ? 'border-transparent bg-brand text-brand-ink' : 'border-line'
+        }`}
+        aria-hidden
+      >
+        {session.done && (
+          <IconCheck width={compact ? 9 : 11} height={compact ? 9 : 11} />
+        )}
+      </span>
+      <span className={`size-1.5 shrink-0 rounded-full ${AREA_DOT[area]}`} aria-hidden />
+      <span
+        className={`truncate ${
+          session.done ? 'text-muted line-through' : AREA_TEXT[area]
+        }`}
+      >
+        {session.topic.name}
+      </span>
+      {!compact && (
+        <span className="ml-auto shrink-0 text-xs tabular-nums text-muted">
+          {session.minutes} min
+        </span>
+      )}
+    </button>
+  );
+}
+
+/**
+ * Cronograma por dia. No desktop, um grid Seg–Dom; no mobile, uma lista —
+ * sete colunas em 360px deixavam ~42px por célula e o nome do assunto sumia.
+ */
+function PlanDays({
   plan,
   onToggle,
 }: {
   plan: StudyPlan;
   onToggle: (s: StudySession) => void;
 }) {
-  const { cells } = useMemo(() => {
+  const { days, rows } = useMemo(() => {
     const planStart = startOfDay(new Date(plan.createdAt));
     const maxDay = plan.sessions.reduce((m, s) => Math.max(m, s.dayIndex), -1);
     const totalDays = maxDay + 1;
-    const startOffset = (planStart.getDay() + 6) % 7; // Seg=0..Dom=6
-    const weeks = Math.ceil((startOffset + totalDays) / 7);
     const byDay = new Map<number, StudySession[]>();
     for (const s of plan.sessions) {
       const list = byDay.get(s.dayIndex) ?? [];
       list.push(s);
       byDay.set(s.dayIndex, list);
     }
-    const rows: { date: Date | null; dayIndex: number | null; sessions: StudySession[] }[][] = [];
+    const flat: PlanDay[] = Array.from({ length: totalDays }, (_, i) => ({
+      date: addDays(planStart, i),
+      dayIndex: i,
+      sessions: byDay.get(i) ?? [],
+    }));
+
+    const startOffset = (planStart.getDay() + 6) % 7; // Seg=0..Dom=6
+    const weeks = Math.ceil((startOffset + totalDays) / 7);
+    const grid: (PlanDay | null)[][] = [];
     for (let w = 0; w < weeks; w += 1) {
-      const row: { date: Date | null; dayIndex: number | null; sessions: StudySession[] }[] = [];
+      const row: (PlanDay | null)[] = [];
       for (let c = 0; c < 7; c += 1) {
         const globalIndex = w * 7 + c - startOffset;
-        if (globalIndex >= 0 && globalIndex < totalDays) {
-          row.push({
-            date: addDays(planStart, globalIndex),
-            dayIndex: globalIndex,
-            sessions: byDay.get(globalIndex) ?? [],
-          });
-        } else {
-          row.push({ date: null, dayIndex: null, sessions: [] });
-        }
+        row.push(flat[globalIndex] ?? null);
       }
-      rows.push(row);
+      grid.push(row);
     }
-    return { cells: rows };
+    return { days: flat, rows: grid };
   }, [plan]);
 
   const today = startOfDay(new Date());
 
   return (
-    <div className="card p-4">
-      <div className="grid grid-cols-7 gap-1.5">
-        {WEEKDAYS.map((d) => (
-          <div
-            key={d}
-            className="text-center text-[10px] font-semibold uppercase tracking-wide text-muted"
-          >
-            {d}
-          </div>
-        ))}
+    <>
+      {/* Mobile: lista vertical legível. */}
+      <div className="space-y-2 md:hidden">
+        {days.map((day) => {
+          const isToday = sameDay(day.date, today);
+          const daySubject = dominantSubject(day.sessions);
+          const dayArea = daySubject ? areaKey(daySubject) : null;
+          return (
+            <section
+              key={day.dayIndex}
+              className={`card p-3 ${isToday ? 'ring-1 ring-brand' : ''}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold tabular-nums text-muted">
+                  {WEEKDAYS[(day.date.getDay() + 6) % 7]} {fmtDay(day.date)}
+                </span>
+                {isToday && (
+                  <span className="rounded-full bg-brand/12 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+                    hoje
+                  </span>
+                )}
+                {daySubject && dayArea && (
+                  <span
+                    className={`ml-auto truncate text-xs font-bold ${AREA_TEXT[dayArea]}`}
+                  >
+                    {shortSubject(daySubject)}
+                  </span>
+                )}
+              </div>
+              {day.sessions.length === 0 ? (
+                <p className="mt-1 text-xs text-muted">Dia livre</p>
+              ) : (
+                <ul className="mt-1.5 space-y-0.5">
+                  {day.sessions.map((s) => (
+                    <li key={s.id}>
+                      <SessionToggle
+                        session={s}
+                        onToggle={onToggle}
+                        compact={false}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
       </div>
-      <div className="mt-1.5 space-y-1.5">
-        {cells.map((row, w) => (
-          <div key={w} className="grid grid-cols-7 gap-1.5">
-            {row.map((cell, c) => {
-              if (cell.date === null) {
+
+      {/* Desktop: calendário Seg–Dom. */}
+      <div className="card hidden p-4 md:block">
+        <div className="grid grid-cols-7 gap-1.5">
+          {WEEKDAYS.map((d) => (
+            <div
+              key={d}
+              className="text-center text-[10px] font-semibold uppercase tracking-wide text-muted"
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+        <div className="mt-1.5 space-y-1.5">
+          {rows.map((row, w) => (
+            <div key={w} className="grid grid-cols-7 gap-1.5">
+              {row.map((cell, c) => {
+                if (cell === null) {
+                  return (
+                    <div
+                      key={c}
+                      className="min-h-[88px] rounded-lg border border-line/30 opacity-40"
+                    />
+                  );
+                }
+                const isToday = sameDay(cell.date, today);
+                const hasSessions = cell.sessions.length > 0;
+                const daySubject = dominantSubject(cell.sessions);
+                const dayArea = daySubject ? areaKey(daySubject) : null;
                 return (
                   <div
                     key={c}
-                    className="min-h-[88px] rounded-lg border border-line/30 opacity-40"
-                  />
-                );
-              }
-              const isToday = sameDay(cell.date, today);
-              const hasSessions = cell.sessions.length > 0;
-              const daySubject = dominantSubject(cell.sessions);
-              const dayArea = daySubject ? areaKey(daySubject) : null;
-              return (
-                <div
-                  key={c}
-                  className={`min-h-[88px] rounded-lg border p-1.5 ${
-                    hasSessions ? 'border-line bg-surface' : 'border-line/50'
-                  } ${isToday ? 'ring-1 ring-brand' : ''}`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-semibold tabular-nums text-muted">
-                      {fmtDay(cell.date)}
-                    </span>
-                    {isToday && (
-                      <span className="rounded-full bg-brand/12 px-1.5 py-0.5 text-[9px] font-semibold text-brand">
-                        hoje
+                    className={`min-h-[88px] rounded-lg border p-1.5 ${
+                      hasSessions ? 'border-line bg-surface' : 'border-line/50'
+                    } ${isToday ? 'ring-1 ring-brand' : ''}`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-semibold tabular-nums text-muted">
+                        {fmtDay(cell.date)}
                       </span>
+                      {isToday && (
+                        <span className="rounded-full bg-brand/12 px-1.5 py-0.5 text-[9px] font-semibold text-brand">
+                          hoje
+                        </span>
+                      )}
+                    </div>
+                    {/* Matéria dominante do dia (issue #46). */}
+                    {daySubject && dayArea && (
+                      <p
+                        className={`mt-0.5 truncate text-[10px] font-bold ${AREA_TEXT[dayArea]}`}
+                      >
+                        {shortSubject(daySubject)}
+                      </p>
                     )}
-                  </div>
-                  {/* Matéria dominante do dia (issue #46). */}
-                  {daySubject && dayArea && (
-                    <p
-                      className={`mt-0.5 truncate text-[10px] font-bold ${AREA_TEXT[dayArea]}`}
-                    >
-                      {shortSubject(daySubject)}
-                    </p>
-                  )}
-                  <ul className="mt-1 space-y-0.5">
-                    {cell.sessions.map((s) => {
-                      const area = areaKey(s.topic.subject.name);
-                      return (
+                    <ul className="mt-1 space-y-0.5">
+                      {cell.sessions.map((s) => (
                         <li key={s.id}>
-                          <button
-                            onClick={() => onToggle(s)}
-                            className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[10px] transition-colors hover:bg-surface-2"
-                          >
-                            <span
-                              className={`grid size-3.5 shrink-0 place-items-center rounded border ${
-                                s.done
-                                  ? 'border-transparent bg-brand text-brand-ink'
-                                  : 'border-line'
-                              }`}
-                            >
-                              {s.done && <IconCheck width={9} height={9} />}
-                            </span>
-                            <span
-                              className={`size-1.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
-                            />
-                            <span
-                              className={`truncate ${
-                                s.done
-                                  ? 'text-muted line-through'
-                                  : AREA_TEXT[area]
-                              }`}
-                            >
-                              {s.topic.name}
-                            </span>
-                          </button>
+                          <SessionToggle
+                            session={s}
+                            onToggle={onToggle}
+                            compact
+                          />
                         </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
