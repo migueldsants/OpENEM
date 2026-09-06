@@ -78,7 +78,10 @@ describe('Formulas (issue #38)', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Matemática' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Física' })).toBeInTheDocument();
-    expect(screen.getByText(/Assunto: Funções/)).toBeInTheDocument();
+    // O assunto agora titula um subgrupo dentro da matéria.
+    expect(
+      screen.getByRole('heading', { name: 'Funções' }),
+    ).toBeInTheDocument();
   });
 
   it('busca por texto chama a API com o termo (debounce ~250ms)', async () => {
@@ -253,5 +256,40 @@ describe('Formulas (issue #38)', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
+  });
+  it('agrupa por matéria e, dentro dela, por assunto', async () => {
+    vi.mocked(api.formulas).mockResolvedValue([
+      BHASKARA,
+      { ...BHASKARA, id: 'f3', title: 'Delta', topicName: 'Funções' },
+      {
+        ...BHASKARA,
+        id: 'f4',
+        title: 'Lei dos senos',
+        topicName: 'Trigonometria',
+      },
+    ]);
+    renderPage();
+
+    // Uma matéria (h2) com dois assuntos (h3) abaixo.
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Matemática' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Funções' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Trigonometria' }),
+    ).toBeInTheDocument();
+  });
+
+  it('fórmula sem assunto cai no grupo "Outras", no fim', async () => {
+    vi.mocked(api.formulas).mockResolvedValue([
+      { ...BHASKARA, id: 'f5', title: 'Solta', topicName: null },
+      BHASKARA,
+    ]);
+    renderPage();
+
+    const titulos = await screen.findAllByRole('heading', { level: 3 });
+    expect(titulos.map((h) => h.textContent)).toEqual(['Funções', 'Outras']);
   });
 });

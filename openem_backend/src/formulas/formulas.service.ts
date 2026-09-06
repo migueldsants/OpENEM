@@ -100,7 +100,12 @@ export class FormulasService {
 
     const rows = await this.prisma.formula.findMany({
       where,
-      orderBy: [{ subject: { name: 'asc' } }, { title: 'asc' }],
+      // Matéria › assunto › título: a tela agrupa nessa mesma ordem.
+      orderBy: [
+        { subject: { name: 'asc' } },
+        { topic: { name: 'asc' } },
+        { title: 'asc' },
+      ],
       select: FORMULA_SELECT,
     });
     return rows.map((r) => this.toView(r, favoritedIds));

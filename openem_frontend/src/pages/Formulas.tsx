@@ -115,16 +115,12 @@ function FormulaCard({
           {formula.description}
         </p>
       )}
+      {/* O assunto já titula o grupo; repetir aqui era ruído. */}
       <div className="mt-auto flex items-center gap-2 pt-2.5">
         <button type="button" onClick={onOpen} className="chip shrink-0">
           <IconExpand width={12} height={12} />
           Expandir
         </button>
-        {formula.topicName && (
-          <span className="ml-auto min-w-0 truncate text-[0.65rem] text-muted">
-            Assunto: {formula.topicName}
-          </span>
-        )}
       </div>
     </li>
   );
@@ -208,15 +204,31 @@ export default function Formulas() {
     }
   }
 
-  // Agrupamento por matéria (mantém a ordenação da API).
+  /**
+   * Agrupamento em dois níveis: matéria › assunto (mantém a ordenação da
+   * API). Sem o segundo nível, Matemática virava uma lista corrida de 18
+   * fórmulas sem nenhuma pista de onde cada uma se encaixa.
+   */
   const bySubject = useMemo(() => {
-    const map = new Map<string, Formula[]>();
+    const subjects = new Map<string, Map<string, Formula[]>>();
     for (const f of formulas ?? []) {
-      const list = map.get(f.subjectName) ?? [];
-      list.push(f);
-      map.set(f.subjectName, list);
+      const topics = subjects.get(f.subjectName) ?? new Map<string, Formula[]>();
+      // Fórmulas sem assunto cadastrado caem num grupo próprio, no fim.
+      const key = f.topicName ?? '';
+      topics.set(key, [...(topics.get(key) ?? []), f]);
+      subjects.set(f.subjectName, topics);
     }
-    return [...map.entries()];
+    return [...subjects.entries()].map(([subjectName, topics]) => ({
+      subjectName,
+      count: [...topics.values()].reduce((n, list) => n + list.length, 0),
+      topics: [...topics.entries()]
+        .map(([topicName, list]) => ({ topicName, list }))
+        .sort((a, b) => {
+          if (a.topicName === '') return 1;
+          if (b.topicName === '') return -1;
+          return a.topicName.localeCompare(b.topicName, 'pt-BR');
+        }),
+    }));
   }, [formulas]);
 
   const open = formulas?.find((f) => f.id === openId) ?? null;
@@ -309,12 +321,12 @@ export default function Formulas() {
           tip="Busque por nome do conteúdo (ex.: Bhaskara) ou pela expressão"
         />
       ) : (
-        <div className="space-y-7">
-          {bySubject.map(([subjectName, list], i) => {
+        <div className="space-y-8">
+          {bySubject.map(({ subjectName, count, topics }, i) => {
             const area = areaKey(subjectName);
             return (
               <Reveal as="section" key={subjectName} delay={i * 60}>
-                {/* Cabeçalho ancorado na cor da área, sem caixa em volta. */}
+                {/* Cabeçalho da matéria, ancorado na cor da área. */}
                 <div className="flex items-center gap-2.5">
                   <span
                     className={`size-2.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
@@ -330,21 +342,38 @@ export default function Formulas() {
                     aria-hidden
                   />
                   <span className="shrink-0 font-data text-xs text-muted">
-                    {list.length}
+                    {count}
                   </span>
                 </div>
-                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {list.map((f) => (
-                    <FormulaCard
-                      key={f.id}
-                      formula={f}
-                      copied={copiedId === f.id}
-                      onCopy={() => copyLatex(f)}
-                      onOpen={() => setOpenId(f.id)}
-                      onToggleFavorite={() => void toggleFavorite(f)}
-                    />
+
+                <div className="mt-3 space-y-5">
+                  {topics.map(({ topicName, list }) => (
+                    <div key={topicName || 'sem-assunto'}>
+                      {/* Assunto: hierarquia mais leve que a da matéria. */}
+                      <div className="flex items-center gap-2">
+                        <h3 className="eyebrow shrink-0">
+                          {topicName || 'Outras'}
+                        </h3>
+                        <span className="h-px flex-1 bg-line" aria-hidden />
+                        <span className="shrink-0 font-data text-[0.65rem] text-muted">
+                          {list.length}
+                        </span>
+                      </div>
+                      <ul className="mt-2.5 grid gap-3 sm:grid-cols-2">
+                        {list.map((f) => (
+                          <FormulaCard
+                            key={f.id}
+                            formula={f}
+                            copied={copiedId === f.id}
+                            onCopy={() => copyLatex(f)}
+                            onOpen={() => setOpenId(f.id)}
+                            onToggleFavorite={() => void toggleFavorite(f)}
+                          />
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </Reveal>
             );
           })}

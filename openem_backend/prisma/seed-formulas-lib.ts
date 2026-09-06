@@ -650,6 +650,72 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
   ],
 };
 
+/**
+ * Assunto (subtópico) de cada fórmula, indexado pelo título. Os nomes têm de
+ * bater com a TAXONOMY do seed.ts — o seeding resolve por (matéria, nome) e
+ * ignora silenciosamente o que não existir.
+ *
+ * É o que permite agrupar a cola por assunto dentro de cada matéria, em vez
+ * de uma lista corrida de 18 fórmulas de Matemática.
+ */
+export const FORMULA_TOPICS: Record<string, string> = {
+  // ---- Matemática ----
+  'Equação do 2º grau (Bhaskara)': 'Equações do 2º grau',
+  'Delta (discriminante)': 'Equações do 2º grau',
+  'Soma e produto': 'Equações do 2º grau',
+  'Variação percentual': 'Porcentagem',
+  'Juros simples': 'Juros simples e compostos',
+  'Juros compostos': 'Juros simples e compostos',
+  'Área do triângulo': 'Áreas e perímetros',
+  'Área do triângulo (lados)': 'Áreas e perímetros',
+  'Círculo: área e circunferência': 'Áreas e perímetros',
+  'Teorema de Pitágoras': 'Geometria plana',
+  'Volume do cilindro': 'Volumes',
+  'Volume da esfera': 'Volumes',
+  'Seno e cosseno': 'Trigonometria',
+  'Lei dos senos': 'Trigonometria',
+  'PA — termo geral e soma': 'Progressão aritmética',
+  'PG — termo geral e soma': 'Progressão geométrica',
+  Combinação: 'Análise combinatória',
+  Probabilidade: 'Probabilidade',
+
+  // ---- Física ----
+  'Velocidade média': 'Cinemática',
+  'Função horária (MRU)': 'Cinemática',
+  'Funções horárias (MUV)': 'Cinemática',
+  Torricelli: 'Cinemática',
+  '2ª Lei de Newton': 'Leis de Newton',
+  Peso: 'Leis de Newton',
+  Trabalho: 'Trabalho e energia',
+  'Energia cinética e potencial': 'Trabalho e energia',
+  'Conservação de energia': 'Trabalho e energia',
+  Potência: 'Energia e potência',
+  'Quantidade de movimento': 'Impulso e quantidade de movimento',
+  '1ª Lei de Ohm': 'Eletrodinâmica',
+  'Resistência equivalente': 'Circuitos elétricos',
+  'Dilatação térmica linear': 'Termologia',
+  'Calor sensível': 'Calorimetria',
+
+  // ---- Química ----
+  Densidade: 'Propriedades da matéria',
+  'Concentração comum': 'Soluções',
+  'Concentração molar': 'Soluções',
+  Título: 'Soluções',
+  'Número de mols': 'Estequiometria',
+  'Constante de Avogadro': 'Estequiometria',
+  'Rendimento de reação': 'Estequiometria',
+  'Grau de ionização': 'Equilíbrio químico',
+  'Celsius ↔ Kelvin': 'Termoquímica',
+
+  // ---- Biologia ----
+  'Hardy-Weinberg': 'Genética',
+  'Aumento total (microscópio)': 'Citologia',
+  'Crescimento populacional': 'Ecologia',
+
+  // ---- Redação ----
+  'Estrutura da redação ENEM': 'Estrutura dissertativa',
+};
+
 /** Semeia as fórmulas por upsert (idempotente). Retorna quantas gravou. */
 export async function seedFormulas(prisma: PrismaClient): Promise<number> {
   let count = 0;
@@ -662,18 +728,37 @@ export async function seedFormulas(prisma: PrismaClient): Promise<number> {
       console.warn(`[seed-formulas] matéria não encontrada: ${f.subject}`);
       continue;
     }
+    // Assunto: resolvido por (matéria, nome) na taxonomia. Um nome que não
+    // exista mais vira null em vez de quebrar o seed.
+    const topicName = FORMULA_TOPICS[f.title];
+    const topic = topicName
+      ? await prisma.topic.findUnique({
+          where: {
+            subjectId_name: { subjectId: subject.id, name: topicName },
+          },
+          select: { id: true },
+        })
+      : null;
+    if (topicName && !topic) {
+      console.warn(
+        `[seed-formulas] assunto não encontrado: ${f.subject} / ${topicName}`,
+      );
+    }
+
     const formula = await prisma.formula.upsert({
       where: { title: f.title },
       update: {
         latex: f.latex,
         description: f.description ?? null,
         subjectId: subject.id,
+        topicId: topic?.id ?? null,
       },
       create: {
         title: f.title,
         latex: f.latex,
         description: f.description ?? null,
         subjectId: subject.id,
+        topicId: topic?.id ?? null,
         isBuiltIn: true,
       },
       select: { id: true },
