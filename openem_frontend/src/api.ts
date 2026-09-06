@@ -519,22 +519,20 @@ export interface Paginated<T> {
   items: T[];
   meta: { total: number; page: number; limit: number; pages: number };
 }
+/**
+ * Bloco do cronograma (issue #46): nome livre, não mais um subtópico fixo.
+ * O calendário é editável, então `label` é a fonte de verdade do que aparece.
+ */
 export interface StudySession {
   id: string;
+  /** "Matemática", "Inglês", "Revisar simulado"… */
+  label: string;
   dayIndex: number;
   minutes: number;
   done: boolean;
-  topic: TopicRef;
-  gamification?: GamificationDelta;
-}
-/** Retorno do PATCH /study-plan/sessions/:id — sem `topic` (StudySessionResult). */
-export interface StudySessionUpdate {
-  id: string;
-  planId: string;
-  topicId: string;
-  dayIndex: number;
-  minutes: number;
-  done: boolean;
+  position: number;
+  /** Matéria do ENEM quando o nome bate com o catálogo (cor e relatórios). */
+  subject: { id: string; name: string } | null;
   gamification?: GamificationDelta;
 }
 export interface StudyPlan {
@@ -942,11 +940,28 @@ export const api = {
   studyPlan: () => request<StudyPlan>('/study-plan'),
   generateStudyPlan: () =>
     request<StudyPlan>('/study-plan/generate', { method: 'POST' }),
-  setSessionDone: (id: string, done: boolean) =>
-    request<StudySessionUpdate>(`/study-plan/sessions/${id}`, {
+  /** Edita um bloco: nome, duração, dia ou conclusão. */
+  updateSession: (
+    id: string,
+    patch: Partial<
+      Pick<StudySession, 'label' | 'minutes' | 'dayIndex' | 'done'>
+    >,
+  ) =>
+    request<StudySession>(`/study-plan/sessions/${id}`, {
       method: 'PATCH',
-      body: { done },
+      body: patch,
     }),
+  addSession: (label: string, dayIndex: number, minutes?: number) =>
+    request<StudySession>('/study-plan/sessions', {
+      method: 'POST',
+      body: { label, dayIndex, ...(minutes ? { minutes } : {}) },
+    }),
+  removeSession: (id: string) =>
+    request<{ removed: boolean }>(`/study-plan/sessions/${id}`, {
+      method: 'DELETE',
+    }),
+  /** Esvazia o cronograma, mantendo o plano para edição manual. */
+  clearStudyPlan: () => request<StudyPlan>('/study-plan', { method: 'DELETE' }),
 
   essayPrompts: () => request<EssayPrompt[]>('/essays/prompts'),
   submitEssay: (promptId: string, content: string) =>

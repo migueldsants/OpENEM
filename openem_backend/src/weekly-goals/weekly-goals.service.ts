@@ -182,12 +182,15 @@ export class WeeklyGoalsService {
               done: true,
               // Planos gerados a partir do início da semana da meta.
               plan: { userId, createdAt: { gte: since } },
-              topic: goal.topicId
-                ? { id: goal.topicId }
+              // O bloco do cronograma passou a ser por MATÉRIA (issue #46),
+              // não por subtópico: uma meta de minutos por tópico é contada
+              // pelos blocos da matéria à qual esse tópico pertence.
+              subject: goal.topicId
+                ? { topics: { some: { id: goal.topicId } } }
                 : goal.subjectId
-                  ? { subjectId: goal.subjectId }
+                  ? { id: goal.subjectId }
                   : goal.subjectAreaId
-                    ? { subject: { subjectAreaId: goal.subjectAreaId } }
+                    ? { subjectAreaId: goal.subjectAreaId }
                     : undefined,
             },
             _sum: { minutes: true },

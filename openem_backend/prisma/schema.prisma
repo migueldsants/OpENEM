@@ -71,6 +71,7 @@ model Subject {
   formulas      Formula[]
   focusSessions FocusSession[]
   videos        Video[]
+  studySessions StudySession[]
 
   @@index([subjectAreaId])
 }
@@ -83,7 +84,6 @@ model Topic {
   weight        Int            @default(3) // peso Pareto 1..5 (incidência no ENEM)
   questions     Question[]
   reviewItems   ReviewItem[]
-  studySessions StudySession[]
   weeklyGoals   WeeklyGoal[]
   formulas      Formula[]
 
@@ -220,11 +220,18 @@ model StudySession {
   id       String    @id @default(cuid())
   planId   String
   plan     StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  topicId  String
-  topic    Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  /// Nome livre do bloco: "Matemática", "Inglês", "Revisar simulado".
+  /// É a fonte de verdade do que aparece no calendário.
+  label    String
+  /// Matéria do ENEM correspondente, quando o nome bate com o catálogo.
+  /// Serve para cor e relatórios; nulo em blocos livres.
+  subjectId String?
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
   dayIndex Int // 0..n
   minutes  Int
   done     Boolean   @default(false)
+  /// Ordem do bloco dentro do dia.
+  position Int       @default(0)
 
   @@index([planId, dayIndex])
 }
