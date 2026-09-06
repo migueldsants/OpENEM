@@ -57,6 +57,16 @@ function renderPage() {
   );
 }
 
+/**
+ * Renderiza e abre todos os grupos: os assuntos começam fechados, então os
+ * cards só existem no DOM depois disso.
+ */
+async function renderExpandido() {
+  const r = renderPage();
+  fireEvent.click(await screen.findByRole('button', { name: /Expandir tudo/ }));
+  return r;
+}
+
 describe('Formulas (issue #38)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -71,7 +81,7 @@ describe('Formulas (issue #38)', () => {
   });
 
   it('lista fórmulas agrupadas por matéria com título e assunto', async () => {
-    renderPage();
+    await renderExpandido();
 
     expect(
       await screen.findByText(/Equação do 2º grau/),
@@ -112,7 +122,7 @@ describe('Formulas (issue #38)', () => {
 
   it('favoritar é otimista e chama o toggle', async () => {
     vi.mocked(api.toggleFormulaFavorite).mockResolvedValue({ favorited: true });
-    renderPage();
+    await renderExpandido();
 
     const star = await screen.findByRole('button', {
       name: /Favoritar Equação/,
@@ -175,7 +185,7 @@ describe('Formulas (issue #38)', () => {
   it('copia o LaTeX da fórmula', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
-    renderPage();
+    await renderExpandido();
 
     fireEvent.click(
       await screen.findByRole('button', {
@@ -209,7 +219,7 @@ describe('Formulas (issue #38)', () => {
     expect(screen.getByText(/Lei de Ohm/)).toBeInTheDocument();
   });
   it('abre o detalhe da fórmula pela expressão', async () => {
-    renderPage();
+    await renderExpandido();
     fireEvent.click(
       await screen.findByRole('button', {
         name: `Abrir ${BHASKARA.title}`,
@@ -224,7 +234,7 @@ describe('Formulas (issue #38)', () => {
   });
 
   it('lista o significado e a unidade de cada símbolo', async () => {
-    renderPage();
+    await renderExpandido();
     fireEvent.click((await screen.findAllByText('Expandir'))[0]);
 
     const dialog = await screen.findByRole('dialog');
@@ -235,7 +245,7 @@ describe('Formulas (issue #38)', () => {
   });
 
   it('fórmula sem legenda abre o detalhe e explica a ausência', async () => {
-    renderPage();
+    await renderExpandido();
     await screen.findByText(/Lei de Ohm/);
 
     fireEvent.click(screen.getByRole('button', { name: `Abrir ${OHM.title}` }));
@@ -246,7 +256,7 @@ describe('Formulas (issue #38)', () => {
   });
 
   it('fecha o detalhe com Esc', async () => {
-    renderPage();
+    await renderExpandido();
     fireEvent.click(
       await screen.findByRole('button', { name: `Abrir ${BHASKARA.title}` }),
     );
@@ -291,5 +301,62 @@ describe('Formulas (issue #38)', () => {
 
     const titulos = await screen.findAllByRole('heading', { level: 3 });
     expect(titulos.map((h) => h.textContent)).toEqual(['Funções', 'Outras']);
+  });
+  it('assuntos começam fechados e a matéria abre como índice', async () => {
+    renderPage();
+
+    // O índice de assuntos aparece...
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Funções' }),
+    ).toBeInTheDocument();
+    // ...mas os cards ainda não.
+    expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Funções/ }));
+    expect(await screen.findByText(/Equação do 2º grau/)).toBeInTheDocument();
+  });
+
+  it('recolher a matéria esconde os assuntos', async () => {
+    renderPage();
+
+    const materia = await screen.findByRole('button', { name: /Matemática/ });
+    expect(materia).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(materia);
+    expect(materia).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('heading', { level: 3, name: 'Funções' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('"expandir tudo" abre e vira "recolher tudo"', async () => {
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Expandir tudo/ }),
+    );
+    expect(screen.getByText(/Equação do 2º grau/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Recolher tudo/ }));
+    expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument();
+  });
+
+  it('busca abre os grupos sozinha', async () => {
+    renderPage();
+    // Resultado escondido atrás de um grupo fechado faria a busca parecer
+    // quebrada.
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Funções' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Buscar fórmulas'), {
+      target: { value: 'bhaskara' },
+    });
+
+    expect(await screen.findByText(/Equação do 2º grau/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Expandir tudo|Recolher tudo/ }),
+    ).toBeDisabled();
   });
 });

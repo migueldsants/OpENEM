@@ -10,6 +10,8 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { FormulaSheet } from '../components/FormulaSheet';
 import {
   IconCheck,
+  IconChevronDown,
+  IconChevronRight,
   IconCopy,
   IconExpand,
   IconFormula,
@@ -141,6 +143,10 @@ export default function Formulas() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Matérias começam abertas (viram um índice de assuntos); assuntos começam
+  // fechados, senão a cola inteira vira uma página quilométrica.
+  const [subjectOpen, setSubjectOpen] = useState<Record<string, boolean>>({});
+  const [topicOpen, setTopicOpen] = useState<Record<string, boolean>>({});
   const [copiedId, copyLatex] = useCopyLatex();
   // Descarta respostas de buscas antigas que cheguem fora de ordem.
   const requestIdRef = useRef(0);
@@ -235,6 +241,44 @@ export default function Formulas() {
   const total = formulas?.length ?? 0;
   const hasFilters = q !== '' || subjectId !== '' || onlyFavorites;
 
+  // Com filtro ativo tudo abre: resultado escondido atrás de um grupo fechado
+  // faz a busca parecer quebrada.
+  const isSubjectOpen = (name: string) =>
+    hasFilters || (subjectOpen[name] ?? true);
+  const isTopicOpen = (key: string) => hasFilters || (topicOpen[key] ?? false);
+
+  function toggleSubject(name: string) {
+    setSubjectOpen((cur) => ({ ...cur, [name]: !(cur[name] ?? true) }));
+  }
+  function toggleTopic(key: string) {
+    setTopicOpen((cur) => ({ ...cur, [key]: !(cur[key] ?? false) }));
+  }
+
+  /** Abre ou fecha matérias e assuntos de uma vez. */
+  function setAll(open: boolean) {
+    const subjects: Record<string, boolean> = {};
+    const topics: Record<string, boolean> = {};
+    for (const group of bySubject) {
+      subjects[group.subjectName] = open;
+      for (const t of group.topics) {
+        topics[`${group.subjectName}::${t.topicName}`] = open;
+      }
+    }
+    setSubjectOpen(subjects);
+    setTopicOpen(topics);
+  }
+
+  // "Expandir tudo" só faz sentido enquanto houver algo fechado.
+  const allExpanded =
+    bySubject.length > 0 &&
+    bySubject.every(
+      (g) =>
+        (subjectOpen[g.subjectName] ?? true) &&
+        g.topics.every(
+          (t) => topicOpen[`${g.subjectName}::${t.topicName}`] ?? false,
+        ),
+    );
+
   function clearFilters() {
     setQ('');
     setSubjectId('');
@@ -289,9 +333,29 @@ export default function Formulas() {
             Favoritas
           </button>
           {formulas !== null && total > 0 && (
-            <span className="ml-auto shrink-0 font-data text-xs text-muted">
-              {total} {total === 1 ? 'fórmula' : 'fórmulas'}
-            </span>
+            <>
+              <button
+                type="button"
+                onClick={() => setAll(!allExpanded)}
+                disabled={hasFilters}
+                title={
+                  hasFilters
+                    ? 'Com filtro ativo os grupos ficam abertos'
+                    : undefined
+                }
+                className="chip ml-auto shrink-0"
+              >
+                {allExpanded ? (
+                  <IconChevronDown width={12} height={12} />
+                ) : (
+                  <IconChevronRight width={12} height={12} />
+                )}
+                {allExpanded ? 'Recolher tudo' : 'Expandir tudo'}
+              </button>
+              <span className="shrink-0 font-data text-xs text-muted">
+                {total} {total === 1 ? 'fórmula' : 'fórmulas'}
+              </span>
+            </>
           )}
         </div>
       </div>
@@ -321,13 +385,27 @@ export default function Formulas() {
           tip="Busque por nome do conteúdo (ex.: Bhaskara) ou pela expressão"
         />
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-3">
           {bySubject.map(({ subjectName, count, topics }, i) => {
             const area = areaKey(subjectName);
+            const subjectShown = isSubjectOpen(subjectName);
             return (
-              <Reveal as="section" key={subjectName} delay={i * 60}>
-                {/* Cabeçalho da matéria, ancorado na cor da área. */}
-                <div className="flex items-center gap-2.5">
+              <Reveal as="section" key={subjectName} delay={i * 40}>
+                {/* Matéria: cabeçalho colapsável, ancorado na cor da área. */}
+                <button
+                  type="button"
+                  onClick={() => toggleSubject(subjectName)}
+                  aria-expanded={subjectShown}
+                  className="flex w-full items-center gap-2.5 rounded-lg py-1 text-left transition-colors hover:bg-surface-2"
+                >
+                  <span
+                    className={`shrink-0 transition-transform ${AREA_TEXT[area]} ${
+                      subjectShown ? 'rotate-90' : ''
+                    }`}
+                    aria-hidden
+                  >
+                    <IconChevronRight width={13} height={13} />
+                  </span>
                   <span
                     className={`size-2.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
                     aria-hidden
@@ -344,36 +422,59 @@ export default function Formulas() {
                   <span className="shrink-0 font-data text-xs text-muted">
                     {count}
                   </span>
-                </div>
+                </button>
 
-                <div className="mt-3 space-y-5">
-                  {topics.map(({ topicName, list }) => (
-                    <div key={topicName || 'sem-assunto'}>
-                      {/* Assunto: hierarquia mais leve que a da matéria. */}
-                      <div className="flex items-center gap-2">
-                        <h3 className="eyebrow shrink-0">
-                          {topicName || 'Outras'}
-                        </h3>
-                        <span className="h-px flex-1 bg-line" aria-hidden />
-                        <span className="shrink-0 font-data text-[0.65rem] text-muted">
-                          {list.length}
-                        </span>
-                      </div>
-                      <ul className="mt-2.5 grid gap-3 sm:grid-cols-2">
-                        {list.map((f) => (
-                          <FormulaCard
-                            key={f.id}
-                            formula={f}
-                            copied={copiedId === f.id}
-                            onCopy={() => copyLatex(f)}
-                            onOpen={() => setOpenId(f.id)}
-                            onToggleFavorite={() => void toggleFavorite(f)}
-                          />
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                {subjectShown && (
+                  <div className="mt-1.5 space-y-1 pl-1.5">
+                    {topics.map(({ topicName, list }) => {
+                      const key = `${subjectName}::${topicName}`;
+                      const topicShown = isTopicOpen(key);
+                      return (
+                        <div key={topicName || 'sem-assunto'}>
+                          {/* Assunto: hierarquia mais leve que a da matéria. */}
+                          <button
+                            type="button"
+                            onClick={() => toggleTopic(key)}
+                            aria-expanded={topicShown}
+                            className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-surface-2"
+                          >
+                            <span
+                              className="shrink-0 text-muted"
+                              aria-hidden
+                            >
+                              {topicShown ? (
+                                <IconChevronDown width={11} height={11} />
+                              ) : (
+                                <IconChevronRight width={11} height={11} />
+                              )}
+                            </span>
+                            <h3 className="eyebrow shrink-0">
+                              {topicName || 'Outras'}
+                            </h3>
+                            <span className="h-px flex-1 bg-line" aria-hidden />
+                            <span className="shrink-0 font-data text-[0.65rem] text-muted">
+                              {list.length}
+                            </span>
+                          </button>
+                          {topicShown && (
+                            <ul className="mb-3 mt-2 grid gap-3 pl-4 sm:grid-cols-2">
+                              {list.map((f) => (
+                                <FormulaCard
+                                  key={f.id}
+                                  formula={f}
+                                  copied={copiedId === f.id}
+                                  onCopy={() => copyLatex(f)}
+                                  onOpen={() => setOpenId(f.id)}
+                                  onToggleFavorite={() => void toggleFavorite(f)}
+                                />
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Reveal>
             );
           })}
