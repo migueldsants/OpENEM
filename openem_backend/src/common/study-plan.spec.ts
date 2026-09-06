@@ -1,83 +1,70 @@
-import { buildStudyPlan, PlanTopic } from './study-plan';
+import { buildStudyPlan, PlanSubject } from './study-plan';
 
-const topics: PlanTopic[] = [
-  { id: 't1', name: 'Funções', subjectName: 'Matemática' },
-  { id: 't2', name: 'Cinemática', subjectName: 'Natureza' },
-  { id: 't3', name: 'Probabilidade', subjectName: 'Matemática' },
+const SUBJECTS: PlanSubject[] = [
+  { id: 'mat', name: 'Matemática' },
+  { id: 'fis', name: 'Física' },
+  { id: 'bio', name: 'Biologia' },
+  { id: 'his', name: 'História' },
 ];
 
-describe('buildStudyPlan', () => {
-  it('retorna vazio sem assuntos ou sem tempo', () => {
-    expect(buildStudyPlan([], 60)).toEqual([]);
-    expect(buildStudyPlan(topics, 0)).toEqual([]);
-  });
+describe('buildStudyPlan (issue #46 — plano por matéria)', () => {
+  it('respeita o horizonte e o orçamento diário de minutos', () => {
+    const blocks = buildStudyPlan(SUBJECTS, 90, { days: 7 });
+    const days = new Set(blocks.map((b) => b.dayIndex));
+    expect(days.size).toBe(7);
 
-  it('respeita o orçamento diário de minutos', () => {
-    const sessions = buildStudyPlan(topics, 90, { days: 7, blockMinutes: 30 });
-    for (let day = 0; day < 7; day++) {
-      const total = sessions
-        .filter((s) => s.dayIndex === day)
-        .reduce((sum, s) => sum + s.minutes, 0);
+    for (const day of days) {
+      const total = blocks
+        .filter((b) => b.dayIndex === day)
+        .reduce((sum, b) => sum + b.minutes, 0);
       expect(total).toBe(90);
     }
   });
 
-  it('cobre o número de dias pedido', () => {
-    const sessions = buildStudyPlan(topics, 60, { days: 5 });
-    const days = new Set(sessions.map((s) => s.dayIndex));
-    expect(days.size).toBe(5);
-    expect(Math.max(...days)).toBe(4);
-  });
-
-  it('prioriza os assuntos mais fracos (primeiros aparecem antes)', () => {
-    const sessions = buildStudyPlan(topics, 30, { days: 3, blockMinutes: 30 });
-    // 1 bloco por dia: o assunto mais fraco (t1) ocupa o primeiro slot.
-    expect(sessions[0].topicId).toBe('t1');
-  });
-
-  it('agrupa os blocos do dia em uma matéria dominante (issue #46)', () => {
-    // 3 blocos/dia: todas as sessões de um dia são da mesma matéria.
-    const sessions = buildStudyPlan(topics, 90, { days: 4, blockMinutes: 30 });
-    for (let day = 0; day < 4; day++) {
-      const daySubjects = new Set(
-        sessions.filter((s) => s.dayIndex === day).map((s) => s.subjectName),
-      );
-      expect(daySubjects.size).toBe(1);
+  it('não repete a mesma matéria dentro de um dia', () => {
+    const blocks = buildStudyPlan(SUBJECTS, 180, { days: 5 });
+    for (const day of new Set(blocks.map((b) => b.dayIndex))) {
+      const labels = blocks
+        .filter((b) => b.dayIndex === day)
+        .map((b) => b.label);
+      expect(new Set(labels).size).toBe(labels.length);
     }
   });
 
-  it('rotaciona as matérias entre os dias (issue #46)', () => {
-    const sessions = buildStudyPlan(topics, 90, { days: 4, blockMinutes: 30 });
-    // Matérias únicas na ordem de prioridade: Matemática, Natureza.
-    // Dias 0 e 2 = Matemática; dias 1 e 3 = Natureza.
-    expect(sessions.find((s) => s.dayIndex === 0)?.subjectName).toBe(
-      'Matemática',
-    );
-    expect(sessions.find((s) => s.dayIndex === 1)?.subjectName).toBe(
-      'Natureza',
-    );
-    expect(sessions.find((s) => s.dayIndex === 2)?.subjectName).toBe(
-      'Matemática',
-    );
-    expect(sessions.find((s) => s.dayIndex === 3)?.subjectName).toBe(
-      'Natureza',
-    );
+  it('espalha as matérias pela semana em vez de insistir em duas', () => {
+    // Regressão: o gerador antigo pegava os 5 tópicos alfabeticamente
+    // primeiros, o que concentrava a semana em poucas matérias.
+    const blocks = buildStudyPlan(SUBJECTS, 120, { days: 7 });
+    expect(new Set(blocks.map((b) => b.label)).size).toBe(SUBJECTS.length);
   });
 
-  it('dentro da matéria do dia, cobre tópicos distintos e cicla', () => {
-    const sessions = buildStudyPlan(topics, 60, { days: 4, blockMinutes: 30 });
-    const matDays = sessions.filter((s) => s.subjectName === 'Matemática');
-    // Matemática tem t1 e t3; 2 blocos/dia → dia 0 usa t1+t3.
-    const day0 = matDays.filter((s) => s.dayIndex === 0).map((s) => s.topicId);
-    expect(day0).toEqual(['t1', 't3']);
-    // Janela avança 2 → volta ao início (ciclo de 2 tópicos).
-    const day2 = matDays.filter((s) => s.dayIndex === 2).map((s) => s.topicId);
-    expect(day2).toEqual(['t1', 't3']);
+  it('carrega o subjectId quando a matéria vem do catálogo', () => {
+    const blocks = buildStudyPlan(SUBJECTS, 60, { days: 1 });
+    expect(blocks[0].subjectId).toBe('mat');
+    expect(blocks[0].label).toBe('Matemática');
+    expect(blocks[0].position).toBe(0);
   });
 
-  it('garante ao menos um bloco por dia mesmo com pouco tempo', () => {
-    const sessions = buildStudyPlan(topics, 10, { days: 2, blockMinutes: 30 });
-    expect(sessions.filter((s) => s.dayIndex === 0)).toHaveLength(1);
-    expect(sessions[0].minutes).toBe(10);
+  it('aceita matéria livre, sem id de catálogo', () => {
+    const blocks = buildStudyPlan([{ name: 'Inglês' }], 60, { days: 1 });
+    expect(blocks[0]).toMatchObject({ label: 'Inglês', subjectId: null });
+  });
+
+  it('limita os blocos por dia mesmo com muito tempo disponível', () => {
+    const blocks = buildStudyPlan(SUBJECTS, 600, { days: 1 });
+    expect(blocks).toHaveLength(4); // maxBlocksPerDay padrão
+    expect(blocks.reduce((sum, b) => sum + b.minutes, 0)).toBe(600);
+  });
+
+  it('gera ao menos um bloco quando o tempo é menor que um bloco', () => {
+    const blocks = buildStudyPlan(SUBJECTS, 20, { days: 2 });
+    expect(blocks).toHaveLength(2);
+    expect(blocks.every((b) => b.minutes === 20)).toBe(true);
+  });
+
+  it('retorna vazio para entradas degeneradas', () => {
+    expect(buildStudyPlan([], 60)).toEqual([]);
+    expect(buildStudyPlan(SUBJECTS, 0)).toEqual([]);
+    expect(buildStudyPlan(SUBJECTS, 60, { days: 0 })).toEqual([]);
   });
 });

@@ -6,12 +6,35 @@ import {
   type LeaderboardEntry,
 } from '../api';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconBolt, IconClock, IconGame, IconTarget } from '../components/icons';
+import {
+  IconBolt,
+  IconClock,
+  IconFlame,
+  IconGame,
+  IconHeart,
+  IconTarget,
+  IconTrophy,
+} from '../components/icons';
+import Reveal from '../components/Reveal';
 import { SkeletonCard } from '../components/Skeleton';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { useAuth } from '../auth';
 import { useGamification } from '../gamification';
 
 type Phase = 'menu' | 'playing' | 'over';
+
+/** Resultado de uma partida, comum a qualquer minigame. */
+export interface GameResult {
+  score: number;
+  level: number;
+  durationSec: number;
+}
+
+/** Contrato que todo minigame implementa para plugar no catálogo. */
+interface GameComponentProps {
+  levelKey: string;
+  onFinish: (result: GameResult) => void;
+}
 
 interface Problem {
   a: number;
@@ -60,15 +83,7 @@ function makeProblem(level: (typeof LEVELS)[number]): Problem {
 }
 
 /** Minigame Cálculo Mental: resoluções rápidas com combo e bônus de velocidade. */
-function CalcMental({
-  levelKey,
-  onOver,
-  onQuit,
-}: {
-  levelKey: string;
-  onOver: (score: number, level: number, durationSec: number) => void;
-  onQuit: () => void;
-}) {
+function CalcMental({ levelKey, onFinish }: GameComponentProps) {
   const level = LEVELS.find((l) => l.key === levelKey) ?? LEVELS[0];
   const [problem, setProblem] = useState<Problem>(() => makeProblem(level));
   const [guess, setGuess] = useState('');
@@ -78,8 +93,26 @@ function CalcMental({
   const [timeLeft, setTimeLeft] = useState(level.time);
   const [roundStart, setRoundStart] = useState(() => Date.now());
   const [feedback, setFeedback] = useState<'ok' | 'no' | null>(null);
+  // Pontos da rodada, congelados no momento do acerto — recalcular no render
+  // com Date.now() podia exibir ×1 numa rodada que pontuou ×2.
+  const [gained, setGained] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const startRef = useRef(Date.now());
+  const finishedRef = useRef(false);
+
+  /** Encerra a partida uma única vez (fim de vidas ou saída manual). */
+  const finish = useCallback(
+    (finalScore: number) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      onFinish({
+        score: finalScore,
+        level: Math.min(3, 1 + Math.floor(finalScore / 20)),
+        durationSec: Math.round((Date.now() - startRef.current) / 1000),
+      });
+    },
+    [onFinish],
+  );
 
   // Re-gera um problema e reinicia o cronômetro da rodada.
   const next = useCallback(() => {
@@ -95,32 +128,29 @@ function CalcMental({
     inputRef.current?.focus();
   }, [problem]);
 
-  // Cronômetro regressivo da rodada.
+  // Cronômetro regressivo da rodada. O updater é puro de propósito: com efeitos
+  // dentro dele o StrictMode o invocava duas vezes e o timeout custava 2 vidas.
   useEffect(() => {
     if (feedback) return;
-    const id = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          // tempo esgotado = erro
-          setFeedback('no');
-          setCombo(0);
-          setLives((l) => l - 1);
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
+    const id = setInterval(
+      () => setTimeLeft((t) => Math.max(0, t - 1)),
+      1000,
+    );
     return () => clearInterval(id);
   }, [feedback, problem]);
 
+  // Tempo esgotado conta como erro (efeito separado do updater acima).
+  useEffect(() => {
+    if (timeLeft > 0 || feedback) return;
+    setFeedback('no');
+    setCombo(0);
+    setLives((l) => l - 1);
+  }, [timeLeft, feedback]);
+
   // Fim de jogo quando as vidas acabam.
   useEffect(() => {
-    if (lives <= 0) {
-      const durationSec = Math.round((Date.now() - startRef.current) / 1000);
-      const finalLevel = Math.min(3, 1 + Math.floor(score / 20));
-      onOver(score, finalLevel, durationSec);
-    }
-  }, [lives, onOver, score]);
+    if (lives <= 0) finish(score);
+  }, [lives, finish, score]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -130,8 +160,9 @@ function CalcMental({
     const elapsed = (Date.now() - roundStart) / 1000;
     if (value === problem.answer) {
       const speedBonus = elapsed < 3 ? 2 : 1;
-      const gained = (1 + combo) * speedBonus;
-      setScore((s) => s + gained);
+      const points = (1 + combo) * speedBonus;
+      setGained(points);
+      setScore((s) => s + points);
       setCombo((c) => c + 1);
       setFeedback('ok');
     } else {
@@ -153,28 +184,26 @@ function CalcMental({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={onQuit} className="btn btn-ghost shrink-0">
-          Sair
+        <button
+          onClick={() => finish(score)}
+          className="btn btn-ghost shrink-0"
+          title="Encerra a partida e registra a pontuação atual"
+        >
+          Encerrar
         </button>
-        <div className="min-w-0 flex-1 text-center">
-          <p className="font-display text-sm font-bold tabular-nums">
-            {score}
-            <span className="text-muted"> pts</span>
-          </p>
-          <p className="text-[0.68rem] text-muted">
-            combo ×{combo} · {lives} vidas
-          </p>
-        </div>
         <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 font-display text-sm font-bold tabular-nums ${
+          role="timer"
+          aria-label={`${timeLeft} segundos restantes`}
+          className={`ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 font-display text-lg font-extrabold tabular-nums transition-colors ${
             timeLeft <= 2 ? 'bg-red/12 text-red' : 'bg-surface-2 text-fg'
           }`}
         >
-          <IconClock width={16} height={16} />
+          <IconClock width={18} height={18} aria-hidden />
           {timeLeft}s
         </span>
       </div>
 
+      {/* Barra do tempo: fina, colada ao HUD, vira vermelha nos 2s finais. */}
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
         <div
           className={`h-full rounded-full transition-[width] duration-1000 linear ${
@@ -184,8 +213,45 @@ function CalcMental({
         />
       </div>
 
+      {/* Placar em tiles: pontos, combo e vidas legíveis de relance. */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="card px-3 py-2 text-center">
+          <p className="font-display text-xl font-extrabold tabular-nums">
+            {score}
+          </p>
+          <p className="eyebrow mt-0.5">pontos</p>
+        </div>
+        <div className="card px-3 py-2 text-center">
+          <p
+            className={`inline-flex items-center gap-1 font-display text-xl font-extrabold tabular-nums ${
+              combo >= 3 ? 'text-hum' : ''
+            }`}
+          >
+            {combo >= 3 && <IconFlame width={16} height={16} filled aria-hidden />}
+            ×{combo}
+          </p>
+          <p className="eyebrow mt-0.5">combo</p>
+        </div>
+        <div className="card px-3 py-2 text-center">
+          <p className="flex items-center justify-center gap-1">
+            <span className="sr-only">{lives} vidas</span>
+            {[0, 1, 2].map((i) => (
+              <IconHeart
+                key={i}
+                width={17}
+                height={17}
+                filled={i < lives}
+                aria-hidden
+                className={i < lives ? 'text-red' : 'text-line'}
+              />
+            ))}
+          </p>
+          <p className="eyebrow mt-0.5">vidas</p>
+        </div>
+      </div>
+
       <div
-        className={`card card-raised p-8 text-center transition-colors ${
+        className={`card card-raised relative overflow-hidden p-8 text-center transition-colors sm:p-10 ${
           feedback === 'ok'
             ? 'bg-nat/10'
             : feedback === 'no'
@@ -193,10 +259,21 @@ function CalcMental({
               : ''
         }`}
       >
-        <p className="font-display text-4xl font-extrabold tabular-nums sm:text-5xl">
-          {problem.a} {problem.op} {problem.b}
+        {/* Textura de gabarito — decorativa, dá matéria ao fundo do card. */}
+        <span
+          className="bubble-field pointer-events-none absolute inset-0 opacity-[0.18]"
+          aria-hidden
+        />
+        <div className="relative">
+        <p
+          role="math"
+          aria-label={`${problem.a} ${problem.op} ${problem.b}`}
+          className="font-display text-5xl font-extrabold tabular-nums tracking-tight sm:text-6xl"
+        >
+          {problem.a} <span className="text-muted">{problem.op}</span>{' '}
+          {problem.b}
         </p>
-        <p className="mt-1 text-xs text-muted">= ?</p>
+        <p className="mt-1 font-data text-xs text-muted">= ?</p>
 
         <form onSubmit={submit} className="mt-5">
           <input
@@ -206,6 +283,7 @@ function CalcMental({
             inputMode="numeric"
             pattern="[0-9-]*"
             placeholder="Sua resposta"
+            aria-label="Sua resposta"
             className="input mx-auto w-40 text-center text-2xl font-bold tabular-nums"
             disabled={!!feedback}
           />
@@ -216,16 +294,20 @@ function CalcMental({
           )}
         </form>
 
-        {feedback === 'ok' && (
-          <p className="mt-3 text-sm font-semibold text-nat">
-            Acertou! +{(1 + combo - 1) * (Date.now() - roundStart < 3000 ? 2 : 1)} pts
-          </p>
-        )}
-        {feedback === 'no' && (
-          <p className="mt-3 text-sm font-semibold text-red">
-            Resposta: {problem.answer}
-          </p>
-        )}
+        {/* Leitores de tela precisam do resultado da rodada. */}
+        <div aria-live="assertive" className="mt-3 min-h-5">
+          {feedback === 'ok' && (
+            <p className="text-sm font-semibold text-nat">
+              Acertou! +{gained} pts
+            </p>
+          )}
+          {feedback === 'no' && (
+            <p className="text-sm font-semibold text-red">
+              Resposta: {problem.answer}
+            </p>
+          )}
+        </div>
+        </div>
       </div>
 
       <p className="text-center text-xs text-muted">
@@ -235,38 +317,69 @@ function CalcMental({
   );
 }
 
+/**
+ * Registro de minigames: a chave vem do catálogo do backend (GET /games).
+ * Um jogo sem componente aqui aparece como "em breve" em vez de abrir o jogo
+ * errado — antes qualquer item do catálogo renderizava o Cálculo Mental e
+ * gravava a pontuação na chave 'calculo-mental'.
+ */
+const GAME_COMPONENTS: Record<
+  string,
+  (props: GameComponentProps) => React.ReactElement
+> = {
+  'calculo-mental': CalcMental,
+};
+
 /** Card de um minigame no menu. */
 function GameCard({
   game,
+  playable,
+  record,
   onPlay,
 }: {
   game: GameCatalogItem;
+  playable: boolean;
+  record: number | null;
   onPlay: (levelKey: string) => void;
 }) {
   const [selected, setSelected] = useState(game.levels[0]?.key ?? '');
   return (
     <li className="card card-raised overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
-            <IconGame width={22} height={22} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-display font-bold">{game.name}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted">
-              {game.description}
+      <div className="flex items-start gap-3.5 p-5">
+        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand/12 text-brand">
+          <IconGame width={28} height={28} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg font-bold leading-tight">
+            {game.name}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-muted text-pretty">
+            {game.description}
+          </p>
+          {record !== null && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted">
+              <IconTrophy width={13} height={13} className="text-mat" aria-hidden />
+              Melhor marca:{' '}
+              <span className="font-data font-semibold text-fg">
+                {record} pts
+              </span>
             </p>
-          </div>
+          )}
         </div>
-        <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">
+      </div>
+
+      {/* Rodapé de ação, separado do conteúdo por uma superfície mais funda. */}
+      <div className="border-t border-line bg-surface-2/60 p-4">
+        <p className="text-xs leading-relaxed text-muted text-pretty">
           {game.scoring}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <div className="seg">
+          <div className="seg" role="group" aria-label="Dificuldade">
             {game.levels.map((l) => (
               <button
                 key={l.key}
                 data-active={selected === l.key}
+                aria-pressed={selected === l.key}
                 onClick={() => setSelected(l.key)}
               >
                 {l.label}
@@ -275,10 +388,12 @@ function GameCard({
           </div>
           <button
             onClick={() => onPlay(selected)}
+            disabled={!playable}
+            title={playable ? undefined : 'Este minigame ainda não está disponível'}
             className="btn btn-primary ml-auto"
           >
             <IconTarget width={16} height={16} />
-            Jogar
+            {playable ? 'Jogar' : 'Em breve'}
           </button>
         </div>
       </div>
@@ -286,51 +401,69 @@ function GameCard({
   );
 }
 
+// Pódio com os gradientes de liga que o design system já define.
+const MEDAL = ['league-ouro', 'league-prata', 'league-bronze'];
+
 function Leaderboard({
   title,
   entries,
   unit = 'pontos',
+  meId,
 }: {
   title: string;
   entries: LeaderboardEntry[];
   unit?: string;
+  meId?: string;
 }) {
   return (
     <section className="card p-5">
-      <h2 className="font-display text-lg font-bold">{title}</h2>
+      <h2 className="flex items-center gap-2 font-display text-base font-bold">
+        <IconTrophy width={16} height={16} className="text-muted" aria-hidden />
+        {title}
+      </h2>
       {entries.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
-          Nenhum resultado ainda. Seja o primeiro a jogar!
+          Nenhum resultado ainda. Seja o primeiro a jogar.
         </p>
       ) : (
-        <ol className="mt-3 space-y-1.5">
-          {entries.map((e, i) => (
+        <ol className="mt-3 space-y-0.5">
+          {entries.map((e, i) => {
+            const isMe = meId !== undefined && e.userId === meId;
+            return (
             <li
               key={e.userId}
-              className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2"
+              className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors ${
+                isMe
+                  ? 'bg-brand/10 ring-1 ring-brand/25'
+                  : 'hover:bg-surface-2'
+              }`}
             >
               <span
-                className={`grid size-7 shrink-0 place-items-center rounded-md text-xs font-bold tabular-nums ${
-                  i === 0
-                    ? 'bg-mat/15 text-mat'
-                    : i === 1
-                      ? 'bg-surface-2 text-muted'
-                      : i === 2
-                        ? 'bg-hum/15 text-hum'
-                        : 'bg-surface-2 text-muted'
+                className={`grid size-7 shrink-0 place-items-center rounded-lg font-data text-xs font-bold tabular-nums ${
+                  MEDAL[i] ? `${MEDAL[i]} text-white` : 'text-muted'
                 }`}
               >
                 {i + 1}
               </span>
-              <span className="min-w-0 flex-1 truncate font-medium">
+              <span
+                className={`min-w-0 flex-1 truncate ${
+                  i === 0 || isMe ? 'font-semibold' : 'font-medium'
+                }`}
+              >
                 {e.displayName}
+                {isMe && (
+                  <span className="ml-1.5 text-xs font-medium text-brand">
+                    você
+                  </span>
+                )}
               </span>
-              <span className="shrink-0 font-display font-bold tabular-nums text-brand">
+              <span className="shrink-0 font-data font-bold tabular-nums text-brand">
                 {e.bestScore}{' '}
                 <span className="text-xs font-medium text-muted">{unit}</span>
               </span>
             </li>
-          ))}
+            );
+          })}
         </ol>
       )}
     </section>
@@ -338,26 +471,38 @@ function Leaderboard({
 }
 
 export default function Games() {
+  const { me } = useAuth();
   const { refresh } = useGamification();
   const [games, setGames] = useState<GameCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>('menu');
+  const [activeGame, setActiveGame] = useState<GameCatalogItem | null>(null);
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [award, setAward] = useState<GamificationDelta | null>(null);
-  const [board, setBoard] = useState<LeaderboardEntry[]>([]);
+  const [lastScore, setLastScore] = useState(0);
+  const [boards, setBoards] = useState<Record<string, LeaderboardEntry[]>>({});
   const [globalBoard, setGlobalBoard] = useState<LeaderboardEntry[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const [g, b, gb] = await Promise.all([
-        api.gameCatalog(),
-        api.gameLeaderboard('calculo-mental', 10).catch(() => []),
-        api.globalLeaderboard(10).catch(() => []),
+      const catalog = await api.gameCatalog();
+      setGames(catalog);
+      // Um ranking por jogo do catálogo, em vez de uma chave fixa.
+      const [perGame, gb] = await Promise.all([
+        Promise.all(
+          catalog.map((g) =>
+            api
+              .gameLeaderboard(g.key, 10)
+              .catch((): LeaderboardEntry[] => [])
+              .then((entries) => [g.key, entries] as const),
+          ),
+        ),
+        api.globalLeaderboard(10).catch((): LeaderboardEntry[] => []),
       ]);
-      setGames(g);
-      setBoard(b);
+      setBoards(Object.fromEntries(perGame));
       setGlobalBoard(gb);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar.');
     } finally {
@@ -369,61 +514,70 @@ export default function Games() {
     void load();
   }, [load]);
 
-  async function handleOver(score: number, level: number, durationSec: number) {
-    setPhase('over');
-    if (score <= 0) return;
-    setError(null);
-    try {
-      const res = await api.submitGameScore(
-        'calculo-mental',
-        score,
-        level,
-        durationSec,
-      );
-      if (res.gamification) {
-        setAward(res.gamification);
-        void refresh();
+  const handleFinish = useCallback(
+    async (gameKey: string, result: GameResult) => {
+      setPhase('over');
+      setLastScore(result.score);
+      if (result.score <= 0) return;
+      setError(null);
+      try {
+        const res = await api.submitGameScore(
+          gameKey,
+          result.score,
+          result.level,
+          result.durationSec,
+        );
+        if (res.gamification) {
+          setAward(res.gamification);
+          void refresh();
+        }
+        await load();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Não foi possível salvar.');
       }
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível salvar.');
-    }
-  }
+    },
+    [load, refresh],
+  );
 
-  if (phase === 'playing') {
+  if (phase === 'playing' && activeGame) {
+    const ActiveGame = GAME_COMPONENTS[activeGame.key];
     return (
-      <div className="space-y-5 pb-28 md:pb-24">
-        <CalcMental
+      <div className="space-y-5">
+        <ActiveGame
           levelKey={activeLevel}
-          onOver={handleOver}
-          onQuit={() => setPhase('menu')}
+          onFinish={(result) => void handleFinish(activeGame.key, result)}
         />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
         <p className="eyebrow">Minigames</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           Games
         </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
           Treine o raciocínio rápido e ganhe XP jogando.
         </p>
       </header>
 
-      {error && (
-        <ErrorBanner message={error} />
-      )}
+      <ErrorBanner message={error} onRetry={() => void load()} />
 
       {phase === 'over' && (
-        <div className="card card-raised p-5">
-          <div className="flex items-center gap-2">
-            <IconBolt width={20} height={20} className="text-brand" filled />
-            <p className="font-display text-lg font-bold">Partida concluída!</p>
+        <div className="card card-raised card-glow p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
+              <IconBolt width={20} height={20} filled />
+            </span>
+            <p className="font-display text-lg font-bold">Partida concluída</p>
           </div>
+          <p className="mt-1 text-sm text-muted">
+            {lastScore > 0
+              ? `Pontuação registrada: ${lastScore} pts.`
+              : 'Sem pontos nesta partida — acerte pelo menos uma conta para pontuar.'}
+          </p>
           {award && (
             <div className="mt-2">
               <GamificationFeedback g={award} />
@@ -432,6 +586,7 @@ export default function Games() {
           <button
             onClick={() => {
               setAward(null);
+              setActiveGame(null);
               setPhase('menu');
             }}
             className="btn btn-primary mt-3"
@@ -447,13 +602,16 @@ export default function Games() {
           <SkeletonCard lines={3} />
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {games.map((g) => (
             <GameCard
               key={g.key}
               game={g}
+              playable={g.key in GAME_COMPONENTS}
+              record={boards[g.key]?.[0]?.bestScore ?? null}
               onPlay={(levelKey) => {
                 setAward(null);
+                setActiveGame(g);
                 setActiveLevel(levelKey);
                 setPhase('playing');
               }}
@@ -462,12 +620,22 @@ export default function Games() {
         </ul>
       )}
 
-      <Leaderboard title="Ranking — Cálculo Mental" entries={board} />
-      <Leaderboard
-        title="Ranking geral (XP)"
-        entries={globalBoard}
-        unit="XP"
-      />
+      <Reveal className="grid gap-3 sm:grid-cols-2">
+        {games.map((g) => (
+          <Leaderboard
+            key={g.key}
+            title={`Ranking — ${g.name}`}
+            entries={boards[g.key] ?? []}
+            meId={me?.id}
+          />
+        ))}
+        <Leaderboard
+          title="Ranking geral (XP)"
+          entries={globalBoard}
+          unit="XP"
+          meId={me?.id}
+        />
+      </Reveal>
     </div>
   );
 }

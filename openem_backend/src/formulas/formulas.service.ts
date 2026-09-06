@@ -3,6 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateFormulaDto } from './dto/create-formula.dto';
 import { QueryFormulasDto } from './dto/query-formulas.dto';
 
+/** Uma linha da legenda: o que o símbolo representa e em que unidade. */
+export interface FormulaSymbolView {
+  symbol: string;
+  meaning: string;
+  unit: string | null;
+}
+
 export interface FormulaView {
   id: string;
   title: string;
@@ -14,6 +21,8 @@ export interface FormulaView {
   topicName: string | null;
   isBuiltIn: boolean;
   favorited: boolean;
+  /** Legenda dos símbolos, na ordem em que aparecem na expressão. */
+  symbols: FormulaSymbolView[];
 }
 
 const FORMULA_SELECT = {
@@ -26,6 +35,10 @@ const FORMULA_SELECT = {
   isBuiltIn: true,
   subject: { select: { name: true } },
   topic: { select: { name: true } },
+  symbols: {
+    orderBy: { position: 'asc' as const },
+    select: { symbol: true, meaning: true, unit: true },
+  },
 } as const;
 
 type FormulaRow = {
@@ -38,6 +51,7 @@ type FormulaRow = {
   isBuiltIn: boolean;
   subject: { name: string } | null;
   topic: { name: string } | null;
+  symbols: { symbol: string; meaning: string; unit: string | null }[];
 };
 
 @Injectable()
@@ -56,6 +70,7 @@ export class FormulasService {
       topicName: row.topic?.name ?? null,
       isBuiltIn: row.isBuiltIn,
       favorited: favoritedIds.has(row.id),
+      symbols: row.symbols,
     };
   }
 
@@ -85,7 +100,12 @@ export class FormulasService {
 
     const rows = await this.prisma.formula.findMany({
       where,
-      orderBy: [{ subject: { name: 'asc' } }, { title: 'asc' }],
+      // Matéria › assunto › título: a tela agrupa nessa mesma ordem.
+      orderBy: [
+        { subject: { name: 'asc' } },
+        { topic: { name: 'asc' } },
+        { title: 'asc' },
+      ],
       select: FORMULA_SELECT,
     });
     return rows.map((r) => this.toView(r, favoritedIds));

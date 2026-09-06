@@ -1,6 +1,6 @@
 // Testes da tela Fórmulas (issue #38).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Formulas from './Formulas';
 import { api } from '../api';
@@ -29,6 +29,11 @@ const BHASKARA: Formula = {
   topicName: 'Funções',
   isBuiltIn: true,
   favorited: false,
+  symbols: [
+    { symbol: 'x', meaning: 'raízes da equação', unit: null },
+    { symbol: 'a', meaning: 'coeficiente de x²', unit: null },
+    { symbol: '\\Delta', meaning: 'discriminante', unit: 'u.a.' },
+  ],
 };
 
 const OHM: Formula = {
@@ -41,6 +46,7 @@ const OHM: Formula = {
   subjectName: 'Física',
   topicId: null,
   topicName: null,
+  symbols: [],
 };
 
 function renderPage() {
@@ -49,6 +55,16 @@ function renderPage() {
       <Formulas />
     </MemoryRouter>,
   );
+}
+
+/**
+ * Renderiza e abre todos os grupos: os assuntos começam fechados, então os
+ * cards só existem no DOM depois disso.
+ */
+async function renderExpandido() {
+  const r = renderPage();
+  fireEvent.click(await screen.findByRole('button', { name: /Expandir tudo/ }));
+  return r;
 }
 
 describe('Formulas (issue #38)', () => {
@@ -65,14 +81,17 @@ describe('Formulas (issue #38)', () => {
   });
 
   it('lista fórmulas agrupadas por matéria com título e assunto', async () => {
-    renderPage();
+    await renderExpandido();
 
     expect(
       await screen.findByText(/Equação do 2º grau/),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Matemática' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Física' })).toBeInTheDocument();
-    expect(screen.getByText(/Assunto: Funções/)).toBeInTheDocument();
+    // O assunto agora titula um subgrupo dentro da matéria.
+    expect(
+      screen.getByRole('heading', { name: 'Funções' }),
+    ).toBeInTheDocument();
   });
 
   it('busca por texto chama a API com o termo (debounce ~250ms)', async () => {
@@ -103,7 +122,7 @@ describe('Formulas (issue #38)', () => {
 
   it('favoritar é otimista e chama o toggle', async () => {
     vi.mocked(api.toggleFormulaFavorite).mockResolvedValue({ favorited: true });
-    renderPage();
+    await renderExpandido();
 
     const star = await screen.findByRole('button', {
       name: /Favoritar Equação/,
@@ -132,5 +151,234 @@ describe('Formulas (issue #38)', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Falha na rede');
+  });
+  it('o chip "Favoritas" expõe o estado ativo', async () => {
+    renderPage();
+    const chip = await screen.findByRole('button', { name: /Favoritas/ });
+    expect(chip).toHaveAttribute('data-active', 'false');
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('data-active', 'true');
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('desfavoritar no modo "só favoritas" tira a fórmula da lista', async () => {
+    vi.mocked(api.toggleFormulaFavorite).mockResolvedValue({ favorited: false });
+    vi.mocked(api.formulas).mockResolvedValue([
+      { ...BHASKARA, favorited: true },
+    ]);
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Favoritas/ }));
+    const star = await screen.findByRole('button', {
+      name: /Remover .* dos favoritos/,
+    });
+    fireEvent.click(star);
+
+    // Antes ficava na lista com a estrela vazia até um reload.
+    await waitFor(() =>
+      expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument(),
+    );
+  });
+
+  it('copia o LaTeX da fórmula', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    await renderExpandido();
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `Copiar LaTeX de ${BHASKARA.title}`,
+      }),
+    );
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(BHASKARA.latex));
+  });
+
+  it('descarta a resposta de uma busca antiga que chegue depois', async () => {
+    let resolveSlow: (v: unknown) => void = () => {};
+    vi.mocked(api.formulas)
+      // 1ª chamada (montagem) fica pendente de propósito.
+      .mockImplementationOnce(
+        () => new Promise((r) => { resolveSlow = r as (v: unknown) => void; }),
+      )
+      .mockResolvedValue([OHM]);
+
+    renderPage();
+    fireEvent.change(await screen.findByLabelText('Buscar fórmulas'), {
+      target: { value: 'ohm' },
+    });
+
+    // A busca nova responde primeiro...
+    expect(await screen.findByText(/Lei de Ohm/)).toBeInTheDocument();
+    // ...e a antiga, ao chegar atrasada, não pode sobrescrever a tela.
+    resolveSlow([BHASKARA]);
+    await waitFor(() =>
+      expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Lei de Ohm/)).toBeInTheDocument();
+  });
+  it('abre o detalhe da fórmula pela expressão', async () => {
+    await renderExpandido();
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `Abrir ${BHASKARA.title}`,
+      }),
+    );
+
+    const dialog = await screen.findByRole('dialog', {
+      name: `Fórmula: ${BHASKARA.title}`,
+    });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('Legenda')).toBeInTheDocument();
+  });
+
+  it('lista o significado e a unidade de cada símbolo', async () => {
+    await renderExpandido();
+    fireEvent.click(
+      await screen.findByRole('button', { name: `Abrir ${BHASKARA.title}` }),
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/raízes da equação/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/coeficiente de x²/)).toBeInTheDocument();
+    // Unidade aparece ao lado do significado quando existe.
+    expect(within(dialog).getByText('[u.a.]')).toBeInTheDocument();
+  });
+
+  it('fórmula sem legenda abre o detalhe e explica a ausência', async () => {
+    await renderExpandido();
+    await screen.findByText(/Lei de Ohm/);
+
+    fireEvent.click(screen.getByRole('button', { name: `Abrir ${OHM.title}` }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(/ainda não tem legenda cadastrada/),
+    ).toBeInTheDocument();
+  });
+
+  it('fecha o detalhe com Esc', async () => {
+    await renderExpandido();
+    fireEvent.click(
+      await screen.findByRole('button', { name: `Abrir ${BHASKARA.title}` }),
+    );
+    await screen.findByRole('dialog');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+  it('agrupa por matéria e, dentro dela, por assunto', async () => {
+    vi.mocked(api.formulas).mockResolvedValue([
+      BHASKARA,
+      { ...BHASKARA, id: 'f3', title: 'Delta', topicName: 'Funções' },
+      {
+        ...BHASKARA,
+        id: 'f4',
+        title: 'Lei dos senos',
+        topicName: 'Trigonometria',
+      },
+    ]);
+    renderPage();
+
+    // Uma matéria (h2) com dois assuntos (h3) abaixo.
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Matemática' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Funções' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Trigonometria' }),
+    ).toBeInTheDocument();
+  });
+
+  it('fórmula sem assunto cai no grupo "Outras", no fim', async () => {
+    vi.mocked(api.formulas).mockResolvedValue([
+      { ...BHASKARA, id: 'f5', title: 'Solta', topicName: null },
+      BHASKARA,
+    ]);
+    renderPage();
+
+    const titulos = await screen.findAllByRole('heading', { level: 3 });
+    expect(titulos.map((h) => h.textContent)).toEqual(['Funções', 'Outras']);
+  });
+  it('assuntos começam fechados e a matéria abre como índice', async () => {
+    renderPage();
+
+    // O índice de assuntos aparece...
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Funções' }),
+    ).toBeInTheDocument();
+    // ...mas os cards ainda não.
+    expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Funções/ }));
+    expect(await screen.findByText(/Equação do 2º grau/)).toBeInTheDocument();
+  });
+
+  it('recolher a matéria esconde os assuntos', async () => {
+    renderPage();
+
+    const materia = await screen.findByRole('button', { name: /Matemática/ });
+    expect(materia).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(materia);
+    expect(materia).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('heading', { level: 3, name: 'Funções' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('"expandir tudo" abre e vira "recolher tudo"', async () => {
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Expandir tudo/ }),
+    );
+    expect(screen.getByText(/Equação do 2º grau/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Recolher tudo/ }));
+    expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument();
+  });
+
+  it('busca abre os grupos sozinha', async () => {
+    renderPage();
+    // Resultado escondido atrás de um grupo fechado faria a busca parecer
+    // quebrada.
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Funções' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Equação do 2º grau/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Buscar fórmulas'), {
+      target: { value: 'bhaskara' },
+    });
+
+    expect(await screen.findByText(/Equação do 2º grau/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Expandir tudo|Recolher tudo/ }),
+    ).toBeDisabled();
+  });
+  it('ordena as matérias com Física e Matemática primeiro', async () => {
+    vi.mocked(api.formulas).mockResolvedValue([
+      { ...BHASKARA, id: 'b1', subjectName: 'Biologia', topicName: 'Genética' },
+      BHASKARA, // Matemática e suas Tecnologias
+      OHM, // Física
+      { ...BHASKARA, id: 'r1', subjectName: 'Redação', topicName: null },
+      { ...BHASKARA, id: 'q1', subjectName: 'Química', topicName: 'Soluções' },
+    ]);
+    renderPage();
+
+    await screen.findByRole('heading', { level: 2, name: 'Física' });
+    const materias = screen.getAllByRole('heading', { level: 2 });
+    expect(materias.map((h) => h.textContent)).toEqual([
+      'Física',
+      'Matemática',
+      'Química',
+      'Biologia',
+      'Redação',
+    ]);
   });
 });

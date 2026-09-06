@@ -1,92 +1,85 @@
 // Gerador de cronograma de estudos (ver docs/PRD.md §6 E1).
-// Distribui blocos de estudo por dia, priorizando os assuntos mais fracos e
-// respeitando o orçamento diário de minutos do estudante.
+//
+// O plano trabalha em MATÉRIAS, não em subtópicos: o calendário mostra
+// "Matemática", não "Análise combinatória". Antes o gerador puxava os 5
+// tópicos alfabeticamente primeiros quando não havia histórico, o que fazia a
+// semana inteira cair em duas ou três matérias repetindo o mesmo subtópico.
+//
+// O plano gerado é só um ponto de partida: cada bloco é editável na tela.
 
-export interface PlanTopic {
-  id: string;
+export interface PlanSubject {
+  /** Matéria do catálogo do ENEM; nulo em blocos livres. */
+  id?: string | null;
   name: string;
-  subjectName?: string;
 }
 
-export interface PlanSession {
-  topicId: string;
-  topicName: string;
-  subjectName?: string;
+export interface PlanBlock {
+  label: string;
+  subjectId: string | null;
   dayIndex: number;
   minutes: number;
+  position: number;
 }
 
 export interface StudyPlanOptions {
   days?: number; // horizonte do plano (default 7)
-  blockMinutes?: number; // duração-alvo de cada bloco (default 30)
+  blockMinutes?: number; // duração-alvo de cada bloco (default 60)
+  maxBlocksPerDay?: number; // teto de blocos por dia (default 4)
 }
 
 /**
- * Monta as sessões de estudo. Os assuntos devem vir ordenados por prioridade
- * (mais fracos primeiro); eles são distribuídos ciclicamente, então os
- * primeiros aparecem mais cedo (e, se houver folga, com mais frequência).
- *
- * Distribuição por matéria (issue #46): os blocos de um dia são agrupados em
- * UMA matéria dominante — "hoje é dia de Biologia" — e as matérias rotacionam
- * entre os dias (round-robin pelas matérias únicas dos tópicos priorizados).
- * Dentro da matéria do dia, os tópicos seguem a ordem de prioridade.
+ * Distribui as matérias pelos dias em round-robin, priorizando as primeiras
+ * da lista (as mais fracas). Dentro de um mesmo dia não repete matéria
+ * enquanto houver outra disponível — a semana cobre o máximo de matérias
+ * possível em vez de insistir em duas.
  */
 export function buildStudyPlan(
-  topics: PlanTopic[],
+  subjects: PlanSubject[],
   minutesPerDay: number,
   options: StudyPlanOptions = {},
-): PlanSession[] {
+): PlanBlock[] {
   const days = options.days ?? 7;
-  if (topics.length === 0 || minutesPerDay <= 0 || days <= 0) return [];
+  if (subjects.length === 0 || minutesPerDay <= 0 || days <= 0) return [];
 
-  const targetBlock = Math.max(1, options.blockMinutes ?? 30);
-  const blocksPerDay = Math.max(1, Math.floor(minutesPerDay / targetBlock));
+  const targetBlock = Math.max(1, options.blockMinutes ?? 60);
+  const maxBlocks = Math.max(1, options.maxBlocksPerDay ?? 4);
+  const blocksPerDay = Math.min(
+    maxBlocks,
+    Math.max(1, Math.round(minutesPerDay / targetBlock)),
+  );
   const base = Math.floor(minutesPerDay / blocksPerDay);
+  // O resto vai para os primeiros blocos, para o dia somar exatamente o tempo.
   const remainder = minutesPerDay - base * blocksPerDay;
 
-  // Matérias únicas na ordem de prioridade (primeira aparição vence).
-  const subjects: string[] = [];
-  for (const t of topics) {
-    const s = t.subjectName ?? 'Geral';
-    if (!subjects.includes(s)) subjects.push(s);
-  }
-  // Tópicos agrupados por matéria, preservando prioridade dentro de cada uma.
-  const bySubject = new Map<string, PlanTopic[]>();
-  for (const t of topics) {
-    const s = t.subjectName ?? 'Geral';
-    bySubject.set(s, [...(bySubject.get(s) ?? []), t]);
-  }
-  // Cursor de tópico por matéria (avança conforme a matéria é usada).
-  const cursorBySubject = new Map<string, number>(subjects.map((s) => [s, 0]));
-
-  const sessions: PlanSession[] = [];
-  for (let day = 0; day < days; day++) {
-    // Matéria dominante do dia: round-robin entre as matérias.
-    const subject = subjects[day % subjects.length];
-    const topicList = bySubject.get(subject) ?? [];
-    const start = cursorBySubject.get(subject) ?? 0;
-    // Os minutos que sobram da divisão vão para os primeiros blocos do dia,
-    // de modo que a soma diária seja exatamente `minutesPerDay`.
+  const blocks: PlanBlock[] = [];
+  let cursor = 0;
+  for (let day = 0; day < days; day += 1) {
+    const usedToday = new Set<string>();
     let extra = remainder;
-    for (let b = 0; b < blocksPerDay; b++) {
-      // Blocos do dia cobrem tópicos distintos (janela deslizante na
-      // prioridade); com menos tópicos que blocos, o ciclo se repete.
-      const topic = topicList[(start + b) % topicList.length];
+    for (let b = 0; b < blocksPerDay; b += 1) {
+      let pick = subjects[cursor % subjects.length];
+      // Avança até achar uma matéria ainda não usada hoje (se houver).
+      for (
+        let tries = 0;
+        tries < subjects.length && usedToday.has(pick.name);
+        tries += 1
+      ) {
+        cursor += 1;
+        pick = subjects[cursor % subjects.length];
+      }
+      cursor += 1;
+      usedToday.add(pick.name);
+
       const minutes = base + (extra > 0 ? 1 : 0);
       if (extra > 0) extra -= 1;
-      sessions.push({
-        topicId: topic.id,
-        topicName: topic.name,
-        subjectName: topic.subjectName,
+      blocks.push({
+        label: pick.name,
+        subjectId: pick.id ?? null,
         dayIndex: day,
         minutes,
+        position: b,
       });
     }
-    // O próximo dia desta matéria continua de onde parou (janela avança).
-    cursorBySubject.set(
-      subject,
-      topicList.length > 0 ? (start + blocksPerDay) % topicList.length : 0,
-    );
   }
-  return sessions;
+  return blocks;
 }

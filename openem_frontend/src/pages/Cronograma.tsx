@@ -1,19 +1,33 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   api,
+  HttpError,
   type GamificationDelta,
   type StudyPlan,
   type StudySession,
+  type Subject,
 } from '../api';
 import { useAuth } from '../auth';
-import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconCalendar, IconCheck } from '../components/icons';
+import {
+  IconCalendar,
+  IconCheck,
+  IconPlus,
+  IconTrash,
+} from '../components/icons';
 import { useGamification } from '../gamification';
-import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
+
+/** Faixa aceita pelo backend (UpdateProfileDto: Min(5) / Max(1440)). */
+const MIN_MINUTES = 5;
+const MAX_MINUTES = 1440;
+/** Atalhos de tempo diário — o campo numérico continua livre. */
+const MINUTE_PRESETS = [30, 60, 90, 120] as const;
+/** Durações oferecidas ao editar um bloco. */
+const BLOCK_PRESETS = [15, 30, 45, 60, 90, 120] as const;
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -41,20 +55,284 @@ function fmtDay(d: Date): string {
   ).padStart(2, '0')}`;
 }
 
+/** Índice do dia de hoje dentro do plano (negativo = plano começa no futuro). */
+function dayIndexOf(plan: StudyPlan, today = new Date()): number {
+  const planStart = startOfDay(new Date(plan.createdAt));
+  return Math.round(
+    (startOfDay(today).getTime() - planStart.getTime()) / 86_400_000,
+  );
+}
+
+/**
+ * Um bloco no calendário. O nome é editável no lugar (duplo clique ou botão
+ * de editar); o checkbox marca a conclusão.
+ */
+function SessionBlock({
+  session,
+  onToggle,
+  onRename,
+  onRetime,
+  onRemove,
+}: {
+  session: StudySession;
+  onToggle: (s: StudySession) => void;
+  onRename: (s: StudySession, label: string) => void;
+  onRetime: (s: StudySession, minutes: number) => void;
+  onRemove: (s: StudySession) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(session.label);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const area = areaKey(session.subject?.name ?? session.label);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  function commit() {
+    const next = draft.trim();
+    setEditing(false);
+    if (next && next !== session.label) onRename(session, next);
+    else setDraft(session.label);
+  }
+
+  if (editing) {
+    return (
+      <li className="rounded-lg border border-brand/40 bg-surface p-1.5">
+        <input
+          ref={inputRef}
+          value={draft}
+          list="cronograma-materias"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') {
+              setDraft(session.label);
+              setEditing(false);
+            }
+          }}
+          aria-label={`Nome do bloco ${session.label}`}
+          className="input w-full px-2 py-1 text-xs"
+        />
+        <div className="mt-1.5 flex items-center gap-1">
+          <select
+            value={session.minutes}
+            onChange={(e) => onRetime(session, Number(e.target.value))}
+            aria-label={`Duração de ${session.label}`}
+            className="input min-w-0 flex-1 px-1.5 py-1 text-[11px]"
+          >
+            {[...new Set([...BLOCK_PRESETS, session.minutes])]
+              .sort((a, b) => a - b)
+              .map((m) => (
+                <option key={m} value={m}>
+                  {m} min
+                </option>
+              ))}
+          </select>
+          <button
+            onClick={() => onRemove(session)}
+            aria-label={`Remover ${session.label}`}
+            className="grid size-6 shrink-0 place-items-center rounded text-muted transition-colors hover:bg-red/10 hover:text-red"
+          >
+            <IconTrash width={12} height={12} />
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li
+      className={`group flex items-center gap-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-surface-2 ${
+        session.done ? 'opacity-60' : ''
+      }`}
+    >
+      <button
+        onClick={() => onToggle(session)}
+        aria-pressed={session.done}
+        aria-label={`${session.done ? 'Desmarcar' : 'Concluir'} ${session.label}`}
+        className={`grid size-4 shrink-0 place-items-center rounded border transition-colors ${
+          session.done
+            ? 'border-transparent bg-brand text-brand-ink'
+            : 'border-line hover:border-brand'
+        }`}
+      >
+        {session.done && <IconCheck width={10} height={10} />}
+      </button>
+      <span
+        className={`size-1.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
+        aria-hidden
+      />
+      <button
+        onClick={() => setEditing(true)}
+        aria-label={`Renomear ${session.label}`}
+        title={`${session.label} · ${session.minutes} min — clique para renomear`}
+        className={`min-w-0 flex-1 truncate text-left text-xs ${
+          session.done ? 'text-muted line-through' : AREA_TEXT[area]
+        }`}
+      >
+        {session.label}
+      </button>
+      <span className="shrink-0 font-data text-[10px] tabular-nums text-muted">
+        {session.minutes}
+      </span>
+    </li>
+  );
+}
+
+/** Célula de um dia: lista de blocos + campo para adicionar. */
+function DayCell({
+  date,
+  dayIndex,
+  sessions,
+  isToday,
+  isPast,
+  onAdd,
+  onToggle,
+  onRename,
+  onRetime,
+  onRemove,
+}: {
+  date: Date;
+  dayIndex: number;
+  sessions: StudySession[];
+  isToday: boolean;
+  isPast: boolean;
+  onAdd: (dayIndex: number, label: string) => void;
+  onToggle: (s: StudySession) => void;
+  onRename: (s: StudySession, label: string) => void;
+  onRetime: (s: StudySession, minutes: number) => void;
+  onRemove: (s: StudySession) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (adding) inputRef.current?.focus();
+  }, [adding]);
+
+  function commit() {
+    const label = draft.trim();
+    if (label) onAdd(dayIndex, label);
+    setDraft('');
+    setAdding(false);
+  }
+
+  const total = sessions.reduce((sum, s) => sum + s.minutes, 0);
+
+  return (
+    <section
+      className={`flex flex-col rounded-xl border p-2 transition-colors sm:min-h-[190px] ${
+        sessions.length > 0 ? 'border-line bg-surface' : 'border-line/50'
+      } ${isToday ? 'ring-2 ring-brand' : ''} ${isPast && !isToday ? 'opacity-60' : ''}`}
+    >
+      <header className="flex items-baseline justify-between gap-1">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">
+            {WEEKDAYS[(date.getDay() + 6) % 7]}
+          </p>
+          <p className="font-data text-xs font-bold tabular-nums">
+            {fmtDay(date)}
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5">
+          {total > 0 && (
+            <span className="font-data text-[10px] tabular-nums text-muted">
+              {total}min
+            </span>
+          )}
+          {isToday && (
+            <span className="rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-bold text-brand-ink">
+              hoje
+            </span>
+          )}
+        </span>
+      </header>
+
+      <ul className="mt-2 space-y-0.5">
+        {sessions.map((s) => (
+          <SessionBlock
+            key={s.id}
+            session={s}
+            onToggle={onToggle}
+            onRename={onRename}
+            onRetime={onRetime}
+            onRemove={onRemove}
+          />
+        ))}
+      </ul>
+
+      <div className="mt-auto pt-1.5">
+        {adding ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            list="cronograma-materias"
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commit();
+              if (e.key === 'Escape') {
+                setDraft('');
+                setAdding(false);
+              }
+            }}
+            placeholder="Matéria ou tarefa…"
+            aria-label={`Adicionar em ${fmtDay(date)}`}
+            className="input w-full px-2 py-1 text-xs"
+          />
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            aria-label={`Adicionar bloco em ${fmtDay(date)}`}
+            className="flex w-full items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] text-muted transition-colors hover:bg-surface-2 hover:text-brand"
+          >
+            <IconPlus width={11} height={11} />
+            adicionar
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function Cronograma() {
   const { me, refreshMe } = useAuth();
   const { refresh } = useGamification();
   const [plan, setPlan] = useState<StudyPlan | null>(null);
-  const [minutes, setMinutes] = useState(me?.profile?.minutesPerDay ?? 60);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  // String para permitir o campo vazio enquanto o usuário digita — com Number()
+  // direto, apagar o campo virava 0 e o ajuste era descartado em silêncio.
+  const [minutes, setMinutes] = useState(
+    String(me?.profile?.minutesPerDay ?? 60),
+  );
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [award, setAward] = useState<GamificationDelta | null>(null);
+  const [confirming, setConfirming] = useState<'regen' | 'clear' | null>(null);
 
   const load = useCallback(async () => {
     try {
       setPlan(await api.studyPlan());
-    } catch {
-      setPlan(null); // ainda não há cronograma gerado
+      setLoadFailed(false);
+      setError(null);
+    } catch (err) {
+      setPlan(null);
+      // 404 = ainda não há cronograma; o resto é falha de verdade e não pode
+      // se disfarçar de "sem cronograma ainda".
+      if (err instanceof HttpError && err.status === 404) {
+        setLoadFailed(false);
+      } else {
+        setLoadFailed(true);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar o cronograma.',
+        );
+      }
     }
   }, []);
 
@@ -63,19 +341,58 @@ export default function Cronograma() {
   }, [load]);
 
   useEffect(() => {
-    if (me?.profile?.minutesPerDay) setMinutes(me.profile.minutesPerDay);
+    void api
+      .subjects()
+      .then(setSubjects)
+      .catch(() => setSubjects([]));
+  }, []);
+
+  useEffect(() => {
+    if (me?.profile?.minutesPerDay) setMinutes(String(me.profile.minutesPerDay));
   }, [me?.profile?.minutesPerDay]);
 
+  const minutesValue = Number(minutes);
+  const minutesValid =
+    Number.isInteger(minutesValue) &&
+    minutesValue >= MIN_MINUTES &&
+    minutesValue <= MAX_MINUTES;
+
+  /** Aplica uma mudança já refletida na tela, revertendo se a API falhar. */
+  const optimistic = useCallback(
+    async (next: StudySession[], action: () => Promise<unknown>) => {
+      const previous = plan;
+      if (plan) setPlan({ ...plan, sessions: next });
+      setError(null);
+      try {
+        await action();
+        await load();
+      } catch (err) {
+        setPlan(previous);
+        setError(
+          err instanceof Error ? err.message : 'Não foi possível salvar.',
+        );
+      }
+    },
+    [plan, load],
+  );
+
   async function generate() {
+    if (!minutesValid) {
+      setError(
+        `Informe um número inteiro de minutos entre ${MIN_MINUTES} e ${MAX_MINUTES}.`,
+      );
+      return;
+    }
+    setConfirming(null);
     setLoading(true);
     setError(null);
     try {
-      // O cronograma usa o tempo do perfil — salva o ajuste antes de gerar.
-      if (minutes && minutes !== me?.profile?.minutesPerDay) {
-        await api.updateProfile({ minutesPerDay: minutes });
+      if (minutesValue !== me?.profile?.minutesPerDay) {
+        await api.updateProfile({ minutesPerDay: minutesValue });
         await refreshMe();
       }
       setPlan(await api.generateStudyPlan());
+      setLoadFailed(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível gerar.');
     } finally {
@@ -83,76 +400,216 @@ export default function Cronograma() {
     }
   }
 
-  async function toggleDone(s: StudySession) {
-    setError(null);
-    setAward(null);
+  async function clearAll() {
+    setConfirming(null);
+    setLoading(true);
     try {
-      const res = await api.setSessionDone(s.id, !s.done);
-      const delta = res.gamification;
-      if (delta) {
-        setAward(delta);
+      setPlan(await api.clearStudyPlan());
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível limpar.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function toggleDone(s: StudySession) {
+    setAward(null);
+    const next =
+      plan?.sessions.map((x) =>
+        x.id === s.id ? { ...x, done: !s.done } : x,
+      ) ?? [];
+    await optimistic(next, async () => {
+      const res = await api.updateSession(s.id, { done: !s.done });
+      if (res.gamification) {
+        setAward(res.gamification);
         void refresh();
       }
+    });
+  }
+
+  async function addBlock(dayIndex: number, label: string) {
+    setError(null);
+    try {
+      await api.addSession(label, dayIndex);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível atualizar.');
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível adicionar.',
+      );
     }
+  }
+
+  async function rename(s: StudySession, label: string) {
+    const next =
+      plan?.sessions.map((x) => (x.id === s.id ? { ...x, label } : x)) ?? [];
+    await optimistic(next, () => api.updateSession(s.id, { label }));
+  }
+
+  async function retime(s: StudySession, minutesValue: number) {
+    const next =
+      plan?.sessions.map((x) =>
+        x.id === s.id ? { ...x, minutes: minutesValue } : x,
+      ) ?? [];
+    await optimistic(next, () =>
+      api.updateSession(s.id, { minutes: minutesValue }),
+    );
+  }
+
+  async function removeBlock(s: StudySession) {
+    const next = plan?.sessions.filter((x) => x.id !== s.id) ?? [];
+    await optimistic(next, () => api.removeSession(s.id));
   }
 
   const done = plan?.sessions.filter((s) => s.done).length ?? 0;
   const total = plan?.sessions.length ?? 0;
+  const subjectNames = useMemo(() => subjects.map((s) => s.name), [subjects]);
 
-  /** Sessões de hoje (issue #46): "Hoje: [Matéria]". */
+  /** Horizonte do plano: pelo menos 7 dias, mais se houver blocos além disso. */
+  const { todayIndex, planDays } = useMemo(() => {
+    if (!plan) return { todayIndex: -1, planDays: 0 };
+    const maxDay = plan.sessions.reduce((m, s) => Math.max(m, s.dayIndex), -1);
+    return { todayIndex: dayIndexOf(plan), planDays: Math.max(7, maxDay + 1) };
+  }, [plan]);
+  const expired = plan !== null && todayIndex >= planDays;
+
   const todaySessions = useMemo(() => {
+    if (!plan || todayIndex < 0) return [];
+    return plan.sessions.filter((s) => s.dayIndex === todayIndex);
+  }, [plan, todayIndex]);
+  const todayDone =
+    todaySessions.every((s) => s.done) && todaySessions.length > 0;
+
+  const days = useMemo(() => {
     if (!plan) return [];
     const planStart = startOfDay(new Date(plan.createdAt));
-    const today = startOfDay(new Date());
-    const dayIndex = Math.round(
-      (today.getTime() - planStart.getTime()) / 86_400_000,
-    );
-    if (dayIndex < 0) return [];
-    return plan.sessions.filter((s) => s.dayIndex === dayIndex);
-  }, [plan]);
-  const todaySubject = dominantSubject(todaySessions);
-  const todayDone = todaySessions.every((s) => s.done) && todaySessions.length > 0;
+    const byDay = new Map<number, StudySession[]>();
+    for (const s of plan.sessions) {
+      const list = byDay.get(s.dayIndex) ?? [];
+      list.push(s);
+      byDay.set(s.dayIndex, list);
+    }
+    return Array.from({ length: planDays }, (_, i) => ({
+      dayIndex: i,
+      date: addDays(planStart, i),
+      sessions: byDay.get(i) ?? [],
+    }));
+  }, [plan, planDays]);
+
+  const today = startOfDay(new Date());
 
   return (
-    <div className="space-y-5">
-      <header className="space-y-4">
+    <div className="space-y-6">
+      <header className="space-y-5">
         <div>
           <p className="eyebrow">Plano de estudos</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
             Cronograma
           </h1>
+          <p className="mt-2 max-w-lg text-sm text-muted text-pretty">
+            Clique em qualquer bloco para renomear, ou em “adicionar” para
+            escrever o que quiser — matéria do ENEM, idioma, aula do cursinho.
+          </p>
         </div>
-        <div className="card flex flex-wrap items-end gap-4 p-4">
-          <label className="block">
-            <span className="eyebrow">Tempo por dia</span>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input
-                type="number"
-                min={5}
-                max={1440}
-                value={minutes}
-                onChange={(e) => setMinutes(Number(e.target.value))}
-                className="input w-24"
-              />
-              <span className="text-sm text-muted">min</span>
+
+        <div className="card card-raised p-4">
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+            <div>
+              <span className="eyebrow" id="minutes-label">
+                Tempo por dia
+              </span>
+              <div className="mt-1.5 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={MIN_MINUTES}
+                  max={MAX_MINUTES}
+                  step={1}
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                  aria-labelledby="minutes-label"
+                  aria-invalid={!minutesValid}
+                  aria-describedby={minutesValid ? undefined : 'minutes-hint'}
+                  className="input w-20 text-center font-data tabular-nums"
+                />
+                <span className="text-sm text-muted">min</span>
+                <div
+                  className="seg ml-1"
+                  role="group"
+                  aria-label="Tempo sugerido"
+                >
+                  {MINUTE_PRESETS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      data-active={minutesValue === m}
+                      aria-pressed={minutesValue === m}
+                      onClick={() => setMinutes(String(m))}
+                      className="font-data"
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </label>
-          <button
-            onClick={generate}
-            disabled={loading}
-            className="btn btn-primary ml-auto"
-          >
-            {loading ? 'Montando…' : plan ? 'Regenerar plano' : 'Gerar cronograma'}
-          </button>
+
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {confirming && (
+                <button
+                  onClick={() => setConfirming(null)}
+                  className="btn btn-ghost"
+                >
+                  Cancelar
+                </button>
+              )}
+              {total > 0 && confirming !== 'regen' && (
+                <button
+                  onClick={() =>
+                    confirming === 'clear'
+                      ? void clearAll()
+                      : setConfirming('clear')
+                  }
+                  disabled={loading}
+                  className={`btn btn-ghost ${confirming === 'clear' ? 'text-red' : ''}`}
+                >
+                  {confirming === 'clear' ? 'Confirmar — apaga tudo' : 'Limpar'}
+                </button>
+              )}
+              {confirming !== 'clear' && (
+                <button
+                  // Gerar substitui o plano inteiro no backend, então um plano
+                  // existente exige confirmação em dois passos.
+                  onClick={() =>
+                    total > 0 && confirming !== 'regen'
+                      ? setConfirming('regen')
+                      : void generate()
+                  }
+                  disabled={loading || !minutesValid}
+                  className={`btn ${confirming === 'regen' ? 'btn-ghost text-red' : 'btn-primary'}`}
+                >
+                  {loading
+                    ? 'Montando…'
+                    : confirming === 'regen'
+                      ? 'Confirmar — substitui a semana'
+                      : total > 0
+                        ? 'Gerar semana'
+                        : 'Gerar cronograma'}
+                </button>
+              )}
+            </div>
+          </div>
+          {!minutesValid && (
+            <p id="minutes-hint" className="mt-2 text-xs text-red">
+              Entre {MIN_MINUTES} e {MAX_MINUTES} minutos.
+            </p>
+          )}
         </div>
       </header>
 
-      {error && (
-        <ErrorBanner message={error} />
-      )}
+      <ErrorBanner
+        message={error}
+        onRetry={loadFailed ? () => void load() : undefined}
+      />
 
       {award && (
         <div className="card card-raised p-4">
@@ -160,229 +617,138 @@ export default function Cronograma() {
         </div>
       )}
 
-      {!plan ? (
-        <EmptyState
-          icon={IconCalendar}
-          title="Sem cronograma ainda"
-          description="Gere um plano adaptado ao seu tempo disponível."
-          action={{ onClick: generate, label: 'Gerar cronograma' }}
-          tip="Priorizamos os assuntos em que você mais erra"
-        />
-      ) : (
-        <>
-          {/* Matéria de hoje (issue #46) — visão canônica por matéria. */}
-          {todaySubject && (
-            <div className="card card-raised flex items-center gap-3 p-4 ring-1 ring-brand/30">
-              <span
-                className={`grid size-11 shrink-0 place-items-center rounded-xl ${
-                  AREA_DOT[areaKey(todaySubject)]
-                } opacity-90`}
-                aria-hidden
-              >
-                <IconCalendar width={20} height={20} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="eyebrow">Hoje</p>
-                <p className="mt-0.5 font-display text-lg font-bold">
-                  Dia de{' '}
-                  <span className={AREA_TEXT[areaKey(todaySubject)]}>
-                    {shortSubject(todaySubject)}
-                  </span>
-                </p>
-                <p className="mt-0.5 text-xs text-muted">
-                  {todaySessions.length}{' '}
-                  {todaySessions.length === 1 ? 'sessão' : 'sessões'} ·{' '}
-                  {todaySessions.reduce((sum, s) => sum + s.minutes, 0)} min
-                </p>
-              </div>
-              {todayDone && (
-                <span className="chip shrink-0 bg-nat/12 text-nat">
-                  <IconCheck width={13} height={13} /> concluído
-                </span>
-              )}
-            </div>
-          )}
-
-          <div className="card card-raised flex items-center gap-4 p-4">
-            <div>
-              <p className="font-display text-2xl font-extrabold tabular-nums">
-                {done}
-                <span className="text-muted">/{total}</span>
-              </p>
-              <p className="text-xs text-muted">sessões concluídas</p>
-            </div>
-            <div className="flex-1">
-              <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                <div
-                  className="h-full rounded-full bg-brand transition-all"
-                  style={{ width: `${total ? (done / total) * 100 : 0}%` }}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-muted">
-                {plan.minutesPerDay} min por dia
-              </p>
-            </div>
+      {expired && (
+        <div className="card flex flex-wrap items-center gap-3 p-4 ring-1 ring-hum/30">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-sm font-bold">
+              Este cronograma já terminou
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              Ele começou em {fmtDay(new Date(plan.createdAt))}. Gere uma nova
+              semana para continuar.
+            </p>
           </div>
-
-          <WeeklyCalendar plan={plan} onToggle={toggleDone} />
-        </>
-      )}
-    </div>
-  );
-}
-
-/** Matéria dominante do dia (issue #46): a de maior minutagem no dia. */
-function dominantSubject(sessions: StudySession[]): string | null {
-  if (sessions.length === 0) return null;
-  const bySubject = new Map<string, number>();
-  for (const s of sessions) {
-    const name = s.topic.subject.name;
-    bySubject.set(name, (bySubject.get(name) ?? 0) + s.minutes);
-  }
-  return [...bySubject.entries()].sort((a, b) => b[1] - a[1])[0][0];
-}
-
-/** Rótulo curto da matéria ("Matemática e suas Tecnologias" → "Matemática"). */
-function shortSubject(name: string): string {
-  return name.replace(' e suas Tecnologias', '');
-}
-
-/** Calendário visual semanal do cronograma — cada dia num grid Seg–Dom. */
-function WeeklyCalendar({
-  plan,
-  onToggle,
-}: {
-  plan: StudyPlan;
-  onToggle: (s: StudySession) => void;
-}) {
-  const { cells } = useMemo(() => {
-    const planStart = startOfDay(new Date(plan.createdAt));
-    const maxDay = plan.sessions.reduce((m, s) => Math.max(m, s.dayIndex), -1);
-    const totalDays = maxDay + 1;
-    const startOffset = (planStart.getDay() + 6) % 7; // Seg=0..Dom=6
-    const weeks = Math.ceil((startOffset + totalDays) / 7);
-    const byDay = new Map<number, StudySession[]>();
-    for (const s of plan.sessions) {
-      const list = byDay.get(s.dayIndex) ?? [];
-      list.push(s);
-      byDay.set(s.dayIndex, list);
-    }
-    const rows: { date: Date | null; dayIndex: number | null; sessions: StudySession[] }[][] = [];
-    for (let w = 0; w < weeks; w += 1) {
-      const row: { date: Date | null; dayIndex: number | null; sessions: StudySession[] }[] = [];
-      for (let c = 0; c < 7; c += 1) {
-        const globalIndex = w * 7 + c - startOffset;
-        if (globalIndex >= 0 && globalIndex < totalDays) {
-          row.push({
-            date: addDays(planStart, globalIndex),
-            dayIndex: globalIndex,
-            sessions: byDay.get(globalIndex) ?? [],
-          });
-        } else {
-          row.push({ date: null, dayIndex: null, sessions: [] });
-        }
-      }
-      rows.push(row);
-    }
-    return { cells: rows };
-  }, [plan]);
-
-  const today = startOfDay(new Date());
-
-  return (
-    <div className="card p-4">
-      <div className="grid grid-cols-7 gap-1.5">
-        {WEEKDAYS.map((d) => (
-          <div
-            key={d}
-            className="text-center text-[10px] font-semibold uppercase tracking-wide text-muted"
+          <button
+            onClick={() => void generate()}
+            disabled={loading || !minutesValid}
+            className="btn btn-primary shrink-0"
           >
-            {d}
-          </div>
-        ))}
-      </div>
-      <div className="mt-1.5 space-y-1.5">
-        {cells.map((row, w) => (
-          <div key={w} className="grid grid-cols-7 gap-1.5">
-            {row.map((cell, c) => {
-              if (cell.date === null) {
-                return (
-                  <div
-                    key={c}
-                    className="min-h-[88px] rounded-lg border border-line/30 opacity-40"
-                  />
-                );
-              }
-              const isToday = sameDay(cell.date, today);
-              const hasSessions = cell.sessions.length > 0;
-              const daySubject = dominantSubject(cell.sessions);
-              const dayArea = daySubject ? areaKey(daySubject) : null;
-              return (
-                <div
-                  key={c}
-                  className={`min-h-[88px] rounded-lg border p-1.5 ${
-                    hasSessions ? 'border-line bg-surface' : 'border-line/50'
-                  } ${isToday ? 'ring-1 ring-brand' : ''}`}
+            Gerar nova
+          </button>
+        </div>
+      )}
+
+      {plan && todaySessions.length > 0 && (
+        <section className="card card-raised flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+          <span
+            className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand/12 text-brand"
+            aria-hidden
+          >
+            <IconCalendar width={20} height={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow">Hoje</p>
+            {/* Lista os blocos do dia em vez de eleger um "dominante": com
+                dois blocos de mesma duração o desempate era arbitrário. */}
+            <ul className="mt-1 flex flex-wrap items-center gap-1.5">
+              {todaySessions.map((s) => (
+                <li
+                  key={s.id}
+                  className={`chip ${s.done ? 'text-muted line-through' : ''}`}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-semibold tabular-nums text-muted">
-                      {fmtDay(cell.date)}
-                    </span>
-                    {isToday && (
-                      <span className="rounded-full bg-brand/12 px-1.5 py-0.5 text-[9px] font-semibold text-brand">
-                        hoje
-                      </span>
-                    )}
-                  </div>
-                  {/* Matéria dominante do dia (issue #46). */}
-                  {daySubject && dayArea && (
-                    <p
-                      className={`mt-0.5 truncate text-[10px] font-bold ${AREA_TEXT[dayArea]}`}
-                    >
-                      {shortSubject(daySubject)}
-                    </p>
-                  )}
-                  <ul className="mt-1 space-y-0.5">
-                    {cell.sessions.map((s) => {
-                      const area = areaKey(s.topic.subject.name);
-                      return (
-                        <li key={s.id}>
-                          <button
-                            onClick={() => onToggle(s)}
-                            className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[10px] transition-colors hover:bg-surface-2"
-                          >
-                            <span
-                              className={`grid size-3.5 shrink-0 place-items-center rounded border ${
-                                s.done
-                                  ? 'border-transparent bg-brand text-brand-ink'
-                                  : 'border-line'
-                              }`}
-                            >
-                              {s.done && <IconCheck width={9} height={9} />}
-                            </span>
-                            <span
-                              className={`size-1.5 shrink-0 rounded-full ${AREA_DOT[area]}`}
-                            />
-                            <span
-                              className={`truncate ${
-                                s.done
-                                  ? 'text-muted line-through'
-                                  : AREA_TEXT[area]
-                              }`}
-                            >
-                              {s.topic.name}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            })}
+                  <span
+                    className={`size-1.5 rounded-full ${
+                      AREA_DOT[areaKey(s.subject?.name ?? s.label)]
+                    }`}
+                    aria-hidden
+                  />
+                  {shortSubject(s.label)}
+                  <span className="font-data text-[0.65rem] text-muted">
+                    {s.minutes}min
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
+          {todayDone && (
+            <span className="chip shrink-0 bg-nat/12 text-nat">
+              <IconCheck width={13} height={13} /> concluído
+            </span>
+          )}
+          <div className="shrink-0 text-right">
+            <p className="font-display text-2xl font-extrabold tabular-nums">
+              {done}
+              <span className="text-muted">/{total}</span>
+            </p>
+            <p className="text-xs text-muted">blocos feitos</p>
+          </div>
+        </section>
+      )}
+
+      {/* Sugestões de nome compartilhadas por todos os campos do calendário. */}
+      <datalist id="cronograma-materias">
+        {subjectNames.map((n) => (
+          <option key={n} value={n} />
         ))}
-      </div>
+      </datalist>
+
+      {plan === null ? (
+        loadFailed ? null : (
+          <section className="card p-8 text-center">
+            <span className="mx-auto grid size-20 place-items-center rounded-2xl bg-brand/12 text-brand">
+              <IconCalendar width={48} height={48} />
+            </span>
+            <p className="mt-4 font-display text-base font-bold">
+              Monte sua semana
+            </p>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted text-pretty">
+              Gere uma semana equilibrada entre as matérias do ENEM, ou comece
+              do zero e escreva os blocos você mesmo.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button
+                onClick={() => void generate()}
+                disabled={loading || !minutesValid}
+                className="btn btn-primary"
+              >
+                Gerar cronograma
+              </button>
+              <button
+                onClick={() => void addBlock(0, 'Matemática')}
+                className="btn btn-ghost"
+              >
+                <IconPlus width={14} height={14} />
+                Começar do zero
+              </button>
+            </div>
+          </section>
+        )
+      ) : (
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {days.map((d) => (
+            <DayCell
+              key={d.dayIndex}
+              date={d.date}
+              dayIndex={d.dayIndex}
+              sessions={d.sessions}
+              isToday={sameDay(d.date, today)}
+              isPast={d.date < today}
+              onAdd={(day, label) => void addBlock(day, label)}
+              onToggle={(s) => void toggleDone(s)}
+              onRename={(s, label) => void rename(s, label)}
+              onRetime={(s, m) => void retime(s, m)}
+              onRemove={(s) => void removeBlock(s)}
+            />
+          ))}
+        </div>
+      )}
+
+      {plan !== null && total === 0 && (
+        <p className="text-center text-sm text-muted">
+          Calendário vazio — use “adicionar” em qualquer dia, ou gere uma semana
+          automaticamente.
+        </p>
+      )}
     </div>
   );
 }

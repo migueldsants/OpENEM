@@ -52,25 +52,36 @@ export function EmptyState({
       </span>
       <p className="mt-4 font-display text-base font-bold">{title}</p>
       <div className="mt-1 text-sm text-muted">{description}</div>
-      {action &&
-        (action.to ? (
-          <NavLink to={action.to} className="btn btn-primary mt-4">
-            {action.label}
-          </NavLink>
-        ) : (
-          <button
-            type="button"
-            onClick={action.onClick}
-            className="btn btn-primary mt-4"
-          >
-            {action.label}
-          </button>
-        ))}
-      {tip && (
-        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted">
-          <IconSparkle width={14} height={14} className="text-brand" />
-          {tip}
-        </p>
+      {/* CTA e dica num flex explícito: os dois são inline-flex e acabavam
+          fluindo na mesma linha, separados só por um espaço de texto. */}
+      {(action || tip) && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5">
+          {action &&
+            (action.to ? (
+              <NavLink to={action.to} className="btn btn-primary">
+                {action.label}
+              </NavLink>
+            ) : (
+              <button
+                type="button"
+                onClick={action.onClick}
+                className="btn btn-primary"
+              >
+                {action.label}
+              </button>
+            ))}
+          {tip && (
+            <p className="inline-flex items-center gap-1.5 text-xs text-muted">
+              <IconSparkle
+                width={14}
+                height={14}
+                className="shrink-0 text-brand"
+                aria-hidden
+              />
+              {tip}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

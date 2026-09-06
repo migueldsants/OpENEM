@@ -78,6 +78,34 @@ export const AREAS: { key: AreaKey; label: string }[] = [
   { key: 'lin', label: 'Linguagens' },
 ];
 
+// Nome curto da matéria: "Matemática e suas Tecnologias" -> "Matemática".
+// Usado em Cronograma, Fórmulas e Vídeos (antes duplicado como .replace inline).
+export function shortSubject(subjectName?: string): string {
+  return (subjectName ?? '').replace(' e suas Tecnologias', '');
+}
+
+/**
+ * Ordem de exibição das matérias em listas agrupadas. As de fórmula pesada
+ * vêm primeiro; o resto cai depois, em ordem alfabética. Compara pelo nome
+ * curto, então "Matemática e suas Tecnologias" também casa.
+ */
+export const SUBJECT_ORDER = [
+  'Física',
+  'Matemática',
+  'Química',
+  'Biologia',
+  'Redação',
+];
+
+export function compareSubjects(a: string, b: string): number {
+  const ia = SUBJECT_ORDER.indexOf(shortSubject(a));
+  const ib = SUBJECT_ORDER.indexOf(shortSubject(b));
+  if (ia !== -1 && ib !== -1) return ia - ib;
+  if (ia !== -1) return -1;
+  if (ib !== -1) return 1;
+  return a.localeCompare(b, 'pt-BR');
+}
+
 // Rótulo curto pelo nome completo do subject (ex.: "Matemática e suas Tecnologias").
 export function shortArea(subjectName?: string): string {
   const key = areaKey(subjectName);

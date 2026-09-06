@@ -73,13 +73,17 @@ describe('FormulasService (issue #38)', () => {
     ]);
   });
 
-  it('ordena por matéria e título', async () => {
+  it('ordena por matéria, assunto e título', async () => {
     const { service, prisma } = makeService();
     prisma.formula.findMany.mockResolvedValue([]);
     await service.list('u1', {});
     expect(prisma.formula.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderBy: [{ subject: { name: 'asc' } }, { title: 'asc' }],
+        orderBy: [
+          { subject: { name: 'asc' } },
+          { topic: { name: 'asc' } },
+          { title: 'asc' },
+        ],
       }),
     );
   });
