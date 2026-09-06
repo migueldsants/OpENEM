@@ -23,6 +23,7 @@ import {
   areaKey,
   AREA_DOT,
   AREA_TEXT,
+  compareSubjects,
   shortSubject,
 } from '../lib/areas';
 
@@ -224,7 +225,10 @@ export default function Formulas() {
       topics.set(key, [...(topics.get(key) ?? []), f]);
       subjects.set(f.subjectName, topics);
     }
-    return [...subjects.entries()].map(([subjectName, topics]) => ({
+    return [...subjects.entries()]
+      // Física e Matemática abrem a cola; Biologia e Redação fecham.
+      .sort(([a], [b]) => compareSubjects(a, b))
+      .map(([subjectName, topics]) => ({
       subjectName,
       count: [...topics.values()].reduce((n, list) => n + list.length, 0),
       topics: [...topics.entries()]

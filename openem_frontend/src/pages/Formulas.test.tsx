@@ -235,7 +235,9 @@ describe('Formulas (issue #38)', () => {
 
   it('lista o significado e a unidade de cada símbolo', async () => {
     await renderExpandido();
-    fireEvent.click((await screen.findAllByText('Expandir'))[0]);
+    fireEvent.click(
+      await screen.findByRole('button', { name: `Abrir ${BHASKARA.title}` }),
+    );
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/raízes da equação/)).toBeInTheDocument();
@@ -358,5 +360,25 @@ describe('Formulas (issue #38)', () => {
     expect(
       screen.getByRole('button', { name: /Expandir tudo|Recolher tudo/ }),
     ).toBeDisabled();
+  });
+  it('ordena as matérias com Física e Matemática primeiro', async () => {
+    vi.mocked(api.formulas).mockResolvedValue([
+      { ...BHASKARA, id: 'b1', subjectName: 'Biologia', topicName: 'Genética' },
+      BHASKARA, // Matemática e suas Tecnologias
+      OHM, // Física
+      { ...BHASKARA, id: 'r1', subjectName: 'Redação', topicName: null },
+      { ...BHASKARA, id: 'q1', subjectName: 'Química', topicName: 'Soluções' },
+    ]);
+    renderPage();
+
+    await screen.findByRole('heading', { level: 2, name: 'Física' });
+    const materias = screen.getAllByRole('heading', { level: 2 });
+    expect(materias.map((h) => h.textContent)).toEqual([
+      'Física',
+      'Matemática',
+      'Química',
+      'Biologia',
+      'Redação',
+    ]);
   });
 });
