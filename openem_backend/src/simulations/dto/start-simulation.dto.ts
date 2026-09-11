@@ -14,7 +14,15 @@ export class StartSimulationDto {
   @IsString()
   templateId!: string;
 
-  /** Filtros customizados (issue #40): simulado por matéria/tópico. */
+  /** Filtros customizados (issue #40): simulado por área/matéria/tópico. */
+  @ApiPropertyOptional({
+    description:
+      'Filtra questões pela área do conhecimento. É o filtro que alcança as questões oficiais ainda não classificadas em matéria.',
+  })
+  @IsOptional()
+  @IsString()
+  subjectAreaId?: string;
+
   @ApiPropertyOptional({ description: 'Filtra questões por matéria' })
   @IsOptional()
   @IsString()
@@ -24,6 +32,14 @@ export class StartSimulationDto {
   @IsOptional()
   @IsString()
   topicId?: string;
+
+  @ApiPropertyOptional({
+    enum: ['ingles', 'espanhol'],
+    description: 'Idioma das questões de língua estrangeira.',
+  })
+  @IsOptional()
+  @IsString()
+  language?: string;
 
   @ApiPropertyOptional({
     description: 'Quantidade de questões (modo rápido: 5–10)',
