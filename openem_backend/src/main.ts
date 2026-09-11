@@ -1,11 +1,14 @@
+import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Hooks de shutdown (issue #49): limpa recursos do Prisma/Throttler no SIGTERM.
   app.enableShutdownHooks();
@@ -26,6 +29,24 @@ async function bootstrap() {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
+
+  // Imagens das questões oficiais do ENEM, gravadas pelo importador.
+  // Servidas pelo próprio backend em vez de apontar para o enem.dev: o app é um
+  // PWA offline-first para um público com internet limitada, e imagem de
+  // terceiro não é cacheável pelo service worker nem cabe no CSP acima. O
+  // caminho fica fora do prefixo `api/v1` por não ser rota do Nest.
+  const mediaDir =
+    process.env.ENEM_MEDIA_DIR ?? join(__dirname, '..', 'public', 'enem');
+  if (!existsSync(mediaDir)) {
+    mkdirSync(mediaDir, { recursive: true });
+  }
+  app.useStaticAssets(mediaDir, {
+    prefix: '/media/enem',
+    // O nome do arquivo é um UUID: o conteúdo nunca muda sob o mesmo caminho.
+    maxAge: '365d',
+    immutable: true,
+    fallthrough: false,
+  });
 
   // CORS explícito (issue #49): credenciais off; em dev o Vite proxy encaminha
   // mesmas origens, então basta liberar a origem do preview/build de produção.

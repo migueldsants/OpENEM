@@ -17,6 +17,11 @@ export default function globalSetup(): void {
 
   const env = { ...process.env, DATABASE_URL: databaseUrl };
   execSync('npx prisma migrate deploy', { env, stdio: 'inherit' });
-  // Popula o banco de teste com o seed de demonstração.
-  execSync('npx prisma db seed', { env, stdio: 'inherit' });
+  // Popula o banco de teste com o seed, incluindo o conteúdo de demonstração
+  // (questões e simulados) de que as suítes dependem — fora dos testes ele
+  // não é criado.
+  execSync('npx prisma db seed', {
+    env: { ...env, SEED_DEMO: '1' },
+    stdio: 'inherit',
+  });
 }

@@ -12,3 +12,9 @@ prisma/*.db-journal
 npm-debug.log*
 Dockerfile
 .dockerignore
+
+# Dataset das provas do ENEM (baixado pelo importador) e as imagens servidas
+# a partir dele. Nada disso é versionado: o dataset vem de um projeto GPL-2.0
+# e pesa ~177 MB.
+prisma/.enem-dataset/
+public/enem/

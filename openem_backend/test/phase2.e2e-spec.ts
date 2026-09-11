@@ -179,10 +179,24 @@ describe('Fase 2 â€” pÃ³s-MVP (e2e)', () => {
   });
 
   it('finaliza um simulado de questÃµes calibradas e calcula a nota TRI', async () => {
+    // Só questões calibradas: as da seed de Matemática. O simulado completo
+    // sorteia do banco inteiro, e as questões oficiais do ENEM (sem parâmetros
+    // de TRI) anulam a nota — basta uma sem calibração.
+    const subjects = await request(app.getHttpServer())
+      .get('/api/v1/subjects')
+      .set(auth())
+      .expect(200);
+    const math = subjects.body.find(
+      (s: { name: string }) => s.name === 'Matemática',
+    );
     const start = await request(app.getHttpServer())
       .post('/api/v1/simulations')
       .set(auth())
-      .send({ templateId: 'seed-template-full' })
+      .send({
+        templateId: 'seed-template-custom',
+        subjectId: math.id,
+        questionCount: 4,
+      })
       .expect(201);
 
     const answers = [];

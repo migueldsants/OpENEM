@@ -1,0 +1,9 @@
+{"index":10,"year":2098,"language":null,"discipline":"linguagens",
+ "context":"Texto de apoio com figura ![](https://enem.dev/2098/questions/10/fig.png)",
+ "files":["https://enem.dev/2098/questions/10/fig.png"],
+ "correctAlternative":"C","alternativesIntroduction":"Qual o valor de x?",
+ "alternatives":[{"letter":"A","text":"1","file":null,"isCorrect":false},
+ {"letter":"B","text":"2","file":null,"isCorrect":false},
+ {"letter":"C","text":"3","file":null,"isCorrect":true},
+ {"letter":"D","text":"4","file":null,"isCorrect":false},
+ {"letter":"E","text":"5","file":null,"isCorrect":false}]}
