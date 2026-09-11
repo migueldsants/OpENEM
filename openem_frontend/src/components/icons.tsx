@@ -10,6 +10,7 @@ import {
   CaretLeft,
   CaretRight,
   CaretDown,
+  ChartLineUp,
   ChatsCircle,
   Check,
   Circle,
@@ -116,6 +117,8 @@ export const IconClock = shim(Clock, 'regular');
 export const IconTimer = shim(Timer, 'duotone');
 export const IconChat = shim(ChatsCircle, 'duotone');
 export const IconTarget = shim(Target, 'duotone');
+// Aba "Painel": métricas de estudo que antes ocupavam a Home.
+export const IconChart = shim(ChartLineUp, 'duotone');
 export const IconSparkle = shim(Sparkle, 'fill');
 export const IconGame = shim(Lightning, 'duotone');
 export const IconBook = shim(BookOpen, 'duotone');

@@ -7,9 +7,11 @@ import {
   IconBook,
   IconCalendar,
   IconChat,
+  IconClock,
   IconFlame,
   IconFormula,
   IconGame,
+  IconChart,
   IconHome,
   IconLogout,
   IconMore,
@@ -23,9 +25,11 @@ import {
 } from './components/icons';
 import { MoreSheet, type NavItem } from './components/MoreSheet';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { PomodoroFloating } from './components/PomodoroFloating';
 import RouteTransition from './components/RouteTransition';
 import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
+import { PomodoroProvider } from './pomodoro';
 import { leagueStyle } from './lib/gamification';
 import Comunidade from './pages/Comunidade';
 import Conquistas from './pages/Conquistas';
@@ -36,9 +40,11 @@ import Flashcards from './pages/Flashcards';
 import Formulas from './pages/Formulas';
 import Games from './pages/Games';
 import Home from './pages/Home';
+import Painel from './pages/Painel';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import Perfil from './pages/Perfil';
+import Pomodoro from './pages/Pomodoro';
 import PerfilPublico from './pages/PerfilPublico';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
@@ -57,13 +63,17 @@ const QuadroEditorPage = lazy(() => import('./pages/QuadroEditorPage'));
 // para agrupar Progresso, Comunidade, Cronograma, Redação e Favoritos.
 const NAV: NavItem[] = [
   { to: '/', label: 'Início', Icon: IconHome, end: true, mobile: 'primary' },
+  // Métricas que antes ocupavam a Home (que agora é só um hub).
+  { to: '/painel', label: 'Painel', Icon: IconChart, mobile: 'primary' },
   { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary' },
   { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary' },
-  { to: '/games', label: 'Games', Icon: IconGame, mobile: 'primary' },
+  // Cedeu o lugar na tabbar para o Painel (continua no "Mais").
+  { to: '/games', label: 'Games', Icon: IconGame, mobile: 'more' },
   { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more' },
   { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: 'more' },
   { to: '/conquistas', label: 'Conquistas', Icon: IconStar, mobile: 'more' },
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more' },
+  { to: '/pomodoro', label: 'Pomodoro', Icon: IconClock, mobile: 'more' },
   { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
   { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more' },
@@ -253,6 +263,7 @@ export default function App() {
   const content = (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/painel" element={<Painel />} />
       <Route path="/questoes" element={<Questoes />} />
       <Route path="/simulados" element={<Simulados />} />
       <Route path="/desempenho" element={<Desempenho />} />
@@ -260,6 +271,7 @@ export default function App() {
       <Route path="/progresso" element={<Progresso />} />
       <Route path="/conquistas" element={<Conquistas />} />
       <Route path="/cronograma" element={<Cronograma />} />
+      <Route path="/pomodoro" element={<Pomodoro />} />
       <Route path="/redacao" element={<Redacao />} />
       <Route path="/games" element={<Games />} />
       <Route path="/comunidade" element={<Comunidade />} />
@@ -304,23 +316,28 @@ export default function App() {
   );
 
   // Modo sem distrações: sem sidebar, top bar ou tabs — só o conteúdo.
+  // O pop-up do Pomodoro fica: cronometrar o foco é o ponto do modo.
   if (focusMode) {
     return (
-      <div className="min-h-screen bg-bg text-fg">
-        <div className="mx-auto max-w-2xl px-5 py-8">
-          <div className="mb-5 flex items-center justify-between text-xs text-muted">
-            <span>Modo sem distrações ativo</span>
-            <NavLink to="/perfil" className="font-medium text-brand">
-              Desativar no perfil
-            </NavLink>
+      <PomodoroProvider>
+        <div className="min-h-screen bg-bg text-fg">
+          <div className="mx-auto max-w-2xl px-5 py-8">
+            <div className="mb-5 flex items-center justify-between text-xs text-muted">
+              <span>Modo sem distrações ativo</span>
+              <NavLink to="/perfil" className="font-medium text-brand">
+                Desativar no perfil
+              </NavLink>
+            </div>
+            <RouteTransition>{content}</RouteTransition>
           </div>
-          <RouteTransition>{content}</RouteTransition>
+          <PomodoroFloating />
         </div>
-      </div>
+      </PomodoroProvider>
     );
   }
 
   return (
+    <PomodoroProvider>
     <div className="min-h-screen bg-bg text-fg md:flex">
       <OfflineIndicator />
       <Sidebar email={me?.email} onLogout={logout} />
@@ -409,6 +426,10 @@ export default function App() {
       {moreOpen && (
         <MoreSheet items={MOBILE_MORE} onClose={() => setMoreOpen(false)} />
       )}
+
+      {/* Pop-up do cronômetro — segue o usuário por todas as telas. */}
+      <PomodoroFloating />
     </div>
+    </PomodoroProvider>
   );
 }
