@@ -761,7 +761,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 - [ ] Conteúdo seed **misto**: provas oficiais do ENEM + questões autorais da comunidade, com **comentários próprios** escritos pela equipe/colaboradores.
 
 **Dependências externas:**
-- [ ] Provas oficiais do ENEM (INEP/MEC, domínio público) para fidelidade/curadoria.
+- [x] Provas oficiais do ENEM (INEP/MEC, domínio público) para fidelidade/curadoria — importadas do dataset aberto do enem-api (`npm run db:import:enem`): 26 provas, ~4 mil questões com gabarito e imagens. Comentário e classificação por assunto via IA, sob demanda.
 - [ ] Questões autorais sob licença compatível (AGPL/CC) — definir rubrica de curadoria.
 - [x] Provedor de IA (Fase 3) — arquitetura multi-provedor implementada (Anthropic, OpenAI, OpenAI-compatível, Gemini); escolha do provedor padrão por configuração via env.
 - [ ] Registry de imagens / VPS — **adiado**; por enquanto execução local via Docker Compose.

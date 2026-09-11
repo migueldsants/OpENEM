@@ -63,6 +63,49 @@ npm install
 npm run dev                 # http://localhost:5173 (faz proxy de /api para o backend)
 ```
 
+### Questões oficiais do ENEM
+
+O banco de questões vem das provas oficiais do ENEM (INEP), a partir do dataset
+aberto do projeto [enem-api](https://github.com/yunger7/enem-api) —
+especificamente do fork atualizado
+[migueldsants/updated-enem-api](https://github.com/migueldsants/updated-enem-api).
+O dataset **não é versionado neste repositório**: o importador o baixa para uma
+pasta ignorada pelo git.
+
+```bash
+# em openem_backend/, depois do db:seed (a taxonomia precisa existir)
+npm run db:import:enem                        # as 26 provas (2009–2025 + reaplicações)
+npm run db:import:enem -- --exam=2023         # só uma prova
+npm run db:import:enem -- --limit=5 --dry-run # valida sem gravar
+```
+
+O import é idempotente: rodar de novo atualiza sem duplicar e não desfaz
+comentários nem classificações feitos depois. Questões que o dataset traz
+incompletas (sem alternativas, gabarito inconsistente) são recusadas e
+listadas no relatório final. As imagens vão para `ENEM_MEDIA_DIR` e são
+servidas pelo próprio backend em `/media/enem/`.
+
+No Docker, rode o import dentro do container — banco e imagens ficam no volume:
+
+```bash
+docker compose exec backend npx ts-node prisma/import-enem.ts
+```
+
+As questões oficiais entram classificadas só por **área**. Com um provedor de
+IA configurado (o mesmo da correção de redação), dois recursos ficam
+disponíveis:
+
+*   **Comentário sob demanda**: o botão "Ver comentário" gera a explicação na
+    primeira vez que alguém pede e a grava para os próximos.
+*   **Classificação por assunto**, que liga revisão espaçada, mapa de calor e
+    recomendação às questões oficiais. Use um modelo barato
+    (`AI_CLASSIFY_MODEL`):
+
+    ```bash
+    npm run db:classify -- --limit=50 --dry-run  # confira as decisões antes
+    npm run db:classify
+    ```
+
 ### Testes
 
 ```bash

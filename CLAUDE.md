@@ -15,7 +15,9 @@ OpENEM is a free, open-source platform to help students prepare for the ENEM (Br
 
 The Phase 1 UI is fully implemented (Home, Questões, Simulados, Desempenho, Revisão) — including an **onboarding** screen (`src/pages/Onboarding.tsx`) that collects goal + minutes/day on first login (the `Profile.onboarded` flag gates the main app until completed).
 
-Phase 3 also adds: a **daily challenge** (deterministic per-day goal, `common/daily-challenge.ts`, claimed reward in `DailyChallengeLog`, exposed via `GET /gamification/daily-challenge` + `POST .../claim`), a **recommendation engine** (`recommendation` module + `common/recommendation.ts`, `GET /recommendation/next` — weak-topic questions from recent errors), **community/forum** (`community` module, `ForumThread`/`ForumPost`, threads + replies), and **AI essay correction** with pluggable providers (`common/essay-ai/` — Claude/Anthropic, OpenAI, OpenAI-compatible endpoints, and Google Gemini; selected by `ESSAY_AI_PROVIDER` or auto-detected from whichever provider key/URL is set; `POST /essays/submissions/:id/ai-evaluation`, `GET /essays/ai-available` reports availability + the active `provider`; falls back to the manual rubric when no provider is configured). Frontend: **Comunidade** screen, daily-challenge card + "Recomendado para você" on Home, and an AI-correct button on Redação.
+Phase 3 also adds: a **daily challenge** (deterministic per-day goal, `common/daily-challenge.ts`, claimed reward in `DailyChallengeLog`, exposed via `GET /gamification/daily-challenge` + `POST .../claim`), a **recommendation engine** (`recommendation` module + `common/recommendation.ts`, `GET /recommendation/next` — weak-topic questions from recent errors), **community/forum** (`community` module, `ForumThread`/`ForumPost`, threads + replies), and **AI essay correction** with pluggable providers (`common/essay-ai/`, on top of the generic `common/ai/` layer — Claude/Anthropic, OpenAI, OpenAI-compatible endpoints, and Google Gemini; selected by `ESSAY_AI_PROVIDER` or auto-detected from whichever provider key/URL is set; `POST /essays/submissions/:id/ai-evaluation`, `GET /essays/ai-available` reports availability + the active `provider`; falls back to the manual rubric when no provider is configured). Frontend: **Comunidade** screen, daily-challenge card + "Recomendado para você" on Home, and an AI-correct button on Redação.
+
+**Official ENEM question bank:** `prisma/import-enem.ts` (+ `-lib.ts`) imports the static dataset of the `enem-api` fork (26 exams, ~4k questions) — the dataset is downloaded to a git-ignored folder, never committed (it is GPL-2.0; this repo is AGPL-3.0). Pure mapping lives in `src/common/enem-import/mapping.ts` (Jest's `rootDir` is `src/`, so testable logic must not live in `prisma/`). Imported questions carry `externalId`/`source`/`language`/`questionPrompt`/`subjectAreaId` and enter with **`topicId: null`** (area only) and **`explanation: null`**; every consumer must tolerate both. Images are served by the backend at `/media/enem/` from `ENEM_MEDIA_DIR` (Docker: `/data/enem-media`, same volume as the DB). `Alternative` has `letter`/`position`/`imageUrl` — always select alternatives via `src/questions/question.select.ts` so the `orderBy: position` is never forgotten. The import must **never** run inside `seed.ts` (the e2e setup runs the seed on every suite). Generic AI provider layer: `src/common/ai/` (`completeJson` + provider selection); essay grading, on-demand explanations (`POST /questions/:id/explanation`) and topic classification (`prisma/classify-questions.ts`) all go through it. Simulations sample by stratum (`src/common/sampling.ts`) instead of loading the whole pool; TRI score stays `null` whenever a simulado includes an uncalibrated (official) question.
 
 Remaining work: native apps (React Native/Expo) are **out of scope for now** — see `docs/PRD.md` §18. The full application plan (data model, Docker Compose, CI/CD, testing strategy, and phased roadmap) lives in `docs/PRD.md` — consult it for product/architecture decisions before adding domain modules. Target-audience research is in `references/` (gitignored).
 
@@ -44,6 +46,8 @@ npm run test:cov       # unit tests with coverage — FAILS below thresholds (is
 npx prisma migrate dev # create/apply a migration against the dev SQLite db
 npx prisma generate    # regenerate the Prisma client after editing schema.prisma
 npm run db:seed        # seed demo data (prisma/seed.ts)
+npm run db:import:enem # import official ENEM exams (downloads the dataset; run after db:seed)
+npm run db:classify    # AI topic classification of imported questions (needs an AI provider)
 npx jest -t "substring"               # run tests matching a name
 ```
 
@@ -51,7 +55,7 @@ Frontend (run from `openem_frontend/`):
 
 ```bash
 npm install            # install dependencies
-npm run dev            # Vite dev server (proxies /api and /health to :3000)
+npm run dev            # Vite dev server (proxies /api, /health and /media to :3000)
 npm run build          # typecheck + production build (generates the PWA service worker)
 npm run preview        # serve the production build locally
 npm test               # Vitest unit/component tests
