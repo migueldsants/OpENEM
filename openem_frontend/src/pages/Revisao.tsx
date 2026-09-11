@@ -9,6 +9,7 @@ import {
   type ReviewItem,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { QuestionExplanation } from '../components/QuestionExplanation';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
@@ -157,9 +158,13 @@ function PracticeCard({
           >
             {result.isCorrect ? 'Você acertou!' : 'Não foi dessa vez.'}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
-            {result.explanation}
-          </p>
+          <QuestionExplanation
+            key={question.id}
+            questionId={question.id}
+            explanation={result.explanation}
+            source={result.explanationSource}
+            offline={result.offlineQueued}
+          />
           {result.gamification && <GamificationFeedback g={result.gamification} />}
         </div>
       )}

@@ -70,6 +70,7 @@ export default function Perfil() {
     minutesPerDay?: number;
     goal?: string;
     displayName?: string | null;
+    foreignLanguage?: string;
   }) {
     setSaving(true);
     setError(null);
@@ -236,6 +237,34 @@ export default function Perfil() {
               onChange={(v) => update({ gamificationEnabled: v })}
               label="Alternar gamificação"
             />
+          </div>
+        </div>
+
+        <div className="border-t border-line" />
+
+        <div className="flex flex-wrap items-center gap-3 p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Língua estrangeira</p>
+            <p className="text-xs text-muted">
+              Qual versão das questões de língua estrangeira aparece para você,
+              nas questões e nos simulados das provas.
+            </p>
+          </div>
+          <div className="seg ml-auto" role="group" aria-label="Língua estrangeira">
+            {[
+              { valor: 'ingles', nome: 'Inglês' },
+              { valor: 'espanhol', nome: 'Espanhol' },
+            ].map(({ valor, nome }) => (
+              <button
+                key={valor}
+                type="button"
+                disabled={saving}
+                data-active={(profile?.foreignLanguage ?? 'ingles') === valor}
+                onClick={() => void update({ foreignLanguage: valor })}
+              >
+                {nome}
+              </button>
+            ))}
           </div>
         </div>
       </div>

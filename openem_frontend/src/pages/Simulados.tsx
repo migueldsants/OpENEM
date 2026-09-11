@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   api,
   type SimulationResult,
@@ -7,12 +7,21 @@ import {
   type Subject,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { QuestionExplanation } from '../components/QuestionExplanation';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconBook, IconCheck, IconClock, IconFilter, IconStack, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { Markdown } from '../components/Markdown';
+import {
+  areaSourceName,
+  codeLabel,
+  hasCalibratedDifficulty,
+  subjectLabel,
+  topicLabel,
+} from '../lib/question';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const STORAGE_KEY = 'openem.simulado.ativo';
@@ -232,6 +241,162 @@ function CustomBuilder({
   );
 }
 
+/** "Linguagens, Códigos e suas Tecnologias" → "Linguagens". */
+function areaCurta(nome: string): string {
+  return nome
+    .replace(' e suas Tecnologias', '')
+    .replace('Linguagens, Códigos', 'Linguagens')
+    .replace('Ciências da ', '')
+    .replace('Ciências ', '');
+}
+
+/** 330 → "5h30", 300 → "5h". */
+function duracao(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`;
+}
+
+/** Os dois dias de uma aplicação (regular ou reaplicação). */
+interface Aplicacao {
+  label: string;
+  isReapplication: boolean;
+  dias: SimulationTemplate[];
+}
+
+/** Provas oficiais agrupadas por ano: regular primeiro, reaplicação depois. */
+function agruparProvas(templates: SimulationTemplate[]) {
+  const porAno = new Map<number, Map<string, Aplicacao>>();
+  for (const t of templates) {
+    if (t.scope !== 'EXAM' || !t.exam) continue;
+    const ano = porAno.get(t.exam.year) ?? new Map<string, Aplicacao>();
+    const ap = ano.get(t.exam.slug) ?? {
+      label: t.exam.isReapplication ? 'Reaplicação' : 'Aplicação regular',
+      isReapplication: t.exam.isReapplication,
+      dias: [],
+    };
+    ap.dias.push(t);
+    ano.set(t.exam.slug, ap);
+    porAno.set(t.exam.year, ano);
+  }
+  return [...porAno.entries()]
+    .sort(([a], [b]) => b - a)
+    .map(([ano, aps]) => ({
+      ano,
+      aplicacoes: [...aps.values()]
+        .sort((a, b) => Number(a.isReapplication) - Number(b.isReapplication))
+        .map((ap) => ({
+          ...ap,
+          dias: ap.dias.sort((a, b) => (a.day ?? 0) - (b.day ?? 0)),
+        })),
+    }));
+}
+
+/**
+ * Provas oficiais do ENEM: cada dia é um simulado com as questões na ordem do
+ * caderno e o tempo oficial. Anos mais recentes ficam abertos; os demais
+ * aparecem sob demanda, para a lista não virar um paredão de 20 anos.
+ */
+function ProvasOficiais({
+  templates,
+  starting,
+  onStart,
+}: {
+  templates: SimulationTemplate[];
+  starting: string | null;
+  onStart: (t: SimulationTemplate) => void;
+}) {
+  const [verTodas, setVerTodas] = useState(false);
+  const anos = useMemo(() => agruparProvas(templates), [templates]);
+  if (anos.length === 0) return null;
+  const visiveis = verTodas ? anos : anos.slice(0, 3);
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="font-display text-lg font-bold">Provas oficiais do ENEM</h2>
+        <p className="mt-0.5 text-xs text-muted">
+          Cada dia completo, na ordem do caderno e com o tempo oficial de prova.
+        </p>
+      </div>
+
+      <ul className="space-y-3">
+        {visiveis.map(({ ano, aplicacoes }) => (
+          <li key={ano} className="card card-raised p-4">
+            <p className="font-display text-base font-bold">ENEM {ano}</p>
+            <div className="mt-3 space-y-3">
+              {aplicacoes.map((ap) => (
+                <div key={ap.label}>
+                  {aplicacoes.length > 1 && (
+                    <p className="mb-1.5 text-xs font-semibold text-muted">
+                      {ap.label}
+                    </p>
+                  )}
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ap.dias.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => onStart(t)}
+                        disabled={starting !== null}
+                        className="rounded-xl border border-line p-3 text-left transition-colors hover:bg-surface-2 disabled:opacity-60"
+                      >
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold">
+                            {t.day}º dia
+                          </span>
+                          <span className="text-xs font-medium text-brand">
+                            {starting === t.id ? 'Iniciando…' : 'Iniciar'}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-1 text-xs">
+                          {(t.areas ?? []).map((a) => (
+                            <span
+                              key={a}
+                              className={`inline-flex items-center gap-1 ${AREA_TEXT[areaKey(a)]}`}
+                            >
+                              <span
+                                className={`size-1.5 rounded-full ${AREA_DOT[areaKey(a)]}`}
+                              />
+                              {areaCurta(a)}
+                            </span>
+                          ))}
+                        </span>
+                        <span className="mt-1 flex items-center gap-3 text-xs text-muted">
+                          <span className="inline-flex items-center gap-1">
+                            <IconStack width={13} height={13} />
+                            {t.questionCount} questões
+                          </span>
+                          {t.timeLimitMin != null && (
+                            <span className="inline-flex items-center gap-1">
+                              <IconClock width={13} height={13} />
+                              {duracao(t.timeLimitMin)}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {anos.length > 3 && (
+        <button
+          onClick={() => setVerTodas((v) => !v)}
+          className="btn btn-ghost w-full"
+        >
+          {verTodas
+            ? 'Mostrar só as mais recentes'
+            : `Ver todas as provas (${anos.length} anos)`}
+        </button>
+      )}
+    </section>
+  );
+}
+
 /** Lista de templates disponíveis para iniciar um simulado. */
 function TemplateList({
   resumeAvailable,
@@ -302,8 +467,8 @@ function TemplateList({
           Treine no padrão ENEM
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Escolha um simulado por área ou completo, com cronômetro e gabarito
-          comentado ao final.
+          Faça uma prova oficial do ENEM, dia por dia, ou monte o seu simulado
+          por área, matéria e assunto.
         </p>
       </header>
 
@@ -331,28 +496,42 @@ function TemplateList({
         <ErrorBanner message={error} />
       )}
 
-      {/* Simulado personalizado (issue #40): matéria/tópico + quantidade. */}
-      <CustomBuilder
-        onStart={(f) => void startCustom(f)}
-        starting={customStarting}
-      />
-
       {loading ? (
         <div className="space-y-3" aria-busy>
           <SkeletonCard lines={2} />
           <SkeletonCard lines={2} />
         </div>
-      ) : templates.length === 0 ? (
-        <EmptyState
-          icon={IconBook}
-          title="Nenhum simulado disponível ainda"
-          description="Os simulados seguem o padrão ENEM, com cronômetro e gabarito."
-          tip="Em breve novos templates por área"
+      ) : templates.some((t) => t.scope === 'EXAM') ? (
+        <ProvasOficiais
+          templates={templates}
+          starting={starting}
+          onStart={(t) => void start(t)}
         />
       ) : (
+        <EmptyState
+          icon={IconBook}
+          title="Nenhuma prova oficial disponível ainda"
+          description="As provas entram com a importação do banco do ENEM (npm run db:import:enem)."
+          tip="Enquanto isso, monte um simulado personalizado abaixo"
+        />
+      )}
+
+      {/* Simulado personalizado (issue #40): área/matéria/assunto + quantidade. */}
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Monte o seu</h2>
+        <CustomBuilder
+          onStart={(f) => void startCustom(f)}
+          starting={customStarting}
+        />
+      </section>
+
+      {/* Outros simulados que não são prova oficial nem o personalizado. */}
+      {templates.some(
+        (t) => t.scope !== 'EXAM' && t.id !== CUSTOM_TEMPLATE_ID,
+      ) && (
         <ul className="space-y-3">
           {templates
-            .filter((t) => t.id !== CUSTOM_TEMPLATE_ID)
+            .filter((t) => t.scope !== 'EXAM' && t.id !== CUSTOM_TEMPLATE_ID)
             .map((t) => {
             const area = t.subject ? areaKey(t.subject.name) : null;
             return (
@@ -500,7 +679,7 @@ function Player({
   }
 
   if (!current) return null;
-  const area = areaKey(current.topic.subject.name);
+  const area = areaKey(areaSourceName(current));
   const lowTime = remaining != null && remaining <= 60;
 
   return (
@@ -543,13 +722,29 @@ function Player({
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-x-2 text-xs">
               <span className={`font-semibold ${AREA_TEXT[area]}`}>
-                {current.topic.subject.name}
+                {subjectLabel(current)}
               </span>
-              <span className="text-muted">· {current.topic.name}</span>
+              {topicLabel(current) && (
+                <span className="text-muted">· {topicLabel(current)}</span>
+              )}
+              {codeLabel(current) && (
+                <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.7rem] tracking-tight text-muted">
+                  {codeLabel(current)}
+                </span>
+              )}
             </p>
-            <p className="mt-1.5 text-sm leading-relaxed">{current.statement}</p>
+            <Markdown className="mt-1.5 text-sm leading-relaxed">
+              {current.statement}
+            </Markdown>
+            {current.questionPrompt && (
+              <Markdown className="mt-2 text-sm font-medium leading-relaxed">
+                {current.questionPrompt}
+              </Markdown>
+            )}
           </div>
-          <span className="chip shrink-0">nível {current.difficulty}</span>
+          {hasCalibratedDifficulty(current) && (
+            <span className="chip shrink-0">nível {current.difficulty}</span>
+          )}
         </div>
 
         <div className="space-y-1.5 px-4 pb-4">
@@ -569,9 +764,20 @@ function Player({
                     isChosen ? 'bg-brand text-brand-ink' : 'bg-surface-2 text-muted'
                   }`}
                 >
-                  {LETTERS[i]}
+                  {alt.letter ?? LETTERS[i]}
                 </span>
-                <span className="min-w-0 flex-1">{alt.text}</span>
+                <span className="min-w-0 flex-1">
+                  {alt.imageUrl ? (
+                    <img
+                      src={alt.imageUrl}
+                      alt={`Alternativa ${alt.letter ?? LETTERS[i]}`}
+                      loading="lazy"
+                      className="h-auto max-w-full rounded"
+                    />
+                  ) : (
+                    alt.text
+                  )}
+                </span>
               </button>
             );
           })}
@@ -696,7 +902,7 @@ function Result({
         <ul className="space-y-3">
           {start.questions.map((q, qi) => {
             const detail = detailByQuestion.get(q.id);
-            const area = areaKey(q.topic.subject.name);
+            const area = areaKey(areaSourceName(q));
             return (
               <li key={q.id} className="card card-raised overflow-hidden">
                 <div className="flex items-start gap-3 p-4">
@@ -707,10 +913,17 @@ function Result({
                     <p className="flex flex-wrap items-center gap-x-2 text-xs">
                       <span className="text-muted">Questão {qi + 1}</span>
                       <span className={`font-semibold ${AREA_TEXT[area]}`}>
-                        {q.topic.subject.name}
+                        {subjectLabel(q)}
                       </span>
+                      {q.code && (
+                        <span className="font-mono text-[0.7rem] text-muted">
+                          {q.code}
+                        </span>
+                      )}
                     </p>
-                    <p className="mt-1.5 text-sm leading-relaxed">{q.statement}</p>
+                    <Markdown className="mt-1.5 text-sm leading-relaxed">
+                      {q.statement}
+                    </Markdown>
                   </div>
                   {detail && (
                     <span
@@ -768,9 +981,10 @@ function Result({
                         Você deixou em branco.
                       </p>
                     )}
-                    <p className="text-sm leading-relaxed text-muted">
-                      {detail.explanation}
-                    </p>
+                    <QuestionExplanation
+                      questionId={q.id}
+                      explanation={detail.explanation}
+                    />
                   </div>
                 )}
               </li>

@@ -78,16 +78,58 @@ export interface TopicRef {
   name: string;
   subject: { id: string; name: string };
 }
+export interface AreaRef {
+  id: string;
+  name: string;
+}
+export interface ExamRef {
+  year: number;
+  slug: string;
+  label: string;
+}
 export interface Alternative {
   id: string;
+  /** Letra oficial do gabarito. Nula nas questões autorais antigas. */
+  letter: string | null;
   text: string;
+  /** Alternativa que é uma imagem (gráficos, mapas das provas oficiais). */
+  imageUrl: string | null;
 }
 export interface Question {
   id: string;
+  /** Código da questão oficial: "ENEM-2023-136". Nulo nas autorais. */
+  code?: string | null;
+  /** Número no caderno oficial (1..180). */
+  number?: number | null;
+  /** Texto de apoio, em Markdown (pode conter imagens e LaTeX). */
   statement: string;
+  /** O comando da questão, quando vem separado do apoio. */
+  questionPrompt: string | null;
   difficulty: number;
-  topic: TopicRef;
+  /** "ENEM_DEV" nas provas oficiais, "AUTORAL" nas demais. */
+  source: string;
+  /** Idioma da questão de língua estrangeira. */
+  language: string | null;
+  /**
+   * Nulo enquanto a questão não for classificada em matéria/assunto — é o caso
+   * da maior parte do banco oficial, que entra só com a área.
+   */
+  topic: TopicRef | null;
+  subjectArea: AreaRef | null;
+  examYear: ExamRef | null;
   alternatives: Alternative[];
+}
+export interface QuestionFacets {
+  total: number;
+  areas: { id: string; count: number }[];
+  topics: { id: string; count: number }[];
+  exams: { slug: string; count: number }[];
+}
+export interface ExplanationResult {
+  explanation: string | null;
+  source: string | null;
+  /** false quando não há comentário e nenhum provedor de IA configurado. */
+  available: boolean;
 }
 export interface Favorite {
   id: string;
@@ -125,7 +167,10 @@ export interface GamificationDelta {
 export interface AnswerResult {
   isCorrect: boolean;
   correctAlternativeId: string | null;
-  explanation: string;
+  /** Nulo quando a questão ainda não tem comentário. */
+  explanation: string | null;
+  /** Origem do comentário: "ai:<provedor>" quando gerado por IA. */
+  explanationSource?: string | null;
   gamification?: GamificationDelta;
   /** true quando a resposta foi enfileirada offline (issue #42). */
   offlineQueued?: boolean;
@@ -286,6 +331,7 @@ export interface LeaderboardResult {
 export interface Subject {
   id: string;
   name: string;
+  subjectArea: AreaRef | null;
   topics: { id: string; name: string }[];
 }
 export interface AreaPerformance {
@@ -588,10 +634,20 @@ export interface EssaySubmissionDetail {
 export interface SimulationTemplate {
   id: string;
   name: string;
-  scope: 'AREA' | 'FULL';
+  /** EXAM = um dia de prova oficial do ENEM, na ordem do caderno. */
+  scope: 'AREA' | 'FULL' | 'EXAM';
   questionCount: number;
   timeLimitMin: number | null;
   subject: { id: string; name: string } | null;
+  exam?: {
+    slug: string;
+    year: number;
+    label: string;
+    isReapplication: boolean;
+  } | null;
+  day?: number | null;
+  /** Áreas do dia da prova, na ordem do caderno. */
+  areas?: string[];
 }
 export interface SimulationStart {
   id: string;
@@ -610,7 +666,7 @@ export interface SimulationResultDetail {
   isCorrect: boolean;
   chosenId: string | null;
   correctAlternativeId: string | null;
-  explanation: string;
+  explanation: string | null;
 }
 export interface SimulationResult {
   simulationId: string;
@@ -628,6 +684,8 @@ export interface Profile {
   focusMode: boolean;
   gamificationEnabled: boolean;
   onboarded: boolean;
+  /** Língua estrangeira da prova: "ingles" | "espanhol". */
+  foreignLanguage?: string;
 }
 export interface Me {
   id: string;
@@ -663,26 +721,50 @@ export const api = {
         | 'displayName'
         | 'gamificationEnabled'
         | 'onboarded'
+        | 'foreignLanguage'
       >
     >,
   ) => request<Me>('/users/me/profile', { method: 'PUT', body: patch }),
 
   subjects: () => request<Subject[]>('/subjects'),
-  questions: (params: {
-    subjectId?: string;
-    topicId?: string;
-    difficulty?: number;
-    page?: number;
-    limit?: number;
-  } = {}) => {
+  questions: (
+    params: {
+      subjectAreaId?: string;
+      subjectId?: string;
+      topicId?: string;
+      difficulty?: number;
+      /** Prova específica: "2023", "2023-reaplicacao". */
+      examSlug?: string;
+      language?: string;
+      /** Busca por código, por prefixo: "ENEM-2023-136", "2023 136". */
+      code?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ) => {
     const qs = new URLSearchParams();
+    if (params.subjectAreaId) qs.set('subjectAreaId', params.subjectAreaId);
     if (params.subjectId) qs.set('subjectId', params.subjectId);
     if (params.topicId) qs.set('topicId', params.topicId);
     if (params.difficulty) qs.set('difficulty', String(params.difficulty));
+    if (params.examSlug) qs.set('examSlug', params.examSlug);
+    if (params.language) qs.set('language', params.language);
+    if (params.code) qs.set('code', params.code);
     qs.set('page', String(params.page ?? 1));
     qs.set('limit', String(params.limit ?? 10));
     return request<Paginated<Question>>(`/questions?${qs.toString()}`);
   },
+  exams: () => request<ExamRef[]>('/questions/exams'),
+  /** Quantas questões há por área, assunto e prova (para os filtros). */
+  questionFacets: (language?: string) =>
+    request<QuestionFacets>(
+      `/questions/facets${language ? `?language=${language}` : ''}`,
+    ),
+  /** Comentário da questão; gerado por IA na primeira vez, se houver provedor. */
+  explanation: (questionId: string) =>
+    request<ExplanationResult>(`/questions/${questionId}/explanation`, {
+      method: 'POST',
+    }),
   answer: async (questionId: string, chosenId: string) => {
     try {
       return await request<AnswerResult>('/answers', {
@@ -702,7 +784,7 @@ export const api = {
         return {
           isCorrect: false,
           correctAlternativeId: null,
-          explanation: '',
+          explanation: null,
           offlineQueued: true,
         } as AnswerResult;
       }

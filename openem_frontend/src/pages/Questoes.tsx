@@ -4,10 +4,14 @@ import { useSearchParams } from 'react-router-dom';
 import {
   api,
   type AnswerResult,
+  type ExamRef,
   type Question,
+  type QuestionFacets,
   type Subject,
 } from '../api';
+import { useAuth } from '../auth';
 import { EmptyState } from '../components/EmptyState';
+import { QuestionExplanation } from '../components/QuestionExplanation';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
@@ -25,13 +29,21 @@ import { QuestNoteModal } from '../components/QuestNoteModal';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { Markdown } from '../components/Markdown';
+import {
+  areaSourceName,
+  codeLabel,
+  hasCalibratedDifficulty,
+  normalizeCodeQuery,
+  subjectLabel,
+  topicLabel,
+} from '../lib/question';
 
 // Overlay "Anotar" é lazy (carrega o editor + mathlive só quando aberto).
 const AnnotateOverlay = lazy(() =>
   import('../board/AnnotateOverlay').then((m) => ({ default: m.AnnotateOverlay })),
 );
 
-const DIFFICULTIES = [1, 2, 3, 4, 5];
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 interface AnswerState {
@@ -59,7 +71,7 @@ function QuestionView({
   onAnnotate: () => void;
   onNote: () => void;
 }) {
-  const area = areaKey(question.topic.subject.name);
+  const area = areaKey(areaSourceName(question));
   const { chosen, result } = state;
 
   return (
@@ -69,16 +81,33 @@ function QuestionView({
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 text-xs">
             <span className={`font-semibold ${AREA_TEXT[area]}`}>
-              {question.topic.subject.name.replace(' e suas Tecnologias', '')}
+              {subjectLabel(question)}
             </span>
-            <span className="text-muted">· {question.topic.name}</span>
+            {topicLabel(question) && (
+              <span className="text-muted">· {topicLabel(question)}</span>
+            )}
+            {codeLabel(question) && (
+              <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.7rem] tracking-tight text-muted">
+                {codeLabel(question)}
+              </span>
+            )}
           </p>
-          <p className="mt-2 text-[0.95rem] leading-relaxed sm:text-base">
+          {/* Markdown: os enunciados oficiais trazem imagens, tabelas e LaTeX. */}
+          <Markdown className="mt-2 text-[0.95rem] leading-relaxed sm:text-base">
             {question.statement}
-          </p>
+          </Markdown>
+          {question.questionPrompt && (
+            <Markdown className="mt-3 text-[0.95rem] font-medium leading-relaxed sm:text-base">
+              {question.questionPrompt}
+            </Markdown>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <span className="chip">nível {question.difficulty}</span>
+          {/* Todas as questões oficiais entram no nível padrão: mostrar "nível 3"
+              em milhares de questões seria desinformação. O código já diz a prova. */}
+          {hasCalibratedDifficulty(question) && (
+            <span className="chip">nível {question.difficulty}</span>
+          )}
           <button
             onClick={onNote}
             aria-label={hasNote ? 'Ver/editar anotação' : 'Anotar esta questão'}
@@ -145,9 +174,21 @@ function QuestionView({
                     : 'bg-surface-2 text-muted'
                 }`}
               >
-                {LETTERS[i]}
+                {alt.letter ?? LETTERS[i]}
               </span>
-              <span className="min-w-0 flex-1">{alt.text}</span>
+              <span className="min-w-0 flex-1">
+                {alt.imageUrl ? (
+                  <img
+                    src={alt.imageUrl}
+                    alt={`Alternativa ${alt.letter ?? LETTERS[i]}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-auto max-w-full rounded"
+                  />
+                ) : (
+                  alt.text
+                )}
+              </span>
               {result && isCorrect && (
                 <IconCheck width={16} height={16} className="shrink-0 text-nat" />
               )}
@@ -172,9 +213,13 @@ function QuestionView({
           >
             {result.isCorrect ? 'Você acertou!' : 'Não foi dessa vez.'}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
-            {result.explanation}
-          </p>
+          <QuestionExplanation
+            key={question.id}
+            questionId={question.id}
+            explanation={result.explanation}
+            source={result.explanationSource}
+            offline={result.offlineQueued}
+          />
           {result.gamification && <GamificationFeedback g={result.gamification} />}
         </div>
       )}
@@ -182,38 +227,113 @@ function QuestionView({
   );
 }
 
-/** Painel lateral de filtros (drawer), com staging e Aplicar. */
+/** Filtros aplicados à lista de questões. */
+interface Filtros {
+  areaId: string;
+  subjectId: string;
+  topicId: string;
+  examSlug: string;
+  onlyFavorites: boolean;
+}
+
+const SEM_FILTROS: Filtros = {
+  areaId: '',
+  subjectId: '',
+  topicId: '',
+  examSlug: '',
+  onlyFavorites: false,
+};
+
+/** Matérias sem questão objetiva: Redação é a prova discursiva. */
+const SEM_QUESTOES = new Set(['Redação']);
+
+function semTecnologias(nome: string): string {
+  return nome.replace(' e suas Tecnologias', '');
+}
+
+/**
+ * Painel lateral de filtros (drawer), com staging e Aplicar.
+ *
+ * Área → matéria → assunto, em cascata, com a contagem de questões ao lado.
+ * Matéria e assunto sem nenhuma questão ficam de fora: a maior parte do banco
+ * oficial ainda não foi classificada por assunto, e oferecer "Funções (0)"
+ * seria mandar o aluno para uma lista vazia.
+ */
 function FilterDrawer({
   open,
   subjects,
+  exams,
+  facets,
   initial,
   onClose,
   onApply,
 }: {
   open: boolean;
   subjects: Subject[];
-  initial: { subjectId: string; difficulty: number; onlyFavorites: boolean };
+  exams: ExamRef[];
+  facets: QuestionFacets | null;
+  initial: Filtros;
   onClose: () => void;
-  onApply: (f: {
-    subjectId: string;
-    difficulty: number;
-    onlyFavorites: boolean;
-  }) => void;
+  onApply: (f: Filtros) => void;
 }) {
-  const [subjectId, setSubjectId] = useState(initial.subjectId);
-  const [difficulty, setDifficulty] = useState(initial.difficulty);
-  const [onlyFavorites, setOnlyFavorites] = useState(initial.onlyFavorites);
+  const [f, setF] = useState<Filtros>(initial);
 
   // Re-semeia o staging sempre que o drawer abre.
   useEffect(() => {
-    if (open) {
-      setSubjectId(initial.subjectId);
-      setDifficulty(initial.difficulty);
-      setOnlyFavorites(initial.onlyFavorites);
+    if (open) setF(initial);
+  }, [open, initial]);
+
+  const contagem = useMemo(
+    () => ({
+      area: new Map((facets?.areas ?? []).map((a) => [a.id, a.count])),
+      topic: new Map((facets?.topics ?? []).map((t) => [t.id, t.count])),
+      exam: new Map((facets?.exams ?? []).map((e) => [e.slug, e.count])),
+    }),
+    [facets],
+  );
+
+  const areas = useMemo(() => {
+    const porId = new Map<string, { id: string; name: string }>();
+    for (const s of subjects) {
+      if (s.subjectArea) porId.set(s.subjectArea.id, s.subjectArea);
     }
-  }, [open, initial.subjectId, initial.difficulty, initial.onlyFavorites]);
+    return [...porId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [subjects]);
+
+  // Matérias da área escolhida que têm ao menos uma questão classificada.
+  const materias = useMemo(
+    () =>
+      subjects
+        .filter(
+          (s) =>
+            !SEM_QUESTOES.has(s.name) &&
+            (!f.areaId || s.subjectArea?.id === f.areaId),
+        )
+        .map((s) => ({
+          ...s,
+          count: s.topics.reduce(
+            (acc, t) => acc + (contagem.topic.get(t.id) ?? 0),
+            0,
+          ),
+        }))
+        .filter((s) => s.count > 0),
+    [subjects, f.areaId, contagem],
+  );
+
+  const assuntos = useMemo(() => {
+    const materia = subjects.find((s) => s.id === f.subjectId);
+    return (materia?.topics ?? [])
+      .map((t) => ({ ...t, count: contagem.topic.get(t.id) ?? 0 }))
+      .filter((t) => t.count > 0);
+  }, [subjects, f.subjectId, contagem]);
 
   if (!open) return null;
+
+  const chip = (ativo: boolean) => `chip ${ativo ? 'ring-1 ring-brand' : ''}`;
+  const qtd = (n: number | undefined) =>
+    n != null ? (
+      <span className="tabular-nums text-muted">{n.toLocaleString('pt-BR')}</span>
+    ) : null;
 
   return createPortal(
     <div className="fixed inset-0 z-40">
@@ -239,22 +359,30 @@ function FilterDrawer({
             <span className="eyebrow">Área</span>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button
-                onClick={() => setSubjectId('')}
-                className={`chip ${!subjectId ? 'ring-1 ring-brand' : ''}`}
+                onClick={() => setF({ ...f, areaId: '', subjectId: '', topicId: '' })}
+                className={chip(!f.areaId)}
               >
-                Todas
+                Todas {qtd(facets?.total)}
               </button>
-              {subjects.map((s) => {
-                const area = areaKey(s.name);
-                const active = subjectId === s.id;
+              {areas.map((a) => {
+                const ativo = f.areaId === a.id;
                 return (
                   <button
-                    key={s.id}
-                    onClick={() => setSubjectId(active ? '' : s.id)}
-                    className={`chip ${active ? 'ring-1 ring-brand' : ''}`}
+                    key={a.id}
+                    onClick={() =>
+                      setF({
+                        ...f,
+                        areaId: ativo ? '' : a.id,
+                        subjectId: '',
+                        topicId: '',
+                      })
+                    }
+                    className={chip(ativo)}
                   >
-                    <span className={`size-2.5 rounded-full ${AREA_DOT[area]}`} />
-                    {s.name.replace(' e suas Tecnologias', '')}
+                    <span
+                      className={`size-2.5 rounded-full ${AREA_DOT[areaKey(a.name)]}`}
+                    />
+                    {semTecnologias(a.name)} {qtd(contagem.area.get(a.id))}
                   </button>
                 );
               })}
@@ -262,31 +390,85 @@ function FilterDrawer({
           </div>
 
           <div>
-            <span className="eyebrow">Nível de dificuldade</span>
-            <div className="seg mt-2">
-              <button
-                data-active={difficulty === 0}
-                onClick={() => setDifficulty(0)}
-              >
-                Todos
-              </button>
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d}
-                  data-active={difficulty === d}
-                  onClick={() => setDifficulty(d)}
-                >
-                  {d}
-                </button>
-              ))}
+            <span className="eyebrow">Matéria</span>
+            {materias.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {materias.map((m) => {
+                  const ativo = f.subjectId === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() =>
+                        setF({
+                          ...f,
+                          areaId: m.subjectArea?.id ?? f.areaId,
+                          subjectId: ativo ? '' : m.id,
+                          topicId: '',
+                        })
+                      }
+                      className={chip(ativo)}
+                    >
+                      {m.name} {qtd(m.count)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                As questões oficiais ainda não foram classificadas por matéria
+                {f.areaId ? ' nesta área' : ''}. Por enquanto, filtre pela área
+                e pela prova.
+              </p>
+            )}
+          </div>
+
+          {f.subjectId && assuntos.length > 0 && (
+            <div>
+              <span className="eyebrow">Assunto</span>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {assuntos.map((t) => {
+                  const ativo = f.topicId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setF({ ...f, topicId: ativo ? '' : t.id })}
+                      className={chip(ativo)}
+                    >
+                      {t.name} {qtd(t.count)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          )}
+
+          <div>
+            <label htmlFor="filtro-prova" className="eyebrow">
+              Prova
+            </label>
+            <select
+              id="filtro-prova"
+              value={f.examSlug}
+              onChange={(e) => setF({ ...f, examSlug: e.target.value })}
+              className="input mt-2 w-full"
+            >
+              <option value="">Todas as provas</option>
+              {exams.map((e) => (
+                <option key={e.slug} value={e.slug}>
+                  {e.label}
+                  {contagem.exam.has(e.slug)
+                    ? ` · ${contagem.exam.get(e.slug)} questões`
+                    : ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"
-              checked={onlyFavorites}
-              onChange={(e) => setOnlyFavorites(e.target.checked)}
+              checked={f.onlyFavorites}
+              onChange={(e) => setF({ ...f, onlyFavorites: e.target.checked })}
               className="size-4 accent-[var(--brand)]"
             />
             <span className="text-sm">Só questões favoritas</span>
@@ -294,20 +476,10 @@ function FilterDrawer({
         </div>
 
         <footer className="flex items-center gap-2 border-t border-line px-5 py-4">
-          <button
-            onClick={() => {
-              setSubjectId('');
-              setDifficulty(0);
-              setOnlyFavorites(false);
-            }}
-            className="btn btn-ghost"
-          >
+          <button onClick={() => setF(SEM_FILTROS)} className="btn btn-ghost">
             Limpar
           </button>
-          <button
-            onClick={() => onApply({ subjectId, difficulty, onlyFavorites })}
-            className="btn btn-primary flex-1"
-          >
+          <button onClick={() => onApply(f)} className="btn btn-primary flex-1">
             Aplicar
           </button>
         </footer>
@@ -319,19 +491,35 @@ function FilterDrawer({
 
 export default function Questoes() {
   const { refresh } = useGamification();
+  const { me } = useAuth();
+  // Língua estrangeira do aluno: sem ela, cada questão de LE apareceria duas
+  // vezes (o banco guarda a versão em inglês e a em espanhol).
+  const language = me?.profile?.foreignLanguage ?? 'ingles';
   const [searchParams, setSearchParams] = useSearchParams();
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [exams, setExams] = useState<ExamRef[]>([]);
+  const [facets, setFacets] = useState<QuestionFacets | null>(null);
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [favoriteQuestions, setFavoriteQuestions] = useState<Question[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   // Filtros aplicados (o drawer faz o staging e confirma no Aplicar).
-  // topicId vem do deep-link do mapa de calor (issue #43).
-  const [subjectId, setSubjectId] = useState('');
-  const [topicId, setTopicId] = useState(() => searchParams.get('topicId') ?? '');
-  const [difficulty, setDifficulty] = useState(0);
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  // topicId pode vir do deep-link do mapa de calor (issue #43).
+  const [filtros, setFiltros] = useState<Filtros>(() => ({
+    ...SEM_FILTROS,
+    topicId: searchParams.get('topicId') ?? '',
+  }));
+  const { areaId, subjectId, topicId, examSlug, onlyFavorites } = filtros;
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Busca por código: o campo atualiza na hora, a busca espera o aluno parar
+  // de digitar para não disparar uma requisição por tecla.
+  const [codeInput, setCodeInput] = useState('');
+  const [code, setCode] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setCode(codeInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [codeInput]);
 
   // Buffer paginado (modo banco) + ponteiro da questão atual.
   const [fetched, setFetched] = useState<Question[]>([]);
@@ -356,12 +544,14 @@ export default function Questoes() {
   useEffect(() => {
     void (async () => {
       try {
-        const [subs, favs, notes] = await Promise.all([
+        const [subs, favs, notes, provas] = await Promise.all([
           api.subjects(),
           api.favorites(),
           api.questionNotes(),
+          api.exams(),
         ]);
         setSubjects(subs);
+        setExams(provas);
         setFavoritedIds(new Set(favs.map((f) => f.question.id)));
         setFavoriteQuestions(favs.map((f) => f.question));
         setNotedIds(new Set(notes.map((n) => n.question.id)));
@@ -376,15 +566,26 @@ export default function Questoes() {
     })();
   }, []);
 
+  // Contagens dos filtros: dependem da língua (a versão na outra língua sai).
+  useEffect(() => {
+    void api
+      .questionFacets(language)
+      .then(setFacets)
+      .catch(() => setFacets(null));
+  }, [language]);
+
   const fetchPage = useCallback(
     async (nextPage: number, replace: boolean) => {
       setLoading(true);
       setError(null);
       try {
         const res = await api.questions({
+          subjectAreaId: areaId || undefined,
           subjectId: subjectId || undefined,
           topicId: topicId || undefined,
-          difficulty: difficulty || undefined,
+          examSlug: examSlug || undefined,
+          code: code || undefined,
+          language,
           page: nextPage,
           limit: 10,
         });
@@ -402,19 +603,21 @@ export default function Questoes() {
         setLoading(false);
       }
     },
-    [subjectId, topicId, difficulty],
+    [areaId, subjectId, topicId, examSlug, code, language],
   );
 
   // Favoritas: derivadas em memória (refletem toggles ao vivo, sem refetch).
-  const favFiltered = useMemo(
-    () =>
-      favoriteQuestions.filter(
-        (q) =>
-          (!subjectId || q.topic.subject.id === subjectId) &&
-          (!difficulty || q.difficulty === difficulty),
-      ),
-    [favoriteQuestions, subjectId, difficulty],
-  );
+  const favFiltered = useMemo(() => {
+    const prefixo = code ? normalizeCodeQuery(code) : '';
+    return favoriteQuestions.filter(
+      (q) =>
+        (!areaId || q.subjectArea?.id === areaId) &&
+        (!subjectId || q.topic?.subject.id === subjectId) &&
+        (!topicId || q.topic?.id === topicId) &&
+        (!examSlug || q.examYear?.slug === examSlug) &&
+        (!prefixo || (q.code ?? '').startsWith(prefixo)),
+    );
+  }, [favoriteQuestions, areaId, subjectId, topicId, examSlug, code]);
 
   const items = onlyFavorites ? favFiltered : fetched;
   const total = onlyFavorites ? items.length : bankTotal;
@@ -442,10 +645,14 @@ export default function Questoes() {
   );
 
   const activeFilters =
+    (areaId ? 1 : 0) +
     (subjectId ? 1 : 0) +
     (topicId ? 1 : 0) +
-    (difficulty ? 1 : 0) +
+    (examSlug ? 1 : 0) +
     (onlyFavorites ? 1 : 0);
+
+  // O drawer re-semeia o staging quando `initial` muda: precisa ser estável.
+  const filtrosIniciais = useMemo(() => filtros, [filtros]);
 
   /** Nome do tópico filtrado (deep-link do heatmap, issue #43). */
   const topicName = useMemo(() => {
@@ -458,7 +665,7 @@ export default function Questoes() {
   }, [subjects, topicId]);
 
   function clearTopicFilter() {
-    setTopicId('');
+    setFiltros((f) => ({ ...f, topicId: '' }));
     // Remove o query param do deep-link para não re-aplicar no próximo mount.
     setSearchParams((cur) => {
       const next = new URLSearchParams(cur);
@@ -547,14 +754,37 @@ export default function Questoes() {
         </button>
       </header>
 
+      {/* Busca pelo código da questão: ENEM-2023-136, "2023 136", "2023". */}
+      <div className="relative">
+        <input
+          type="search"
+          value={codeInput}
+          onChange={(e) => setCodeInput(e.target.value)}
+          placeholder="Buscar por código: ENEM-2023-136"
+          aria-label="Buscar questão pelo código"
+          className="input w-full font-mono text-sm"
+        />
+      </div>
+
       {/* Resumo dos filtros ativos */}
       {activeFilters > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {areaId && !subjectId && (
+            <span className="chip">
+              {semTecnologias(
+                subjects.find((s) => s.subjectArea?.id === areaId)?.subjectArea
+                  ?.name ?? 'Área',
+              )}
+            </span>
+          )}
           {subjectId && (
             <span className="chip">
-              {subjects
-                .find((s) => s.id === subjectId)
-                ?.name.replace(' e suas Tecnologias', '')}
+              {subjects.find((s) => s.id === subjectId)?.name}
+            </span>
+          )}
+          {examSlug && (
+            <span className="chip">
+              {exams.find((e) => e.slug === examSlug)?.label ?? examSlug}
             </span>
           )}
           {topicId && (
@@ -569,14 +799,11 @@ export default function Questoes() {
               </button>
             </span>
           )}
-          {difficulty > 0 && <span className="chip">Nível {difficulty}</span>}
           {onlyFavorites && <span className="chip">Favoritas</span>}
           <button
             onClick={() => {
-              setSubjectId('');
               if (topicId) clearTopicFilter();
-              setDifficulty(0);
-              setOnlyFavorites(false);
+              setFiltros(SEM_FILTROS);
             }}
             className="text-muted underline-offset-2 hover:underline"
           >
@@ -614,9 +841,11 @@ export default function Questoes() {
             description={
               onlyFavorites
                 ? 'Você ainda não favoritou questões com esses filtros.'
-                : 'Ajuste os filtros para ver outras questões.'
+                : code
+                  ? `Nenhuma questão com o código ${normalizeCodeQuery(code)}.`
+                  : 'Ajuste os filtros para ver outras questões.'
             }
-            tip="Tente outra área ou remova os favoritos"
+            tip="Tente outra área, outra prova ou remova os favoritos"
           />
         )
       ) : (
@@ -679,12 +908,14 @@ export default function Questoes() {
       <FilterDrawer
         open={drawerOpen}
         subjects={subjects}
-        initial={{ subjectId, difficulty, onlyFavorites }}
+        exams={exams}
+        facets={facets}
+        initial={filtrosIniciais}
         onClose={() => setDrawerOpen(false)}
         onApply={(f) => {
-          setSubjectId(f.subjectId);
-          setDifficulty(f.difficulty);
-          setOnlyFavorites(f.onlyFavorites);
+          // O assunto do deep-link do mapa de calor sai da URL ao ser trocado.
+          if (topicId && f.topicId !== topicId) clearTopicFilter();
+          setFiltros(f);
           setDrawerOpen(false);
         }}
       />

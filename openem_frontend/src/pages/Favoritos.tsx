@@ -7,12 +7,14 @@ import {
   type Question,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
+import { QuestionExplanation } from '../components/QuestionExplanation';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconCheck, IconStar, IconX } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { areaSourceName, subjectLabel, topicLabel } from '../lib/question';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -28,7 +30,7 @@ function FavoriteCard({
   const [chosen, setChosen] = useState<string | null>(null);
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [sending, setSending] = useState(false);
-  const area = areaKey(question.topic.subject.name);
+  const area = areaKey(areaSourceName(question));
 
   async function send() {
     if (!chosen) return;
@@ -49,9 +51,11 @@ function FavoriteCard({
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 text-xs">
             <span className={`font-semibold ${AREA_TEXT[area]}`}>
-              {question.topic.subject.name}
+              {subjectLabel(question)}
             </span>
-            <span className="text-muted">· {question.topic.name}</span>
+            {topicLabel(question) && (
+              <span className="text-muted">· {topicLabel(question)}</span>
+            )}
           </p>
           <p className="mt-1.5 text-sm leading-relaxed">{question.statement}</p>
         </div>
@@ -130,9 +134,12 @@ function FavoriteCard({
           >
             {result.isCorrect ? 'Você acertou!' : 'Não foi dessa vez.'}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
-            {result.explanation}
-          </p>
+          <QuestionExplanation
+            questionId={question.id}
+            explanation={result.explanation}
+            source={result.explanationSource}
+            offline={result.offlineQueued}
+          />
           {result.gamification && <GamificationFeedback g={result.gamification} />}
         </div>
       )}
