@@ -18,7 +18,9 @@ function makePrismaMock() {
   return {
     simulationTemplate: { findMany: jest.fn(), findUnique: jest.fn() },
     subject: { findMany: jest.fn(), count: jest.fn() },
-    question: { findMany: jest.fn() },
+    topic: { findMany: jest.fn().mockResolvedValue([]) },
+    profile: { findUnique: jest.fn().mockResolvedValue(null) },
+    question: { findMany: jest.fn(), groupBy: jest.fn().mockResolvedValue([]) },
     simulation: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -37,6 +39,45 @@ function makeService() {
   };
   const service = new SimulationsService(prisma, review, gamification);
   return { service, prisma, review, gamification };
+}
+
+/**
+ * Prepara a amostragem: `groupBy` devolve os estratos (assunto -> tamanho) e
+ * cada `question.findMany` seguinte devolve os ids daquele estrato. A última
+ * chamada de findMany e sempre a busca das questoes selecionadas.
+ */
+function mockPool(
+  prisma: any,
+  estratos: { topicId: string | null; ids: string[]; weight?: number }[],
+  selecionadas: unknown[] = [],
+) {
+  prisma.question.groupBy.mockResolvedValue(
+    estratos.map((e) => ({
+      topicId: e.topicId,
+      _count: { _all: e.ids.length },
+    })),
+  );
+  prisma.topic.findMany.mockResolvedValue(
+    estratos
+      .filter((e) => e.topicId !== null)
+      .map((e) => ({ id: e.topicId, weight: e.weight ?? 3 })),
+  );
+  // Leitura por vaga (take: 1, só o id) devolve a linha na posição sorteada
+  // do estrato; qualquer outra leitura é a busca das questões selecionadas.
+  const porTopico = new Map(estratos.map((e) => [e.topicId, e.ids]));
+  prisma.question.findMany.mockImplementation(
+    (args: {
+      take?: number;
+      skip?: number;
+      where: { topicId?: string | null };
+    }) => {
+      if (args.take === 1 && 'topicId' in args.where) {
+        const id = porTopico.get(args.where.topicId ?? null)?.[args.skip ?? 0];
+        return Promise.resolve(id ? [{ id }] : []);
+      }
+      return Promise.resolve(selecionadas);
+    },
+  );
 }
 
 describe('SimulationsService', () => {
@@ -68,18 +109,21 @@ describe('SimulationsService', () => {
     it('retorna 400 quando não há questões no pool', async () => {
       const { service, prisma } = makeService();
       prisma.simulationTemplate.findUnique.mockResolvedValue(TEMPLATE);
-      prisma.question.findMany.mockResolvedValue([]);
+      prisma.question.groupBy.mockResolvedValue([]);
       await expect(
         service.start('u1', { templateId: 'seed-template-math' }),
       ).rejects.toBeInstanceOf(BadRequestException);
+      // Sem estratos, o banco de questões nem chega a ser lido.
+      expect(prisma.question.findMany).not.toHaveBeenCalled();
     });
 
     it('cria o simulado com questões sem gabarito', async () => {
       const { service, prisma } = makeService();
       prisma.simulationTemplate.findUnique.mockResolvedValue(TEMPLATE);
-      prisma.question.findMany
-        .mockResolvedValueOnce([{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }]) // pool
-        .mockResolvedValueOnce([
+      mockPool(
+        prisma,
+        [{ topicId: 't1', ids: ['q1', 'q2', 'q3'] }],
+        [
           {
             id: 'q1',
             statement: 's1',
@@ -87,7 +131,8 @@ describe('SimulationsService', () => {
             topic: { id: 't1', name: 'T1', subject: { id: 's1', name: 'S1' } },
             alternatives: [{ id: 'a1', text: 'alt' }],
           },
-        ]); // selecionadas
+        ],
+      );
       prisma.simulation.create.mockResolvedValue({
         id: 'sim-1',
         startedAt: new Date(),
@@ -115,21 +160,16 @@ describe('SimulationsService', () => {
             subjectId: 'nao-existe',
           }),
         ).rejects.toBeInstanceOf(BadRequestException);
-        expect(prisma.question.findMany).not.toHaveBeenCalled();
+        expect(prisma.question.groupBy).not.toHaveBeenCalled();
       });
 
       it('filtra o pool por subjectId e usa questionCount do DTO', async () => {
         const { service, prisma } = makeService();
         prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
         prisma.subject.count.mockResolvedValue(1);
-        prisma.question.findMany
-          .mockResolvedValueOnce(
-            Array.from({ length: 12 }, (_, i) => ({
-              id: `q${i}`,
-              topic: { weight: 1 },
-            })),
-          ) // pool
-          .mockResolvedValueOnce([]); // selecionadas
+        mockPool(prisma, [
+          { topicId: 't1', ids: Array.from({ length: 12 }, (_, i) => `q${i}`) },
+        ]);
         prisma.simulation.create.mockResolvedValue({
           id: 'sim-c',
           startedAt: new Date(),
@@ -141,20 +181,23 @@ describe('SimulationsService', () => {
           questionCount: 5,
         });
 
-        const poolArg = prisma.question.findMany.mock.calls[0][0];
-        expect(poolArg.where).toEqual({ topic: { subjectId: 'subj-mat' } });
-        // Busca das selecionadas: 5 ids do pool embaralhado.
-        const detailArg = prisma.question.findMany.mock.calls[1][0];
-        expect(detailArg.where.id.in).toHaveLength(5);
+        expect(prisma.question.groupBy.mock.calls[0][0].where).toEqual({
+          topic: { subjectId: 'subj-mat' },
+        });
+        // Só as vagas são lidas do banco — uma linha por vaga, nunca o pool.
+        const leituras = prisma.question.findMany.mock.calls.slice(0, -1);
+        expect(leituras).toHaveLength(5);
+        expect(leituras.every((c: any[]) => c[0].take === 1)).toBe(true);
+        // As 5 questões sorteadas são distintas.
+        const ids = prisma.question.findMany.mock.calls.at(-1)[0].where.id.in;
+        expect(new Set(ids).size).toBe(5);
       });
 
       it('topicId tem precedência sobre subjectId', async () => {
         const { service, prisma } = makeService();
         prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
         prisma.subject.count.mockResolvedValue(1);
-        prisma.question.findMany
-          .mockResolvedValueOnce([{ id: 'q1', topic: { weight: 2 } }])
-          .mockResolvedValueOnce([]);
+        mockPool(prisma, [{ topicId: 'topico-x', ids: ['q1'] }]);
         prisma.simulation.create.mockResolvedValue({
           id: 'sim-t',
           startedAt: new Date(),
@@ -166,21 +209,61 @@ describe('SimulationsService', () => {
           topicId: 'topico-x',
         });
 
-        expect(prisma.question.findMany.mock.calls[0][0].where).toEqual({
+        expect(prisma.question.groupBy.mock.calls[0][0].where).toEqual({
           topicId: 'topico-x',
         });
       });
 
-      it('pareto=true ordena o pool por peso do tópico (desc)', async () => {
+      it('subjectAreaId filtra pela área quando não há matéria/assunto', async () => {
         const { service, prisma } = makeService();
         prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
-        prisma.question.findMany
-          .mockResolvedValueOnce([
-            { id: 'leve', topic: { weight: 1 } },
-            { id: 'pesada', topic: { weight: 5 } },
-            { id: 'media', topic: { weight: 3 } },
-          ])
-          .mockResolvedValueOnce([]);
+        mockPool(prisma, [{ topicId: null, ids: ['q1', 'q2'] }]);
+        prisma.simulation.create.mockResolvedValue({
+          id: 'sim-a',
+          startedAt: new Date(),
+        });
+
+        await service.start('u1', {
+          templateId: 'seed-template-custom',
+          subjectAreaId: 'area-mat',
+        });
+
+        expect(prisma.question.groupBy.mock.calls[0][0].where).toEqual({
+          subjectAreaId: 'area-mat',
+        });
+        // O estrato sem assunto classificado participa do sorteio.
+        expect(
+          prisma.question.findMany.mock.calls[0][0].where.topicId,
+        ).toBeNull();
+      });
+
+      it('language recorta a língua estrangeira sem excluir o resto', async () => {
+        const { service, prisma } = makeService();
+        prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
+        mockPool(prisma, [{ topicId: 't1', ids: ['q1'] }]);
+        prisma.simulation.create.mockResolvedValue({
+          id: 'sim-lang',
+          startedAt: new Date(),
+        });
+
+        await service.start('u1', {
+          templateId: 'seed-template-custom',
+          language: 'ingles',
+        });
+
+        expect(prisma.question.groupBy.mock.calls[0][0].where.OR).toEqual([
+          { language: null },
+          { language: 'ingles' },
+        ]);
+      });
+
+      it('pareto=true consulta o peso dos assuntos para ponderar o sorteio', async () => {
+        const { service, prisma } = makeService();
+        prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
+        mockPool(prisma, [
+          { topicId: 'leve', ids: ['q-leve'], weight: 1 },
+          { topicId: 'pesada', ids: ['q-pesada-1', 'q-pesada-2'], weight: 5 },
+        ]);
         prisma.simulation.create.mockResolvedValue({
           id: 'sim-p',
           startedAt: new Date(),
@@ -192,34 +275,54 @@ describe('SimulationsService', () => {
           questionCount: 2,
         });
 
-        // As 2 selecionadas são as de maior peso (pesada, media).
-        const detailArg = prisma.question.findMany.mock.calls[1][0];
-        expect(detailArg.where.id.in).toEqual(
-          expect.arrayContaining(['pesada', 'media']),
-        );
-        expect(detailArg.where.id.in).not.toContain('leve');
+        expect(prisma.topic.findMany).toHaveBeenCalled();
+        // 2 vagas distribuídas entre os estratos, nunca mais que o disponível.
+        const lidas = prisma.question.findMany.mock.calls
+          .slice(0, -1)
+          .reduce((acc: number, c: unknown[]) => {
+            const args = c[0] as { take: number };
+            return acc + args.take;
+          }, 0);
+        expect(lidas).toBe(2);
+      });
+
+      it('sem pareto NÃO consulta pesos (sorteio uniforme)', async () => {
+        const { service, prisma } = makeService();
+        prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
+        mockPool(prisma, [{ topicId: 't1', ids: ['q1', 'q2'] }]);
+        prisma.simulation.create.mockResolvedValue({
+          id: 'sim-u',
+          startedAt: new Date(),
+        });
+
+        await service.start('u1', {
+          templateId: 'seed-template-custom',
+          questionCount: 2,
+        });
+
+        expect(prisma.topic.findMany).not.toHaveBeenCalled();
       });
 
       it('timeLimitMin proporcional ao questionCount custom', async () => {
         const { service, prisma } = makeService();
         prisma.simulationTemplate.findUnique.mockResolvedValue(CUSTOM);
         prisma.subject.count.mockResolvedValue(1);
-        prisma.question.findMany
-          .mockResolvedValueOnce(
-            Array.from({ length: 10 }, (_, i) => ({
-              id: `q${i}`,
-              topic: { weight: 1 },
-            })),
-          )
-          .mockResolvedValueOnce(
-            Array.from({ length: 10 }, (_, i) => ({
-              id: `q${i}`,
-              statement: 's',
-              difficulty: 1,
-              topic: { id: 't', name: 'T', subject: { id: 's', name: 'S' } },
-              alternatives: [{ id: `a${i}`, text: 'x' }],
-            })),
-          );
+        mockPool(
+          prisma,
+          [
+            {
+              topicId: 't1',
+              ids: Array.from({ length: 10 }, (_, i) => `q${i}`),
+            },
+          ],
+          Array.from({ length: 10 }, (_, i) => ({
+            id: `q${i}`,
+            statement: 's',
+            difficulty: 1,
+            topic: { id: 't', name: 'T', subject: { id: 's', name: 'S' } },
+            alternatives: [{ id: `a${i}`, text: 'x' }],
+          })),
+        );
         prisma.simulation.create.mockResolvedValue({
           id: 'sim-l',
           startedAt: new Date(),
@@ -375,5 +478,140 @@ describe('SimulationsService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(tx.answer.create).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('SimulationsService — provas oficiais do ENEM', () => {
+  const PROVA = {
+    id: 'enem-2023-dia2',
+    name: 'ENEM 2023 · 2º dia',
+    scope: 'EXAM',
+    subjectId: null,
+    questionCount: 90,
+    timeLimitMin: 300,
+    examYearId: 'ey-2023',
+    day: 2,
+    archived: false,
+  };
+
+  function prepararProva(prisma: any, ids: string[]) {
+    prisma.simulationTemplate.findUnique.mockResolvedValue(PROVA);
+    prisma.simulation.create.mockResolvedValue({
+      id: 'sim-prova',
+      startedAt: new Date(),
+    });
+    prisma.question.findMany.mockImplementation(
+      (args: { where: { id?: { in: string[] } } }) => {
+        if (args.where.id?.in) {
+          // O banco devolve fora de ordem: a prova tem que reordenar.
+          return Promise.resolve(
+            [...args.where.id.in].reverse().map((id) => ({ id })),
+          );
+        }
+        return Promise.resolve(ids.map((id) => ({ id })));
+      },
+    );
+  }
+
+  it('traz o dia inteiro na ordem do caderno, sem sortear', async () => {
+    const { service, prisma } = makeService();
+    prepararProva(prisma, ['q91', 'q92', 'q93']);
+
+    const res = await service.start('u1', { templateId: 'enem-2023-dia2' });
+
+    // Nada de amostragem estratificada na prova oficial.
+    expect(prisma.question.groupBy).not.toHaveBeenCalled();
+    const busca = prisma.question.findMany.mock.calls[0][0];
+    expect(busca.where.examYearId).toBe('ey-2023');
+    expect(busca.where.number).toEqual({ gte: 91, lte: 180 });
+    expect(busca.orderBy).toEqual({ number: 'asc' });
+    expect(res.questions.map((q: { id: string }) => q.id)).toEqual([
+      'q91',
+      'q92',
+      'q93',
+    ]);
+  });
+
+  it('usa o tempo oficial do dia, não o proporcional', async () => {
+    const { service, prisma } = makeService();
+    prepararProva(prisma, ['q91', 'q92']);
+
+    const res = await service.start('u1', { templateId: 'enem-2023-dia2' });
+
+    expect(res.timeLimitMin).toBe(300);
+  });
+
+  it('segue a língua estrangeira do perfil do aluno', async () => {
+    const { service, prisma } = makeService();
+    prepararProva(prisma, ['q1']);
+    prisma.profile.findUnique.mockResolvedValue({
+      foreignLanguage: 'espanhol',
+    });
+
+    await service.start('u1', { templateId: 'enem-2023-dia2' });
+
+    expect(prisma.question.findMany.mock.calls[0][0].where.OR).toEqual([
+      { language: null },
+      { language: 'espanhol' },
+    ]);
+  });
+
+  it('sem perfil, cai no inglês', async () => {
+    const { service, prisma } = makeService();
+    prepararProva(prisma, ['q1']);
+
+    await service.start('u1', { templateId: 'enem-2023-dia2' });
+
+    expect(prisma.question.findMany.mock.calls[0][0].where.OR[1]).toEqual({
+      language: 'ingles',
+    });
+  });
+
+  it('a lista esconde os arquivados e ordena as provas da mais recente', async () => {
+    const { service, prisma } = makeService();
+    const prova = (id: string, year: number, day: number, rea = false) => ({
+      id,
+      name: id,
+      scope: 'EXAM',
+      subjectId: null,
+      questionCount: 90,
+      timeLimitMin: 300,
+      day,
+      examYear: { slug: id, year, label: id, isReapplication: rea },
+    });
+    prisma.simulationTemplate.findMany.mockResolvedValue([
+      prova('2019-d1', 2019, 1),
+      prova('2023r-d1', 2023, 1, true),
+      prova('2023-d2', 2023, 2),
+      prova('2023-d1', 2023, 1),
+      {
+        ...TEMPLATE,
+        id: 'custom',
+        scope: 'FULL',
+        subjectId: null,
+        examYear: null,
+        day: null,
+      },
+    ]);
+    prisma.subject.findMany.mockResolvedValue([]);
+
+    const res = await service.listTemplates();
+
+    expect(prisma.simulationTemplate.findMany.mock.calls[0][0].where).toEqual({
+      archived: false,
+    });
+    expect(res.map((t: { id: string }) => t.id)).toEqual([
+      'custom',
+      '2023-d1',
+      '2023-d2',
+      '2023r-d1',
+      '2019-d1',
+    ]);
+    // 2023: 1º dia é Linguagens + Humanas.
+    const d1 = res.find((t: { id: string }) => t.id === '2023-d1')!;
+    expect(d1.areas).toEqual([
+      'Linguagens, Códigos e suas Tecnologias',
+      'Ciências Humanas e suas Tecnologias',
+    ]);
   });
 });

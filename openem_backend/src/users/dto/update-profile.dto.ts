@@ -60,4 +60,14 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   onboarded?: boolean;
+
+  @ApiProperty({
+    required: false,
+    enum: ['ingles', 'espanhol'],
+    description:
+      'Língua estrangeira da prova: define qual versão das questões 1–5 (ou 91–95) aparece nas questões e nos simulados oficiais',
+  })
+  @IsOptional()
+  @IsIn(['ingles', 'espanhol'])
+  foreignLanguage?: string;
 }

@@ -50,6 +50,25 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Imagens das questões oficiais do ENEM. CacheFirst porque o nome
+            // do arquivo é um UUID: o conteúdo nunca muda sob o mesmo caminho.
+            // Questão com figura sem a figura é questão inutilizável offline.
+            urlPattern: ({ url, request }) =>
+              request.destination === 'image' &&
+              url.pathname.startsWith('/media/enem/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'enem-media',
+              expiration: {
+                // As ~2.200 imagens do banco não cabem na cota do celular;
+                // 400 cobre com folga as questões que o aluno abriu de fato.
+                maxEntries: 400,
+                maxAgeSeconds: 60 * 60 * 24 * 90,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),
@@ -60,6 +79,8 @@ export default defineConfig({
     proxy: {
       '/api': process.env.VITE_PROXY_TARGET ?? 'http://localhost:3000',
       '/health': process.env.VITE_PROXY_TARGET ?? 'http://localhost:3000',
+      // Imagens das questões oficiais, servidas pelo backend.
+      '/media': process.env.VITE_PROXY_TARGET ?? 'http://localhost:3000',
     },
   },
 });

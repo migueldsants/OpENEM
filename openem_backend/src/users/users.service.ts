@@ -26,6 +26,7 @@ export class UsersService {
             focusMode: true,
             gamificationEnabled: true,
             onboarded: true,
+            foreignLanguage: true,
           },
         },
       },

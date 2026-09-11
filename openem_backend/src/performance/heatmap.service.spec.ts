@@ -80,3 +80,34 @@ describe('HeatmapService (issue #43)', () => {
     await expect(service.heatmap('u1')).resolves.toEqual([]);
   });
 });
+
+describe('HeatmapService — respostas sem assunto classificado', () => {
+  it('ignora questões com topicId nulo em vez de quebrar', async () => {
+    const prisma = makePrisma() as any;
+    prisma.answer.findMany.mockResolvedValue([
+      { isCorrect: true, question: { topicId: 't1' } },
+      // Questão oficial recém-importada: tem área, ainda não tem assunto.
+      { isCorrect: false, question: { topicId: null } },
+    ]);
+    prisma.subjectArea.findMany.mockResolvedValue([
+      {
+        id: 'area-mat',
+        name: 'Matemática e suas Tecnologias',
+        subjects: [
+          {
+            id: 'subj-mat',
+            name: 'Matemática',
+            topics: [{ id: 't1', name: 'Funções', weight: 5 }],
+          },
+        ],
+      },
+    ]);
+    const service = new HeatmapService(prisma);
+
+    const res = await service.heatmap('u1');
+
+    const funcoes = res[0].subjects[0].topics[0];
+    // Só a resposta com assunto entra na célula; a outra não é atribuída a ninguém.
+    expect(funcoes).toMatchObject({ total: 1, correct: 1, accuracy: 100 });
+  });
+});

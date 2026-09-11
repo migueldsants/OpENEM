@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUESTION_PUBLIC_SELECT } from '../questions/question.select';
 
 @Injectable()
 export class FavoritesService {
@@ -29,22 +30,8 @@ export class FavoritesService {
       select: {
         id: true,
         createdAt: true,
-        question: {
-          select: {
-            id: true,
-            statement: true,
-            difficulty: true,
-            topic: {
-              select: {
-                id: true,
-                name: true,
-                subject: { select: { id: true, name: true } },
-              },
-            },
-            // Sem o gabarito; permite responder a questão favoritada.
-            alternatives: { select: { id: true, text: true } },
-          },
-        },
+        // Sem o gabarito; permite responder a questão favoritada.
+        question: { select: QUESTION_PUBLIC_SELECT },
       },
     });
   }

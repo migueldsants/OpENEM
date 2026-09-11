@@ -193,6 +193,12 @@ export const FORMULAS: FormulaSeed[] = [
     title: 'Calor sensível',
     latex: 'Q = mc\\Delta\\theta',
   },
+  {
+    subject: 'Física',
+    title: 'Calor latente',
+    latex: 'Q = mL',
+    description: 'Mudança de estado físico, com a temperatura constante.',
+  },
 
   // ---- Química ----
   {
@@ -539,6 +545,20 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     { symbol: 'c', meaning: 'calor específico do material', unit: 'cal/g·°C' },
     { symbol: '\\Delta\\theta', meaning: 'variação de temperatura', unit: '°C' },
   ],
+  'Calor latente': [
+    {
+      symbol: 'Q',
+      meaning: 'calor trocado — só muda o estado físico, não a temperatura',
+      unit: 'cal ou J',
+    },
+    { symbol: 'm', meaning: 'massa que muda de estado', unit: 'g ou kg' },
+    {
+      symbol: 'L',
+      meaning:
+        'calor latente da mudança de estado (ex.: fusão do gelo ≈ 80 cal/g); negativo na solidificação e na condensação',
+      unit: 'cal/g',
+    },
+  ],
 
   // ---- Química ----
   Densidade: [
@@ -695,6 +715,7 @@ export const FORMULA_TOPICS: Record<string, string> = {
   'Resistência equivalente': 'Circuitos elétricos',
   'Dilatação térmica linear': 'Termologia',
   'Calor sensível': 'Calorimetria',
+  'Calor latente': 'Calorimetria',
 
   // ---- Química ----
   Densidade: 'Propriedades da matéria',

@@ -1,74 +1,53 @@
-// Correção de redação por IA (Fase 3) com provedores opcionais e intercambiáveis.
+// Correção de redação por IA (Fase 3).
 //
-// O provedor é escolhido por ESSAY_AI_PROVIDER (anthropic | openai |
-// openai-compatible | gemini). Sem essa variável, detecta automaticamente o
-// primeiro provedor configurado (nesta ordem de prioridade). Cada provedor é
-// gated pela sua própria chave/URL; sem nenhum configurado a correção por IA
-// fica indisponível e o app recai na rubrica manual.
+// A escolha de provedor e a chamada em si vivem em `src/common/ai/`, que
+// atende também o comentário e a classificação das questões oficiais. Aqui
+// ficam só os prompts, o schema e a normalização das notas — o que é de
+// redação. Nada muda para quem já configurou: ESSAY_AI_PROVIDER continua
+// valendo, e o fallback para a rubrica manual segue igual.
 
-import * as anthropic from './anthropic';
-import * as gemini from './gemini';
-import * as openai from './openai';
-import { AiEssayInput, AiEssayScores, EssayAiProvider } from './shared';
+import { activeAiProvider, completeJson, isAiConfigured } from '../ai';
+import {
+  AiEssayInput,
+  AiEssayScores,
+  buildUserPrompt,
+  normalizeScores,
+  OUTPUT_SCHEMA,
+  SYSTEM_PROMPT,
+} from './shared';
 
 export type { AiEssayInput, AiEssayScores, EssayAiProvider } from './shared';
 
-/** Ordem de detecção automática quando ESSAY_AI_PROVIDER não está definido. */
-const DETECTION_ORDER: EssayAiProvider[] = [
-  'anthropic',
-  'openai',
-  'gemini',
-  'openai-compatible',
-];
-
-function isProviderConfigured(provider: EssayAiProvider): boolean {
-  switch (provider) {
-    case 'anthropic':
-      return anthropic.isConfigured();
-    case 'openai':
-      return openai.isConfigured();
-    case 'openai-compatible':
-      return openai.isCompatibleConfigured();
-    case 'gemini':
-      return gemini.isConfigured();
-  }
+/** Provedor ativo para a correção de redação (null se não houver). */
+export function activeEssayAiProvider() {
+  return activeAiProvider('essay');
 }
 
-/**
- * Resolve o provedor ativo. Respeita ESSAY_AI_PROVIDER se ele estiver
- * configurado; caso contrário, faz a detecção automática. Retorna null quando
- * nenhum provedor utilizável está configurado.
- */
-export function activeEssayAiProvider(): EssayAiProvider | null {
-  const explicit = process.env.ESSAY_AI_PROVIDER as EssayAiProvider | undefined;
-  if (explicit) {
-    return isProviderConfigured(explicit) ? explicit : null;
-  }
-  return DETECTION_ORDER.find(isProviderConfigured) ?? null;
-}
-
-/** Indica se a correção por IA está configurada (há algum provedor utilizável). */
+/** Indica se a correção por IA está configurada. */
 export function isAiEssayConfigured(): boolean {
-  return activeEssayAiProvider() !== null;
+  return isAiConfigured('essay');
 }
 
 /**
  * Corrige uma redação com o provedor ativo e devolve as notas por competência +
  * feedback. Lança se nenhum provedor estiver configurado (o chamador trata como 503).
  */
-export function gradeEssayWithAi(input: AiEssayInput): Promise<AiEssayScores> {
-  const provider = activeEssayAiProvider();
-  if (!provider) {
+export async function gradeEssayWithAi(
+  input: AiEssayInput,
+): Promise<AiEssayScores> {
+  // Mensagem própria da redação: é ela que o essays.service traduz em 503.
+  if (!isAiEssayConfigured()) {
     throw new Error('Nenhum provedor de IA de redação configurado');
   }
-  switch (provider) {
-    case 'anthropic':
-      return anthropic.grade(input);
-    case 'openai':
-      return openai.grade(input);
-    case 'openai-compatible':
-      return openai.gradeCompatible(input);
-    case 'gemini':
-      return gemini.grade(input);
-  }
+  const texto = await completeJson(
+    {
+      system: SYSTEM_PROMPT,
+      user: buildUserPrompt(input),
+      schema: OUTPUT_SCHEMA as unknown as Record<string, unknown>,
+      schemaName: 'enem_essay_evaluation',
+      maxTokens: 4096,
+    },
+    'essay',
+  );
+  return normalizeScores(texto);
 }

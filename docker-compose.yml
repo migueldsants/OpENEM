@@ -7,6 +7,10 @@ services:
     build: ./openem_backend
     environment:
       - DATABASE_URL=file:/data/prod.db
+      # Imagens das questões oficiais do ENEM, gravadas por `db:import:enem`.
+      # Ficam no MESMO volume do banco: ambas são saída do import e precisam
+      # sobreviver ao rebuild da imagem (que não as contém, ver .dockerignore).
+      - ENEM_MEDIA_DIR=/data/enem-media
       - PORT=3000
       - NODE_ENV=production
       # Obrigatório: sem JWT_SECRET a API falha a inicialização em produção.

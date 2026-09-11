@@ -24,7 +24,9 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "db:seed:flashcards": "ts-node prisma/seed-flashcards.ts"
+    "db:seed:flashcards": "ts-node prisma/seed-flashcards.ts",
+    "db:import:enem": "ts-node prisma/import-enem.ts",
+    "db:classify": "ts-node prisma/classify-questions.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

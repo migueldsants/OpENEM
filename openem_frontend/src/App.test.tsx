@@ -46,9 +46,11 @@ describe('Tabbar mobile — botão Mais (issue #21)', () => {
     const withinTab = within(tabbar!);
 
     // Atalhos primários visíveis.
-    for (const label of ['Início', 'Questões', 'Simulados', 'Games', 'Perfil']) {
+    // O Painel (métricas que saíram da Home) ocupa o lugar que era do Games.
+    for (const label of ['Início', 'Painel', 'Questões', 'Simulados', 'Perfil']) {
       expect(withinTab.getByText(label)).toBeInTheDocument();
     }
+    expect(withinTab.queryByText('Games')).not.toBeInTheDocument();
     // Botão "Mais".
     expect(withinTab.getByLabelText('Mais telas')).toBeInTheDocument();
     // Telas secundárias NÃO estão direto na tabbar.
@@ -73,6 +75,7 @@ describe('Tabbar mobile — botão Mais (issue #21)', () => {
       'Cronograma',
       'Redação',
       'Favoritos',
+      'Games',
     ]) {
       expect(withinSheet.getByText(label)).toBeInTheDocument();
     }

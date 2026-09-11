@@ -12,60 +12,64 @@ generator client {
 }
 
 model User {
-  id           String            @id @default(cuid())
-  email        String            @unique
-  passwordHash String
-  createdAt    DateTime          @default(now())
-  profile      Profile?
-  answers      Answer[]
-  simulations  Simulation[]
-  reviewItems  ReviewItem[]
-  favorites    Favorite[]
-  studyPlan    StudyPlan?
-  essays       EssaySubmission[]
-  gamification GamificationStat?
-  achievements UserAchievement[]
-  dailyChallenges DailyChallengeLog[]
-  xpLogs       XpLog[]
-  gameScores   GameScore[]
-  forumThreads ForumThread[]
-  forumPosts   ForumPost[]
-  postLikes    ForumPostLike[]
-  questionNotes QuestionNote[]
-  flashcardDecks FlashcardDeck[]
+  id               String              @id @default(cuid())
+  email            String              @unique
+  passwordHash     String
+  createdAt        DateTime            @default(now())
+  profile          Profile?
+  answers          Answer[]
+  simulations      Simulation[]
+  reviewItems      ReviewItem[]
+  favorites        Favorite[]
+  studyPlan        StudyPlan?
+  essays           EssaySubmission[]
+  gamification     GamificationStat?
+  achievements     UserAchievement[]
+  dailyChallenges  DailyChallengeLog[]
+  xpLogs           XpLog[]
+  gameScores       GameScore[]
+  forumThreads     ForumThread[]
+  forumPosts       ForumPost[]
+  postLikes        ForumPostLike[]
+  questionNotes    QuestionNote[]
+  flashcardDecks   FlashcardDeck[]
   flashcardReviews FlashcardReview[]
-  weeklyGoals WeeklyGoal[]
+  weeklyGoals      WeeklyGoal[]
   formulaFavorites UserFormula[]
-  focusSessions FocusSession[]
-  videos Video[]
-  videoNotes VideoNote[]
+  focusSessions    FocusSession[]
+  videos           Video[]
+  videoNotes       VideoNote[]
 }
 
 model Profile {
-  id            String  @id @default(cuid())
-  userId        String  @unique
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal          String  @default("SISU") // SISU | PROUNI | TREINEIRO
-  minutesPerDay Int     @default(60)
-  displayName   String?
-  focusMode     Boolean @default(false) // modo sem distrações (Fase 2)
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal                String  @default("SISU") // SISU | PROUNI | TREINEIRO
+  minutesPerDay       Int     @default(60)
+  displayName         String?
+  focusMode           Boolean @default(false) // modo sem distrações (Fase 2)
   gamificationEnabled Boolean @default(true) // toggle de gamificação (Fase 3)
-  onboarded     Boolean @default(false) // false até o 1º onboarding ser concluído
+  onboarded           Boolean @default(false) // false até o 1º onboarding ser concluído
+  /// Língua estrangeira escolhida na prova. O ENEM tem inglês e espanhol, e o
+  /// banco guarda as duas versões de cada questão — sem isso o aluno vê tudo em dobro.
+  foreignLanguage     String  @default("ingles") // ingles | espanhol
 }
 
 // Área do conhecimento ENEM (nível mais alto da taxonomia canônica).
 model SubjectArea {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  subjects Subject[]
+  id          String       @id @default(cuid())
+  name        String       @unique
+  subjects    Subject[]
   weeklyGoals WeeklyGoal[]
+  questions   Question[]
 }
 
 model Subject {
-  id            String      @id @default(cuid())
-  name          String      @unique
+  id            String         @id @default(cuid())
+  name          String         @unique
   subjectAreaId String
-  subjectArea   SubjectArea @relation(fields: [subjectAreaId], references: [id], onDelete: Cascade)
+  subjectArea   SubjectArea    @relation(fields: [subjectAreaId], references: [id], onDelete: Cascade)
   topics        Topic[]
   weeklyGoals   WeeklyGoal[]
   formulas      Formula[]
@@ -77,54 +81,108 @@ model Subject {
 }
 
 model Topic {
-  id            String         @id @default(cuid())
-  name          String
-  subjectId     String
-  subject       Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  weight        Int            @default(3) // peso Pareto 1..5 (incidência no ENEM)
-  questions     Question[]
-  reviewItems   ReviewItem[]
-  weeklyGoals   WeeklyGoal[]
-  formulas      Formula[]
+  id          String       @id @default(cuid())
+  name        String
+  subjectId   String
+  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  weight      Int          @default(3) // peso Pareto 1..5 (incidência no ENEM)
+  questions   Question[]
+  reviewItems ReviewItem[]
+  weeklyGoals WeeklyGoal[]
+  formulas    Formula[]
 
   @@unique([subjectId, name])
 }
 
+// Uma aplicação de prova. `year` não é único: a reaplicação de 2023 também é
+// year 2023, e só o slug as distingue.
 model ExamYear {
-  id        String     @id @default(cuid())
-  year      Int        @unique
-  questions Question[]
+  id              String               @id @default(cuid())
+  /// "2023", "2023-reaplicacao" — espelha o diretório do dataset de origem.
+  slug            String               @unique
+  year            Int
+  /// Rótulo de exibição: "ENEM 2023", "ENEM 2023 (reaplicação)".
+  label           String
+  isReapplication Boolean              @default(false)
+  questions       Question[]
+  templates       SimulationTemplate[]
+
+  @@index([year])
 }
 
 model Question {
-  id           String        @id @default(cuid())
-  statement    String
-  difficulty   Int           @default(3) // 1..5 (questões por nível)
-  explanation  String
-  topicId      String
-  topic        Topic         @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  examYearId   String?
-  examYear     ExamYear?     @relation(fields: [examYearId], references: [id])
-  alternatives Alternative[]
-  answers      Answer[]
-  favorites    Favorite[]
-  forumThreads ForumThread[]
-  notes        QuestionNote[]
+  id                String         @id @default(cuid())
+  /// Chave estável da origem externa: "enem:<slug-da-prova>:<pasta-da-questão>".
+  /// Nula em questões autorais/seed — em SQLite o índice único aceita vários NULLs.
+  externalId        String?        @unique
+  /// Código legível da questão oficial: "ENEM-2023-136", "ENEM-2023R-136",
+  /// "ENEM-2023-001-ING". Buscável pelo aluno.
+  code              String?        @unique
+  /// Número no caderno oficial (1..180): ordena o simulado da prova e define
+  /// o dia (1–90 no primeiro, 91–180 no segundo).
+  number            Int?
+  source            String         @default("AUTORAL") // AUTORAL | ENEM_DEV
+  /// Texto de apoio da questão, em Markdown (pode conter imagens e LaTeX).
+  statement         String
+  /// O comando da questão ("Qual é a massa..."), quando vem separado do apoio.
+  questionPrompt    String?
+  /// Idioma da questão de língua estrangeira: null | "ingles" | "espanhol".
+  language          String?
+  difficulty        Int            @default(3) // 1..5 (questões por nível)
+  /// Nulo enquanto não houver comentário — as questões oficiais chegam sem ele.
+  explanation       String?
+  /// Origem do comentário: "seed" | "humano" | "ai:<provedor>". Alimenta o aviso da UI.
+  explanationSource String?
+  /// Área do conhecimento. É o que a questão tem antes de ser classificada em
+  /// matéria/tópico — por isso o topicId abaixo é opcional.
+  subjectAreaId     String?
+  subjectArea       SubjectArea?   @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
+  topicId           String?
+  /// SetNull (e não Cascade): o seed remove áreas fora da TAXONOMY, e em cascata
+  /// isso apagaria todo o banco de questões importadas.
+  topic             Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  examYearId        String?
+  examYear          ExamYear?      @relation(fields: [examYearId], references: [id])
+  alternatives      Alternative[]
+  answers           Answer[]
+  favorites         Favorite[]
+  forumThreads      ForumThread[]
+  notes             QuestionNote[]
 
   // Parâmetros TRI (modelo logístico de 3 parâmetros) — nullable até haver calibração (Fase 2)
   discrimination Float? // a — discriminação
   irtDifficulty  Float? // b — dificuldade na escala latente
   guessing       Float? // c — acerto ao acaso (0..1)
 
+  // Confiança da classificação automática de tópico e nº de tentativas já feitas
+  // (sem o contador, o job reprocessa para sempre as questões que a IA recusa).
+  classificationConfidence Float?
+  classificationAttempts   Int    @default(0)
+
   @@index([topicId, difficulty])
+  @@index([subjectAreaId, difficulty])
+  @@index([subjectAreaId, topicId])
+  @@index([examYearId, number])
+  @@index([language])
 }
 
 model Alternative {
   id         String   @id @default(cuid())
   questionId String
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  /// Letra oficial do gabarito ("A".."E"). Nula em questões autorais antigas,
+  /// onde a letra é derivada da posição.
+  letter     String?
   text       String
+  /// Alternativa que é uma imagem (gráficos, mapas). Caminho relativo servido
+  /// pelo próprio backend, nunca a URL de origem.
+  imageUrl   String?
   isCorrect  Boolean  @default(false)
+  /// Ordem de exibição. Sem ela a ordem vinha do rowid, indefinida por contrato —
+  /// e ordem errada com letra semântica é gabarito errado na tela.
+  position   Int      @default(0)
+
+  @@index([questionId, position])
 }
 
 // Anotações pessoais do usuário em questões (issue #39). Markdown livre.
@@ -144,11 +202,20 @@ model QuestionNote {
 model SimulationTemplate {
   id            String       @id @default(cuid())
   name          String
-  scope         String       @default("FULL") // AREA | FULL
+  scope         String       @default("FULL") // AREA | FULL | EXAM
   subjectId     String?
   questionCount Int          @default(10)
   timeLimitMin  Int?
+  /// Prova oficial (scope EXAM): a aplicação e o dia do ENEM que o simulado
+  /// reproduz, na ordem do caderno. Criados pelo importador das provas.
+  examYearId    String?
+  examYear      ExamYear?    @relation(fields: [examYearId], references: [id])
+  day           Int? // 1 | 2
+  /// Fora da lista de simulados, mas preservado: há histórico ligado a ele.
+  archived      Boolean      @default(false)
   simulations   Simulation[]
+
+  @@unique([examYearId, day])
 }
 
 model Simulation {
@@ -217,21 +284,21 @@ model StudyPlan {
 }
 
 model StudySession {
-  id       String    @id @default(cuid())
-  planId   String
-  plan     StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  planId    String
+  plan      StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   /// Nome livre do bloco: "Matemática", "Inglês", "Revisar simulado".
   /// É a fonte de verdade do que aparece no calendário.
-  label    String
+  label     String
   /// Matéria do ENEM correspondente, quando o nome bate com o catálogo.
   /// Serve para cor e relatórios; nulo em blocos livres.
   subjectId String?
-  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  dayIndex Int // 0..n
-  minutes  Int
-  done     Boolean   @default(false)
+  subject   Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  dayIndex  Int // 0..n
+  minutes   Int
+  done      Boolean   @default(false)
   /// Ordem do bloco dentro do dia.
-  position Int       @default(0)
+  position  Int       @default(0)
 
   @@index([planId, dayIndex])
 }
@@ -242,20 +309,20 @@ model StudySession {
 // questões de Matemática". weekStart é a segunda-feira (00:00 UTC) da semana;
 // `completed` é recalculado a cada leitura a partir do progresso real.
 model WeeklyGoal {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Escopo opcional da meta (null = meta geral da semana).
-  subjectAreaId  String?
-  subjectArea    SubjectArea? @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
-  subjectId      String?
-  subject        Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  topicId        String?
-  topic          Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  targetMinutes  Int      @default(0) // meta de tempo (0 = sem meta de tempo)
-  targetQuestions Int     @default(0) // meta de questões (0 = sem meta de questões)
-  weekStart      DateTime // segunda-feira 00:00 UTC da semana da meta
-  createdAt      DateTime @default(now())
+  subjectAreaId   String?
+  subjectArea     SubjectArea? @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
+  subjectId       String?
+  subject         Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  topicId         String?
+  topic           Topic?       @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  targetMinutes   Int          @default(0) // meta de tempo (0 = sem meta de tempo)
+  targetQuestions Int          @default(0) // meta de questões (0 = sem meta de questões)
+  weekStart       DateTime // segunda-feira 00:00 UTC da semana da meta
+  createdAt       DateTime     @default(now())
 
   @@index([userId, weekStart])
 }
@@ -265,16 +332,16 @@ model WeeklyGoal {
 // Fórmula essencial catalogada (a maioria é builtIn, via seed). `latex`
 // guarda a expressão em LaTeX para renderizar no MathLive/KaTeX.
 model Formula {
-  id          String        @id @default(cuid())
-  title       String        @unique
+  id          String          @id @default(cuid())
+  title       String          @unique
   latex       String
   description String?
   subjectId   String
-  subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subject     Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   topicId     String?
-  topic       Topic?        @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  isBuiltIn   Boolean       @default(true)
-  createdAt   DateTime      @default(now())
+  topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  isBuiltIn   Boolean         @default(true)
+  createdAt   DateTime        @default(now())
   favoritedBy UserFormula[]
   symbols     FormulaSymbol[]
 
@@ -317,14 +384,14 @@ model UserFormula {
 // Sessão de foco concluída (Pomodoro 25/5 ou tempo livre). O registro é
 // criado apenas quando a sessão termina — timers em andamento vivem no cliente.
 model FocusSession {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subjectId    String?
-  subject      Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  durationSec  Int
-  startedAt    DateTime
-  completedAt  DateTime  @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  durationSec Int
+  startedAt   DateTime
+  completedAt DateTime @default(now())
 
   @@index([userId, completedAt])
 }
@@ -334,17 +401,17 @@ model FocusSession {
 // Vídeo de estudo salvo pelo usuário (link do YouTube). Metadados (título/
 // thumbnail) vêm do oEmbed público do YouTube no momento do save.
 model Video {
-  id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  youtubeId   String
-  title       String
-  thumbnail   String?
-  subjectId   String?
-  subject     Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  watched     Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  notes       VideoNote[]
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  youtubeId String
+  title     String
+  thumbnail String?
+  subjectId String?
+  subject   Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  watched   Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  notes     VideoNote[]
 
   @@index([userId, subjectId])
   @@index([youtubeId])
@@ -352,14 +419,14 @@ model Video {
 
 // Nota vinculada a um instante do vídeo (timestamp clicável no player).
 model VideoNote {
-  id              String   @id @default(cuid())
-  videoId         String
-  video           Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  timestampSec    Int
-  content         String
-  createdAt       DateTime @default(now())
+  id           String   @id @default(cuid())
+  videoId      String
+  video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestampSec Int
+  content      String
+  createdAt    DateTime @default(now())
 
   @@index([videoId, timestampSec])
 }
@@ -386,21 +453,21 @@ model EssaySubmission {
 }
 
 model EssayEvaluation {
-  id           String          @id @default(cuid())
-  submissionId String          @unique
-  submission   EssaySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  c1           Int // competência 1 (0..200)
-  c2           Int
-  c3           Int
-  c4           Int
-  c5           Int
-  total        Int // 0..1000
-  feedback     String? // comentário geral da redação
+  id                 String          @id @default(cuid())
+  submissionId       String          @unique
+  submission         EssaySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  c1                 Int // competência 1 (0..200)
+  c2                 Int
+  c3                 Int
+  c4                 Int
+  c5                 Int
+  total              Int // 0..1000
+  feedback           String? // comentário geral da redação
   // JSON (IA): resumo por competência { c1..c5: string }
   competencyFeedback String?
   // JSON (IA): anotações por erro [{ competency, start, end, excerpt, comment, suggestion }]
-  annotations  String?
-  evaluatedAt  DateTime        @default(now())
+  annotations        String?
+  evaluatedAt        DateTime        @default(now())
 }
 
 // ---- Fase 3 (gamificação) ----
@@ -408,22 +475,22 @@ model EssayEvaluation {
 // Estatísticas de gamificação do usuário (1:1). O catálogo de conquistas vive
 // no código (common/gamification.ts); aqui guardamos apenas o estado acumulado.
 model GamificationStat {
-  id             String    @id @default(cuid())
-  userId         String    @unique
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  points         Int       @default(0)
-  currentStreak  Int       @default(0) // dias consecutivos com atividade
-  longestStreak  Int       @default(0)
-  lastActivityOn DateTime? // dia (00:00) da última atividade contabilizada
-  answersCount   Int       @default(0)
-  correctCount   Int       @default(0)
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points           Int       @default(0)
+  currentStreak    Int       @default(0) // dias consecutivos com atividade
+  longestStreak    Int       @default(0)
+  lastActivityOn   DateTime? // dia (00:00) da última atividade contabilizada
+  answersCount     Int       @default(0)
+  correctCount     Int       @default(0)
   // Contadores por atividade (Fase 3, issue #17) — alimentam conquistas específicas.
-  simulationsCount Int     @default(0)
-  essaysCount      Int     @default(0)
-  highScoreEssays  Int     @default(0) // redações com nota >= 800
-  reviewsCount     Int     @default(0)
-  sessionsDone     Int     @default(0)
-  updatedAt      DateTime  @updatedAt
+  simulationsCount Int       @default(0)
+  essaysCount      Int       @default(0)
+  highScoreEssays  Int       @default(0) // redações com nota >= 800
+  reviewsCount     Int       @default(0)
+  sessionsDone     Int       @default(0)
+  updatedAt        DateTime  @updatedAt
 }
 
 // Conquistas desbloqueadas (uma linha por conquista por usuário).
@@ -443,7 +510,7 @@ model XpLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action    String   // ANSWER | SIMULATION | ESSAY | REVIEW | STUDY_SESSION | DAILY_CHALLENGE
+  action    String // ANSWER | SIMULATION | ESSAY | REVIEW | STUDY_SESSION | DAILY_CHALLENGE
   xpGained  Int
   // Detalhe legível (ex.: "10 acertos em simulado", "Redação nota 820") — opcional.
   detail    String?
@@ -483,13 +550,13 @@ model ForumThread {
 }
 
 model ForumPost {
-  id        String      @id @default(cuid())
+  id        String          @id @default(cuid())
   threadId  String
-  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread    ForumThread     @relation(fields: [threadId], references: [id], onDelete: Cascade)
   userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   body      String
-  createdAt DateTime    @default(now())
+  createdAt DateTime        @default(now())
   likes     ForumPostLike[]
 
   @@index([threadId, createdAt])
@@ -498,12 +565,12 @@ model ForumPost {
 // Curtidas em respostas do fórum (issue #19). Um like por usuário por post
 // (índice único). A exclusão é em cascata com o post.
 model ForumPostLike {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   postId    String
   post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
 
   @@unique([postId, userId])
   @@index([postId])
@@ -513,35 +580,35 @@ model ForumPostLike {
 
 // Conjunto de flashcards (público ou privado do usuário).
 model FlashcardDeck {
-  id            String      @id @default(cuid())
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title         String
-  description   String
-  isPublic      Boolean    @default(false)
+  id          String      @id @default(cuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  isPublic    Boolean     @default(false)
   // subject = nome do Subject; topic = matéria; subtheme = subtema dentro da matéria
-  subject       String
-  topic         String?
-  subtheme      String?
-  weight        Int        @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
-  icon          String      @default("📚")
-  upvotes       Int         @default(0)
-  downvotes     Int         @default(0)
-  createdAt     DateTime    @default(now())
-  flashcards    Flashcard[]
+  subject     String
+  topic       String?
+  subtheme    String?
+  weight      Int         @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
+  icon        String      @default("📚")
+  upvotes     Int         @default(0)
+  downvotes   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  flashcards  Flashcard[]
 
   @@index([isPublic, upvotes]) // ordenação por popularidade
   @@index([subject])
 }
 
 model Flashcard {
-  id        String          @id @default(cuid())
+  id        String            @id @default(cuid())
   deckId    String
-  deck      FlashcardDeck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  front     String          // Markdown (pergunta)
-  back      String          // Markdown (resposta)
-  order     Int             @default(0)
-  createdAt DateTime        @default(now())
+  deck      FlashcardDeck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  front     String // Markdown (pergunta)
+  back      String // Markdown (resposta)
+  order     Int               @default(0)
+  createdAt DateTime          @default(now())
   reviews   FlashcardReview[]
 
   @@index([deckId, order])
@@ -549,17 +616,17 @@ model Flashcard {
 
 // Estado SM-2 de revisão por flashcard por usuário (reutiliza common/spaced-repetition).
 model FlashcardReview {
-  id           String   @id @default(cuid())
-  flashcardId  String
-  flashcard    Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  easeFactor   Float    @default(2.5)
-  intervalD    Int      @default(0)
-  repetition   Int      @default(0)
-  dueAt        DateTime @default(now())
-  lastQuality  Int?     // última nota 0..5
-  reviewedAt   DateTime @default(now())
+  id          String    @id @default(cuid())
+  flashcardId String
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  easeFactor  Float     @default(2.5)
+  intervalD   Int       @default(0)
+  repetition  Int       @default(0)
+  dueAt       DateTime  @default(now())
+  lastQuality Int? // última nota 0..5
+  reviewedAt  DateTime  @default(now())
 
   @@unique([userId, flashcardId])
   @@index([userId, dueAt]) // fila "vencidos primeiro"
@@ -569,14 +636,14 @@ model FlashcardReview {
 
 // Pontuação de um usuário em um minigame (uma linha por partida).
 model GameScore {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameKey    String   // chave do GameDefinition (catálogo em código)
-  score      Int
-  level      Int      // nível alcançado no minigame
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameKey     String // chave do GameDefinition (catálogo em código)
+  score       Int
+  level       Int // nível alcançado no minigame
   durationSec Int
-  createdAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([gameKey, score]) // leaderboard por jogo
 }
