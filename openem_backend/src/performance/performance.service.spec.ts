@@ -117,3 +117,55 @@ describe('PerformanceService.overview() — filtro de período', () => {
     expect(res.recent.accuracy).toBe(0);
   });
 });
+
+// Questão importada do ENEM tem área, mas ainda não tem matéria/assunto.
+describe('PerformanceService.overview() — questão sem assunto classificado', () => {
+  const AREA = { id: 'a1', name: 'Matemática e suas Tecnologias' };
+
+  function semTopico(correct: boolean, iso: string) {
+    return {
+      isCorrect: correct,
+      createdAt: new Date(iso),
+      question: { topic: null, subjectArea: AREA },
+    };
+  }
+
+  it('agrupa pela área quando não há matéria, e não gera linha em byTopic', async () => {
+    const { service, prisma } = makeService();
+    prisma.answer.findMany.mockResolvedValue([
+      semTopico(true, '2026-09-01T10:00:00Z'),
+      semTopico(false, '2026-09-01T11:00:00Z'),
+    ]);
+
+    const res = await service.overview('u-1', 'all');
+
+    expect(res.overall).toEqual({ total: 2, correct: 1, accuracy: 50 });
+    expect(res.bySubject).toEqual([
+      {
+        id: 'a1',
+        name: 'Matemática e suas Tecnologias',
+        total: 2,
+        correct: 1,
+        accuracy: 50,
+      },
+    ]);
+    expect(res.byTopic).toEqual([]);
+    expect(res.weakestTopics).toEqual([]);
+  });
+
+  it('sem área e sem assunto, a resposta ainda conta no overall', async () => {
+    const { service, prisma } = makeService();
+    prisma.answer.findMany.mockResolvedValue([
+      {
+        isCorrect: true,
+        createdAt: new Date('2026-09-01T10:00:00Z'),
+        question: { topic: null, subjectArea: null },
+      },
+    ]);
+
+    const res = await service.overview('u-1', 'all');
+
+    expect(res.overall.total).toBe(1);
+    expect(res.bySubject).toEqual([]);
+  });
+});

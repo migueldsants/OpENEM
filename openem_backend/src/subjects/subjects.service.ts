@@ -11,6 +11,9 @@ export class SubjectsService {
       select: {
         id: true,
         name: true,
+        // A área acompanha a matéria: é por ela que a UI filtra as questões
+        // oficiais que ainda não têm matéria/assunto classificados.
+        subjectArea: { select: { id: true, name: true } },
         topics: {
           orderBy: { name: 'asc' },
           select: { id: true, name: true },

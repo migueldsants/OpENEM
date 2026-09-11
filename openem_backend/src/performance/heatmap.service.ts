@@ -40,10 +40,15 @@ export class HeatmapService {
     });
     const byTopic = new Map<string, Bucket>();
     for (const a of answers) {
-      const b = byTopic.get(a.question.topicId) ?? { total: 0, correct: 0 };
+      // O grid é montado a partir da taxonomia, então questão ainda sem assunto
+      // classificado não tem célula onde cair. TODO: expor o total dessas
+      // respostas na resposta, para o mapa não divergir do total de tentativas.
+      const topicId = a.question.topicId;
+      if (!topicId) continue;
+      const b = byTopic.get(topicId) ?? { total: 0, correct: 0 };
       b.total += 1;
       if (a.isCorrect) b.correct += 1;
-      byTopic.set(a.question.topicId, b);
+      byTopic.set(topicId, b);
     }
 
     const areas = await this.prisma.subjectArea.findMany({

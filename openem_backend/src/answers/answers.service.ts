@@ -15,7 +15,9 @@ import { CreateAnswerDto } from './dto/create-answer.dto';
 export interface AnswerResult {
   isCorrect: boolean;
   correctAlternativeId: string | null;
-  explanation: string;
+  explanation: string | null;
+  /** Origem do comentário ("ai:<provedor>" quando gerado por IA). */
+  explanationSource: string | null;
   gamification?: GamificationDelta;
 }
 
@@ -34,6 +36,7 @@ export class AnswersService {
         id: true,
         topicId: true,
         explanation: true,
+        explanationSource: true,
         alternatives: { select: { id: true, isCorrect: true } },
       },
     });
@@ -73,7 +76,11 @@ export class AnswersService {
       },
     });
 
-    await this.review.recordOutcome(userId, question.topicId, isCorrect);
+    // Questão ainda sem assunto classificado (as oficiais entram só com a área)
+    // não alimenta a revisão espaçada — não há assunto que se possa reagendar.
+    if (question.topicId) {
+      await this.review.recordOutcome(userId, question.topicId, isCorrect);
+    }
     const gamification = await this.gamification.recordAnswer(
       userId,
       isCorrect,
@@ -83,6 +90,7 @@ export class AnswersService {
       isCorrect,
       correctAlternativeId: correct?.id ?? null,
       explanation: question.explanation,
+      explanationSource: question.explanationSource ?? null,
       ...(gamification ? { gamification } : {}),
     };
   }

@@ -38,6 +38,9 @@ export class PerformanceService {
         createdAt: true,
         question: {
           select: {
+            // A área entra junto da matéria: as questões oficiais chegam com
+            // área e sem assunto, e sem esse fallback a tela ficaria vazia.
+            subjectArea: { select: { id: true, name: true } },
             topic: {
               select: {
                 id: true,
@@ -57,23 +60,27 @@ export class PerformanceService {
     const topics = new Map<string, Bucket>();
 
     for (const a of answers) {
-      const subject = a.question.topic.subject;
       const topic = a.question.topic;
+      // Sem assunto classificado, a resposta é contabilizada na área — é o
+      // agrupamento mais fino que a questão tem.
+      const group = topic?.subject ?? a.question.subjectArea;
+      if (group) {
+        const sb = subjects.get(group.id) ?? {
+          id: group.id,
+          name: group.name,
+          total: 0,
+          correct: 0,
+        };
+        sb.total += 1;
+        if (a.isCorrect) sb.correct += 1;
+        subjects.set(group.id, sb);
+      }
 
-      const sb = subjects.get(subject.id) ?? {
-        id: subject.id,
-        name: subject.name,
-        total: 0,
-        correct: 0,
-      };
-      sb.total += 1;
-      if (a.isCorrect) sb.correct += 1;
-      subjects.set(subject.id, sb);
-
+      if (!topic) continue;
       const tb = topics.get(topic.id) ?? {
         id: topic.id,
         name: topic.name,
-        subjectName: subject.name,
+        subjectName: topic.subject.name,
         total: 0,
         correct: 0,
       };

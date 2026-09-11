@@ -165,7 +165,15 @@ export class WeeklyGoalsService {
       : goal.subjectId
         ? { topic: { subjectId: goal.subjectId } }
         : goal.subjectAreaId
-          ? { topic: { subject: { subjectAreaId: goal.subjectAreaId } } }
+          ? {
+              // A questao oficial do ENEM guarda a area direto, e so ganha
+              // matéria/assunto depois da classificação. Sem o OR, a meta por
+              // área nunca contaria nenhuma delas.
+              OR: [
+                { subjectAreaId: goal.subjectAreaId },
+                { topic: { subject: { subjectAreaId: goal.subjectAreaId } } },
+              ],
+            }
           : {};
 
     const [answers, minutesRows] = await Promise.all([

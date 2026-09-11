@@ -1,9 +1,24 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class QueryQuestionsDto {
-  @ApiPropertyOptional({ description: 'Filtra pela área (Subject)' })
+  @ApiPropertyOptional({
+    description: 'Filtra pela área do conhecimento (SubjectArea)',
+  })
+  @IsOptional()
+  @IsString()
+  subjectAreaId?: string;
+
+  @ApiPropertyOptional({ description: 'Filtra pela matéria (Subject)' })
   @IsOptional()
   @IsString()
   subjectId?: string;
@@ -27,6 +42,31 @@ export class QueryQuestionsDto {
   @IsInt()
   @Min(1998)
   year?: number;
+
+  @ApiPropertyOptional({
+    description: 'Prova específica: "2023", "2023-reaplicacao"',
+  })
+  @IsOptional()
+  @IsString()
+  examSlug?: string;
+
+  @ApiPropertyOptional({
+    enum: ['ingles', 'espanhol'],
+    description:
+      'Língua estrangeira do aluno. Traz as questões comuns mais as da língua escolhida — o banco guarda inglês e espanhol da mesma questão.',
+  })
+  @IsOptional()
+  @IsIn(['ingles', 'espanhol'])
+  language?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Busca pelo código da questão, por prefixo: "ENEM-2023-136", "2023 136", "2023".',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  code?: string;
 
   @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()

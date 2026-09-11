@@ -154,3 +154,39 @@ describe('AnswersService', () => {
     });
   });
 });
+
+// As questões oficiais do ENEM entram com área e sem assunto classificado.
+// Nesse caso não há assunto que a revisão espaçada possa reagendar.
+describe('AnswersService.create() — questão sem assunto classificado', () => {
+  const SEM_TOPICO = { ...QUESTION, topicId: null, explanation: null };
+
+  it('não chama recordOutcome quando topicId é nulo', async () => {
+    const { service, prisma, review, gamification } = makeService();
+    prisma.question.findUnique.mockResolvedValue(SEM_TOPICO);
+    prisma.answer.create.mockResolvedValue({});
+
+    const res = await service.create('u1', {
+      questionId: 'q1',
+      chosenId: 'a2',
+    });
+
+    expect(res.isCorrect).toBe(true);
+    expect(review.recordOutcome).not.toHaveBeenCalled();
+    // A gamificação continua valendo: o aluno respondeu.
+    expect(gamification.recordAnswer).toHaveBeenCalledWith('u1', true);
+  });
+
+  it('devolve explanation nula sem quebrar', async () => {
+    const { service, prisma } = makeService();
+    prisma.question.findUnique.mockResolvedValue(SEM_TOPICO);
+    prisma.answer.create.mockResolvedValue({});
+
+    const res = await service.create('u1', {
+      questionId: 'q1',
+      chosenId: 'a1',
+    });
+
+    expect(res.isCorrect).toBe(false);
+    expect(res.explanation).toBeNull();
+  });
+});
