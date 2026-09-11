@@ -1,9 +1,11 @@
-﻿// Testes do timer Pomodoro (issue #41).
+// Testes do card Modo Foco na Home (issue #41).
 // Fake timers + flush manual de microtasks (o RTL waitFor depende de timers
 // reais, então usamos queries síncronas após avançar os timers).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { PomodoroTimer } from './PomodoroTimer';
+import { PomodoroProvider } from '../pomodoro';
 import { api } from '../api';
 
 vi.mock('../api', () => ({
@@ -32,9 +34,20 @@ async function tickAsync(ms: number) {
   });
 }
 
+function renderTimer() {
+  return render(
+    <MemoryRouter>
+      <PomodoroProvider>
+        <PomodoroTimer />
+      </PomodoroProvider>
+    </MemoryRouter>,
+  );
+}
+
 describe('PomodoroTimer (issue #41)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear(); // a sessão é persistida entre renders
     vi.useFakeTimers();
     vi.mocked(api.focusToday).mockResolvedValue({ minutes: 0 });
     vi.mocked(api.subjects).mockResolvedValue(SUBJECTS as never);
@@ -53,7 +66,7 @@ describe('PomodoroTimer (issue #41)', () => {
   });
 
   it('idle: mostra minutos de hoje e select de matéria', async () => {
-    render(<PomodoroTimer />);
+    renderTimer();
     await flush();
     expect(screen.getByText('Modo Foco')).toBeInTheDocument();
     expect(screen.getByText('0 min de foco hoje')).toBeInTheDocument();
@@ -62,7 +75,7 @@ describe('PomodoroTimer (issue #41)', () => {
   });
 
   it('focando: cronômetro decresce e permite pausar', async () => {
-    render(<PomodoroTimer />);
+    renderTimer();
     await flush();
     fireEvent.click(screen.getByText(/Focar 25 min/));
 
@@ -76,8 +89,22 @@ describe('PomodoroTimer (issue #41)', () => {
     expect(screen.getByText('Retomar')).toBeInTheDocument();
   });
 
+  it('retomar continua de onde parou', async () => {
+    renderTimer();
+    await flush();
+    fireEvent.click(screen.getByText(/Focar 25 min/));
+
+    await tickAsync(60_000);
+    fireEvent.click(screen.getByText('Pausar'));
+    await tickAsync(30_000); // tempo parado não conta
+    fireEvent.click(screen.getByText('Retomar'));
+    await tickAsync(10_000);
+
+    expect(screen.getByText('23:50')).toBeInTheDocument();
+  });
+
   it('ao zerar registra a sessão e entra em pausa com feedback', async () => {
-    render(<PomodoroTimer />);
+    renderTimer();
     await flush();
     fireEvent.click(screen.getByText(/Focar 25 min/));
 
@@ -90,8 +117,19 @@ describe('PomodoroTimer (issue #41)', () => {
     expect(screen.getByText(/Sessão registrada/)).toBeInTheDocument();
   });
 
+  it('registra a sessão uma única vez ao zerar', async () => {
+    renderTimer();
+    await flush();
+    fireEvent.click(screen.getByText(/Focar 25 min/));
+
+    await tickAsync(25 * 60_000 + 5000);
+    await flush();
+
+    expect(api.completeFocusSession).toHaveBeenCalledTimes(1);
+  });
+
   it('registro envia a matéria selecionada', async () => {
-    render(<PomodoroTimer />);
+    renderTimer();
     await flush();
     fireEvent.change(screen.getByLabelText('Matéria da sessão'), {
       target: { value: 's1' },
@@ -107,7 +145,7 @@ describe('PomodoroTimer (issue #41)', () => {
 
   it('falha ao registrar mostra a pausa sem quebrar (silencioso)', async () => {
     vi.mocked(api.completeFocusSession).mockRejectedValue(new Error('offline'));
-    render(<PomodoroTimer />);
+    renderTimer();
     await flush();
     fireEvent.click(screen.getByText(/Focar 25 min/));
     await tickAsync(25 * 60_000);
@@ -115,5 +153,20 @@ describe('PomodoroTimer (issue #41)', () => {
 
     // Entra na pausa mesmo com falha no registro (não mostra "registrada").
     expect(screen.getByText(/Pausa de 5 minutos/)).toBeInTheDocument();
+  });
+
+  it('a pausa também roda e volta ao estado ocioso ao zerar', async () => {
+    renderTimer();
+    await flush();
+    fireEvent.click(screen.getByText(/Focar 25 min/));
+    await tickAsync(25 * 60_000);
+    await flush();
+
+    expect(screen.getByText('5:00')).toBeInTheDocument();
+    await tickAsync(5 * 60_000);
+    await flush();
+
+    // De volta ao início: o botão de começar reaparece.
+    expect(screen.getByText(/Focar 25 min/)).toBeInTheDocument();
   });
 });
