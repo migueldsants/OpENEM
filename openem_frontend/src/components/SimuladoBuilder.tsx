@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   api,
   type SimulationFilters,
@@ -142,16 +142,19 @@ export function SimuladoBuilder({
 
   // Contagem ao vivo, com atraso: o aluno mexe em vários chips seguidos e não
   // faz sentido consultar o servidor a cada clique.
-  const ultimaChave = useRef('');
+  // O efeito depende da SERIALIZAÇÃO dos filtros, não do objeto: recalcular o
+  // mesmo recorte não dispara outra consulta, e o efeito continua idempotente.
+  // Guardar a última chave num ref seria a forma óbvia, e estava errada — no
+  // StrictMode o React monta, desmonta e monta de novo; a limpeza da primeira
+  // montagem cancelava o timer e a segunda caía no `return` do ref, deixando a
+  // contagem em "Calculando…" para sempre.
+  const chaveFiltros = useMemo(() => JSON.stringify(filters), [filters]);
   useEffect(() => {
-    const chave = JSON.stringify(filters);
-    if (chave === ultimaChave.current) return;
-    ultimaChave.current = chave;
     let cancelado = false;
     setCarregandoPreview(true);
     const id = setTimeout(() => {
       void api
-        .simulationPreview(filters)
+        .simulationPreview(JSON.parse(chaveFiltros) as SimulationFilters)
         .then((p) => {
           if (!cancelado) setPreview(p);
         })
@@ -166,7 +169,7 @@ export function SimuladoBuilder({
       cancelado = true;
       clearTimeout(id);
     };
-  }, [filters]);
+  }, [chaveFiltros]);
 
   const areas = useMemo(() => areasDe(subjects ?? []), [subjects]);
   const materiasVisiveis = useMemo(() => {

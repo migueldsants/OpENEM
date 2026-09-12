@@ -1,4 +1,5 @@
 // Testes do montador de simulado por tema, dos simulados salvos e do PDF.
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -96,6 +97,23 @@ describe('Simulados — montador por tema', () => {
     expect(
       await screen.findByText(/142 questões disponíveis/),
     ).toBeInTheDocument();
+  });
+
+  it('conta as questões mesmo no StrictMode (monta, desmonta, monta)', async () => {
+    // Em dev o React monta o efeito duas vezes. Uma versão anterior guardava a
+    // última chave num ref e, na segunda montagem, desistia de agendar a
+    // consulta — a tela ficava em "Calculando…" para sempre.
+    render(
+      <StrictMode>
+        <MemoryRouter>
+          <Simulados />
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    expect(
+      await screen.findByText(/142 questões disponíveis/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Calculando/)).not.toBeInTheDocument();
   });
 
   it('área, matéria e assunto são somados nos filtros do start', async () => {
