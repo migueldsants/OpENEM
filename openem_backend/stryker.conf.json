@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment_mutate": "PDF (desenho) e o catálogo de palavras-chave ficam fora: são pixels e sinônimos, e mutá-los gera centenas de mutantes sem valor de defeito.",
   "_comment": "Mutation testing (issue #47). Roda sobre o código de domínio (não muta bootstrap, DTOs e modules); thresholds calibrados para subir gradualmente.",
   "packageManager": "npm",
   "testRunner": "jest",
@@ -18,7 +19,10 @@
     "!src/auth/jwt.strategy.ts",
     "!src/auth/current-user.decorator.ts",
     "!src/common/essay-ai/**",
-    "!src/essays/essays.service.ts"
+    "!src/essays/essays.service.ts",
+    "!src/common/pdf/simulado-pdf.ts",
+    "!src/common/pdf/themes.ts",
+    "!src/common/classification/heuristic.ts"
   ],
   "thresholds": {
     "high": 80,

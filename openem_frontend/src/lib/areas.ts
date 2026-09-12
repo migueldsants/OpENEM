@@ -22,6 +22,18 @@ const SUBJECT_TO_AREA: Record<string, AreaKey> = {
   redação: 'lin', // Redação vive dentro de Linguagens, não é área própria
 };
 
+/**
+ * Nome curto da área, para caber em chip e etiqueta:
+ * "Linguagens, Códigos e suas Tecnologias" → "Linguagens".
+ */
+export function areaCurta(nome: string): string {
+  return nome
+    .replace(' e suas Tecnologias', '')
+    .replace('Linguagens, Códigos', 'Linguagens')
+    .replace('Ciências da ', '')
+    .replace('Ciências ', '');
+}
+
 export function areaKey(subjectName?: string): AreaKey {
   const n = (subjectName ?? '').toLowerCase().trim();
   if (SUBJECT_TO_AREA[n]) return SUBJECT_TO_AREA[n];

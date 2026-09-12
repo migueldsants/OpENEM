@@ -231,10 +231,45 @@ describe('mapQuestion', () => {
     ).toThrow(QuestionValidationError);
   });
 
-  it('rejeita questão sem nenhuma alternativa correta', () => {
+  it('usa correctAlternative quando nenhuma alternativa vem marcada', () => {
+    // Centenas de questões do dataset chegam sem nenhum isCorrect=true. O
+    // gabarito publicado pela prova é o correctAlternative — ele manda.
+    const q = mapQuestion(
+      raw({
+        correctAlternative: 'B',
+        alternatives: [
+          { letter: 'A', text: 'a', file: null, isCorrect: false },
+          { letter: 'B', text: 'b', file: null, isCorrect: false },
+        ],
+      }),
+      '2023',
+      '1',
+    );
+    expect(q.alternatives.filter((a) => a.isCorrect)).toHaveLength(1);
+    expect(q.alternatives.find((a) => a.isCorrect)?.letter).toBe('B');
+  });
+
+  it('rejeita gabarito divergente entre as duas fontes do dataset', () => {
     expect(() =>
       mapQuestion(
         raw({
+          correctAlternative: 'A',
+          alternatives: [
+            { letter: 'A', text: 'a', file: null, isCorrect: false },
+            { letter: 'B', text: 'b', file: null, isCorrect: true },
+          ],
+        }),
+        '2023',
+        '1',
+      ),
+    ).toThrow(QuestionValidationError);
+  });
+
+  it('rejeita correctAlternative que não existe entre as letras', () => {
+    expect(() =>
+      mapQuestion(
+        raw({
+          correctAlternative: 'E',
           alternatives: [
             { letter: 'A', text: 'a', file: null, isCorrect: false },
             { letter: 'B', text: 'b', file: null, isCorrect: false },
@@ -242,6 +277,58 @@ describe('mapQuestion', () => {
         }),
         '2023',
         '1',
+      ),
+    ).toThrow(QuestionValidationError);
+  });
+
+  it('recupera alternativas de imagem que vieram no files da questão', () => {
+    // Padrão real do dataset (2021 reaplicação): as cinco imagens das
+    // alternativas chegam no `files` e no enunciado, com o `file` de cada
+    // alternativa nulo. Elas viram alternativas e saem do enunciado.
+    const base = 'https://enem.dev/2021-reaplicacao/questions/176';
+    const q = mapQuestion(
+      raw({
+        year: 2021,
+        index: 176,
+        context: `Sequência de quadrinhos\n\n![](${base}/a.png)\n![](${base}/b.png)\n![](${base}/c.png)`,
+        files: [`${base}/a.png`, `${base}/b.png`, `${base}/c.png`],
+        correctAlternative: 'C',
+        alternativesIntroduction: 'pela sequência de quadrinhos',
+        alternatives: [
+          { letter: 'A', text: null, file: null, isCorrect: false },
+          { letter: 'B', text: null, file: null, isCorrect: false },
+          { letter: 'C', text: null, file: null, isCorrect: true },
+        ],
+      }),
+      '2021-reaplicacao',
+      '176',
+    );
+    expect(q.alternatives.map((a) => a.imageUrl)).toEqual([
+      '/media/enem/2021-reaplicacao/176/a.png',
+      '/media/enem/2021-reaplicacao/176/b.png',
+      '/media/enem/2021-reaplicacao/176/c.png',
+    ]);
+    // Promovidas a alternativa, não aparecem mais no enunciado.
+    expect(q.statement).toBe('Sequência de quadrinhos');
+    expect(q.alternatives.find((a) => a.isCorrect)?.letter).toBe('C');
+  });
+
+  it('não recupera quando as imagens sobrando não dão para todas as vazias', () => {
+    const base = 'https://enem.dev/2020-reaplicacao/questions/10';
+    expect(() =>
+      mapQuestion(
+        raw({
+          year: 2020,
+          index: 10,
+          files: [`${base}/a.png`],
+          correctAlternative: 'A',
+          alternatives: [
+            { letter: 'A', text: null, file: null, isCorrect: false },
+            { letter: 'B', text: null, file: null, isCorrect: false },
+          ],
+        }),
+        '2020-reaplicacao',
+        '10',
       ),
     ).toThrow(QuestionValidationError);
   });

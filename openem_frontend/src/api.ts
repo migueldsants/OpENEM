@@ -631,14 +631,40 @@ export interface EssaySubmissionDetail {
   prompt: { id: string; title: string; theme: string; instructions: string };
   evaluation: EssayEvaluation | null;
 }
+/** Recorte de um simulado personalizado (mesmos campos do backend). */
+export interface SimulationFilters {
+  subjectAreaIds?: string[];
+  subjectIds?: string[];
+  topicIds?: string[];
+  examSlugs?: string[];
+  yearFrom?: number;
+  yearTo?: number;
+  difficulty?: number;
+  language?: string;
+  questionCount?: number;
+  timeLimitMin?: number;
+  pareto?: boolean;
+  unseenOnly?: boolean;
+  onlyFavorites?: boolean;
+  wrongOnly?: boolean;
+}
 export interface SimulationTemplate {
   id: string;
   name: string;
-  /** EXAM = um dia de prova oficial do ENEM, na ordem do caderno. */
-  scope: 'AREA' | 'FULL' | 'EXAM';
+  /**
+   * EXAM = um dia de prova oficial do ENEM, na ordem do caderno.
+   * AREA = um bloco de uma área do conhecimento.
+   * CUSTOM = montado pelo aluno (só aparece para ele).
+   */
+  scope: 'AREA' | 'FULL' | 'EXAM' | 'CUSTOM';
   questionCount: number;
   timeLimitMin: number | null;
   subject: { id: string; name: string } | null;
+  subjectAreaId?: string | null;
+  /** true nos simulados que o próprio aluno salvou — os que ele pode apagar. */
+  owned?: boolean;
+  /** Recorte salvo, presente só nos simulados do aluno. */
+  filters?: SimulationFilters | null;
   exam?: {
     slug: string;
     year: number;
@@ -655,6 +681,44 @@ export interface SimulationStart {
   timeLimitMin: number | null;
   questionCount: number;
   questions: Question[];
+  /** Id do simulado salvo, quando o aluno pediu para guardar o recorte. */
+  savedTemplateId?: string;
+}
+/** Prévia de um recorte: quantas questões existem antes de começar. */
+export interface SimulationPreview {
+  available: number;
+  /** Quantas já têm assunto — explica um tema com poucas questões. */
+  classified: number;
+  questionCount: number;
+  timeLimitMin: number;
+  description: string;
+}
+export interface SimulationState {
+  id: string;
+  startedAt: string;
+  finishedAt: string | null;
+  rawScore: number | null;
+  triScore: number | null;
+  answersCount: number;
+}
+export interface PdfTheme {
+  key: string;
+  label: string;
+  brand: string;
+  surface: string;
+}
+/** Opções do caderno em PDF. */
+export interface PdfOptions extends SimulationFilters {
+  templateId?: string;
+  title?: string;
+  studentName?: string;
+  theme?: string;
+  brandColor?: string;
+  cover?: boolean;
+  answerSheet?: boolean;
+  answerKey?: boolean;
+  explanations?: boolean;
+  twoColumns?: boolean;
 }
 export interface SimulationAnswerInput {
   questionId: string;
@@ -793,8 +857,7 @@ export const api = {
   },
   performance: (period: '7d' | '30d' | 'all' = '30d') =>
     request<Performance>(`/performance?period=${period}`),
-  performanceHeatmap: () =>
-    request<HeatmapArea[]>('/performance/heatmap'),
+  performanceHeatmap: () => request<HeatmapArea[]>('/performance/heatmap'),
 
   weeklyGoals: () => request<WeeklyGoal[]>('/weekly-goals'),
   createWeeklyGoal: (goal: {
@@ -803,9 +866,11 @@ export const api = {
     topicId?: string;
     targetMinutes?: number;
     targetQuestions?: number;
-  }) =>
-    request<WeeklyGoal>('/weekly-goals', { method: 'POST', body: goal }),
-  updateWeeklyGoal: (id: string, targets: { targetMinutes?: number; targetQuestions?: number }) =>
+  }) => request<WeeklyGoal>('/weekly-goals', { method: 'POST', body: goal }),
+  updateWeeklyGoal: (
+    id: string,
+    targets: { targetMinutes?: number; targetQuestions?: number },
+  ) =>
     request<WeeklyGoal>(`/weekly-goals/${id}`, {
       method: 'PATCH',
       body: targets,
@@ -900,19 +965,66 @@ export const api = {
 
   simulationTemplates: () =>
     request<SimulationTemplate[]>('/simulations/templates'),
+  /** Inicia um simulado: de um template, só com filtros, ou os dois. */
   startSimulation: (
-    templateId: string,
-    filters?: {
-      subjectId?: string;
-      topicId?: string;
-      questionCount?: number;
-      pareto?: boolean;
-    },
+    templateId: string | null,
+    filters?: SimulationFilters & { saveAs?: string },
   ) =>
     request<SimulationStart>('/simulations', {
       method: 'POST',
-      body: { templateId, ...filters },
+      body: { ...(templateId ? { templateId } : {}), ...filters },
     }),
+  /** Quantas questões o recorte tem — usado ao vivo no montador. */
+  simulationPreview: (filters: SimulationFilters) =>
+    request<SimulationPreview>('/simulations/preview', {
+      method: 'POST',
+      body: filters,
+    }),
+  simulation: (id: string) => request<SimulationState>(`/simulations/${id}`),
+  saveSimulationTemplate: (name: string, filters: SimulationFilters) =>
+    request<SimulationTemplate & { description: string }>(
+      '/simulations/templates',
+      { method: 'POST', body: { name, ...filters } },
+    ),
+  deleteSimulationTemplate: (id: string) =>
+    request<{ id: string; archived: boolean }>(`/simulations/templates/${id}`, {
+      method: 'DELETE',
+    }),
+  pdfThemes: () => request<PdfTheme[]>('/simulations/pdf-themes'),
+  /**
+   * Baixa o caderno em PDF. Não passa pelo `request` porque a resposta é
+   * binária — e o token precisa ir no header, então não dá para usar um link.
+   */
+  simulationPdf: async (options: PdfOptions, simulationId?: string) => {
+    const token = getToken();
+    const res = await fetch(
+      `${API_BASE}/simulations${simulationId ? `/${simulationId}` : ''}/pdf`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(options),
+      },
+    );
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string | string[];
+      };
+      throw new HttpError(
+        res.status,
+        (Array.isArray(data.message)
+          ? data.message.join(', ')
+          : data.message) ?? 'Não foi possível gerar o PDF',
+      );
+    }
+    const nome =
+      /filename="([^"]+)"/.exec(
+        res.headers.get('content-disposition') ?? '',
+      )?.[1] ?? 'openem-simulado.pdf';
+    return { blob: await res.blob(), filename: nome };
+  },
   finishSimulation: (id: string, answers: SimulationAnswerInput[]) =>
     request<SimulationResult>(`/simulations/${id}/finish`, {
       method: 'POST',
@@ -948,9 +1060,11 @@ export const api = {
       `/flashcards/decks/public${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`,
     ),
   flashcardDeck: (deckId: string) =>
-    request<FlashcardDeckBrief & { flashcards: { id: string; front: string; back: string }[] }>(
-      `/flashcards/decks/${deckId}`,
-    ),
+    request<
+      FlashcardDeckBrief & {
+        flashcards: { id: string; front: string; back: string }[];
+      }
+    >(`/flashcards/decks/${deckId}`),
   createDeck: (data: {
     title: string;
     description: string;
@@ -959,7 +1073,11 @@ export const api = {
     subtheme?: string;
     icon?: string;
     isPublic?: boolean;
-  }) => request<FlashcardDeckBrief>('/flashcards/decks', { method: 'POST', body: data }),
+  }) =>
+    request<FlashcardDeckBrief>('/flashcards/decks', {
+      method: 'POST',
+      body: data,
+    }),
   updateDeck: (
     deckId: string,
     data: Partial<{
@@ -990,15 +1108,16 @@ export const api = {
       method: 'DELETE',
     }),
   voteDeck: (deckId: string, vote: 'up' | 'down') =>
-    request(`/flashcards/decks/${deckId}/vote`, { method: 'POST', body: { vote } }),
-  studyQueue: (
-    filters?: {
-      subject?: string;
-      topic?: string;
-      subtheme?: string;
-      deckId?: string;
-    },
-  ) => {
+    request(`/flashcards/decks/${deckId}/vote`, {
+      method: 'POST',
+      body: { vote },
+    }),
+  studyQueue: (filters?: {
+    subject?: string;
+    topic?: string;
+    subtheme?: string;
+    deckId?: string;
+  }) => {
     const qs = new URLSearchParams();
     if (filters?.subject) qs.set('subject', filters.subject);
     if (filters?.topic) qs.set('topic', filters.topic);
@@ -1007,10 +1126,13 @@ export const api = {
     return request<FlashcardItem[]>(`/flashcards/study/queue?${qs.toString()}`);
   },
   reviewFlashcard: (flashcardId: string, quality: number) =>
-    request<FlashcardReviewResult>(`/flashcards/flashcards/${flashcardId}/review`, {
-      method: 'POST',
-      body: { quality },
-    }),
+    request<FlashcardReviewResult>(
+      `/flashcards/flashcards/${flashcardId}/review`,
+      {
+        method: 'POST',
+        body: { quality },
+      },
+    ),
   flashcardStats: () => request<FlashcardStats>('/flashcards/stats'),
   flashcardPreview: (flashcardId: string) =>
     request<FlashcardPreview>(`/flashcards/flashcards/${flashcardId}/preview`),
@@ -1047,7 +1169,12 @@ export const api = {
 
   essayPrompts: () => request<EssayPrompt[]>('/essays/prompts'),
   submitEssay: (promptId: string, content: string) =>
-    request<{ id: string; promptId: string; submittedAt: string; gamification?: GamificationDelta }>('/essays/submissions', {
+    request<{
+      id: string;
+      promptId: string;
+      submittedAt: string;
+      gamification?: GamificationDelta;
+    }>('/essays/submissions', {
       method: 'POST',
       body: { promptId, content },
     }),

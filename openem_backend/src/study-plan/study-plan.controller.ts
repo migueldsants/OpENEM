@@ -51,7 +51,9 @@ export class StudyPlanController {
   }
 
   @Patch('sessions/:id')
-  @ApiOperation({ summary: 'Edita nome, duração, dia ou conclusão de um bloco' })
+  @ApiOperation({
+    summary: 'Edita nome, duração, dia ou conclusão de um bloco',
+  })
   updateSession(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -70,7 +72,9 @@ export class StudyPlanController {
   }
 
   @Delete()
-  @ApiOperation({ summary: 'Esvazia o cronograma, mantendo o plano para edição' })
+  @ApiOperation({
+    summary: 'Esvazia o cronograma, mantendo o plano para edição',
+  })
   clear(@CurrentUser() user: AuthenticatedUser) {
     return this.studyPlanService.clear(user.userId);
   }

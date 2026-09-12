@@ -57,8 +57,8 @@ describe('Fórmulas / cheat sheet (issue #38, e2e)', () => {
       .set(auth())
       .expect(200);
     expect(res.body.length).toBeGreaterThanOrEqual(40);
-    const bhaskara = res.body.find(
-      (f: { title: string }) => f.title.includes('Bhaskara'),
+    const bhaskara = res.body.find((f: { title: string }) =>
+      f.title.includes('Bhaskara'),
     );
     expect(bhaskara).toMatchObject({
       isBuiltIn: true,

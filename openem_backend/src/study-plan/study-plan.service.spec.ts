@@ -44,9 +44,7 @@ describe('StudyPlanService', () => {
       const { service, prisma, performance } = makeService();
       prisma.profile.findUnique.mockResolvedValue({ minutesPerDay: 120 });
       performance.overview.mockResolvedValue({
-        weakestTopics: [
-          { id: 't1', name: 'Óptica', subjectName: 'Física' },
-        ],
+        weakestTopics: [{ id: 't1', name: 'Óptica', subjectName: 'Física' }],
       });
       prisma.studyPlan.deleteMany.mockResolvedValue({ count: 1 });
       prisma.studyPlan.create.mockResolvedValue({});
@@ -284,7 +282,11 @@ describe('StudyPlanService', () => {
       const { service, prisma } = makeService();
       prisma.studyPlan.findUnique
         .mockResolvedValueOnce({ id: 'plan-1' })
-        .mockResolvedValueOnce({ id: 'plan-1', minutesPerDay: 60, sessions: [] });
+        .mockResolvedValueOnce({
+          id: 'plan-1',
+          minutesPerDay: 60,
+          sessions: [],
+        });
       prisma.studySession.deleteMany.mockResolvedValue({ count: 14 });
 
       const res = await service.clear('u1');

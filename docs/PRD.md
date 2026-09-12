@@ -232,6 +232,34 @@ para treinar nas condições reais da prova.
 - [ ] Ao finalizar: nota (acertos brutos no MVP; **TRI em Fase 2**), gabarito comentado, tempo por questão.
 - [ ] Caso de borda: retomar simulado interrompido (sessão persistida).
 
+#### C2. Simulado personalizado por tema (P1) — entregue
+
+```
+Como Isabela (treineira),
+quero montar um simulado com os temas que escolher e baixá-lo em PDF,
+para treinar exatamente o que estou estudando — na tela ou no papel.
+```
+**Critérios:**
+- [x] Área, matéria e assunto se **somam** (união). Cruzá-los devolvia vazio, porque a maior parte do banco oficial ainda não tem assunto classificado.
+- [x] Prévia ao vivo com o número de questões do recorte antes de iniciar.
+- [x] Recortes pessoais: só inéditas, só as que errei, só favoritas, faixa de anos, nível.
+- [x] O recorte pode ser **salvo** como simulado do aluno e refeito depois (apagar preserva o histórico: arquiva quando já houve tentativa).
+- [x] Idioma da língua estrangeira vem do perfil — sem isso a mesma questão entrava em inglês e em espanhol.
+
+#### C3. Caderno em PDF (P1) — entregue
+
+```
+Como professor (ou aluno sem internet no momento do estudo),
+quero imprimir o simulado como um caderno de prova,
+para resolver no papel, no mesmo formato do ENEM.
+```
+**Critérios:**
+- [x] Duas colunas com fluxo real de texto entre colunas e páginas, como o caderno oficial.
+- [x] Capa com a marca do OpENEM, o que é o projeto, instruções, campo de nome e os números da prova.
+- [x] **Cartão-resposta** para marcar à caneta e **gabarito** no fim; comentários opcionais.
+- [x] **Tema de cor** à escolha (os mesmos do app) ou cor livre em hexadecimal.
+- [x] Imagens das questões embutidas a partir de `ENEM_MEDIA_DIR`; formato que o PDF não embute vira aviso, nunca página quebrada.
+
 ### Épico D — Desempenho e Revisão
 
 #### D1. Dashboard de desempenho (P0)
@@ -560,7 +588,13 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 | GET | `/api/v1/questions` | Busca/filtra (área, assunto, nível, ano) | JWT |
 | GET | `/api/v1/questions/:id` | Detalha questão comentada | JWT |
 | POST | `/api/v1/answers` | Registra tentativa | JWT |
-| POST | `/api/v1/simulations` | Inicia simulado | JWT |
+| POST | `/api/v1/simulations` | Inicia simulado (template e/ou filtros por tema) | JWT |
+| POST | `/api/v1/simulations/preview` | Quantas questões o recorte tem, antes de iniciar | JWT |
+| POST | `/api/v1/simulations/templates` | Salva um simulado personalizado do aluno | JWT |
+| DELETE | `/api/v1/simulations/templates/:id` | Remove/arquiva um simulado salvo | JWT |
+| POST | `/api/v1/simulations/pdf` | Caderno em PDF no padrão ENEM | JWT |
+| POST | `/api/v1/simulations/:id/pdf` | PDF de um simulado já feito | JWT |
+| GET | `/api/v1/simulations/pdf-themes` | Temas de cor do caderno | JWT |
 | POST | `/api/v1/simulations/:id/finish` | Finaliza e corrige | JWT |
 | GET | `/api/v1/performance` | Estatísticas por área/assunto/tempo | JWT |
 | GET | `/api/v1/review/queue` | Fila de revisão devida | JWT |
@@ -593,7 +627,7 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 | GET | `/api/v1/essays/ai-available` | Indica se a IA está configurada + provedor ativo | JWT |
 | POST | `/api/v1/essays/submissions/:id/ai-evaluation` | Corrige redação por IA (multi-provedor) | JWT |
 
-Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): ao responder questões (`POST /answers`) o usuário ganha **XP** (= base × **combo** da streak, + **bônus diário** na 1ª atividade do dia), sobe de **nível** (curva quadrática) e progride por **ligas** (Bronze→Diamante); o delta `gamification` da resposta inclui `xpGained`/`breakdown`/`level`/`leveledUp`/`league`/`newAchievements`. Tudo é derivado de `GamificationStat.points` (XP total) + streak — **sem novas colunas**. Controlado pela flag `gamificationEnabled` em `PUT /users/me/profile`; a lógica e o catálogo de conquistas vivem em `common/gamification.ts`. O frontend expõe a tela **Progresso**, um widget na Home e feedback de XP ao responder. A Fase 3 também entrega **desafio diário** (`GET /gamification/daily-challenge` + `POST .../claim`), **recomendação** (`GET /recommendation/next` — questões de tópicos fracos a partir dos erros recentes), **comunidade/fórum** (`community` — tópicos + respostas) e **IA de redação** multi-provedor (Anthropic, OpenAI, OpenAI-compatível, Gemini; `POST /essays/submissions/:id/ai-evaluation`, `GET /essays/ai-available`). O **onboarding** (objetivo + minutos/dia) é coletado no 1º acesso via `PUT /users/me/profile` (`onboarded` em `Profile`). Apps nativos (React Native/Expo) estão fora de cogitação por enquanto.
+Notas: a nota **TRI** é devolvida em `POST /simulations/:id/finish` (e em `GET /simulations/:id`) quando todas as questões respondidas têm parâmetros TRI calibrados; o **modo sem distrações** é a flag `focusMode` em `PUT /users/me/profile`. **Gamificação** (Fase 3): ao responder questões (`POST /answers`) o usuário ganha **XP** (= base × **combo** da streak, + **bônus diário** na 1ª atividade do dia), sobe de **nível** (curva quadrática) e progride por **ligas** (Bronze→Diamante); o delta `gamification` da resposta inclui `xpGained`/`breakdown`/`level`/`leveledUp`/`league`/`newAchievements`. Tudo é derivado de `GamificationStat.points` (XP total) + streak — **sem novas colunas**. Controlado pela flag `gamificationEnabled` em `PUT /users/me/profile`; a lógica e o catálogo de conquistas vivem em `common/gamification.ts`. O frontend expõe a tela **Progresso**, um widget na Home e feedback de XP ao responder. A Fase 3 também entrega **desafio diário** (`GET /gamification/daily-challenge` + `POST .../claim`), **recomendação** (`GET /recommendation/next` — questões de tópicos fracos a partir dos erros recentes), **comunidade/fórum** (`community` — tópicos + respostas) e **IA de redação** multi-provedor (Anthropic, OpenAI, OpenAI-compatível, Gemini; `POST /essays/submissions/:id/ai-evaluation`, `GET /essays/ai-available`). O **onboarding** (objetivo + minutos/dia) é coletado no 1º acesso via `PUT /users/me/profile` (`onboarded` em `Profile`). O **simulado por tema** (C2) aceita filtros que se somam (`subjectAreaIds`/`subjectIds`/`topicIds`, mais prova, ano, nível e recortes pessoais), tem prévia de contagem (`POST /simulations/preview`) e pode ser salvo como `SimulationTemplate` do aluno (`scope: CUSTOM`, `ownerId`, `filters` em JSON). O **caderno em PDF** (C3) é gerado com PDFKit (`common/pdf/`), no padrão de duas colunas do ENEM, com capa, cartão-resposta, gabarito e tema de cor. Para o filtro por tema alcançar o banco oficial, a classificação de assunto ganhou um passe **determinístico por palavra-chave** (`common/classification/heuristic.ts`, `npm run db:classify:keywords`) que roda antes da classificação por IA e cala quando está em dúvida. Apps nativos (React Native/Expo) estão fora de cogitação por enquanto.
 
 ---
 

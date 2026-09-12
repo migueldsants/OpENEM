@@ -1,19 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   api,
+  type SimulationFilters,
   type SimulationResult,
   type SimulationStart,
   type SimulationTemplate,
-  type Subject,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { QuestionExplanation } from '../components/QuestionExplanation';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { GamificationFeedback } from '../components/GamificationFeedback';
-import { IconBook, IconCheck, IconClock, IconFilter, IconStack, IconX } from '../components/icons';
+import {
+  IconBook,
+  IconCheck,
+  IconClock,
+  IconStack,
+  IconTrash,
+  IconX,
+} from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
+import { SimuladoBuilder } from '../components/SimuladoBuilder';
+import {
+  SimuladoPdfModal,
+  type PdfTarget,
+} from '../components/SimuladoPdfModal';
 import { useGamification } from '../gamification';
-import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { areaCurta, areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { Markdown } from '../components/Markdown';
 import {
   areaSourceName,
@@ -39,7 +51,8 @@ function loadActive(): ActiveState | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ActiveState;
-    if (!parsed.start?.id || !Array.isArray(parsed.start.questions)) return null;
+    if (!parsed.start?.id || !Array.isArray(parsed.start.questions))
+      return null;
     return parsed;
   } catch {
     return null;
@@ -58,196 +71,9 @@ function formatClock(totalSec: number): string {
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
-/** Filtros do simulado personalizado (issue #40). */
-interface SimulationFilters {
-  subjectId?: string;
-  topicId?: string;
-  questionCount?: number;
-  pareto?: boolean;
-}
-
-const QUICK_COUNTS = [5, 10, 15, 20, 30];
-const CUSTOM_TEMPLATE_ID = 'seed-template-custom';
-
-/**
- * Builder de simulado personalizado (issue #40): matéria > tópico,
- * quantidade (rápido 5–10 vs completo) e ordenação por frequência ENEM.
- */
-function CustomBuilder({
-  onStart,
-  starting,
-}: {
-  onStart: (filters: SimulationFilters) => void;
-  starting: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [subjects, setSubjects] = useState<Subject[] | null>(null);
-  const [subjectId, setSubjectId] = useState('');
-  const [topicId, setTopicId] = useState('');
-  const [count, setCount] = useState(10);
-  const [pareto, setPareto] = useState(true);
-
-  useEffect(() => {
-    if (!open || subjects !== null) return;
-    void api
-      .subjects()
-      .then(setSubjects)
-      .catch(() => setSubjects([]));
-  }, [open, subjects]);
-
-  const topics =
-    subjects?.find((s) => s.id === subjectId)?.topics ?? [];
-
-  return (
-    <div className="card card-raised overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-surface-2"
-      >
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand/12 text-brand">
-          <IconFilter width={20} height={20} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">
-            Simulado personalizado
-          </span>
-          <span className="block text-xs text-muted">
-            Escolha matéria, assunto e quantas questões quer
-          </span>
-        </span>
-        <span className="btn btn-primary shrink-0">
-          {open ? 'Fechar' : 'Montar'}
-        </span>
-      </button>
-
-      {open && (
-        <div className="space-y-4 border-t border-line p-4">
-          {subjects === null ? (
-            <p className="text-xs text-muted" aria-busy>
-              Carregando matérias…
-            </p>
-          ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-xs font-medium text-muted">
-                  Matéria
-                  <select
-                    value={subjectId}
-                    onChange={(e) => {
-                      setSubjectId(e.target.value);
-                      setTopicId(''); // tópico depende da matéria
-                    }}
-                    className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg"
-                  >
-                    <option value="">Todas as matérias</option>
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block text-xs font-medium text-muted">
-                  Assunto (opcional)
-                  <select
-                    value={topicId}
-                    onChange={(e) => setTopicId(e.target.value)}
-                    disabled={!subjectId}
-                    className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg disabled:opacity-50"
-                  >
-                    <option value="">
-                      {subjectId ? 'Todos os assuntos' : 'Escolha uma matéria'}
-                    </option>
-                    {topics.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div>
-                <span className="block text-xs font-medium text-muted">
-                  Quantidade de questões
-                </span>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  {QUICK_COUNTS.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setCount(n)}
-                      data-active={count === n}
-                      className="chip"
-                    >
-                      {n}
-                      {n <= 10 && (
-                        <span className="text-[0.6rem] text-muted">rápido</span>
-                      )}
-                    </button>
-                  ))}
-                  <input
-                    type="number"
-                    min={3}
-                    max={90}
-                    value={count}
-                    onChange={(e) =>
-                      setCount(
-                        Math.min(
-                          90,
-                          Math.max(3, Number(e.target.value) || 3),
-                        ),
-                      )
-                    }
-                    aria-label="Quantidade de questões"
-                    className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-center text-sm font-data tabular-nums"
-                  />
-                </div>
-              </div>
-
-              <label className="flex items-center gap-2 text-xs text-muted">
-                <input
-                  type="checkbox"
-                  checked={pareto}
-                  onChange={(e) => setPareto(e.target.checked)}
-                  className="size-4 accent-[var(--color-brand)]"
-                />
-                Priorizar assuntos mais frequentes no ENEM (Pareto)
-              </label>
-
-              <button
-                type="button"
-                onClick={() =>
-                  onStart({
-                    subjectId: subjectId || undefined,
-                    topicId: topicId || undefined,
-                    questionCount: count,
-                    pareto,
-                  })
-                }
-                disabled={starting}
-                className="btn btn-primary w-full"
-              >
-                {starting ? 'Iniciando…' : `Iniciar com ${count} questões`}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** "Linguagens, Códigos e suas Tecnologias" → "Linguagens". */
-function areaCurta(nome: string): string {
-  return nome
-    .replace(' e suas Tecnologias', '')
-    .replace('Linguagens, Códigos', 'Linguagens')
-    .replace('Ciências da ', '')
-    .replace('Ciências ', '');
+/** Letra da alternativa: a oficial quando existe, a posição quando não. */
+function letterOf(alt: { letter?: string | null }, index: number): string {
+  return alt.letter ?? LETTERS[index] ?? String(index + 1);
 }
 
 /** 330 → "5h30", 300 → "5h". */
@@ -301,10 +127,12 @@ function ProvasOficiais({
   templates,
   starting,
   onStart,
+  onPdf,
 }: {
   templates: SimulationTemplate[];
   starting: string | null;
   onStart: (t: SimulationTemplate) => void;
+  onPdf: (t: SimulationTemplate) => void;
 }) {
   const [verTodas, setVerTodas] = useState(false);
   const anos = useMemo(() => agruparProvas(templates), [templates]);
@@ -314,7 +142,9 @@ function ProvasOficiais({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="font-display text-lg font-bold">Provas oficiais do ENEM</h2>
+        <h2 className="font-display text-lg font-bold">
+          Provas oficiais do ENEM
+        </h2>
         <p className="mt-0.5 text-xs text-muted">
           Cada dia completo, na ordem do caderno e com o tempo oficial de prova.
         </p>
@@ -334,21 +164,32 @@ function ProvasOficiais({
                   )}
                   <div className="grid gap-2 sm:grid-cols-2">
                     {ap.dias.map((t) => (
-                      <button
+                      <div
                         key={t.id}
-                        onClick={() => onStart(t)}
-                        disabled={starting !== null}
-                        className="rounded-xl border border-line p-3 text-left transition-colors hover:bg-surface-2 disabled:opacity-60"
+                        className="rounded-xl border border-line p-3"
                       >
-                        <span className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold">
                             {t.day}º dia
                           </span>
-                          <span className="text-xs font-medium text-brand">
-                            {starting === t.id ? 'Iniciando…' : 'Iniciar'}
+                          <span className="flex shrink-0 items-center gap-1">
+                            <button
+                              onClick={() => onPdf(t)}
+                              className="btn btn-ghost px-2 py-1 text-xs"
+                              aria-label={`Baixar o ${t.day}º dia de ${ano} em PDF`}
+                            >
+                              PDF
+                            </button>
+                            <button
+                              onClick={() => onStart(t)}
+                              disabled={starting !== null}
+                              className="btn btn-primary px-2.5 py-1 text-xs disabled:opacity-60"
+                            >
+                              {starting === t.id ? 'Iniciando…' : 'Iniciar'}
+                            </button>
                           </span>
-                        </span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-1 text-xs">
+                        </div>
+                        <span className="mt-1 flex flex-wrap items-center gap-1 text-xs">
                           {(t.areas ?? []).map((a) => (
                             <span
                               key={a}
@@ -373,7 +214,7 @@ function ProvasOficiais({
                             </span>
                           )}
                         </span>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -397,40 +238,123 @@ function ProvasOficiais({
   );
 }
 
-/** Lista de templates disponíveis para iniciar um simulado. */
+/** Card de um simulado do catálogo (por área) ou salvo pelo aluno. */
+function TemplateCard({
+  t,
+  starting,
+  onStart,
+  onPdf,
+  onDelete,
+}: {
+  t: SimulationTemplate;
+  starting: string | null;
+  onStart: (t: SimulationTemplate) => void;
+  onPdf: (t: SimulationTemplate) => void;
+  onDelete?: (t: SimulationTemplate) => void;
+}) {
+  const area = areaKey(t.subject?.name ?? t.name);
+  return (
+    <li className="card card-raised overflow-hidden">
+      <div className="flex items-start gap-3 p-4">
+        <span
+          className={`mt-1 h-10 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-x-2 text-xs">
+            <span className={`font-semibold ${AREA_TEXT[area]}`}>
+              {t.scope === 'AREA'
+                ? 'Por área'
+                : t.owned
+                  ? 'Seu simulado'
+                  : 'Personalizado'}
+            </span>
+            {t.subject && (
+              <span className="text-muted">· {t.subject.name}</span>
+            )}
+          </p>
+          <p className="mt-1.5 text-sm font-semibold">{t.name}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+            <span className="inline-flex items-center gap-1">
+              <IconStack width={14} height={14} />
+              {t.questionCount} questões
+            </span>
+            {t.timeLimitMin != null && (
+              <span className="inline-flex items-center gap-1">
+                <IconClock width={14} height={14} />
+                {duracao(t.timeLimitMin)}
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {onDelete && (
+            <button
+              onClick={() => onDelete(t)}
+              aria-label={`Apagar ${t.name}`}
+              className="btn btn-ghost px-2 py-1"
+            >
+              <IconTrash width={14} height={14} />
+            </button>
+          )}
+          <button
+            onClick={() => onPdf(t)}
+            className="btn btn-ghost px-2 py-1 text-xs"
+            aria-label={`Baixar ${t.name} em PDF`}
+          >
+            PDF
+          </button>
+          <button
+            onClick={() => onStart(t)}
+            disabled={starting === t.id}
+            className="btn btn-primary"
+          >
+            {starting === t.id ? 'Iniciando…' : 'Iniciar'}
+          </button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/** Lista de simulados: provas oficiais, blocos por área, salvos e o montador. */
 function TemplateList({
   resumeAvailable,
   onResume,
   onStart,
+  onPdf,
 }: {
   resumeAvailable: boolean;
   onResume: () => void;
   onStart: (
-    template: SimulationTemplate,
+    template: SimulationTemplate | null,
     filters?: SimulationFilters,
   ) => void | Promise<void>;
+  onPdf: (target: PdfTarget) => void;
 }) {
   const [templates, setTemplates] = useState<SimulationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState<string | null>(null);
   const [customStarting, setCustomStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    try {
+      setTemplates(await api.simulationTemplates());
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Não foi possível carregar os simulados.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      try {
-        setTemplates(await api.simulationTemplates());
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Não foi possível carregar os simulados.',
-        );
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    void carregar();
+  }, [carregar]);
 
   async function start(template: SimulationTemplate) {
     setStarting(template.id);
@@ -438,7 +362,9 @@ function TemplateList({
     try {
       await onStart(template);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível iniciar.');
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível iniciar.',
+      );
     } finally {
       setStarting(null);
     }
@@ -448,16 +374,40 @@ function TemplateList({
     setCustomStarting(true);
     setError(null);
     try {
-      await onStart(
-        { id: CUSTOM_TEMPLATE_ID } as SimulationTemplate,
-        filters,
-      );
+      await onStart(null, filters);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível iniciar.');
+      setError(
+        err instanceof Error ? err.message : 'Não foi possível iniciar.',
+      );
     } finally {
       setCustomStarting(false);
     }
   }
+
+  async function salvar(name: string, filters: SimulationFilters) {
+    setError(null);
+    try {
+      const salvo = await api.saveSimulationTemplate(name, filters);
+      setAviso(`"${salvo.name}" foi salvo nos seus simulados.`);
+      await carregar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível salvar.');
+    }
+  }
+
+  async function apagar(t: SimulationTemplate) {
+    setError(null);
+    try {
+      await api.deleteSimulationTemplate(t.id);
+      setAviso(`"${t.name}" foi removido.`);
+      await carregar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível apagar.');
+    }
+  }
+
+  const porArea = templates.filter((t) => t.scope === 'AREA');
+  const salvos = templates.filter((t) => t.owned);
 
   return (
     <div className="space-y-5">
@@ -467,8 +417,8 @@ function TemplateList({
           Treine no padrão ENEM
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Faça uma prova oficial do ENEM, dia por dia, ou monte o seu simulado
-          por área, matéria e assunto.
+          Faça uma prova oficial dia por dia, monte o seu por tema ou baixe
+          qualquer um em PDF para imprimir.
         </p>
       </header>
 
@@ -492,8 +442,40 @@ function TemplateList({
         </button>
       )}
 
-      {error && (
-        <ErrorBanner message={error} />
+      {error && <ErrorBanner message={error} />}
+      {aviso && (
+        <p className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs text-muted">
+          {aviso}
+        </p>
+      )}
+
+      {/* Simulado personalizado por tema — o caminho mais usado. */}
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Monte o seu</h2>
+        <SimuladoBuilder
+          starting={customStarting}
+          onStart={(f) => void startCustom(f)}
+          onPdf={(filters, title) => onPdf({ filters, title })}
+          onSave={salvar}
+        />
+      </section>
+
+      {salvos.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg font-bold">Seus simulados</h2>
+          <ul className="space-y-3">
+            {salvos.map((t) => (
+              <TemplateCard
+                key={t.id}
+                t={t}
+                starting={starting}
+                onStart={(x) => void start(x)}
+                onPdf={(x) => onPdf({ templateId: x.id, title: x.name })}
+                onDelete={(x) => void apagar(x)}
+              />
+            ))}
+          </ul>
+        </section>
       )}
 
       {loading ? (
@@ -506,81 +488,37 @@ function TemplateList({
           templates={templates}
           starting={starting}
           onStart={(t) => void start(t)}
+          onPdf={(t) => onPdf({ templateId: t.id, title: t.name })}
         />
       ) : (
         <EmptyState
           icon={IconBook}
           title="Nenhuma prova oficial disponível ainda"
           description="As provas entram com a importação do banco do ENEM (npm run db:import:enem)."
-          tip="Enquanto isso, monte um simulado personalizado abaixo"
+          tip="Enquanto isso, monte um simulado personalizado acima"
         />
       )}
 
-      {/* Simulado personalizado (issue #40): área/matéria/assunto + quantidade. */}
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Monte o seu</h2>
-        <CustomBuilder
-          onStart={(f) => void startCustom(f)}
-          starting={customStarting}
-        />
-      </section>
-
-      {/* Outros simulados que não são prova oficial nem o personalizado. */}
-      {templates.some(
-        (t) => t.scope !== 'EXAM' && t.id !== CUSTOM_TEMPLATE_ID,
-      ) && (
-        <ul className="space-y-3">
-          {templates
-            .filter((t) => t.scope !== 'EXAM' && t.id !== CUSTOM_TEMPLATE_ID)
-            .map((t) => {
-            const area = t.subject ? areaKey(t.subject.name) : null;
-            return (
-              <li key={t.id} className="card card-raised overflow-hidden">
-                <div className="flex items-start gap-3 p-4">
-                  <span
-                    className={`mt-1 h-10 w-1 shrink-0 rounded-full ${
-                      area ? AREA_DOT[area] : 'bg-brand'
-                    }`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="flex flex-wrap items-center gap-x-2 text-xs">
-                      <span
-                        className={`font-semibold ${
-                          area ? AREA_TEXT[area] : 'text-brand'
-                        }`}
-                      >
-                        {t.scope === 'FULL' ? 'Prova completa' : 'Por área'}
-                      </span>
-                      {t.subject && (
-                        <span className="text-muted">· {t.subject.name}</span>
-                      )}
-                    </p>
-                    <p className="mt-1.5 text-sm font-semibold">{t.name}</p>
-                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <IconStack width={14} height={14} />
-                        {t.questionCount} questões
-                      </span>
-                      {t.timeLimitMin != null && (
-                        <span className="inline-flex items-center gap-1">
-                          <IconClock width={14} height={14} />
-                          {t.timeLimitMin} min
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => void start(t)}
-                    disabled={starting === t.id}
-                    className="btn btn-primary shrink-0"
-                  >
-                    {starting === t.id ? 'Iniciando…' : 'Iniciar'}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+      {porArea.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-display text-lg font-bold">Por área</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Um bloco de 45 questões, como o caderno oficial.
+            </p>
+          </div>
+          <ul className="space-y-3">
+            {porArea.map((t) => (
+              <TemplateCard
+                key={t.id}
+                t={t}
+                starting={starting}
+                onStart={(x) => void start(x)}
+                onPdf={(x) => onPdf({ templateId: x.id, title: x.name })}
+              />
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );
@@ -661,7 +599,15 @@ function Player({
       );
       setFinishing(false);
     }
-  }, [answers, current, finishing, onFinish, questions, start.id, state.timeSpent]);
+  }, [
+    answers,
+    current,
+    finishing,
+    onFinish,
+    questions,
+    start.id,
+    state.timeSpent,
+  ]);
 
   // Encerra automaticamente quando o tempo acaba.
   useEffect(() => {
@@ -709,16 +655,16 @@ function Player({
           }`}
         >
           <IconClock width={16} height={16} />
-          {remaining != null
-            ? formatClock(remaining)
-            : formatClock(elapsedSec)}
+          {remaining != null ? formatClock(remaining) : formatClock(elapsedSec)}
         </span>
       </div>
 
       {/* Questão atual */}
       <div className="card card-raised overflow-hidden">
         <div className="flex items-start gap-3 p-4">
-          <span className={`mt-1 h-10 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`} />
+          <span
+            className={`mt-1 h-10 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`}
+          />
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-x-2 text-xs">
               <span className={`font-semibold ${AREA_TEXT[area]}`}>
@@ -756,12 +702,16 @@ function Player({
                 type="button"
                 onClick={() => choose(alt.id)}
                 className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                  isChosen ? 'border-brand bg-brand/8' : 'border-line hover:bg-surface-2'
+                  isChosen
+                    ? 'border-brand bg-brand/8'
+                    : 'border-line hover:bg-surface-2'
                 }`}
               >
                 <span
                   className={`grid size-6 shrink-0 place-items-center rounded-md text-xs font-semibold ${
-                    isChosen ? 'bg-brand text-brand-ink' : 'bg-surface-2 text-muted'
+                    isChosen
+                      ? 'bg-brand text-brand-ink'
+                      : 'bg-surface-2 text-muted'
                   }`}
                 >
                   {alt.letter ?? LETTERS[i]}
@@ -784,9 +734,7 @@ function Player({
         </div>
       </div>
 
-      {error && (
-        <ErrorBanner message={error} />
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {/* Navegação */}
       <div className="flex items-center gap-2">
@@ -798,7 +746,10 @@ function Player({
           Anterior
         </button>
         {index < questions.length - 1 ? (
-          <button onClick={() => go(index + 1)} className="btn btn-primary ml-auto">
+          <button
+            onClick={() => go(index + 1)}
+            className="btn btn-primary ml-auto"
+          >
             Próxima
           </button>
         ) : (
@@ -844,12 +795,16 @@ function Result({
   start,
   result,
   onBack,
+  onPdf,
 }: {
   start: SimulationStart;
   result: SimulationResult;
   onBack: () => void;
+  onPdf: () => void;
 }) {
-  const detailByQuestion = new Map(result.details.map((d) => [d.questionId, d]));
+  const detailByQuestion = new Map(
+    result.details.map((d) => [d.questionId, d]),
+  );
 
   return (
     <div className="space-y-5">
@@ -893,9 +848,14 @@ function Result({
         </div>
       )}
 
-      <button onClick={onBack} className="btn btn-primary">
-        Voltar aos simulados
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button onClick={onBack} className="btn btn-primary">
+          Voltar aos simulados
+        </button>
+        <button onClick={onPdf} className="btn btn-ghost">
+          Baixar este simulado em PDF
+        </button>
+      </div>
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold">Gabarito comentado</h2>
@@ -948,7 +908,9 @@ function Result({
                   {q.alternatives.map((alt, i) => {
                     const isCorrect = detail?.correctAlternativeId === alt.id;
                     const isWrongPick =
-                      !!detail && detail.chosenId === alt.id && !detail.isCorrect;
+                      !!detail &&
+                      detail.chosenId === alt.id &&
+                      !detail.isCorrect;
                     const cls = isCorrect
                       ? 'border-nat bg-nat/10'
                       : isWrongPick
@@ -960,14 +922,33 @@ function Result({
                         className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${cls}`}
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-md bg-surface-2 text-xs font-semibold text-muted">
-                          {LETTERS[i]}
+                          {letterOf(alt, i)}
                         </span>
-                        <span className="min-w-0 flex-1">{alt.text}</span>
+                        <span className="min-w-0 flex-1">
+                          {alt.imageUrl ? (
+                            <img
+                              src={alt.imageUrl}
+                              alt={`Alternativa ${letterOf(alt, i)}`}
+                              loading="lazy"
+                              className="h-auto max-w-full rounded"
+                            />
+                          ) : (
+                            alt.text
+                          )}
+                        </span>
                         {isCorrect && (
-                          <IconCheck width={16} height={16} className="shrink-0 text-nat" />
+                          <IconCheck
+                            width={16}
+                            height={16}
+                            className="shrink-0 text-nat"
+                          />
                         )}
                         {isWrongPick && (
-                          <IconX width={16} height={16} className="shrink-0 text-red" />
+                          <IconX
+                            width={16}
+                            height={16}
+                            className="shrink-0 text-red"
+                          />
                         )}
                       </div>
                     );
@@ -1002,10 +983,27 @@ export default function Simulados() {
   const [active, setActive] = useState<ActiveState | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [resumeAvailable, setResumeAvailable] = useState(false);
+  const [pdfTarget, setPdfTarget] = useState<PdfTarget | null>(null);
 
-  // Detecta um simulado em andamento salvo localmente.
+  // Detecta um simulado em andamento salvo localmente — e confere no servidor
+  // se ele ainda está aberto. Sem essa checagem, um simulado finalizado em
+  // outro dispositivo ficava oferecido aqui e só falhava na hora de entregar.
   useEffect(() => {
-    setResumeAvailable(!!loadActive());
+    const salvo = loadActive();
+    if (!salvo) return;
+    setResumeAvailable(true);
+    void api
+      .simulation(salvo.start.id)
+      .then((estado) => {
+        if (estado?.finishedAt) {
+          saveActive(null);
+          setResumeAvailable(false);
+        }
+      })
+      .catch(() => {
+        // Offline ou simulado sumido do servidor: mantém o que está salvo, que
+        // é o que o aluno tem em mãos.
+      });
   }, []);
 
   function updateActive(next: ActiveState) {
@@ -1014,10 +1012,10 @@ export default function Simulados() {
   }
 
   async function handleStart(
-    template: SimulationTemplate,
+    template: SimulationTemplate | null,
     filters?: SimulationFilters,
   ) {
-    const start = await api.startSimulation(template.id, filters);
+    const start = await api.startSimulation(template?.id ?? null, filters);
     const state: ActiveState = { start, answers: {}, timeSpent: {} };
     saveActive(state);
     setActive(state);
@@ -1055,6 +1053,10 @@ export default function Simulados() {
     setPhase('list');
   }
 
+  const modal = pdfTarget ? (
+    <SimuladoPdfModal target={pdfTarget} onClose={() => setPdfTarget(null)} />
+  ) : null;
+
   if (phase === 'running' && active) {
     return (
       <Player
@@ -1067,14 +1069,33 @@ export default function Simulados() {
   }
 
   if (phase === 'result' && active && result) {
-    return <Result start={active.start} result={result} onBack={backToList} />;
+    return (
+      <>
+        <Result
+          start={active.start}
+          result={result}
+          onBack={backToList}
+          onPdf={() =>
+            setPdfTarget({
+              simulationId: result.simulationId,
+              title: 'Simulado resolvido',
+            })
+          }
+        />
+        {modal}
+      </>
+    );
   }
 
   return (
-    <TemplateList
-      resumeAvailable={resumeAvailable}
-      onResume={handleResume}
-      onStart={(t, f) => handleStart(t, f)}
-    />
+    <>
+      <TemplateList
+        resumeAvailable={resumeAvailable}
+        onResume={handleResume}
+        onStart={(t, f) => handleStart(t, f)}
+        onPdf={setPdfTarget}
+      />
+      {modal}
+    </>
   );
 }
