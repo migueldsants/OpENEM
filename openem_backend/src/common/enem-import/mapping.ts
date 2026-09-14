@@ -296,7 +296,13 @@ export function mapQuestion(
     );
   }
 
-  const contexto = (raw.context ?? '').trim();
+  // As alternativas vêm antes do enunciado: quando as imagens delas chegaram
+  // no `files` da questão em vez de no `file` de cada uma (ver
+  // mapAlternatives), essas imagens precisam sair do enunciado — senão as
+  // alternativas apareceriam duas vezes, uma no apoio e uma na lista.
+  const { alternatives, promotedFiles } = mapAlternatives(raw);
+
+  const contexto = removeImages((raw.context ?? '').trim(), promotedFiles);
   const comando = (raw.alternativesIntroduction ?? '').trim();
   if (!contexto && !comando) {
     throw new QuestionValidationError('questão sem enunciado');
@@ -305,8 +311,6 @@ export function mapQuestion(
   // contexto, o comando É o enunciado — e aí não se repete nos dois campos.
   const statement = rewriteImageUrls(contexto || comando);
   const questionPrompt = contexto && comando ? rewriteImageUrls(comando) : null;
-
-  const alternatives = mapAlternatives(raw);
 
   const classificacao = raw.language
     ? LANGUAGE_TO_TOPIC[raw.language]
@@ -336,7 +340,50 @@ export function mapQuestion(
   };
 }
 
-function mapAlternatives(raw: RawQuestion): MappedQuestion['alternatives'] {
+/**
+ * Remove de um Markdown as imagens cujo endereço está na lista — usado nas
+ * imagens do enunciado que viraram alternativas. Limpa também a linha vazia
+ * que sobra, para o enunciado não ficar com buracos de parágrafo.
+ */
+export function removeImages(markdown: string, urls: string[]): string {
+  if (urls.length === 0) return markdown;
+  const alvo = new Set(urls.map((u) => u.trim()));
+  return markdown
+    .replace(/!\[[^\]]*\]\(([^)\s]+)\)/g, (todo, url: string) =>
+      alvo.has(url.trim()) ? '' : todo,
+    )
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Imagens do `files` da questão que nenhuma alternativa reivindica.
+ *
+ * O dataset às vezes põe as imagens DAS alternativas no `files` da questão e
+ * deixa o `file` de cada uma nulo (a prova de 2021 reaplicação faz isso nas
+ * questões de quadrinho). Essas sobras são o que permite recuperar uma questão
+ * que, lida ao pé da letra, teria alternativas vazias.
+ */
+function unusedFiles(raw: RawQuestion): string[] {
+  const usadas = new Set(
+    raw.alternatives
+      .map((a) => (a.file ?? '').trim())
+      .filter((f): f is string => !!f),
+  );
+  return (raw.files ?? [])
+    .map((f) => f.trim())
+    .filter((f, i, arr) => f && !usadas.has(f) && arr.indexOf(f) === i);
+}
+
+/**
+ * Alternativas prontas para o banco, mais a lista de imagens que foram
+ * promovidas do `files` da questão para uma alternativa.
+ */
+function mapAlternatives(raw: RawQuestion): {
+  alternatives: MappedQuestion['alternatives'];
+  promotedFiles: string[];
+} {
   if (!Array.isArray(raw.alternatives) || raw.alternatives.length === 0) {
     throw new QuestionValidationError('questão sem alternativas');
   }
@@ -346,9 +393,27 @@ function mapAlternatives(raw: RawQuestion): MappedQuestion['alternatives'] {
     throw new QuestionValidationError(`letras repetidas: ${letras.join('')}`);
   }
 
+  // Alternativa sem texto e sem imagem própria recebe, na ordem, uma das
+  // imagens sobrando no `files`. Só vale quando há sobra para TODAS as vazias:
+  // preencher metade deixaria a questão com alternativas trocadas.
+  const vazias = raw.alternatives.filter(
+    (a) => !(a.text ?? '').trim() && !a.file,
+  );
+  const sobrando = unusedFiles(raw);
+  const fila =
+    vazias.length > 0 && sobrando.length >= vazias.length
+      ? sobrando.slice(sobrando.length - vazias.length)
+      : [];
+  const promotedFiles: string[] = [];
+
   const alternatives = raw.alternatives.map((a, i) => {
     const texto = (a.text ?? '').trim();
-    const imagem = a.file ? rewriteImageUrl(a.file) : null;
+    let arquivo = a.file;
+    if (!texto && !arquivo && fila.length > 0) {
+      arquivo = fila.shift()!;
+      promotedFiles.push(arquivo);
+    }
+    const imagem = arquivo ? rewriteImageUrl(arquivo) : null;
     if (!texto && !imagem) {
       throw new QuestionValidationError(
         `alternativa ${a.letter} sem texto e sem imagem`,
@@ -358,26 +423,27 @@ function mapAlternatives(raw: RawQuestion): MappedQuestion['alternatives'] {
       letter: a.letter,
       text: texto,
       imageUrl: imagem,
-      // O gabarito é conferido nas duas fontes do dataset (`correctAlternative`
-      // e o `isCorrect` de cada alternativa). Num app de estudo, gabarito
-      // errado é o pior defeito possível, e a checagem é grátis.
-      isCorrect: a.letter === raw.correctAlternative && a.isCorrect === true,
+      isCorrect: a.letter === raw.correctAlternative,
       position: i,
     };
   });
 
+  // O gabarito tem duas fontes no dataset (`correctAlternative` e o
+  // `isCorrect` de cada alternativa) e elas discordam: em centenas de questões
+  // nenhuma alternativa vem marcada. `correctAlternative` é a fonte confiável
+  // — é ele que a prova oficial publica —, então ele manda; o `isCorrect` das
+  // alternativas só serve para ACUSAR divergência, que aí é erro de verdade.
+  const marcadas = raw.alternatives.filter((a) => a.isCorrect);
   const corretas = alternatives.filter((a) => a.isCorrect);
-  if (corretas.length !== 1) {
+  const divergente =
+    marcadas.length > 0 &&
+    (marcadas.length > 1 || marcadas[0].letter !== raw.correctAlternative);
+  if (corretas.length !== 1 || divergente) {
     throw new QuestionValidationError(
       `gabarito inconsistente: correctAlternative="${raw.correctAlternative}", ` +
-        `marcadas=${
-          raw.alternatives
-            .filter((a) => a.isCorrect)
-            .map((a) => a.letter)
-            .join(',') || 'nenhuma'
-        }`,
+        `marcadas=${marcadas.map((a) => a.letter).join(',') || 'nenhuma'}`,
     );
   }
 
-  return alternatives;
+  return { alternatives, promotedFiles };
 }

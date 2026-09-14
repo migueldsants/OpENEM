@@ -92,9 +92,19 @@ the volume:
 docker compose exec backend npx ts-node prisma/import-enem.ts
 ```
 
-Official questions come in classified by **area** only. With an AI provider
-configured (the same one used for essay grading), two features become
-available:
+Official questions come in classified by **area** only. So that the by-theme
+mock exam can reach them, there is a **keyword** classification pass —
+deterministic, no AI, runs in seconds — that decides what the vocabulary makes
+obvious and stays silent when in doubt, because the wrong topic is worse than
+no topic:
+
+```bash
+npm run db:classify:keywords -- --dry-run --sample=20  # review the decisions
+npm run db:classify:keywords
+```
+
+With an AI provider configured (the same one used for essay grading), two more
+features become available:
 
 *   **On-demand explanation**: the "Ver comentário" button generates the
     explanation the first time someone asks for it and stores it for everyone
@@ -107,6 +117,21 @@ available:
     npm run db:classify -- --limit=50 --dry-run  # review the decisions first
     npm run db:classify
     ```
+
+### Mock exams and the PDF booklet
+
+Besides the official exams (each day, in booklet order and with the official
+time limit), students can build a **by-theme mock exam**: areas, subjects and
+topics **add up**, and the screen shows how many questions the selection has
+before you start. You can narrow it down by year range and difficulty, train
+only what is pending ("unseen only", "the ones I got wrong", "favourites") —
+and save the selection to redo it later.
+
+Any mock exam — an official paper, a by-theme selection, or the one you just
+finished — can be downloaded as a **PDF booklet** in the ENEM format: two
+columns, a cover with the project's brand and description, an answer sheet to
+fill in by pen, the answer key at the end and, if you want, the explanations.
+The booklet takes the colour theme you pick in the app (or a custom colour).
 
 ### Tests
 

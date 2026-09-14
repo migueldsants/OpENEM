@@ -12,33 +12,34 @@ generator client {
 }
 
 model User {
-  id               String              @id @default(cuid())
-  email            String              @unique
-  passwordHash     String
-  createdAt        DateTime            @default(now())
-  profile          Profile?
-  answers          Answer[]
-  simulations      Simulation[]
-  reviewItems      ReviewItem[]
-  favorites        Favorite[]
-  studyPlan        StudyPlan?
-  essays           EssaySubmission[]
-  gamification     GamificationStat?
-  achievements     UserAchievement[]
-  dailyChallenges  DailyChallengeLog[]
-  xpLogs           XpLog[]
-  gameScores       GameScore[]
-  forumThreads     ForumThread[]
-  forumPosts       ForumPost[]
-  postLikes        ForumPostLike[]
-  questionNotes    QuestionNote[]
-  flashcardDecks   FlashcardDeck[]
-  flashcardReviews FlashcardReview[]
-  weeklyGoals      WeeklyGoal[]
-  formulaFavorites UserFormula[]
-  focusSessions    FocusSession[]
-  videos           Video[]
-  videoNotes       VideoNote[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  createdAt           DateTime             @default(now())
+  profile             Profile?
+  answers             Answer[]
+  simulations         Simulation[]
+  reviewItems         ReviewItem[]
+  favorites           Favorite[]
+  studyPlan           StudyPlan?
+  essays              EssaySubmission[]
+  gamification        GamificationStat?
+  achievements        UserAchievement[]
+  dailyChallenges     DailyChallengeLog[]
+  xpLogs              XpLog[]
+  gameScores          GameScore[]
+  forumThreads        ForumThread[]
+  forumPosts          ForumPost[]
+  postLikes           ForumPostLike[]
+  questionNotes       QuestionNote[]
+  flashcardDecks      FlashcardDeck[]
+  flashcardReviews    FlashcardReview[]
+  weeklyGoals         WeeklyGoal[]
+  formulaFavorites    UserFormula[]
+  focusSessions       FocusSession[]
+  videos              Video[]
+  videoNotes          VideoNote[]
+  simulationTemplates SimulationTemplate[]
 }
 
 model Profile {
@@ -58,11 +59,12 @@ model Profile {
 
 // Área do conhecimento ENEM (nível mais alto da taxonomia canônica).
 model SubjectArea {
-  id          String       @id @default(cuid())
-  name        String       @unique
+  id          String               @id @default(cuid())
+  name        String               @unique
   subjects    Subject[]
   weeklyGoals WeeklyGoal[]
   questions   Question[]
+  templates   SimulationTemplate[]
 }
 
 model Subject {
@@ -157,7 +159,10 @@ model Question {
   // Confiança da classificação automática de tópico e nº de tentativas já feitas
   // (sem o contador, o job reprocessa para sempre as questões que a IA recusa).
   classificationConfidence Float?
-  classificationAttempts   Int    @default(0)
+  classificationAttempts   Int     @default(0)
+  /// Quem classificou o assunto: "dataset" | "keywords" | "ai:<provedor>".
+  /// Distingue o que a heurística decidiu do que a IA confirmou.
+  classificationSource     String?
 
   @@index([topicId, difficulty])
   @@index([subjectAreaId, difficulty])
@@ -202,10 +207,21 @@ model QuestionNote {
 model SimulationTemplate {
   id            String       @id @default(cuid())
   name          String
-  scope         String       @default("FULL") // AREA | FULL | EXAM
+  scope         String       @default("FULL") // AREA | FULL | EXAM | CUSTOM
   subjectId     String?
+  /// Área do conhecimento do simulado (scope AREA). É o recorte que alcança as
+  /// questões oficiais ainda sem matéria/assunto, onde `subjectId` não chega.
+  subjectAreaId String?
+  subjectArea   SubjectArea? @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
   questionCount Int          @default(10)
   timeLimitMin  Int?
+  /// Simulado salvo por um aluno (scope CUSTOM); nulo nos simulados do catálogo.
+  ownerId       String?
+  owner         User?        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Filtros do simulado personalizado, em JSON (ver common/simulation-filters).
+  /// Guardados como texto porque o SQLite não tem tipo Json no Prisma.
+  filters       String?
+  createdAt     DateTime     @default(now())
   /// Prova oficial (scope EXAM): a aplicação e o dia do ENEM que o simulado
   /// reproduz, na ordem do caderno. Criados pelo importador das provas.
   examYearId    String?

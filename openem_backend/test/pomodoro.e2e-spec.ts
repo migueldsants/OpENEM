@@ -126,8 +126,8 @@ describe('Modo Foco / Pomodoro (issue #41, e2e)', () => {
       .expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     // A sessão com matéria aparece rotulada com o nome dela.
-    const withSubject = res.body.find(
-      (x: { subjectName: string }) => x.subjectName?.includes('Matem'),
+    const withSubject = res.body.find((x: { subjectName: string }) =>
+      x.subjectName?.includes('Matem'),
     );
     expect(withSubject).toBeDefined();
     expect(withSubject.minutes).toBeGreaterThanOrEqual(10);

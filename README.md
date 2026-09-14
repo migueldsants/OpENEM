@@ -91,9 +91,19 @@ No Docker, rode o import dentro do container — banco e imagens ficam no volume
 docker compose exec backend npx ts-node prisma/import-enem.ts
 ```
 
-As questões oficiais entram classificadas só por **área**. Com um provedor de
-IA configurado (o mesmo da correção de redação), dois recursos ficam
-disponíveis:
+As questões oficiais entram classificadas só por **área**. Para o simulado por
+tema alcançá-las, há uma classificação **por palavra-chave**, determinística e
+sem IA, que roda em segundos e decide o que é evidente pelo vocabulário —
+calando-se quando fica em dúvida, porque assunto errado é pior que assunto
+nenhum:
+
+```bash
+npm run db:classify:keywords -- --dry-run --sample=20  # veja as decisões antes
+npm run db:classify:keywords
+```
+
+Com um provedor de IA configurado (o mesmo da correção de redação), outros dois
+recursos ficam disponíveis:
 
 *   **Comentário sob demanda**: o botão "Ver comentário" gera a explicação na
     primeira vez que alguém pede e a grava para os próximos.
@@ -105,6 +115,21 @@ disponíveis:
     npm run db:classify -- --limit=50 --dry-run  # confira as decisões antes
     npm run db:classify
     ```
+
+### Simulados e caderno em PDF
+
+Além das provas oficiais (cada dia, na ordem do caderno e com o tempo oficial),
+o aluno monta o **simulado por tema**: áreas, matérias e assuntos se **somam**,
+e a tela mostra quantas questões o recorte tem antes de começar. Dá para
+restringir a faixa de anos, o nível e treinar só o que ficou pendente ("só
+inéditas", "só as que errei", "só favoritas") — e salvar o recorte para refazer
+depois.
+
+Qualquer simulado — uma prova oficial, um recorte por tema ou um que você
+acabou de resolver — pode ser baixado como **caderno em PDF** no padrão do
+ENEM: duas colunas, capa com a marca e a descrição do projeto, cartão-resposta
+para preencher à caneta, gabarito no fim e, se você quiser, os comentários. A
+cor do caderno é a do tema que você escolher no app (ou uma cor livre).
 
 ### Testes
 

@@ -96,7 +96,9 @@ describe('Videoteca (issue #37, e2e)', () => {
       .get(`/api/v1/videos/${videoId}/notes`)
       .set(auth())
       .expect(200);
-    expect(notes.body.map((n: { timestampSec: number }) => n.timestampSec)).toEqual([30, 120]);
+    expect(
+      notes.body.map((n: { timestampSec: number }) => n.timestampSec),
+    ).toEqual([30, 120]);
   });
 
   it('POST /videos/:id/watched alterna assistido', async () => {
@@ -175,9 +177,7 @@ describe('Videoteca (issue #37, e2e)', () => {
       .get('/api/v1/videos')
       .set(auth())
       .expect(200);
-    expect(list.body.some((v: { id: string }) => v.id === videoId)).toBe(
-      false,
-    );
+    expect(list.body.some((v: { id: string }) => v.id === videoId)).toBe(false);
   });
 
   it('sem token retorna 401', async () => {

@@ -319,7 +319,9 @@ async function main() {
       explanation: string,
       alternatives: { text: string; isCorrect: boolean }[],
     ) {
-      const existing = await prisma.question.findFirst({ where: { statement } });
+      const existing = await prisma.question.findFirst({
+        where: { statement },
+      });
       if (existing) return;
       await prisma.question.create({
         data: {
@@ -441,18 +443,50 @@ async function main() {
     });
   }
 
-  // Template para simulados personalizados (issue #40): matéria/tópico e
-  // contagem vêm por DTO no start; o template só carrega o nome/rótulo.
+  // Template para simulados personalizados (issue #40): os filtros vêm por DTO
+  // no start; o template só carrega o nome/rótulo do histórico.
   await prisma.simulationTemplate.upsert({
     where: { id: 'seed-template-custom' },
-    update: {},
+    update: { scope: 'CUSTOM' },
     create: {
       id: 'seed-template-custom',
       name: 'Personalizado',
-      scope: 'FULL',
+      scope: 'CUSTOM',
       questionCount: 10,
     },
   });
+
+  // Um simulado por área do conhecimento: 45 questões em 1h30, que é o ritmo
+  // de um bloco do caderno oficial. Filtra por ÁREA (e não por matéria) de
+  // propósito — é o recorte que alcança as questões oficiais que ainda não
+  // foram classificadas em matéria/assunto.
+  const AREA_SIMULADOS: [string, string][] = [
+    ['linguagens', 'Linguagens, Códigos e suas Tecnologias'],
+    ['humanas', 'Ciências Humanas e suas Tecnologias'],
+    ['natureza', 'Ciências da Natureza e suas Tecnologias'],
+    ['matematica', 'Matemática e suas Tecnologias'],
+  ];
+  for (const [slug, areaName] of AREA_SIMULADOS) {
+    const area = await prisma.subjectArea.findUnique({
+      where: { name: areaName },
+      select: { id: true },
+    });
+    if (!area) continue;
+    const id = `seed-template-area-${slug}`;
+    const dados = {
+      name: `Simulado de ${areaName.replace(' e suas Tecnologias', '')}`,
+      scope: 'AREA',
+      subjectAreaId: area.id,
+      questionCount: 45,
+      timeLimitMin: 90,
+      archived: false,
+    };
+    await prisma.simulationTemplate.upsert({
+      where: { id },
+      update: dados,
+      create: { id, ...dados },
+    });
+  }
 
   // Tema de redação (Fase 2).
   await prisma.essayPrompt.upsert({
