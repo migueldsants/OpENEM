@@ -1,0 +1,5 @@
+node_modules/
+package-lock.json
+# cadernos e gabaritos baixados do INEP, e as páginas renderizadas em cache
+pdf/
+pages/

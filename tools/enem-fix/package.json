@@ -1,0 +1,19 @@
+{
+  "name": "enem-fix",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Conserta o dataset de questões do ENEM a partir dos cadernos oficiais do INEP",
+  "scripts": {
+    "fix": "node build.mjs",
+    "audit": "node auditar.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.9",
+    "fontkit": "^2.0.4",
+    "mupdf": "^1.28.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38"
+  }
+}
