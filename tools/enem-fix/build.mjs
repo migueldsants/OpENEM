@@ -58,13 +58,20 @@ const corrompido = (s) => /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(s || '
 // expoente que não virou texto, ou fórmula desmontada em letras soltas.
 const PUA = /[\ue000-\uf8ff\ufffd]/;
 const MOJIBAKE = /Ã[\u0080-\u00bf]|â€/;
-const MARCADOR = /\^\(|_\([0-9+\-−–]{1,4}\)/;
+const MARCADOR = /\^\(|_\([^\s)]{1,6}\)(?!_)/;
 const FORMULA_SOLTA = /(^|\s)\S\s\S\s\S\s\S\s\S(\s|$)/;
+const IMAGEM_QUEBRADA = /broken-image/;
 const lixoso = (q) => {
   const txt = [q.context, q.alternativesIntroduction, ...q.alternatives.map((a) => a.text)].filter(Boolean).join('\n');
-  return PUA.test(txt) || MOJIBAKE.test(txt) || MARCADOR.test(txt) || q.alternatives.some((a) => FORMULA_SOLTA.test(a.text || ''));
+  const imgs = [q.context || '', ...(q.files ?? [])].join(' ');
+  return PUA.test(txt) || MOJIBAKE.test(txt) || MARCADOR.test(txt) || IMAGEM_QUEBRADA.test(imgs) || q.alternatives.some((a) => FORMULA_SOLTA.test(a.text || ''));
 };
 const vazia = (a) => !(a.text || '').trim() && !a.file;
+/** Questão que perdeu o texto de apoio: só sobrou o comando. */
+const semEnunciado = (q) => {
+  const ctx = (q.context || '').trim();
+  return !ctx && !(q.files ?? []).length;
+};
 const norm = (s) =>
   (s || '')
     .toLowerCase()
@@ -128,7 +135,8 @@ for (const [slug, dias] of Object.entries(EXAMS)) {
       corrompido(q.context) ||
       corrompido(q.alternativesIntroduction) ||
       q.alternatives.some((a) => vazia(a) || corrompido(a.text)) ||
-      lixoso(q),
+      lixoso(q) ||
+      semEnunciado(q),
   );
   // Números que nem existem no dataset: são criados do zero.
   const temNum = new Set(dirs.map((d) => parseInt(d, 10)).filter((n) => !isNaN(n)));
@@ -217,6 +225,13 @@ for (const [slug, dias] of Object.entries(EXAMS)) {
 
   for (const [d, q] of alvo) {
     const criar = q === null;
+    const soSemEnunciado =
+      !criar &&
+      semEnunciado(q) &&
+      !corrompido(q.context) &&
+      !corrompido(q.alternativesIntroduction) &&
+      !lixoso(q) &&
+      !q.alternatives.some((a) => vazia(a) || corrompido(a.text));
     const textoRuim = criar || corrompido(q.context) || corrompido(q.alternativesIntroduction) || !norm((q.context || '') + (q.alternativesIntroduction || ''));
     // Comando que é lixo de extração ("B E") também pede o enunciado do caderno.
     const comandoRuim = !criar && norm(q.alternativesIntroduction).replace(/ /g, '').length < 8;
@@ -247,6 +262,10 @@ for (const [slug, dias] of Object.entries(EXAMS)) {
     }
     if (!/^[A-E]$/.test(correta || '')) { relatorio.pendencias.push(`${slug}/${d}: sem gabarito`); continue; }
 
+    if (soSemEnunciado && p.blocos.filter((b) => b.text).length < 2) {
+      rel.comandoPuro = (rel.comandoPuro ?? 0) + 1;
+      continue; // o caderno confirma: a questão é só o comando
+    }
     const renderFile = p.dia.render ?? p.dia.pdf;
     const doc = { file: join(pdfDir, renderFile) };
     const pasta = join(qdir, d);
@@ -293,7 +312,11 @@ for (const [slug, dias] of Object.entries(EXAMS)) {
     const novo = { ...base, correctAlternative: correta, alternatives };
     // O caderno tem figura no enunciado e o dataset não trouxe nenhuma: refaz.
     const semFigura = !criar && p.blocos.some((bl) => bl.fig && !bl.formula) && !(q.files ?? []).length && !/!\[/.test(q.context || '');
-    if (textoRuim || comandoRuim || semFigura) {
+    // Imagem quebrada no enunciado: o caderno tem a figura de verdade.
+    const imagemQuebrada = !criar && IMAGEM_QUEBRADA.test([q.context || '', ...(q.files ?? [])].join(' '));
+    // Marcador de expoente/índice no enunciado também pede o texto do caderno.
+    const marcadorNoTexto = !criar && MARCADOR.test((q.context || '') + ' ' + (q.alternativesIntroduction || ''));
+    if (textoRuim || comandoRuim || semFigura || soSemEnunciado || imagemQuebrada || marcadorNoTexto) {
       // Enunciado refeito: parágrafos + figuras; o último parágrafo é o comando.
       const partes = [];
       const files = [];

@@ -5,11 +5,13 @@ import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export const SUP = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', '+': '⁺', '-': '⁻', '−': '⁻', '–': '⁻', '—': '⁻', n: 'ⁿ' };
 for (const c of '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻ⁿ') SUP[c] = c; // já vem sobrescrito
+SUP.o = 'º'; SUP.a = 'ª'; // "1 ^o" é ordinal; "30 ^o C" vira "30 ºC"
 export const SUB = { 0: '₀', 1: '₁', 2: '₂', 3: '₃', 4: '₄', 5: '₅', 6: '₆', 7: '₇', 8: '₈', 9: '₉', '+': '₊', '-': '₋', '−': '₋', '–': '₋', '—': '₋' };
 export const conv = (s, tab, marca) => {
   const t = s.trim();
   if ([...t].every((c) => tab[c])) return [...t].map((c) => tab[c]).join('');
-  return `${marca}(${t})`;
+  // conteúdo simples fica sem parêntese ("d_A"), que lê melhor que "d_(A)"
+  return /^[A-Za-zÀ-ÿ0-9]{1,6}$/.test(t) ? `${marca}${t}` : `${marca}(${t})`;
 };
 // Fonte Symbol: glifos na área privada F0xx seguem a codificação Symbol.
 import { SYMBOL } from './symbol.mjs';
