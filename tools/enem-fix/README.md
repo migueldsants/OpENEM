@@ -26,6 +26,8 @@ node fixfonts.mjs <caderno>.pdf <caderno>_fix.pdf
 node build.mjs <dataset/public> <pasta dos PDFs> [--dry] [--only=2021-reaplicacao]
 # 3. confere o resultado
 node auditar.mjs <dataset/public>
+# 4. confere, questão a questão, o banco importado contra o gabarito oficial
+node verificar-gabaritos.mjs <pasta dos PDFs> [url do banco]
 npm test
 ```
 
@@ -72,6 +74,13 @@ Casar a questão errada é pior que deixá-la quebrada, então:
 
 Questão que não passa nessas travas — ou cuja diagramação o extrator não lê bem
 — fica de fora e é listada como pendência, em vez de entrar errada.
+
+## Verificação
+
+`verificar-gabaritos.mjs` compara a resposta certa de cada questão do banco com
+o gabarito oficial, prova por prova. Na última execução: **4187/4187 conferem**.
+O que fica de fora são as provas sem gabarito publicado pelo INEP (2010, a
+reaplicação de 2018 e o 1º dia da reaplicação de 2017) e as questões anuladas.
 
 ## Limites conhecidos
 

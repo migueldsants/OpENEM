@@ -332,7 +332,15 @@ for (const [slug, dias] of Object.entries(EXAMS)) {
     if (alvos.has(d)) continue;
     const p = pdfQs.get(d);
     if (!p?.gab || typeof p.gab !== 'string' || p.gab === 'ANULADA' || p.gab === q.correctAlternative) continue;
-    if (contencao(shingles((q.context || '') + ' ' + (q.alternativesIntroduction || '')), p.sh) < 0.5) continue;
+    // A questão precisa ser a que melhor casa com o caderno. O limite é mais
+    // baixo que 0,5 porque em questão de língua estrangeira boa parte do texto
+    // é imagem, e sobra pouco texto para comparar.
+    const shQ = shingles((q.context || '') + ' ' + (q.alternativesIntroduction || ''));
+    const nota = contencao(shQ, p.sh);
+    if (nota < 0.3) continue;
+    let melhor = nota;
+    for (const [, cand] of pdfQs) melhor = Math.max(melhor, contencao(shQ, cand.sh));
+    if (nota < melhor) continue;
     relatorio.divergenciasGabarito.push(`${slug}/${d}: dataset=${q.correctAlternative} oficial=${p.gab} (Q${p.number}, só gabarito)`);
     const novo = { ...q, correctAlternative: p.gab, alternatives: q.alternatives.map((a) => ({ ...a, isCorrect: a.letter === p.gab })) };
     if (!DRY) writeFileSync(join(qdir, d, 'details.json'), JSON.stringify(novo, null, 4) + '\n');
