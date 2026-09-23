@@ -30,6 +30,16 @@ const PESO_APOIO = 1;
 export const MIN_SCORE = 3;
 /** Vantagem mínima sobre o 2º colocado de OUTRO assunto. */
 export const MIN_MARGIN = 2;
+/**
+ * Termos distintos que o vencedor precisa ter encontrado.
+ *
+ * Um termo isolado decide pela palavra, não pelo assunto da questão: numa
+ * amostragem das decisões gravadas, o grupo "um termo só" errava perto de um
+ * terço das vezes — "radiação" num texto sobre clima virava Radioatividade,
+ * "cinema" citado numa alternativa virava Artes. Com dois termos o vocabulário
+ * do assunto aparece de fato, e o erro some da amostra.
+ */
+export const MIN_TERMS = 2;
 
 export interface TopicRule {
   /** Área do conhecimento (nome exato da TAXONOMY do seed). */
@@ -334,7 +344,11 @@ export const RULES: TopicRule[] = [
     topic: 'Genética',
     strong: [
       'dna',
-      'gene*',
+      // "gene*" casava com "generalizada", "generoso", "gênero": prefixo curto
+      // demais para uma palavra tão comum.
+      'gene',
+      'genes',
+      'genetic*',
       'alelo*',
       'cromossom*',
       'genotipo',
@@ -355,6 +369,11 @@ export const RULES: TopicRule[] = [
       'biodiversidade',
       'nicho ecologico',
       'sucessao ecologica',
+      // Em Natureza, clima e poluição caem aqui: "efeito estufa" só existia em
+      // Geografia, e a questão acabava em Física por causa de "temperatura".
+      'efeito estufa',
+      'aquecimento global',
+      'gases estufa',
     ],
     weak: ['especie*', 'habitat', 'populacoes', 'predador', 'ambiente'],
   },
@@ -843,7 +862,16 @@ export const RULES: TopicRule[] = [
     area: NATUREZA,
     subject: 'Química',
     topic: 'Radioatividade',
-    strong: ['radioativ*', 'meia-vida', 'decaimento radioativo', 'radiacao'],
+    // "radiacao" sozinha é ampla demais: radiação solar e térmica aparecem em
+    // questão de clima e de Física, e levavam a questão para Radioatividade.
+    strong: [
+      'radioativ*',
+      'meia-vida',
+      'decaimento radioativo',
+      'radiacao ionizante',
+      'radiacao nuclear',
+      'radiacao gama',
+    ],
     weak: ['isotopo*', 'urani*', 'cesio', 'fissao nuclear'],
   },
   {
@@ -1781,6 +1809,7 @@ export function classifyByKeywords(
 
   const melhor = candidatas[0];
   if (!melhor || melhor.score < MIN_SCORE) return null;
+  if (melhor.matched.length < MIN_TERMS) return null;
 
   // Concorrente = primeiro candidato de OUTRO assunto. Duas regras do mesmo
   // assunto não competem entre si (não há como errar escolhendo qualquer uma).
