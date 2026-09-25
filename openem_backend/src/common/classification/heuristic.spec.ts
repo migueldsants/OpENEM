@@ -3,6 +3,7 @@ import {
   normalizeText,
   RULES,
   MIN_SCORE,
+  MIN_TERMS,
 } from './heuristic';
 
 const MAT = 'Matemática e suas Tecnologias';
@@ -27,7 +28,7 @@ describe('normalizeText', () => {
 describe('classifyByKeywords', () => {
   it('decide pelo termo forte do assunto', () => {
     const d = classifyByKeywords(
-      'Qual a probabilidade de sair um número par ao lançar o dado?',
+      'Escolhendo ao acaso, qual a probabilidade de sair um número par?',
       MAT,
     );
     expect(d?.subject).toBe('Matemática');
@@ -101,12 +102,60 @@ describe('classifyByKeywords', () => {
   });
 
   it('devolve os termos que decidiram, para auditoria', () => {
-    const d = classifyByKeywords('Calcule o logaritmo de 100 na base 10.', MAT);
+    const d = classifyByKeywords(
+      'Use a escala logaritmica: calcule o logaritmo de 100 na base 10.',
+      MAT,
+    );
     expect(d?.matched).toContain('logaritmo');
   });
 
   it('texto vazio não classifica', () => {
     expect(classifyByKeywords('   ', MAT)).toBeNull();
+  });
+});
+
+describe('um termo só não decide', () => {
+  it('cala quando só uma palavra do assunto aparece', () => {
+    // "probabilidade" sozinha decidia; agora é preciso mais vocabulário.
+    const d = classifyByKeywords(
+      'O texto discute a probabilidade histórica de revoltas populares.',
+      MAT,
+    );
+    expect(d).toBeNull();
+  });
+
+  it('decide com dois termos do mesmo assunto', () => {
+    const d = classifyByKeywords(
+      'Qual a probabilidade de sair um número par no lançamento do dado honesto?',
+      MAT,
+    );
+    expect(d?.topic).toBe('Probabilidade');
+    expect(d!.matched.length).toBeGreaterThanOrEqual(MIN_TERMS);
+  });
+
+  it('"radiação" num texto de clima não vira Radioatividade', () => {
+    const d = classifyByKeywords(
+      'As mudanças climáticas alteram a radiação que chega à vegetação dos trópicos.',
+      NAT,
+    );
+    expect(d?.topic).not.toBe('Radioatividade');
+  });
+
+  it('efeito estufa em Natureza vai para Ecologia, não para Calorimetria', () => {
+    const d = classifyByKeywords(
+      'O gás carbônico e o metano intensificam o efeito estufa e o aquecimento global, elevando a temperatura.',
+      NAT,
+    );
+    expect(d?.topic).toBe('Ecologia');
+  });
+
+  it('"generalizada" não vira Genética', () => {
+    // o prefixo "gene*" casava com qualquer palavra começada em "gene"
+    const d = classifyByKeywords(
+      'As lagartas não possuem voracidade generalizada sobre as folhas.',
+      NAT,
+    );
+    expect(d?.topic).not.toBe('Genética');
   });
 });
 
