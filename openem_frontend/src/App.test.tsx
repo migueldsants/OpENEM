@@ -50,7 +50,6 @@ describe('Tabbar mobile — botão Mais (issue #21)', () => {
     for (const label of ['Início', 'Painel', 'Questões', 'Simulados', 'Revisão']) {
       expect(withinTab.getByText(label)).toBeInTheDocument();
     }
-    expect(withinTab.queryByText('Games')).not.toBeInTheDocument();
     // Botão "Mais".
     expect(withinTab.getByLabelText('Mais telas')).toBeInTheDocument();
     // Telas secundárias NÃO estão direto na tabbar.
@@ -76,12 +75,13 @@ describe('Tabbar mobile — botão Mais (issue #21)', () => {
       'Cronograma',
       'Redação',
       'Favoritos',
-      'Games',
       'Desempenho',
       'Perfil',
     ]) {
       expect(withinSheet.getByText(label)).toBeInTheDocument();
     }
+    // A aba Games saiu do app.
+    expect(withinSheet.queryByText('Games')).not.toBeInTheDocument();
     // Agrupado como na sidebar.
     for (const secao of ['Estudar', 'Planejar', 'Acompanhar', 'Social', 'Conta']) {
       expect(withinSheet.getByText(secao)).toBeInTheDocument();
@@ -159,5 +159,7 @@ describe('Sidebar do desktop — cabe em janela baixa', () => {
     expect(withinNav.getByText('Desempenho').closest('a')).toHaveAttribute('href', '/desempenho');
     // Conquistas entra pelo Progresso, não duplica a entrada no menu.
     expect(withinNav.queryByText('Conquistas')).not.toBeInTheDocument();
+    // A aba Games saiu do app.
+    expect(withinNav.queryByText('Games')).not.toBeInTheDocument();
   });
 });

@@ -29,7 +29,7 @@ function destaque(g: GamificationDelta): string | null {
  * (e o combo, se houver) e no máximo um destaque. As conquistas saem só no
  * toast (issue #48); repetir em badge aqui triplicava a mesma informação.
  * Compartilhado entre Questões, Favoritos, Revisão, Simulados, Redação,
- * Cronograma, Pomodoro e Games.
+ * Cronograma e Pomodoro.
  */
 export function GamificationFeedback({ g }: { g: GamificationDelta }) {
   const brilho = destaque(g);

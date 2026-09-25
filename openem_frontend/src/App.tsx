@@ -10,7 +10,6 @@ import {
   IconClock,
   IconFlame,
   IconFormula,
-  IconGame,
   IconChart,
   IconClipboard,
   IconHome,
@@ -42,7 +41,6 @@ import Desempenho from './pages/Desempenho';
 import Favoritos from './pages/Favoritos';
 import Flashcards from './pages/Flashcards';
 import Formulas from './pages/Formulas';
-import Games from './pages/Games';
 import Home from './pages/Home';
 import Painel from './pages/Painel';
 import Login from './pages/Login';
@@ -88,7 +86,6 @@ const NAV: NavItem[] = [
   { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: 'more', section: 'Acompanhar' },
 
   { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more', section: 'Social' },
-  { to: '/games', label: 'Games', Icon: IconGame, mobile: 'more', section: 'Social' },
 
   { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'more', section: 'Conta' },
 ];
@@ -324,7 +321,6 @@ export default function App() {
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/pomodoro" element={<Pomodoro />} />
       <Route path="/redacao" element={<Redacao />} />
-      <Route path="/games" element={<Games />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/usuarios/:id" element={<PerfilPublico />} />

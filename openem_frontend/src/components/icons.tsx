@@ -138,7 +138,6 @@ export const IconTarget = shim(Target, 'duotone');
 // Aba "Painel": métricas de estudo que antes ocupavam a Home.
 export const IconChart = shim(ChartLineUp, 'duotone');
 export const IconSparkle = shim(Sparkle, 'fill');
-export const IconGame = shim(Lightning, 'duotone');
 export const IconBook = shim(BookOpen, 'duotone');
 export const IconQuestion = shim(Question, 'duotone');
 export const IconThumbsUp = shim(ThumbsUp, 'duotone');
