@@ -44,8 +44,8 @@ export class CreateDeckDto {
   subtheme?: string;
 
   @ApiProperty({
-    description: 'Ícone do deck (emoji)',
-    default: '📚',
+    description: 'Nome do ícone do deck (chave semântica, não emoji)',
+    default: 'books',
     required: false,
   })
   @IsString()

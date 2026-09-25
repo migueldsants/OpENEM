@@ -10,7 +10,7 @@ function item(partial: Partial<Parameters<typeof buildStudyQueue>[0][0]>) {
     front: 'Q',
     back: 'A',
     deckTitle: 'Deck',
-    deckIcon: '📚',
+    deckIcon: 'books',
     weight: 3,
     easeFactor: 2.5,
     intervalD: 0,

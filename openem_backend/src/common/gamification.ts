@@ -196,7 +196,11 @@ export interface AchievementDef {
   description: string;
   /** XP bônus creditado ao desbloquear (issue #48). */
   xp: number;
-  /** Emoji temático exibido nos cards/toasts (issue #48). */
+  /**
+   * Nome do ícone exibido nos cards/toasts. É uma chave semântica (não um
+   * emoji): o front resolve para um ícone vetorial em `lib/achievement-icon`,
+   * que tem um fallback para chaves desconhecidas.
+   */
   icon: string;
   /** Classe Tailwind de destaque (issue #48). */
   color: string;
@@ -209,7 +213,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Primeiro passo',
     description: 'Responda sua primeira questão.',
     xp: 50,
-    icon: '📝',
+    icon: 'pencil',
     color: 'text-brand',
   },
   {
@@ -217,7 +221,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Aquecendo',
     description: 'Responda 10 questões.',
     xp: 100,
-    icon: '🎯',
+    icon: 'target',
     color: 'text-brand',
   },
   {
@@ -225,7 +229,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Maratonista',
     description: 'Responda 100 questões.',
     xp: 300,
-    icon: '💯',
+    icon: 'exam',
     color: 'text-mat',
   },
   {
@@ -233,7 +237,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Na mira',
     description: 'Acerte 10 questões.',
     xp: 100,
-    icon: '🎯',
+    icon: 'target',
     color: 'text-brand',
   },
   {
@@ -241,7 +245,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Pegando o ritmo',
     description: 'Estude 3 dias seguidos.',
     xp: 75,
-    icon: '🔥',
+    icon: 'flame',
     color: 'text-red',
   },
   {
@@ -249,7 +253,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Semana cheia',
     description: 'Estude 7 dias seguidos.',
     xp: 200,
-    icon: '🌋',
+    icon: 'flame',
     color: 'text-red',
   },
   {
@@ -257,7 +261,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Disciplina de ferro',
     description: 'Estude 30 dias seguidos.',
     xp: 500,
-    icon: '🏆',
+    icon: 'trophy',
     color: 'text-red',
   },
   {
@@ -265,7 +269,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Meio milhar',
     description: 'Acumule 500 de XP.',
     xp: 50,
-    icon: '⭐',
+    icon: 'star',
     color: 'text-brand',
   },
   {
@@ -273,7 +277,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Veterano',
     description: 'Acumule 2000 de XP.',
     xp: 150,
-    icon: '💫',
+    icon: 'sparkle',
     color: 'text-brand',
   },
   {
@@ -281,7 +285,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Subindo de liga',
     description: 'Chegue ao nível 5 (liga Prata).',
     xp: 100,
-    icon: '⭐',
+    icon: 'star',
     color: 'text-brand',
   },
   {
@@ -289,7 +293,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Ouro puro',
     description: 'Chegue ao nível 10 (liga Ouro).',
     xp: 250,
-    icon: '💫',
+    icon: 'sparkle',
     color: 'text-nat',
   },
   {
@@ -297,7 +301,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Elite',
     description: 'Chegue ao nível 20 (liga Platina).',
     xp: 1000,
-    icon: '👑',
+    icon: 'crown',
     color: 'text-brand',
   },
   // ---- Ações além de questões (issue #17) ----
@@ -306,7 +310,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Prova de fogo',
     description: 'Conclua seu primeiro simulado.',
     xp: 100,
-    icon: '📋',
+    icon: 'clipboard',
     color: 'text-lin',
   },
   {
@@ -314,7 +318,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Simulador dedicado',
     description: 'Conclua 5 simulados.',
     xp: 300,
-    icon: '🏅',
+    icon: 'medal',
     color: 'text-lin',
   },
   {
@@ -322,7 +326,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Primeira redação',
     description: 'Envie sua primeira redação.',
     xp: 100,
-    icon: '✍️',
+    icon: 'pen-nib',
     color: 'text-hum',
   },
   {
@@ -330,7 +334,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Tirou onda',
     description: 'Tire 800+ em uma redação.',
     xp: 400,
-    icon: '🎖️',
+    icon: 'medal-military',
     color: 'text-hum',
   },
   {
@@ -338,7 +342,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Revisão ativa',
     description: 'Faça sua primeira autoavaliação de revisão.',
     xp: 50,
-    icon: '🔄',
+    icon: 'repeat',
     color: 'text-nat',
   },
   {
@@ -346,7 +350,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Memória de elefante',
     description: 'Faça 10 autoavaliações de revisão.',
     xp: 200,
-    icon: '📚',
+    icon: 'books',
     color: 'text-nat',
   },
   {
@@ -354,7 +358,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'No cronograma',
     description: 'Conclua sua primeira sessão de estudo.',
     xp: 50,
-    icon: '⏱️',
+    icon: 'timer',
     color: 'text-mat',
   },
   {
@@ -362,7 +366,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: 'Constância',
     description: 'Conclua 10 sessões de estudo.',
     xp: 200,
-    icon: '🏃',
+    icon: 'run',
     color: 'text-mat',
   },
 ] as const;

@@ -19,7 +19,7 @@ async function main() {
   const dataPath = join(__dirname, 'seed-flashcards-data.json');
   const decks = JSON.parse(readFileSync(dataPath, 'utf8')) as SeedDeck[];
 
-  console.log(`🌱 Semeando ${decks.length} decks de flashcards (seed-flashcards)...`);
+  console.log(`Semeando ${decks.length} decks de flashcards (seed-flashcards)...`);
 
   let created = 0;
   let updated = 0;
@@ -63,7 +63,7 @@ async function main() {
   }
 
   const total = await prisma.flashcard.count();
-  console.log(`  ✔ ${created} decks criados (${updated} realinhados). Total: ${total} flashcards.`);
+  console.log(`  OK: ${created} decks criados (${updated} realinhados). Total: ${total} flashcards.`);
 }
 
 main()
