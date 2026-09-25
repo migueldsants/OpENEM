@@ -70,6 +70,14 @@ describe('normalizeCodeQuery', () => {
     ['enem 2023 7', 'ENEM-2023-007'],
     ['ENEM-2023-001-ING', 'ENEM-2023-001-ING'],
     ['2023r', 'ENEM-2023R'],
+    // Separadores repetidos, misturados e espaço nas pontas (quem digita
+    // rápido): o mutation testing mostrou que nada cobria isso.
+    ['  2023   7  ', 'ENEM-2023-007'],
+    ['2023/45', 'ENEM-2023-045'],
+    ['2023__7..esp', 'ENEM-2023-007-ESP'],
+    // Só número puro ganha zeros: "R7" não é número de questão.
+    ['2023 r7', 'ENEM-2023-R7'],
+    ['enem', 'ENEM'],
   ])('%j vira %j', (entrada, esperado) => {
     expect(normalizeCodeQuery(entrada)).toBe(esperado);
   });

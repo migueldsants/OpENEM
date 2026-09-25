@@ -55,6 +55,19 @@ describe('proximoPasso', () => {
     expect(p.tipo).toBe('cronograma');
     expect(p.titulo).toBe('Hoje no cronograma: Química');
     expect(p.descricao).toContain('1 de 2');
+    expect(p.to).toBe('/cronograma');
+  });
+
+  it('nenhum bloco feito ainda: fala do primeiro, sem "você já fez"', () => {
+    const p = proximoPasso({
+      vencidas: 0,
+      hoje: [sessao({ minutes: 30 }), sessao({ id: 's2' })],
+      recomendacao: null,
+    });
+    expect(p.descricao).toBe('30 min, o primeiro de 2 blocos de hoje.');
+    expect(
+      proximoPasso({ vencidas: 0, hoje: [sessao()], recomendacao: null }).descricao,
+    ).toBe('30 min, o primeiro de 1 bloco de hoje.');
   });
 
   it('dia concluído passa para a recomendação, com o assunto na URL', () => {
