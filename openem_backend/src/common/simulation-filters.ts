@@ -86,8 +86,12 @@ export function normalizeFilters(
     | undefined,
 ): SimulationFilters {
   if (!input) return {};
-  const juntar = (lista?: string[], unico?: string) =>
-    ids([...(lista ?? []), ...(unico ? [unico] : [])]);
+  // `lista` pode chegar como texto solto (template antigo ou editado à mão):
+  // espalhar uma string com `...` a picava letra por letra ('mat' → m, a, t).
+  const comoLista = (v: unknown): unknown[] =>
+    Array.isArray(v) ? v : typeof v === 'string' ? [v] : [];
+  const juntar = (lista?: unknown, unico?: unknown) =>
+    ids([...comoLista(lista), ...comoLista(unico)]);
 
   const out: SimulationFilters = {};
   const areas = juntar(input.subjectAreaIds, input.subjectAreaId);

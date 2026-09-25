@@ -63,6 +63,63 @@ describe('normalizeFilters', () => {
   });
 });
 
+// O que chega aqui nem sempre é bem formado: o template salvo é JSON no banco
+// (pode vir de uma versão antiga) e o cliente manda o que quiser. Estes casos
+// saíram do mutation testing: a limpeza existia, mas nada a verificava.
+describe('normalizeFilters: entrada malformada', () => {
+  it('id solto no lugar da lista vira lista (antes era picado em letras)', () => {
+    const f = normalizeFilters({
+      subjectIds: 'mat' as unknown as string[],
+      examSlugs: 42 as unknown as string[],
+    });
+    expect(f.subjectIds).toEqual(['mat']);
+    expect(f.examSlugs).toBeUndefined();
+  });
+
+  it('itens que não são texto, vazios ou repetidos saem da lista', () => {
+    const f = normalizeFilters({
+      topicIds: [1, null, ' t1 ', 't1', ''] as unknown as string[],
+    });
+    expect(f.topicIds).toEqual(['t1']);
+  });
+
+  it('template gravado com o formato errado não zera o simulado', () => {
+    expect(parseFilters('{"subjectIds":"mat","questionCount":"20"}')).toEqual({
+      subjectIds: ['mat'],
+      questionCount: 20,
+    });
+  });
+
+  it('número em texto é aceito; decimal é truncado; lixo é descartado', () => {
+    const f = normalizeFilters({
+      questionCount: '20' as unknown as number,
+      difficulty: 2.7,
+      yearFrom: 'abc' as unknown as number,
+      yearTo: Infinity,
+    });
+    expect(f.questionCount).toBe(20);
+    expect(f.difficulty).toBe(2);
+    expect(f.yearFrom).toBeUndefined();
+    expect(f.yearTo).toBeUndefined();
+  });
+
+  it('nível e tempo ficam presos à faixa válida', () => {
+    expect(normalizeFilters({ difficulty: 9 }).difficulty).toBe(5);
+    expect(normalizeFilters({ difficulty: -3 }).difficulty).toBe(1);
+    expect(normalizeFilters({ timeLimitMin: 0 }).timeLimitMin).toBe(1);
+    expect(normalizeFilters({ timeLimitMin: 9999 }).timeLimitMin).toBe(600);
+  });
+
+  it('só um lado da faixa de anos vale sozinho', () => {
+    expect(normalizeFilters({ yearFrom: 2015 })).toEqual({ yearFrom: 2015 });
+    expect(normalizeFilters({ yearTo: 2020 })).toEqual({ yearTo: 2020 });
+    expect(buildQuestionWhere({ yearTo: 2020 })).toEqual({
+      examYear: { year: { lte: 2020 } },
+    });
+    expect(describeFilters({ yearFrom: 2015 })).toBe('2015');
+  });
+});
+
 describe('hasContentFilter', () => {
   it('contagem sozinha não é recorte de conteúdo', () => {
     expect(hasContentFilter({ questionCount: 10 })).toBe(false);
