@@ -114,7 +114,7 @@ describe('serialize .openem', () => {
 
   it('rejeita tipo incorreto', () => {
     const bad = JSON.stringify({ ...sampleBoard(), type: 'other' });
-    expect(() => parseOpenEm(bad)).toThrow(/tipo incorreto/);
+    expect(() => parseOpenEm(bad)).toThrow(/não é um quadro de estudos/);
   });
 
   it('rejeita schemaVersion incompatível', () => {

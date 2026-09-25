@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   api,
@@ -10,28 +10,31 @@ import {
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { SkeletonCard, SkeletonText } from '../components/Skeleton';
+import { useDialog } from '../components/Modal';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import { IconPen, IconSparkle } from '../components/icons';
 import { useGamification } from '../gamification';
+import { PageHeader } from '../components/PageHeader';
 
 // Metadados por competência: rótulo + cor do marca-texto (uma por competência).
 const COMP_META = [
-  { key: 'c1', short: 'C1', label: 'C1 · Norma culta', color: '#D97706' },
-  { key: 'c2', short: 'C2', label: 'C2 · Compreensão do tema', color: '#059669' },
-  { key: 'c3', short: 'C3', label: 'C3 · Argumentação', color: '#2563EB' },
-  { key: 'c4', short: 'C4', label: 'C4 · Coesão', color: '#7C3AED' },
+  { key: 'c1', short: 'C1', label: 'C1 · Norma culta', color: 'var(--hum)' },
+  { key: 'c2', short: 'C2', label: 'C2 · Compreensão do tema', color: 'var(--nat)' },
+  { key: 'c3', short: 'C3', label: 'C3 · Argumentação', color: 'var(--mat)' },
+  { key: 'c4', short: 'C4', label: 'C4 · Coesão', color: 'var(--lin)' },
   {
     key: 'c5',
     short: 'C5',
     label: 'C5 · Proposta de intervenção',
-    color: '#DB2777',
+    color: 'var(--red)',
   },
 ] as const;
 
 type CompKey = (typeof COMP_META)[number]['key'];
 
 function compColor(competency: number): string {
-  return COMP_META[competency - 1]?.color ?? '#64748b';
+  return COMP_META[competency - 1]?.color ?? 'var(--muted)';
 }
 
 function ScoreCard({
@@ -41,7 +44,7 @@ function ScoreCard({
 }) {
   return (
     <div className="mt-3 rounded-xl bg-surface-2 p-3">
-      <p className="font-display text-xl font-extrabold tabular-nums text-nat">
+      <p className="font-display text-xl font-extrabold tabular-nums text-success">
         {evaluation.total}
         <span className="text-sm font-semibold text-muted">/1000</span>
       </p>
@@ -105,9 +108,9 @@ function HighlightedEssay({
         id={`mark-${i}`}
         onClick={() => onSelect(i)}
         title={a.comment}
-        className="cursor-pointer rounded px-0.5 text-fg transition-shadow"
+        className="cursor-pointer rounded-lg px-0.5 text-fg transition-shadow"
         style={{
-          backgroundColor: `${color}40`,
+          backgroundColor: `color-mix(in oklab, ${color} 25%, transparent)`,
           borderBottom: `2px solid ${color}`,
           boxShadow: isSel ? `0 0 0 2px ${color}` : undefined,
         }}
@@ -142,6 +145,8 @@ function DetailModal({
   onClose: () => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const painelRef = useRef<HTMLDivElement>(null);
+  useDialog(painelRef, onClose);
   const evaluation = detail.evaluation;
   const annotations = evaluation?.annotations ?? [];
 
@@ -164,7 +169,12 @@ function DetailModal({
       onClick={onClose}
     >
       <div
-        className="card relative h-fit min-h-full w-full max-w-2xl space-y-4 p-4 sm:min-h-0 sm:rounded-2xl"
+        ref={painelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Correção: ${detail.prompt.title}`}
+        className="card relative h-fit min-h-full w-full max-w-2xl space-y-4 p-4 outline-none sm:min-h-0 sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3">
@@ -180,7 +190,12 @@ function DetailModal({
           </button>
         </header>
 
-        {busy && <p className="text-sm text-muted">Carregando…</p>}
+        {busy && (
+          <div className="space-y-2" aria-busy>
+            <SkeletonText width="90%" />
+            <SkeletonText width="75%" />
+          </div>
+        )}
 
         {!evaluation && (
           <div className="rounded-xl bg-surface-2 p-4 text-center">
@@ -207,8 +222,8 @@ function DetailModal({
                 {COMP_META.map((c) => (
                   <span key={c.key} className="flex items-center gap-1 text-xs text-muted">
                     <span
-                      className="size-2.5 rounded-sm"
-                      style={{ backgroundColor: `${c.color}80` }}
+                      className="size-2.5 rounded-lg"
+                      style={{ backgroundColor: `color-mix(in oklab, ${c.color} 50%, transparent)` }}
                     />
                     {c.short}
                   </span>
@@ -261,6 +276,15 @@ function DetailModal({
                             key={i}
                             id={`ann-${i}`}
                             onClick={() => selectFromList(i)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                selectFromList(i);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={selected === i}
                             className="cursor-pointer rounded-lg border-l-2 bg-surface p-2 text-xs"
                             style={{
                               borderColor: c.color,
@@ -273,7 +297,7 @@ function DetailModal({
                             )}
                             <p className="mt-0.5 text-fg">{a.comment}</p>
                             {a.suggestion && (
-                              <p className="mt-0.5 text-nat">→ {a.suggestion}</p>
+                              <p className="mt-0.5 text-success">→ {a.suggestion}</p>
                             )}
                           </li>
                         ))}
@@ -287,7 +311,7 @@ function DetailModal({
             {evaluation.feedback && (
               <section>
                 <h3 className="eyebrow mb-1.5">Comentário geral</h3>
-                <p className="rounded-xl border-l-2 border-nat bg-nat/5 p-3 text-sm leading-relaxed text-fg">
+                <p className="rounded-xl border-l-2 border-success bg-success/5 p-3 text-sm leading-relaxed text-fg">
                   {evaluation.feedback}
                 </p>
               </section>
@@ -303,7 +327,9 @@ function DetailModal({
 export default function Redacao() {
   const { refresh } = useGamification();
   const [prompts, setPrompts] = useState<EssayPrompt[]>([]);
-  const [submissions, setSubmissions] = useState<EssaySubmissionSummary[]>([]);
+  const [submissions, setSubmissions] = useState<
+    EssaySubmissionSummary[] | null
+  >(null);
   const [promptId, setPromptId] = useState('');
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
@@ -393,12 +419,7 @@ export default function Redacao() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Treino</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          Redação
-        </h1>
-      </header>
+      <PageHeader eyebrow="Treino" title="Redação" />
 
       {error && (
         <ErrorBanner message={error} />
@@ -414,7 +435,7 @@ export default function Redacao() {
           >
             {prompts.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.title} — {p.theme}
+                {p.title}: {p.theme}
               </option>
             ))}
           </select>
@@ -424,14 +445,17 @@ export default function Redacao() {
             {selected.theme}
           </p>
         )}
-        <textarea
-          required
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={8}
-          placeholder="Escreva sua redação dissertativo-argumentativa…"
-          className="input resize-y"
-        />
+        <label className="block">
+          <span className="text-sm font-medium">Seu texto</span>
+          <textarea
+            required
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={8}
+            placeholder="Escreva sua redação dissertativo-argumentativa…"
+            className="input mt-1.5 resize-y"
+          />
+        </label>
         <div className="flex items-center gap-3">
           <button
             type="submit"
@@ -440,14 +464,23 @@ export default function Redacao() {
           >
             {busy ? 'Enviando…' : 'Enviar redação'}
           </button>
-          {message && <p className="text-sm text-nat">{message}</p>}
+          {message && <p className="text-sm text-success">{message}</p>}
         </div>
         {award && <GamificationFeedback g={award} />}
       </form>
 
       <section className="space-y-3">
         <h2 className="eyebrow">Meus envios</h2>
-        {submissions.length === 0 ? (
+        {submissions === null ? (
+          // Ainda carregando (ou falhou: o erro aparece no topo). Sem isto o
+          // "Nenhuma redação ainda" piscava antes da lista chegar.
+          !error && (
+            <div className="space-y-3" aria-busy>
+              <SkeletonCard lines={2} />
+              <SkeletonCard lines={2} />
+            </div>
+          )
+        ) : submissions.length === 0 ? (
           <EmptyState
             icon={IconPen}
             title="Nenhuma redação ainda"
@@ -468,7 +501,7 @@ export default function Redacao() {
                       Enviada em{' '}
                       {new Date(s.submittedAt).toLocaleDateString('pt-BR')}
                     </p>
-                    <p className="mt-0.5 text-xs font-medium text-nat">
+                    <p className="mt-0.5 text-xs font-medium text-success">
                       {s.evaluation ? 'Ver correção →' : 'Ver redação →'}
                     </p>
                   </button>
@@ -483,7 +516,7 @@ export default function Redacao() {
                         {gradingId === s.id ? 'Corrigindo…' : 'Corrigir com IA'}
                       </button>
                     ) : (
-                      <span className="chip text-hum">Aguardando correção</span>
+                      <span className="chip text-warning">Aguardando correção</span>
                     ))}
                 </div>
                 {s.evaluation && <ScoreCard evaluation={s.evaluation} />}

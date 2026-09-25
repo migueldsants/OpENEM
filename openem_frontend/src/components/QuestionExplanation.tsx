@@ -55,7 +55,7 @@ export function QuestionExplanation({
         {origem?.startsWith('ai:') && (
           // Num app de estudo, o aluno precisa saber que o texto pode errar.
           <p className="mt-2 text-xs text-muted">
-            Comentário gerado por IA — pode conter erros. O gabarito é o oficial.
+            Comentário gerado por IA, pode conter erros. O gabarito é o oficial.
           </p>
         )}
       </div>
@@ -86,7 +86,7 @@ export function QuestionExplanation({
         {estado === 'carregando' ? 'Gerando comentário…' : 'Ver comentário'}
       </button>
       {estado === 'erro' && (
-        <p className="mt-1 text-xs text-red">
+        <p className="mt-1 text-xs text-danger">
           Não foi possível carregar o comentário agora. Tente de novo.
         </p>
       )}

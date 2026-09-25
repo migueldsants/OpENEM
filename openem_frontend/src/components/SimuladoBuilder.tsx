@@ -7,6 +7,7 @@ import {
 } from '../api';
 import { areaCurta, areaKey, AREA_DOT } from '../lib/areas';
 import { IconCheck, IconFilter, IconPlus, IconStack, IconX } from './icons';
+import { Skeleton } from './Skeleton';
 
 /**
  * Montador do simulado personalizado — "por tema".
@@ -227,7 +228,7 @@ export function SimuladoBuilder({
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold">Monte o seu por tema</h3>
           <p className="text-xs text-muted">
-            Junte áreas, matérias e assuntos — eles se somam, nunca se anulam.
+            Junte áreas, matérias e assuntos: eles se somam, nunca se anulam.
           </p>
         </div>
       </div>
@@ -274,8 +275,10 @@ export function SimuladoBuilder({
           </span>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {subjects === null ? (
-              <span className="text-xs text-muted" aria-busy>
-                Carregando…
+              <span className="flex gap-1.5" aria-busy>
+                {[88, 72, 96, 80].map((w) => (
+                  <Skeleton key={w} className="h-8" style={{ width: w }} />
+                ))}
               </span>
             ) : (
               areas.map((a) => (
@@ -313,7 +316,7 @@ export function SimuladoBuilder({
             <select
               value={subjectAberta}
               onChange={(e) => setSubjectAberta(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg"
+              className="input mt-1"
             >
               <option value="">Escolha para ver os assuntos</option>
               {materiasVisiveis.map((s) => (
@@ -392,9 +395,7 @@ export function SimuladoBuilder({
                 className="chip"
               >
                 {n}
-                {n <= 10 && (
-                  <span className="text-[0.6rem] text-muted">rápido</span>
-                )}
+                {n <= 10 && <span className="text-xs text-muted">rápido</span>}
               </button>
             ))}
             <input
@@ -408,7 +409,7 @@ export function SimuladoBuilder({
                 )
               }
               aria-label="Quantidade de questões"
-              className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-center font-data text-sm tabular-nums"
+              className="input w-20 px-2 py-1 text-center font-data tabular-nums"
             />
           </div>
         </div>
@@ -438,7 +439,7 @@ export function SimuladoBuilder({
                       e.target.value === '' ? '' : Number(e.target.value),
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                  className="input mt-1"
                 />
               </label>
               <label className="block text-xs font-medium text-muted">
@@ -454,7 +455,7 @@ export function SimuladoBuilder({
                       e.target.value === '' ? '' : Number(e.target.value),
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                  className="input mt-1"
                 />
               </label>
               <label className="block text-xs font-medium text-muted">
@@ -470,7 +471,7 @@ export function SimuladoBuilder({
                       e.target.value === '' ? '' : Number(e.target.value),
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                  className="input mt-1"
                 />
               </label>
             </div>
@@ -516,7 +517,7 @@ export function SimuladoBuilder({
         <div
           className={`rounded-xl border p-3 text-xs ${
             semQuestao
-              ? 'border-red/40 bg-red/8'
+              ? 'border-danger/40 bg-danger/8'
               : 'border-line bg-surface-2/50'
           }`}
           aria-live="polite"
@@ -524,7 +525,7 @@ export function SimuladoBuilder({
           {carregandoPreview && preview === null ? (
             <span className="text-muted">Calculando…</span>
           ) : semQuestao ? (
-            <span className="text-red">
+            <span className="text-danger">
               Nenhuma questão combina com esse recorte. Tire um filtro ou
               escolha a área inteira.
             </span>
@@ -532,11 +533,11 @@ export function SimuladoBuilder({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span className="inline-flex items-center gap-1.5 font-medium">
                 <IconStack width={13} height={13} />
-                {preview?.available ?? '—'} questões disponíveis
+                {preview?.available ?? '...'} questões disponíveis
               </span>
               <span className="text-muted">
                 {Math.min(count, preview?.available ?? count)} no simulado ·{' '}
-                {preview?.timeLimitMin ?? '—'} min
+                {preview?.timeLimitMin ?? '...'} min
               </span>
               {naoCabe && (
                 <span className="text-muted">
@@ -582,14 +583,19 @@ export function SimuladoBuilder({
         </div>
 
         {salvarAberto && (
-          <div className="flex gap-2">
-            <input
-              value={nomeSalvar}
-              onChange={(e) => setNomeSalvar(e.target.value)}
-              placeholder="Nome do simulado (ex.: Funções e Estatística)"
-              maxLength={60}
-              className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-            />
+          <div className="flex items-end gap-2">
+            <label className="min-w-0 flex-1">
+              <span className="block text-xs font-medium text-muted">
+                Nome do simulado
+              </span>
+              <input
+                value={nomeSalvar}
+                onChange={(e) => setNomeSalvar(e.target.value)}
+                placeholder="Ex.: Funções e Estatística"
+                maxLength={60}
+                className="input mt-1.5"
+              />
+            </label>
             <button
               type="button"
               onClick={() => void salvar()}

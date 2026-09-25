@@ -11,17 +11,17 @@ import { Skeleton } from '../Skeleton';
  */
 function levelColor(t: HeatmapTopic): string {
   if (t.total === 0) return 'bg-surface-2';
-  if (t.accuracy >= 70) return 'bg-nat/70';
-  if (t.accuracy >= 40) return 'bg-hum/70';
-  return 'bg-red/70';
+  if (t.accuracy >= 70) return 'bg-success/70';
+  if (t.accuracy >= 40) return 'bg-warning/70';
+  return 'bg-danger/70';
 }
 
 function TopicCell({ t }: { t: HeatmapTopic }) {
   const navigate = useNavigate();
   const label =
     t.total === 0
-      ? `${t.name} — sem respostas ainda`
-      : `${t.name} — ${t.accuracy}% (${t.correct}/${t.total})`;
+      ? `${t.name}: sem respostas ainda`
+      : `${t.name}: ${t.accuracy}% (${t.correct}/${t.total})`;
   return (
     <button
       type="button"
@@ -30,7 +30,7 @@ function TopicCell({ t }: { t: HeatmapTopic }) {
       onClick={() =>
         navigate(`/questoes?topicId=${encodeURIComponent(t.id)}`)
       }
-      className={`h-9 min-w-9 flex-1 rounded-md ${levelColor(t)} transition-transform hover:scale-110 hover:z-10`}
+      className={`h-9 min-w-9 flex-1 rounded-lg ${levelColor(t)} transition-transform hover:scale-110 hover:z-10`}
     />
   );
 }
@@ -65,7 +65,7 @@ export function TopicHeatmap({
   if (error) {
     return (
       <div className="space-y-2">
-        <p className="rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
         <button onClick={onRetry} className="btn btn-ghost">
@@ -82,16 +82,16 @@ export function TopicHeatmap({
       {/* Legenda */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-nat/70" /> domina (≥70%)
+          <span className="size-3 rounded-lg bg-success/70" /> domina (≥70%)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-hum/70" /> mediano (40–69%)
+          <span className="size-3 rounded-lg bg-warning/70" /> mediano (40-69%)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-red/70" /> reforçar (&lt;40%)
+          <span className="size-3 rounded-lg bg-danger/70" /> reforçar (&lt;40%)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-surface-2" /> sem respostas
+          <span className="size-3 rounded-lg bg-surface-2" /> sem respostas
         </span>
       </div>
 

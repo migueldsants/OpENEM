@@ -7,6 +7,7 @@ import {
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { PageHeader } from '../components/PageHeader';
 import { IconChat, IconHeart, IconQuestion } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
@@ -209,7 +210,7 @@ function ThreadView({
                 aria-label={p.liked ? 'Descurtir' : 'Curtir'}
                 className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
                   p.liked
-                    ? 'bg-red/12 text-red'
+                    ? 'bg-danger/12 text-danger'
                     : 'bg-surface-2 text-muted hover:text-fg'
                 }`}
               >
@@ -224,15 +225,16 @@ function ThreadView({
         ))}
       </ul>
 
-      {error && <p className="text-sm text-red">{error}</p>}
+      <ErrorBanner message={error} />
 
       <div className="card p-4">
         <textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           rows={3}
+          aria-label="Sua resposta"
           placeholder="Escreva uma resposta… (use @ para mencionar alguém)"
-          className="w-full resize-y rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-brand"
+          className="input resize-y"
         />
         <div className="mt-2 flex justify-end">
           <button
@@ -279,27 +281,29 @@ function NewThread({
       <button onClick={onCancel} className="btn btn-ghost">
         Voltar
       </button>
-      <header>
-        <h1 className="font-display text-xl font-extrabold tracking-tight">
-          Novo tópico
-        </h1>
-      </header>
-      <div className="card space-y-3 p-4">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={140}
-          placeholder="Título (ex.: Dúvida sobre função quadrática)"
-          className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-brand"
-        />
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={6}
-          placeholder="Descreva sua dúvida ou comentário…"
-          className="w-full resize-y rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-brand"
-        />
-        {error && <p className="text-sm text-red">{error}</p>}
+      <PageHeader eyebrow="Comunidade" title="Novo tópico" />
+      <div className="card space-y-4 p-4">
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Título</span>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={140}
+            placeholder="Ex.: Dúvida sobre função quadrática"
+            className="input"
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Sua dúvida</span>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={6}
+            placeholder="Descreva o que você não entendeu ou quer discutir…"
+            className="input resize-y"
+          />
+        </label>
+        <ErrorBanner message={error} />
         <div className="flex justify-end">
           <button
             onClick={() => void submit()}
@@ -354,21 +358,17 @@ export default function Comunidade() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Comunidade</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            Fórum de dúvidas
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Tire dúvidas e ajude outros estudantes.
-          </p>
-        </div>
-        <button onClick={() => setView('new')} className="btn btn-primary shrink-0">
-          Novo tópico
-        </button>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Fórum de dúvidas"
+        title="Comunidade"
+        subtitle="Tire dúvidas e ajude outros estudantes."
+        actions={
+          <button onClick={() => setView('new')} className="btn btn-primary">
+            Novo tópico
+          </button>
+        }
+      />
 
       {error && (
         <ErrorBanner message={error} />
@@ -386,7 +386,7 @@ export default function Comunidade() {
           title="Nenhum tópico ainda"
           description="Seja o primeiro a perguntar e ajudar outros estudantes."
           action={{ onClick: () => setView('new'), label: 'Criar tópico' }}
-          tip="Dúvidas, dicas e resumos — a comunidade responde"
+          tip="Dúvidas, dicas e resumos: a comunidade responde"
         />
       ) : (
         <ul className="space-y-3">

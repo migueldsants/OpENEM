@@ -8,30 +8,58 @@
     <meta name="theme-color" content="#f5f1f6" media="(prefers-color-scheme: light)" />
     <meta
       name="description"
-      content="OpENEM — preparação gratuita e personalizada para o ENEM."
+      content="OpENEM: preparação gratuita e personalizada para o ENEM."
     />
-    <title>OpENEM — preparação para o ENEM</title>
-    <!-- Define o tema antes da pintura para evitar flash de cor. -->
-    <script>
+    <title>OpENEM: preparação para o ENEM</title>
+    <!-- Define o tema antes da pintura para evitar flash de cor. Espelha
+         initialTheme() de src/theme.tsx e applyCustomTheme() de
+         src/theme-custom.ts; theme-boot.test.ts confere os dois lados. -->
+    <script id="theme-boot">
       (function () {
+        var root = document.documentElement;
+        var prefersLight = false;
+        try {
+          prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        } catch (e) {}
+        var theme = prefersLight ? 'default-light' : 'default-dark';
         try {
           var saved = localStorage.getItem('openem.theme');
-          var theme =
-            saved === 'light' || saved === 'dark'
-              ? saved
-              : window.matchMedia('(prefers-color-scheme: light)').matches
-                ? 'light'
-                : 'dark';
-          document.documentElement.dataset.theme = theme;
-        } catch (e) {
-          document.documentElement.dataset.theme = 'dark';
-        }
+          if (
+            saved &&
+            /^(default|sepia|oled|azure|indigo|forest|gold|fire|contrast)-(light|dark)$/.test(saved)
+          ) {
+            theme = saved;
+          } else if (saved === 'custom') {
+            var custom = JSON.parse(localStorage.getItem('openem.theme.custom') || 'null');
+            if (custom && typeof custom === 'object') {
+              theme = 'custom';
+              var keys = ['bg', 'sidebar', 'surface', 'surface-2', 'fg', 'muted', 'line', 'brand', 'brand-2', 'brand-ink'];
+              for (var i = 0; i < keys.length; i++) {
+                if (typeof custom[keys[i]] === 'string') {
+                  root.style.setProperty('--' + keys[i], custom[keys[i]]);
+                }
+              }
+              var m = /^#?([0-9a-f]{6})$/i.exec(String(custom.bg || '').trim());
+              var l = 1;
+              if (m) {
+                var n = parseInt(m[1], 16);
+                var c = function (v) {
+                  v = v / 255;
+                  return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                };
+                l = 0.2126 * c((n >> 16) & 255) + 0.7152 * c((n >> 8) & 255) + 0.0722 * c(n & 255);
+              }
+              root.dataset.scheme = l < 0.18 ? 'dark' : 'light';
+            }
+          }
+        } catch (e) {}
+        root.dataset.theme = theme;
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
   </head>

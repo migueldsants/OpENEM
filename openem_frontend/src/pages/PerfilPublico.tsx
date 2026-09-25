@@ -5,6 +5,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { IconBolt, IconCheck, IconFlame, IconTrophy } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { leagueStyle } from '../lib/gamification';
+import { PageHeader } from '../components/PageHeader';
 
 function timeSince(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -55,17 +56,12 @@ export default function PerfilPublico() {
   const league = leagueStyle(profile.league.key);
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Perfil público</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          {profile.displayName}
-        </h1>
-        <p className="mt-1 text-xs text-muted">
-          Estudante desde {new Date(profile.createdAt).toLocaleDateString('pt-BR')}{' '}
-          ({timeSince(profile.createdAt)}) · Objetivo: {profile.goal}
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Perfil público"
+        title={profile.displayName}
+        subtitle={<>Estudante desde {new Date(profile.createdAt).toLocaleDateString('pt-BR')}{' '} ({timeSince(profile.createdAt)}) · Objetivo: {profile.goal}</>}
+      />
 
       <section
         className={`card card-raised overflow-hidden p-5 ring-1 ${league.ring}`}
@@ -94,7 +90,7 @@ export default function PerfilPublico() {
           <div className="flex items-center gap-3 rounded-xl bg-surface-2 p-3">
             <span
               className={`grid size-9 place-items-center rounded-lg ${
-                profile.currentStreak > 0 ? 'bg-red/12 text-red' : 'bg-surface-2 text-muted'
+                profile.currentStreak > 0 ? 'bg-warning/12 text-warning' : 'bg-surface-2 text-muted'
               }`}
             >
               <IconFlame width={20} height={20} filled={profile.currentStreak > 0} />

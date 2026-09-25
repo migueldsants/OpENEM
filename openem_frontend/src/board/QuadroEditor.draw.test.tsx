@@ -151,8 +151,10 @@ describe('QuadroEditor — fluxo de desenho', () => {
     clickTitle(container, 'Selecionar');
     act(() => fireEvent.pointerDown(vp, { clientX: 150, clientY: 160, pointerId: 3 }));
 
-    // Seletor de ponta "Início" → botão 'dot' (primeira ocorrência).
-    const dotBtn = container.querySelector('button[title="dot"]') as HTMLButtonElement | null;
+    // Seletor de ponta "Início" → botão da bolinha (primeira ocorrência).
+    const dotBtn = container.querySelector(
+      'button[title="bolinha"]',
+    ) as HTMLButtonElement | null;
     expect(dotBtn).not.toBeNull();
     act(() => fireEvent.click(dotBtn!));
 

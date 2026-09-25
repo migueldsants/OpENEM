@@ -20,6 +20,7 @@ import { SkeletonCard } from '../components/Skeleton';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useAuth } from '../auth';
 import { useGamification } from '../gamification';
+import { PageHeader } from '../components/PageHeader';
 
 type Phase = 'menu' | 'playing' | 'over';
 
@@ -195,7 +196,7 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
           role="timer"
           aria-label={`${timeLeft} segundos restantes`}
           className={`ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 font-display text-lg font-extrabold tabular-nums transition-colors ${
-            timeLeft <= 2 ? 'bg-red/12 text-red' : 'bg-surface-2 text-fg'
+            timeLeft <= 2 ? 'bg-danger/12 text-danger' : 'bg-surface-2 text-fg'
           }`}
         >
           <IconClock width={18} height={18} aria-hidden />
@@ -207,7 +208,7 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
         <div
           className={`h-full rounded-full transition-[width] duration-1000 linear ${
-            timeLeft <= 2 ? 'bg-red' : 'bg-brand'
+            timeLeft <= 2 ? 'bg-danger' : 'bg-brand'
           }`}
           style={{ width: `${timePct}%` }}
         />
@@ -224,7 +225,7 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
         <div className="card px-3 py-2 text-center">
           <p
             className={`inline-flex items-center gap-1 font-display text-xl font-extrabold tabular-nums ${
-              combo >= 3 ? 'text-hum' : ''
+              combo >= 3 ? 'text-warning' : ''
             }`}
           >
             {combo >= 3 && <IconFlame width={16} height={16} filled aria-hidden />}
@@ -242,7 +243,7 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
                 height={17}
                 filled={i < lives}
                 aria-hidden
-                className={i < lives ? 'text-red' : 'text-line'}
+                className={i < lives ? 'text-danger' : 'text-line'}
               />
             ))}
           </p>
@@ -253,9 +254,9 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
       <div
         className={`card card-raised relative overflow-hidden p-8 text-center transition-colors sm:p-10 ${
           feedback === 'ok'
-            ? 'bg-nat/10'
+            ? 'bg-success/10'
             : feedback === 'no'
-              ? 'bg-red/10'
+              ? 'bg-danger/10'
               : ''
         }`}
       >
@@ -297,12 +298,12 @@ function CalcMental({ levelKey, onFinish }: GameComponentProps) {
         {/* Leitores de tela precisam do resultado da rodada. */}
         <div aria-live="assertive" className="mt-3 min-h-5">
           {feedback === 'ok' && (
-            <p className="text-sm font-semibold text-nat">
+            <p className="text-sm font-semibold text-success">
               Acertou! +{gained} pts
             </p>
           )}
           {feedback === 'no' && (
-            <p className="text-sm font-semibold text-red">
+            <p className="text-sm font-semibold text-danger">
               Resposta: {problem.answer}
             </p>
           )}
@@ -440,7 +441,7 @@ function Leaderboard({
             >
               <span
                 className={`grid size-7 shrink-0 place-items-center rounded-lg font-data text-xs font-bold tabular-nums ${
-                  MEDAL[i] ? `${MEDAL[i]} text-white` : 'text-muted'
+                  MEDAL[i] ? MEDAL[i] : 'text-muted'
                 }`}
               >
                 {i + 1}
@@ -553,15 +554,11 @@ export default function Games() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Minigames</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Games
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
-          Treine o raciocínio rápido e ganhe XP jogando.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Treino rápido"
+        title="Games"
+        subtitle="Treine o raciocínio rápido e ganhe XP jogando."
+      />
 
       <ErrorBanner message={error} onRetry={() => void load()} />
 
@@ -576,7 +573,7 @@ export default function Games() {
           <p className="mt-1 text-sm text-muted">
             {lastScore > 0
               ? `Pontuação registrada: ${lastScore} pts.`
-              : 'Sem pontos nesta partida — acerte pelo menos uma conta para pontuar.'}
+              : 'Sem pontos nesta partida. Acerte pelo menos uma conta para pontuar.'}
           </p>
           {award && (
             <div className="mt-2">
@@ -624,7 +621,7 @@ export default function Games() {
         {games.map((g) => (
           <Leaderboard
             key={g.key}
-            title={`Ranking — ${g.name}`}
+            title={`Ranking: ${g.name}`}
             entries={boards[g.key] ?? []}
             meId={me?.id}
           />

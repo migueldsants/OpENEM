@@ -274,7 +274,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }
     document.title = `${fmtClock(remaining)} · ${
       mode === 'focus' ? 'Foco' : 'Pausa'
-    } — ${base}`;
+    } · ${base}`;
     return () => {
       document.title = base;
     };

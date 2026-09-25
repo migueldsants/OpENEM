@@ -1,61 +1,62 @@
 import type { GamificationDelta } from '../api';
 import { AchievementToasts } from './AchievementToast';
-import {
-  IconBolt,
-  IconFlame,
-  IconTrophy,
-} from './icons';
+import { IconBolt, IconFlame, IconTrophy } from './icons';
+
+/** De onde veio o XP, para o tooltip e o leitor de tela. */
+function detalheXp(g: GamificationDelta): string {
+  const partes = [`${g.breakdown.base} da resposta`];
+  if (g.breakdown.dailyBonus > 0) {
+    partes.push(`${g.breakdown.dailyBonus} de bônus diário`);
+  }
+  if (g.breakdown.achievementXp > 0) {
+    partes.push(`${g.breakdown.achievementXp} de conquistas`);
+  }
+  return partes.join(', ');
+}
+
+/** O único destaque da resposta: nível e liga numa frase só. */
+function destaque(g: GamificationDelta): string | null {
+  if (g.leveledUp && g.leagueChanged) {
+    return `Nível ${g.level} e liga ${g.league.name}!`;
+  }
+  if (g.leveledUp) return `Subiu para o nível ${g.level}!`;
+  if (g.leagueChanged) return `Nova liga: ${g.league.name}!`;
+  return null;
+}
 
 /**
- * Badges de feedback de gamificação (XP, combo, bônus diário, level up, liga,
- * conquistas). Compartilhado entre Questões, Favoritos, Revisão, Simulados,
- * Redação e Cronograma (issue #17).
- * Conquistas novas também disparam toasts empilháveis (issue #48).
+ * Feedback de gamificação depois de uma ação (issue #17): uma linha com o XP
+ * (e o combo, se houver) e no máximo um destaque. As conquistas saem só no
+ * toast (issue #48); repetir em badge aqui triplicava a mesma informação.
+ * Compartilhado entre Questões, Favoritos, Revisão, Simulados, Redação,
+ * Cronograma, Pomodoro e Games.
  */
 export function GamificationFeedback({ g }: { g: GamificationDelta }) {
+  const brilho = destaque(g);
+  const detalhe = detalheXp(g);
   return (
     <>
       <AchievementToasts list={g.newAchievements} />
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 animate-rise">
-        <span className="inline-flex items-center gap-1 rounded-full bg-brand/15 px-2.5 py-1 text-xs font-bold text-brand">
+        <span
+          title={detalhe}
+          className="inline-flex items-center gap-1 rounded-full bg-brand/15 px-2.5 py-1 text-xs font-bold text-brand"
+        >
           <IconBolt width={13} height={13} filled />+{g.xpGained} XP
+          <span className="sr-only"> ({detalhe})</span>
         </span>
         {g.breakdown.comboMultiplier > 1 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red/12 px-2.5 py-1 text-xs font-semibold text-red">
+          <span className="inline-flex items-center gap-1 rounded-full bg-warning/12 px-2.5 py-1 text-xs font-semibold text-warning">
             <IconFlame width={13} height={13} filled />
             combo ×{g.breakdown.comboMultiplier}
           </span>
         )}
-        {g.breakdown.dailyBonus > 0 && (
-          <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-muted">
-            +{g.breakdown.dailyBonus} bônus diário
-          </span>
-        )}
-        {g.breakdown.achievementXp > 0 && (
-          <span className="rounded-full bg-hum/15 px-2.5 py-1 text-xs font-semibold text-hum">
-            +{g.breakdown.achievementXp} de conquistas
-          </span>
-        )}
-        {g.leveledUp && (
-          <span className="rounded-full bg-brand/15 px-2.5 py-1 text-xs font-bold text-brand">
-            Subiu para o nível {g.level}!
-          </span>
-        )}
-        {g.leagueChanged && (
-          <span className="rounded-full bg-mat/15 px-2.5 py-1 text-xs font-bold text-mat">
-            Nova liga: {g.league.name}!
-          </span>
-        )}
-        {g.newAchievements.map((a) => (
-          <span
-            key={a.code}
-            title={a.description}
-            className="inline-flex items-center gap-1 rounded-full bg-hum/15 px-2.5 py-1 text-xs font-semibold text-hum"
-          >
+        {brilho && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-xs font-bold text-brand-ink">
             <IconTrophy width={13} height={13} filled />
-            {a.name}
+            {brilho}
           </span>
-        ))}
+        )}
       </div>
     </>
   );

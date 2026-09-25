@@ -5,6 +5,12 @@ import type { PrismaClient } from '@prisma/client';
 export interface FormulaSeed {
   subject: string; // nome canônico da matéria (da TAXONOMY do seed.ts)
   title: string;
+  /**
+   * Título que a fórmula tinha antes (ex.: quando um card com duas fórmulas
+   * virou dois). O seed renomeia o registro antigo em vez de criar outro, e
+   * assim o id e os favoritos dos alunos continuam valendo.
+   */
+  formerTitle?: string;
   latex: string;
   description?: string;
 }
@@ -34,9 +40,16 @@ export const FORMULAS: FormulaSeed[] = [
   },
   {
     subject: 'Matemática',
-    title: 'Soma e produto',
-    latex: 'S = -\\frac{b}{a}, \\quad P = \\frac{c}{a}',
-    description: 'Soma e produto das raízes do 2º grau.',
+    title: 'Soma das raízes',
+    formerTitle: 'Soma e produto',
+    latex: 'S = -\\frac{b}{a}',
+    description: 'Das raízes de ax² + bx + c = 0.',
+  },
+  {
+    subject: 'Matemática',
+    title: 'Produto das raízes',
+    latex: 'P = \\frac{c}{a}',
+    description: 'Das raízes de ax² + bx + c = 0.',
   },
   {
     subject: 'Matemática',
@@ -46,7 +59,12 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Matemática',
     title: 'Juros simples',
-    latex: 'J = C \\cdot i \\cdot t, \\quad M = C + J',
+    latex: 'J = C \\cdot i \\cdot t',
+  },
+  {
+    subject: 'Matemática',
+    title: 'Montante (juros simples)',
+    latex: 'M = C + J',
   },
   {
     subject: 'Matemática',
@@ -61,8 +79,14 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Matemática',
     title: 'Área do triângulo (lados)',
-    latex: 'A = \\sqrt{p(p-a)(p-b)(p-c)}, \\quad p = \\frac{a+b+c}{2}',
-    description: 'Fórmula de Heron.',
+    latex: 'A = \\sqrt{p(p-a)(p-b)(p-c)}',
+    description: 'Fórmula de Heron. p é o semiperímetro.',
+  },
+  {
+    subject: 'Matemática',
+    title: 'Semiperímetro',
+    latex: 'p = \\frac{a+b+c}{2}',
+    description: 'Usado na fórmula de Heron.',
   },
   {
     subject: 'Matemática',
@@ -71,8 +95,14 @@ export const FORMULAS: FormulaSeed[] = [
   },
   {
     subject: 'Matemática',
-    title: 'Círculo: área e circunferência',
-    latex: 'A = \\pi r^2, \\quad C = 2\\pi r',
+    title: 'Área do círculo',
+    formerTitle: 'Círculo: área e circunferência',
+    latex: 'A = \\pi r^2',
+  },
+  {
+    subject: 'Matemática',
+    title: 'Comprimento da circunferência',
+    latex: 'C = 2\\pi r',
   },
   {
     subject: 'Matemática',
@@ -86,9 +116,16 @@ export const FORMULAS: FormulaSeed[] = [
   },
   {
     subject: 'Matemática',
-    title: 'Seno e cosseno',
-    latex: '\\sin\\theta = \\frac{co}{h}, \\quad \\cos\\theta = \\frac{ca}{h}',
-    description: 'cateto oposto / cateto adjacente sobre a hipotenusa.',
+    title: 'Seno',
+    formerTitle: 'Seno e cosseno',
+    latex: '\\sin\\theta = \\frac{co}{h}',
+    description: 'Cateto oposto sobre a hipotenusa.',
+  },
+  {
+    subject: 'Matemática',
+    title: 'Cosseno',
+    latex: '\\cos\\theta = \\frac{ca}{h}',
+    description: 'Cateto adjacente sobre a hipotenusa.',
   },
   {
     subject: 'Matemática',
@@ -97,13 +134,26 @@ export const FORMULAS: FormulaSeed[] = [
   },
   {
     subject: 'Matemática',
-    title: 'PA — termo geral e soma',
-    latex: 'a_n = a_1 + (n-1)r, \\quad S_n = \\frac{(a_1 + a_n)n}{2}',
+    title: 'PA: termo geral',
+    formerTitle: 'PA — termo geral e soma',
+    latex: 'a_n = a_1 + (n-1)r',
   },
   {
     subject: 'Matemática',
-    title: 'PG — termo geral e soma',
-    latex: 'a_n = a_1 \\cdot q^{n-1}, \\quad S_n = \\frac{a_1(q^n - 1)}{q - 1}',
+    title: 'PA: soma dos termos',
+    latex: 'S_n = \\frac{(a_1 + a_n)n}{2}',
+  },
+  {
+    subject: 'Matemática',
+    title: 'PG: termo geral',
+    formerTitle: 'PG — termo geral e soma',
+    latex: 'a_n = a_1 \\cdot q^{n-1}',
+  },
+  {
+    subject: 'Matemática',
+    title: 'PG: soma dos termos',
+    latex: 'S_n = \\frac{a_1(q^n - 1)}{q - 1}',
+    description: 'Soma finita; vale para q ≠ 1.',
   },
   {
     subject: 'Matemática',
@@ -113,7 +163,7 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Matemática',
     title: 'Probabilidade',
-    latex: 'P(A) = \\frac{favor\\acute{a}veis}{poss\\acute{i}veis}',
+    latex: 'P(A) = \\frac{\\text{favoráveis}}{\\text{possíveis}}',
   },
 
   // ---- Física ----
@@ -129,8 +179,14 @@ export const FORMULAS: FormulaSeed[] = [
   },
   {
     subject: 'Física',
-    title: 'Funções horárias (MUV)',
-    latex: 's = s_0 + v_0 t + \\frac{at^2}{2}, \\quad v = v_0 + at',
+    title: 'Função horária da posição (MUV)',
+    formerTitle: 'Funções horárias (MUV)',
+    latex: 's = s_0 + v_0 t + \\frac{at^2}{2}',
+  },
+  {
+    subject: 'Física',
+    title: 'Função horária da velocidade (MUV)',
+    latex: 'v = v_0 + at',
   },
   {
     subject: 'Física',
@@ -145,7 +201,8 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Física',
     title: 'Peso',
-    latex: 'P = mg, \\quad g \\approx 10\\,m/s^2',
+    latex: 'P = mg',
+    description: 'Na Terra, g ≈ 10 m/s².',
   },
   {
     subject: 'Física',
@@ -155,17 +212,28 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Física',
     title: 'Potência',
-    latex: 'P = \\frac{E}{t}, \\quad P_{el} = Ui',
+    latex: 'P = \\frac{E}{t}',
   },
   {
     subject: 'Física',
-    title: 'Energia cinética e potencial',
-    latex: 'E_c = \\frac{mv^2}{2}, \\quad E_p = mgh',
+    title: 'Potência elétrica',
+    latex: 'P_{\\text{el}} = Ui',
+  },
+  {
+    subject: 'Física',
+    title: 'Energia cinética',
+    formerTitle: 'Energia cinética e potencial',
+    latex: 'E_c = \\frac{mv^2}{2}',
+  },
+  {
+    subject: 'Física',
+    title: 'Energia potencial gravitacional',
+    latex: 'E_p = mgh',
   },
   {
     subject: 'Física',
     title: 'Conservação de energia',
-    latex: 'E_{mec} = E_c + E_p = constante',
+    latex: 'E_{\\text{mec}} = E_c + E_p = \\text{constante}',
   },
   {
     subject: 'Física',
@@ -179,9 +247,16 @@ export const FORMULAS: FormulaSeed[] = [
   },
   {
     subject: 'Física',
-    title: 'Resistência equivalente',
-    latex: 'R_{eq} = R_1 + R_2, \\quad \\frac{1}{R_{eq}} = \\frac{1}{R_1} + \\frac{1}{R_2}',
-    description: 'Série e paralelo.',
+    title: 'Resistores em série',
+    formerTitle: 'Resistência equivalente',
+    latex: 'R_{\\text{eq}} = R_1 + R_2',
+    description: 'Resistência equivalente de resistores em série.',
+  },
+  {
+    subject: 'Física',
+    title: 'Resistores em paralelo',
+    latex: '\\frac{1}{R_{\\text{eq}}} = \\frac{1}{R_1} + \\frac{1}{R_2}',
+    description: 'Resistência equivalente de resistores em paralelo.',
   },
   {
     subject: 'Física',
@@ -209,23 +284,29 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Química',
     title: 'Concentração comum',
-    latex: 'C = \\frac{m_{soluto}}{V_{solu\\c{c}\\c{a}o}}',
+    latex: 'C = \\frac{m_{\\text{soluto}}}{V_{\\text{solução}}}',
   },
   {
     subject: 'Química',
     title: 'Concentração molar',
-    latex: 'M = \\frac{n_{mol}}{V(L)}',
+    latex: 'M = \\frac{n_{\\text{mol}}}{V(L)}',
   },
   {
     subject: 'Química',
     title: 'Título',
-    latex: '\\tau = \\frac{m_{soluto}}{m_{solu\\c{c}\\c{a}o}}',
+    latex: '\\tau = \\frac{m_{\\text{soluto}}}{m_{\\text{solução}}}',
   },
   {
     subject: 'Química',
-    title: 'Número de mols',
-    latex: 'n = \\frac{m}{M}, \\quad n = \\frac{V}{22{,}4}',
-    description: 'Por massa ou volume em STP.',
+    title: 'Número de mols (pela massa)',
+    formerTitle: 'Número de mols',
+    latex: 'n = \\frac{m}{M}',
+  },
+  {
+    subject: 'Química',
+    title: 'Número de mols (gás nas CNTP)',
+    latex: 'n = \\frac{V}{22{,}4}',
+    description: 'Para gases nas CNTP.',
   },
   {
     subject: 'Química',
@@ -235,12 +316,12 @@ export const FORMULAS: FormulaSeed[] = [
   {
     subject: 'Química',
     title: 'Rendimento de reação',
-    latex: 'R\\% = \\frac{m_{obtida}}{m_{teorica}} \\times 100\\%',
+    latex: 'R\\% = \\frac{m_{\\text{obtida}}}{m_{\\text{teórica}}} \\times 100\\%',
   },
   {
     subject: 'Química',
     title: 'Grau de ionização',
-    latex: '\\alpha = \\frac{n_{ionizado}}{n_{inicial}} \\times 100\\%',
+    latex: '\\alpha = \\frac{n_{\\text{ionizado}}}{n_{\\text{inicial}}} \\times 100\\%',
   },
   {
     subject: 'Química',
@@ -251,13 +332,19 @@ export const FORMULAS: FormulaSeed[] = [
   // ---- Biologia ----
   {
     subject: 'Biologia',
-    title: 'Hardy-Weinberg',
-    latex: 'p + q = 1, \\quad p^2 + 2pq + q^2 = 1',
+    title: 'Hardy-Weinberg: alelos',
+    formerTitle: 'Hardy-Weinberg',
+    latex: 'p + q = 1',
+  },
+  {
+    subject: 'Biologia',
+    title: 'Hardy-Weinberg: genótipos',
+    latex: 'p^2 + 2pq + q^2 = 1',
   },
   {
     subject: 'Biologia',
     title: 'Aumento total (microscópio)',
-    latex: 'A = a_{ocular} \\times a_{objetiva}',
+    latex: 'A = a_{\\text{ocular}} \\times a_{\\text{objetiva}}',
   },
   {
     subject: 'Biologia',
@@ -270,7 +357,7 @@ export const FORMULAS: FormulaSeed[] = [
     subject: 'Redação',
     title: 'Estrutura da redação ENEM',
     latex:
-      '\\text{introdu\\c{c}\\c{a}o} \\to \\text{2 desenv.} \\to \\text{conclus\\c{a}o}',
+      '\\text{introdução} \\to \\text{2 desenv.} \\to \\text{conclusão}',
     description:
       '4 a 5 linhas por parágrafo; proposta de intervenção com agente, ação, meio, finalidade e detalhamento.',
   },
@@ -300,10 +387,13 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     },
     { symbol: 'a, b, c', meaning: 'coeficientes de ax² + bx + c = 0' },
   ],
-  'Soma e produto': [
+  'Soma das raízes': [
     { symbol: 'S', meaning: 'soma das duas raízes' },
+    { symbol: 'a, b', meaning: 'coeficientes de ax² + bx + c = 0' },
+  ],
+  'Produto das raízes': [
     { symbol: 'P', meaning: 'produto das duas raízes' },
-    { symbol: 'a, b, c', meaning: 'coeficientes de ax² + bx + c = 0' },
+    { symbol: 'a, c', meaning: 'coeficientes de ax² + bx + c = 0' },
   ],
   'Variação percentual': [
     {
@@ -319,7 +409,11 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     { symbol: 'C', meaning: 'capital inicial (o valor aplicado)' },
     { symbol: 'i', meaning: 'taxa por período, em decimal (5% = 0,05)' },
     { symbol: 't', meaning: 'tempo, na mesma unidade da taxa' },
-    { symbol: 'M', meaning: 'montante — capital mais juros' },
+  ],
+  'Montante (juros simples)': [
+    { symbol: 'M', meaning: 'montante: capital mais juros' },
+    { symbol: 'C', meaning: 'capital inicial (o valor aplicado)' },
+    { symbol: 'J', meaning: 'juros acumulados' },
   ],
   'Juros compostos': [
     { symbol: 'M', meaning: 'montante ao fim do período' },
@@ -335,14 +429,22 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
   'Área do triângulo (lados)': [
     { symbol: 'A', meaning: 'área' },
     { symbol: 'a, b, c', meaning: 'os três lados do triângulo' },
-    { symbol: 'p', meaning: 'semiperímetro — metade da soma dos lados' },
+    { symbol: 'p', meaning: 'semiperímetro: metade da soma dos lados' },
+  ],
+  'Semiperímetro': [
+    { symbol: 'p', meaning: 'semiperímetro: metade da soma dos lados' },
+    { symbol: 'a, b, c', meaning: 'os três lados do triângulo' },
   ],
   'Teorema de Pitágoras': [
     { symbol: 'a', meaning: 'hipotenusa — o lado oposto ao ângulo reto' },
     { symbol: 'b, c', meaning: 'catetos — os lados que formam o ângulo reto' },
   ],
-  'Círculo: área e circunferência': [
+  'Área do círculo': [
     { symbol: 'A', meaning: 'área do círculo' },
+    { symbol: 'r', meaning: 'raio' },
+    { symbol: '\\pi', meaning: 'constante ≈ 3,14' },
+  ],
+  'Comprimento da circunferência': [
     { symbol: 'C', meaning: 'comprimento da circunferência' },
     { symbol: 'r', meaning: 'raio' },
     { symbol: '\\pi', meaning: 'constante ≈ 3,14' },
@@ -356,9 +458,13 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     { symbol: 'V', meaning: 'volume' },
     { symbol: 'r', meaning: 'raio da esfera' },
   ],
-  'Seno e cosseno': [
+  'Seno': [
     { symbol: '\\theta', meaning: 'ângulo agudo de referência' },
     { symbol: 'co', meaning: 'cateto oposto ao ângulo' },
+    { symbol: 'h', meaning: 'hipotenusa' },
+  ],
+  'Cosseno': [
+    { symbol: '\\theta', meaning: 'ângulo agudo de referência' },
     { symbol: 'ca', meaning: 'cateto adjacente ao ângulo' },
     { symbol: 'h', meaning: 'hipotenusa' },
   ],
@@ -366,25 +472,29 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     { symbol: 'a, b, c', meaning: 'lados do triângulo' },
     { symbol: 'A, B, C', meaning: 'ângulos opostos aos lados a, b e c' },
   ],
-  'PA — termo geral e soma': [
+  'PA: termo geral': [
     { symbol: 'a_n', meaning: 'termo que está na posição n' },
     { symbol: 'a_1', meaning: 'primeiro termo' },
     { symbol: 'n', meaning: 'posição do termo (1, 2, 3…)' },
-    {
-      symbol: 'r',
-      meaning: 'razão — o que se soma de um termo para o seguinte',
-    },
-    { symbol: 'S_n', meaning: 'soma dos n primeiros termos' },
+    { symbol: 'r', meaning: 'razão: o que se soma de um termo para o seguinte' },
   ],
-  'PG — termo geral e soma': [
+  'PA: soma dos termos': [
+    { symbol: 'S_n', meaning: 'soma dos n primeiros termos' },
+    { symbol: 'a_1', meaning: 'primeiro termo' },
+    { symbol: 'a_n', meaning: 'último termo somado (o da posição n)' },
+    { symbol: 'n', meaning: 'quantidade de termos somados' },
+  ],
+  'PG: termo geral': [
     { symbol: 'a_n', meaning: 'termo que está na posição n' },
     { symbol: 'a_1', meaning: 'primeiro termo' },
-    {
-      symbol: 'q',
-      meaning: 'razão — o que se multiplica de um termo para o seguinte',
-    },
+    { symbol: 'q', meaning: 'razão: o que se multiplica de um termo para o seguinte' },
     { symbol: 'n', meaning: 'posição do termo' },
-    { symbol: 'S_n', meaning: 'soma dos n primeiros termos (vale para q ≠ 1)' },
+  ],
+  'PG: soma dos termos': [
+    { symbol: 'S_n', meaning: 'soma dos n primeiros termos' },
+    { symbol: 'a_1', meaning: 'primeiro termo' },
+    { symbol: 'q', meaning: 'razão: o que se multiplica de um termo para o seguinte' },
+    { symbol: 'n', meaning: 'quantidade de termos somados' },
   ],
   Combinação: [
     {
@@ -417,12 +527,17 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     { symbol: 'v', meaning: 'velocidade — constante no MRU', unit: 'm/s' },
     { symbol: 't', meaning: 'instante considerado', unit: 's' },
   ],
-  'Funções horárias (MUV)': [
+  'Função horária da posição (MUV)': [
     { symbol: 's', meaning: 'posição no instante t', unit: 'm' },
     { symbol: 's_0', meaning: 'posição inicial', unit: 'm' },
     { symbol: 'v_0', meaning: 'velocidade inicial', unit: 'm/s' },
+    { symbol: 'a', meaning: 'aceleração, constante no MUV', unit: 'm/s²' },
+    { symbol: 't', meaning: 'instante considerado', unit: 's' },
+  ],
+  'Função horária da velocidade (MUV)': [
     { symbol: 'v', meaning: 'velocidade no instante t', unit: 'm/s' },
-    { symbol: 'a', meaning: 'aceleração — constante no MUV', unit: 'm/s²' },
+    { symbol: 'v_0', meaning: 'velocidade inicial', unit: 'm/s' },
+    { symbol: 'a', meaning: 'aceleração, constante no MUV', unit: 'm/s²' },
     { symbol: 't', meaning: 'instante considerado', unit: 's' },
   ],
   Torricelli: [
@@ -448,14 +563,10 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
       unit: 'm/s²',
     },
   ],
-  Peso: [
-    {
-      symbol: 'P',
-      meaning: 'peso — a força com que a Terra atrai o corpo',
-      unit: 'N',
-    },
+  'Peso': [
+    { symbol: 'P', meaning: 'peso: a força com que a Terra atrai o corpo', unit: 'N' },
     { symbol: 'm', meaning: 'massa do corpo', unit: 'kg' },
-    { symbol: 'g', meaning: 'aceleração da gravidade', unit: 'm/s²' },
+    { symbol: 'g', meaning: 'aceleração da gravidade (≈ 10 na Terra)', unit: 'm/s²' },
   ],
   Trabalho: [
     { symbol: '\\tau', meaning: 'trabalho realizado pela força', unit: 'J' },
@@ -466,33 +577,30 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
       meaning: 'ângulo entre a força e o deslocamento',
     },
   ],
-  Potência: [
-    {
-      symbol: 'P',
-      meaning: 'potência — energia entregue por unidade de tempo',
-      unit: 'W',
-    },
+  'Potência': [
+    { symbol: 'P', meaning: 'potência: energia entregue por unidade de tempo', unit: 'W' },
     { symbol: 'E', meaning: 'energia (ou trabalho) envolvida', unit: 'J' },
     { symbol: 't', meaning: 'tempo', unit: 's' },
-    { symbol: 'P_{el}', meaning: 'potência elétrica dissipada', unit: 'W' },
+  ],
+  'Potência elétrica': [
+    { symbol: 'P_{\\text{el}}', meaning: 'potência elétrica dissipada', unit: 'W' },
     { symbol: 'U', meaning: 'tensão (ddp)', unit: 'V' },
     { symbol: 'i', meaning: 'corrente elétrica', unit: 'A' },
   ],
-  'Energia cinética e potencial': [
-    { symbol: 'E_c', meaning: 'energia cinética — a do movimento', unit: 'J' },
-    {
-      symbol: 'E_p',
-      meaning: 'energia potencial gravitacional — a da altura',
-      unit: 'J',
-    },
+  'Energia cinética': [
+    { symbol: 'E_c', meaning: 'energia cinética: a do movimento', unit: 'J' },
     { symbol: 'm', meaning: 'massa', unit: 'kg' },
     { symbol: 'v', meaning: 'velocidade', unit: 'm/s' },
+  ],
+  'Energia potencial gravitacional': [
+    { symbol: 'E_p', meaning: 'energia potencial gravitacional: a da altura', unit: 'J' },
+    { symbol: 'm', meaning: 'massa', unit: 'kg' },
     { symbol: 'g', meaning: 'aceleração da gravidade', unit: 'm/s²' },
     { symbol: 'h', meaning: 'altura em relação ao referencial', unit: 'm' },
   ],
   'Conservação de energia': [
     {
-      symbol: 'E_{mec}',
+      symbol: 'E_{\\text{mec}}',
       meaning: 'energia mecânica total — constante quando não há atrito',
       unit: 'J',
     },
@@ -513,17 +621,13 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
     { symbol: 'R', meaning: 'resistência elétrica', unit: 'Ω' },
     { symbol: 'i', meaning: 'corrente elétrica', unit: 'A' },
   ],
-  'Resistência equivalente': [
-    {
-      symbol: 'R_{eq}',
-      meaning: 'resistência equivalente — a 1ª forma é série, a 2ª é paralelo',
-      unit: 'Ω',
-    },
-    {
-      symbol: 'R_1, R_2',
-      meaning: 'resistências dos resistores associados',
-      unit: 'Ω',
-    },
+  'Resistores em série': [
+    { symbol: 'R_{\\text{eq}}', meaning: 'resistência equivalente', unit: 'Ω' },
+    { symbol: 'R_1, R_2', meaning: 'resistências dos resistores associados', unit: 'Ω' },
+  ],
+  'Resistores em paralelo': [
+    { symbol: 'R_{\\text{eq}}', meaning: 'resistência equivalente', unit: 'Ω' },
+    { symbol: 'R_1, R_2', meaning: 'resistências dos resistores associados', unit: 'Ω' },
   ],
   'Dilatação térmica linear': [
     { symbol: '\\Delta L', meaning: 'variação de comprimento', unit: 'm' },
@@ -568,9 +672,9 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
   ],
   'Concentração comum': [
     { symbol: 'C', meaning: 'concentração comum', unit: 'g/L' },
-    { symbol: 'm_{soluto}', meaning: 'massa do soluto dissolvido', unit: 'g' },
+    { symbol: 'm_{\\text{soluto}}', meaning: 'massa do soluto dissolvido', unit: 'g' },
     {
-      symbol: 'V_{solução}',
+      symbol: 'V_{\\text{solução}}',
       meaning: 'volume da solução — não é o volume do solvente',
       unit: 'L',
     },
@@ -581,28 +685,27 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
       meaning: 'concentração em quantidade de matéria (molaridade)',
       unit: 'mol/L',
     },
-    { symbol: 'n_{mol}', meaning: 'número de mols do soluto', unit: 'mol' },
+    { symbol: 'n_{\\text{mol}}', meaning: 'número de mols do soluto', unit: 'mol' },
     { symbol: 'V(L)', meaning: 'volume da solução', unit: 'L' },
   ],
   Título: [
     { symbol: '\\tau', meaning: 'título em massa — adimensional, de 0 a 1' },
-    { symbol: 'm_{soluto}', meaning: 'massa do soluto', unit: 'g' },
+    { symbol: 'm_{\\text{soluto}}', meaning: 'massa do soluto', unit: 'g' },
     {
-      symbol: 'm_{solução}',
+      symbol: 'm_{\\text{solução}}',
       meaning: 'massa da solução: soluto mais solvente',
       unit: 'g',
     },
   ],
-  'Número de mols': [
+  'Número de mols (pela massa)': [
     { symbol: 'n', meaning: 'quantidade de matéria', unit: 'mol' },
     { symbol: 'm', meaning: 'massa da amostra', unit: 'g' },
     { symbol: 'M', meaning: 'massa molar da substância', unit: 'g/mol' },
+  ],
+  'Número de mols (gás nas CNTP)': [
+    { symbol: 'n', meaning: 'quantidade de matéria', unit: 'mol' },
     { symbol: 'V', meaning: 'volume do gás nas CNTP', unit: 'L' },
-    {
-      symbol: '22{,}4',
-      meaning: 'volume molar de qualquer gás nas CNTP',
-      unit: 'L/mol',
-    },
+    { symbol: '22{,}4', meaning: 'volume molar de qualquer gás nas CNTP', unit: 'L/mol' },
   ],
   'Constante de Avogadro': [
     {
@@ -614,12 +717,12 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
   'Rendimento de reação': [
     { symbol: 'R\\%', meaning: 'rendimento da reação', unit: '%' },
     {
-      symbol: 'm_{obtida}',
+      symbol: 'm_{\\text{obtida}}',
       meaning: 'massa realmente obtida no experimento',
       unit: 'g',
     },
     {
-      symbol: 'm_{teorica}',
+      symbol: 'm_{\\text{teórica}}',
       meaning: 'massa prevista pela estequiometria',
       unit: 'g',
     },
@@ -631,12 +734,12 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
       unit: '%',
     },
     {
-      symbol: 'n_{ionizado}',
+      symbol: 'n_{\\text{ionizado}}',
       meaning: 'mols que sofreram ionização',
       unit: 'mol',
     },
     {
-      symbol: 'n_{inicial}',
+      symbol: 'n_{\\text{inicial}}',
       meaning: 'mols dissolvidos no início',
       unit: 'mol',
     },
@@ -651,17 +754,19 @@ export const FORMULA_SYMBOLS: Record<string, FormulaSymbolSeed[]> = {
   ],
 
   // ---- Biologia ----
-  'Hardy-Weinberg': [
+  'Hardy-Weinberg: alelos': [
     { symbol: 'p', meaning: 'frequência do alelo dominante na população' },
     { symbol: 'q', meaning: 'frequência do alelo recessivo' },
+  ],
+  'Hardy-Weinberg: genótipos': [
     { symbol: 'p^2', meaning: 'proporção de homozigotos dominantes (AA)' },
     { symbol: '2pq', meaning: 'proporção de heterozigotos (Aa)' },
     { symbol: 'q^2', meaning: 'proporção de homozigotos recessivos (aa)' },
   ],
   'Aumento total (microscópio)': [
     { symbol: 'A', meaning: 'aumento total da imagem, em vezes' },
-    { symbol: 'a_{ocular}', meaning: 'aumento da lente ocular' },
-    { symbol: 'a_{objetiva}', meaning: 'aumento da lente objetiva' },
+    { symbol: 'a_{\\text{ocular}}', meaning: 'aumento da lente ocular' },
+    { symbol: 'a_{\\text{objetiva}}', meaning: 'aumento da lente objetiva' },
   ],
   'Crescimento populacional': [
     { symbol: '\\Delta N', meaning: 'variação no número de indivíduos' },
@@ -682,37 +787,48 @@ export const FORMULA_TOPICS: Record<string, string> = {
   // ---- Matemática ----
   'Equação do 2º grau (Bhaskara)': 'Equações do 2º grau',
   'Delta (discriminante)': 'Equações do 2º grau',
-  'Soma e produto': 'Equações do 2º grau',
+  'Soma das raízes': 'Equações do 2º grau',
+  'Produto das raízes': 'Equações do 2º grau',
   'Variação percentual': 'Porcentagem',
   'Juros simples': 'Juros simples e compostos',
+  'Montante (juros simples)': 'Juros simples e compostos',
   'Juros compostos': 'Juros simples e compostos',
   'Área do triângulo': 'Áreas e perímetros',
   'Área do triângulo (lados)': 'Áreas e perímetros',
-  'Círculo: área e circunferência': 'Áreas e perímetros',
+  'Semiperímetro': 'Áreas e perímetros',
+  'Área do círculo': 'Áreas e perímetros',
+  'Comprimento da circunferência': 'Áreas e perímetros',
   'Teorema de Pitágoras': 'Geometria plana',
   'Volume do cilindro': 'Volumes',
   'Volume da esfera': 'Volumes',
-  'Seno e cosseno': 'Trigonometria',
+  'Seno': 'Trigonometria',
+  'Cosseno': 'Trigonometria',
   'Lei dos senos': 'Trigonometria',
-  'PA — termo geral e soma': 'Progressão aritmética',
-  'PG — termo geral e soma': 'Progressão geométrica',
+  'PA: termo geral': 'Progressão aritmética',
+  'PA: soma dos termos': 'Progressão aritmética',
+  'PG: termo geral': 'Progressão geométrica',
+  'PG: soma dos termos': 'Progressão geométrica',
   Combinação: 'Análise combinatória',
   Probabilidade: 'Probabilidade',
 
   // ---- Física ----
   'Velocidade média': 'Cinemática',
   'Função horária (MRU)': 'Cinemática',
-  'Funções horárias (MUV)': 'Cinemática',
+  'Função horária da posição (MUV)': 'Cinemática',
+  'Função horária da velocidade (MUV)': 'Cinemática',
   Torricelli: 'Cinemática',
   '2ª Lei de Newton': 'Leis de Newton',
-  Peso: 'Leis de Newton',
+  'Peso': 'Leis de Newton',
   Trabalho: 'Trabalho e energia',
-  'Energia cinética e potencial': 'Trabalho e energia',
+  'Energia cinética': 'Trabalho e energia',
+  'Energia potencial gravitacional': 'Trabalho e energia',
   'Conservação de energia': 'Trabalho e energia',
-  Potência: 'Energia e potência',
+  'Potência': 'Energia e potência',
+  'Potência elétrica': 'Energia e potência',
   'Quantidade de movimento': 'Impulso e quantidade de movimento',
   '1ª Lei de Ohm': 'Eletrodinâmica',
-  'Resistência equivalente': 'Circuitos elétricos',
+  'Resistores em série': 'Circuitos elétricos',
+  'Resistores em paralelo': 'Circuitos elétricos',
   'Dilatação térmica linear': 'Termologia',
   'Calor sensível': 'Calorimetria',
   'Calor latente': 'Calorimetria',
@@ -722,14 +838,16 @@ export const FORMULA_TOPICS: Record<string, string> = {
   'Concentração comum': 'Soluções',
   'Concentração molar': 'Soluções',
   Título: 'Soluções',
-  'Número de mols': 'Estequiometria',
+  'Número de mols (pela massa)': 'Estequiometria',
+  'Número de mols (gás nas CNTP)': 'Estequiometria',
   'Constante de Avogadro': 'Estequiometria',
   'Rendimento de reação': 'Estequiometria',
   'Grau de ionização': 'Equilíbrio químico',
   'Celsius ↔ Kelvin': 'Termoquímica',
 
   // ---- Biologia ----
-  'Hardy-Weinberg': 'Genética',
+  'Hardy-Weinberg: alelos': 'Genética',
+  'Hardy-Weinberg: genótipos': 'Genética',
   'Aumento total (microscópio)': 'Citologia',
   'Crescimento populacional': 'Ecologia',
 
@@ -764,6 +882,19 @@ export async function seedFormulas(prisma: PrismaClient): Promise<number> {
       console.warn(
         `[seed-formulas] assunto não encontrado: ${f.subject} / ${topicName}`,
       );
+    }
+
+    if (f.formerTitle) {
+      const [atual, antiga] = await Promise.all([
+        prisma.formula.findUnique({ where: { title: f.title } }),
+        prisma.formula.findUnique({ where: { title: f.formerTitle } }),
+      ]);
+      if (antiga && !atual) {
+        await prisma.formula.update({
+          where: { id: antiga.id },
+          data: { title: f.title },
+        });
+      }
     }
 
     const formula = await prisma.formula.upsert({

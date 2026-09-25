@@ -20,7 +20,7 @@ export function PomodoroFloating() {
   if (mode === 'idle' || pathname === '/pomodoro') return null;
 
   const focusing = mode === 'focus';
-  const tone = focusing ? 'text-brand' : 'text-nat';
+  const tone = focusing ? 'text-brand' : 'text-success';
   const subject = subjects.find((s) => s.id === subjectId)?.name;
   const label = focusing
     ? paused
@@ -31,8 +31,9 @@ export function PomodoroFloating() {
       : 'Pausa';
 
   // z-[25]: acima da tabbar (z-20) e abaixo do bottom-sheet "Mais" (z-30).
+  // --dock: sobe acima de uma barra fixa da página (ver DockOffset).
   const anchor =
-    'fixed right-4 bottom-24 z-[25] md:bottom-6 md:right-6 print:hidden';
+    'fixed right-4 bottom-[calc(6rem+var(--dock,0rem))] z-[25] md:bottom-[calc(1.5rem+var(--dock,0rem))] md:right-6 print:hidden';
 
   if (collapsed) {
     return (
@@ -57,13 +58,13 @@ export function PomodoroFloating() {
     >
       <div className="flex items-center gap-2.5">
         <PomodoroRing progress={progress} size={44} className={tone}>
-          <span className={`font-data text-[0.6rem] font-bold ${tone}`}>
+          <span className={`font-data text-xs font-bold ${tone}`}>
             {focusing ? 'FOCO' : 'PAUSA'}
           </span>
         </PomodoroRing>
 
         <div className="min-w-0 flex-1">
-          <p className="font-data text-2xl font-extrabold leading-none tabular-nums">
+          <p className="font-data text-2xl font-bold leading-none tabular-nums">
             {fmtClock(remaining)}
           </p>
           <p className="mt-1 truncate text-xs text-muted">
@@ -116,7 +117,7 @@ export function PomodoroFloating() {
             onClick={stop}
             aria-label="Abandonar sessão"
             title="Abandonar"
-            className="grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-red"
+            className="grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-danger"
           >
             <IconX width={14} height={14} />
           </button>

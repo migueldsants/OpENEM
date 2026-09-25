@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { Formula } from '../api';
 import { Katex } from '../board/Katex';
 import { IconCheck, IconCopy, IconStar, IconX } from './icons';
+import { useDialog } from './Modal';
 import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
 
 /**
@@ -32,14 +33,7 @@ export function FormulaSheet({
   const area = areaKey(formula.subjectName);
 
   // Esc fecha; o foco vai para o painel para leitores de tela anunciarem.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    panelRef.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useDialog(panelRef, onClose);
 
   return createPortal(
     <div
@@ -56,7 +50,7 @@ export function FormulaSheet({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="animate-sheet card card-raised relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-b-none outline-none sm:max-w-lg sm:rounded-b-[1.1rem]"
+        className="animate-sheet card card-raised relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-b-none outline-none sm:max-w-lg sm:rounded-b-2xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <header className="flex items-start gap-3 border-b border-line px-5 pb-4 pt-5">
@@ -138,7 +132,7 @@ export function FormulaSheet({
         <footer className="flex items-center gap-2 border-t border-line px-5 py-3">
           <button onClick={onCopy} className="btn btn-ghost">
             {copied ? (
-              <IconCheck width={15} height={15} className="text-nat" />
+              <IconCheck width={15} height={15} className="text-success" />
             ) : (
               <IconCopy width={15} height={15} />
             )}
@@ -147,7 +141,7 @@ export function FormulaSheet({
           <button
             onClick={onToggleFavorite}
             aria-pressed={formula.favorited}
-            className={`btn btn-ghost ml-auto ${formula.favorited ? 'text-hum' : ''}`}
+            className={`btn btn-ghost ml-auto ${formula.favorited ? 'text-warning' : ''}`}
           >
             <IconStar width={15} height={15} filled={formula.favorited} />
             {formula.favorited ? 'Favoritada' : 'Favoritar'}

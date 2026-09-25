@@ -43,17 +43,39 @@ async function request<T>(
   if (token) headers.Authorization = `Bearer ${token}`;
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: options.method ?? 'GET',
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: options.method ?? 'GET',
+      headers,
+      body:
+        options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+  } catch (err) {
+    // Continua TypeError (a fila offline reconhece falha de rede por ele),
+    // mas com texto que o aluno entende no lugar de "Failed to fetch".
+    if (err instanceof TypeError) {
+      throw new TypeError(
+        'Sem conexão com o servidor. Verifique sua internet e tente de novo.',
+        { cause: err },
+      );
+    }
+    throw err;
+  }
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     // Token expirado durante a sessão: limpa e encerra para não travar o usuário.
     if (res.status === 401 && token) {
       setToken(null);
       onUnauthorized?.();
+    }
+    // 5xx chega como "Internal server error" (inglês, e sem nada a fazer):
+    // melhor uma frase útil do que o texto cru do Nest.
+    if (res.status >= 500) {
+      throw new HttpError(
+        res.status,
+        'O servidor teve um problema. Tente de novo em instantes.',
+      );
     }
     throw new HttpError(
       res.status,
@@ -66,6 +88,48 @@ async function request<T>(
   // Corpo vazio ou `null` (ex.: GET /review/next sem revisão agendada).
   if (text === '' || text === 'null') return null as T;
   return JSON.parse(text) as T;
+}
+
+/**
+ * POST que devolve um PDF. Não passa pelo `request` porque a resposta é
+ * binária, e o token precisa ir no header (por isso não dá para ser um link).
+ */
+async function postPdf(
+  path: string,
+  body: unknown,
+  fallbackName: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const token = getToken();
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    throw new TypeError(
+      'Sem conexão com o servidor. Verifique sua internet e tente de novo.',
+      { cause: err },
+    );
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as {
+      message?: string | string[];
+    };
+    throw new HttpError(
+      res.status,
+      (Array.isArray(data.message) ? data.message.join(', ') : data.message) ??
+        'Não foi possível gerar o PDF',
+    );
+  }
+  const nome =
+    /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ??
+    fallbackName;
+  return { blob: await res.blob(), filename: nome };
 }
 
 // ---- Tipos ----
@@ -142,7 +206,7 @@ export interface Achievement {
   description: string;
   /** XP bônus creditado ao desbloquear (issue #48). */
   xp: number;
-  /** Emoji temático (issue #48). */
+  /** Chave do ícone; `lib/achievement-icon` resolve (issue #48). */
   icon: string;
   /** Classe Tailwind de destaque (issue #48). */
   color: string;
@@ -707,6 +771,22 @@ export interface PdfTheme {
   brand: string;
   surface: string;
 }
+/** Opções do caderno de fórmulas em PDF (todas as caixas ligadas por padrão). */
+export interface FormulasPdfOptions {
+  formulaIds?: string[];
+  subjectIds?: string[];
+  topicIds?: string[];
+  onlyFavorites?: boolean;
+  title?: string;
+  studentName?: string;
+  theme?: string;
+  brandColor?: string;
+  cover?: boolean;
+  toc?: boolean;
+  legend?: boolean;
+  descriptions?: boolean;
+  twoColumns?: boolean;
+}
 /** Opções do caderno em PDF. */
 export interface PdfOptions extends SimulationFilters {
   templateId?: string;
@@ -995,36 +1075,15 @@ export const api = {
    * Baixa o caderno em PDF. Não passa pelo `request` porque a resposta é
    * binária — e o token precisa ir no header, então não dá para usar um link.
    */
-  simulationPdf: async (options: PdfOptions, simulationId?: string) => {
-    const token = getToken();
-    const res = await fetch(
-      `${API_BASE}/simulations${simulationId ? `/${simulationId}` : ''}/pdf`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(options),
-      },
-    );
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as {
-        message?: string | string[];
-      };
-      throw new HttpError(
-        res.status,
-        (Array.isArray(data.message)
-          ? data.message.join(', ')
-          : data.message) ?? 'Não foi possível gerar o PDF',
-      );
-    }
-    const nome =
-      /filename="([^"]+)"/.exec(
-        res.headers.get('content-disposition') ?? '',
-      )?.[1] ?? 'openem-simulado.pdf';
-    return { blob: await res.blob(), filename: nome };
-  },
+  simulationPdf: (options: PdfOptions, simulationId?: string) =>
+    postPdf(
+      `/simulations${simulationId ? `/${simulationId}` : ''}/pdf`,
+      options,
+      'openem-simulado.pdf',
+    ),
+  /** Caderno de fórmulas em PDF (capa, sumário, fórmulas e legenda). */
+  formulasPdf: (options: FormulasPdfOptions) =>
+    postPdf('/formulas/pdf', options, 'formulas.pdf'),
   finishSimulation: (id: string, answers: SimulationAnswerInput[]) =>
     request<SimulationResult>(`/simulations/${id}/finish`, {
       method: 'POST',

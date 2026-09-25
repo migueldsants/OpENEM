@@ -13,10 +13,8 @@ import {
   type ThemeJson,
 } from '../theme-custom';
 
-const THEME_KEY = 'openem.theme';
-
 export default function ThemeCustomizer() {
-  const { theme } = useTheme();
+  const { theme, variant, setTheme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ThemeJson>({});
   const [importText, setImportText] = useState('');
@@ -24,13 +22,11 @@ export default function ThemeCustomizer() {
   const [error, setError] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
 
-  // Carrega o tema custom salvo ao montar, se houver.
+  // Quem aplica o custom salvo é o ThemeProvider (vale em qualquer página);
+  // aqui só o rascunho começa dele.
   useEffect(() => {
     const saved = loadCustom();
-    if (saved && localStorage.getItem(THEME_KEY) === 'custom') {
-      applyCustomTheme(saved);
-      setDraft(saved);
-    }
+    if (saved) setDraft(saved);
   }, []);
 
   // Limpa qualquer nota de "salvo" depois de uns segundos.
@@ -59,7 +55,7 @@ export default function ThemeCustomizer() {
   function save() {
     try {
       saveCustom(draft);
-      localStorage.setItem(THEME_KEY, 'custom');
+      setTheme('custom');
       setError(null);
       setEditing(false);
       setSavedNote('Tema personalizado salvo.');
@@ -69,28 +65,24 @@ export default function ThemeCustomizer() {
   }
 
   function cancel() {
-    // Restaura o tema anterior (custom salvo ou o tema pronto selecionado).
-    clearCustomInlineStyles();
+    // Desfaz a prévia: volta ao tema do app (o custom salvo ou o pronto).
     const saved = loadCustom();
-    const currentKey = localStorage.getItem(THEME_KEY);
-    if (saved && currentKey === 'custom') {
+    if (theme === 'custom' && saved) {
+      clearCustomInlineStyles();
       applyCustomTheme(saved);
       setDraft(saved);
     } else {
-      // Volta para o tema pronto previamente selecionado (não 'custom').
-      document.documentElement.dataset.theme = (currentKey && currentKey !== 'custom')
-        ? currentKey
-        : 'default-light';
+      clearCustomInlineStyles();
+      document.documentElement.dataset.theme = theme;
     }
     setEditing(false);
     setError(null);
   }
 
   function reset() {
-    clearCustomInlineStyles();
     clearStoredCustom();
-    localStorage.setItem(THEME_KEY, 'default-light');
-    document.documentElement.dataset.theme = 'default-light';
+    // Mantém o lado claro/escuro em que a pessoa estava.
+    setTheme(`default-${variant}`);
     setDraft({});
     setEditing(false);
     setError(null);
@@ -116,13 +108,13 @@ export default function ThemeCustomizer() {
       document.documentElement.dataset.theme = 'custom';
       applyCustomTheme(valid);
       setError(null);
-      setSavedNote('JSON aplicado — lembre-se de salvar.');
+      setSavedNote('JSON aplicado. Lembre-se de salvar.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'JSON inválido');
     }
   }
 
-  const isCustomActive = theme === 'custom' || !!loadCustom();
+  const isCustomActive = theme === 'custom';
 
   return (
     <div className="card p-4">
@@ -168,7 +160,7 @@ export default function ThemeCustomizer() {
       )}
 
       {error && (
-        <p className="mt-3 rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
+        <p className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
       )}
@@ -217,7 +209,7 @@ export default function ThemeCustomizer() {
             <button
               type="button"
               onClick={reset}
-              className="btn btn-ghost text-sm text-red"
+              className="btn btn-ghost text-sm text-danger"
             >
               Resetar
             </button>

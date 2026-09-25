@@ -22,15 +22,16 @@ import {
 import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { PageHeader } from '../components/PageHeader';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 // Mapeia a autoavaliação para a qualidade SM-2 (0..5).
 const GRADES: { label: string; quality: number; cls: string }[] = [
-  { label: 'Esqueci', quality: 1, cls: 'text-red' },
-  { label: 'Difícil', quality: 3, cls: 'text-hum' },
+  { label: 'Esqueci', quality: 1, cls: 'text-danger' },
+  { label: 'Difícil', quality: 3, cls: 'text-warning' },
   { label: 'Bom', quality: 4, cls: 'text-brand' },
-  { label: 'Fácil', quality: 5, cls: 'text-nat' },
+  { label: 'Fácil', quality: 5, cls: 'text-success' },
 ];
 
 function overdueLabel(dueAt: string): string {
@@ -80,14 +81,14 @@ function PracticeCard({
               onClick={() => setNoteOpen((o) => !o)}
               aria-label={noteOpen ? 'Ocultar anotação' : 'Ver anotação'}
               title={noteOpen ? 'Ocultar anotação' : 'Ver anotação'}
-              className="grid size-8 shrink-0 place-items-center rounded-lg border border-hum/30 bg-hum/10 text-hum transition-colors hover:bg-hum/20"
+              className="grid size-8 shrink-0 place-items-center rounded-lg border border-warning/30 bg-warning/10 text-warning transition-colors hover:bg-warning/20"
             >
               <IconNote width={16} height={16} filled />
             </button>
           )}
         </div>
         {note && noteOpen && (
-          <div className="mt-3 rounded-lg border border-hum/20 bg-hum/5 px-3 py-2.5 text-sm text-fg">
+          <div className="mt-3 rounded-lg border border-warning/20 bg-warning/5 px-3 py-2.5 text-sm text-fg">
             <p className="eyebrow mb-1">Sua anotação</p>
             <p className="whitespace-pre-wrap leading-relaxed">{note.content}</p>
           </div>
@@ -100,9 +101,9 @@ function PracticeCard({
           const isWrongPick = !!result && isChosen && !result.isCorrect;
           const state = result
             ? isCorrect
-              ? 'border-nat bg-nat/10'
+              ? 'border-success bg-success/10'
               : isWrongPick
-                ? 'border-red bg-red/10'
+                ? 'border-danger bg-danger/10'
                 : 'border-line opacity-60'
             : isChosen
               ? 'border-brand bg-brand/8'
@@ -116,7 +117,7 @@ function PracticeCard({
               className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors disabled:cursor-default ${state}`}
             >
               <span
-                className={`grid size-6 shrink-0 place-items-center rounded-md text-xs font-semibold ${
+                className={`grid size-6 shrink-0 place-items-center rounded-lg text-xs font-semibold ${
                   isChosen && !result
                     ? 'bg-brand text-brand-ink'
                     : 'bg-surface-2 text-muted'
@@ -126,10 +127,10 @@ function PracticeCard({
               </span>
               <span className="min-w-0 flex-1">{alt.text}</span>
               {result && isCorrect && (
-                <IconCheck width={16} height={16} className="shrink-0 text-nat" />
+                <IconCheck width={16} height={16} className="shrink-0 text-success" />
               )}
               {isWrongPick && (
-                <IconX width={16} height={16} className="shrink-0 text-red" />
+                <IconX width={16} height={16} className="shrink-0 text-danger" />
               )}
             </button>
           );
@@ -148,12 +149,12 @@ function PracticeCard({
       ) : (
         <div
           className={`border-t px-4 py-3 ${
-            result.isCorrect ? 'border-nat/30 bg-nat/5' : 'border-red/30 bg-red/5'
+            result.isCorrect ? 'border-success/30 bg-success/5' : 'border-danger/30 bg-danger/5'
           }`}
         >
           <p
             className={`text-sm font-semibold ${
-              result.isCorrect ? 'text-nat' : 'text-red'
+              result.isCorrect ? 'text-success' : 'text-danger'
             }`}
           >
             {result.isCorrect ? 'Você acertou!' : 'Não foi dessa vez.'}
@@ -285,7 +286,7 @@ function ReviewSession({
         <p className="mt-0.5 text-xs text-muted">
           Sua resposta define quando este assunto volta para revisão.
         </p>
-        {error && <p className="mt-2 text-sm text-red">{error}</p>}
+        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {GRADES.map((g) => (
             <button
@@ -346,16 +347,12 @@ export default function Revisao() {
   }
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Revisão inteligente</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          O que revisar hoje
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Assuntos priorizados pela repetição espaçada — os mais atrasados primeiro.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="O que revisar hoje"
+        title="Revisão"
+        subtitle="Os assuntos das questões que você errou, na hora certa de rever. Os mais atrasados primeiro."
+      />
 
       {error && <ErrorBanner message={error} />}
 
@@ -368,7 +365,7 @@ export default function Revisao() {
       ) : queue.length === 0 ? (
         <EmptyState
           icon={IconClock}
-          title="Tudo em dia! 🎉"
+          title="Tudo em dia!"
           description={
             <>
               Nenhum assunto vencido agora.{' '}

@@ -125,7 +125,7 @@ export default function QuadroEditorPage() {
           onChange={(e) => setTitle(e.target.value)}
           onBlur={commitTitle}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-          className="min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 font-display text-sm font-bold outline-none focus:bg-surface-2"
+          className="min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1 font-display text-sm font-bold outline-none focus:bg-surface-2 focus-visible:ring-2 focus-visible:ring-brand/40"
           placeholder="Quadro sem título"
         />
         <div className="relative">
@@ -140,7 +140,7 @@ export default function QuadroEditorPage() {
       </header>
 
       {error && (
-        <p className="border-b border-red/30 bg-red/10 px-3 py-2 text-sm text-red">
+        <p className="border-b border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
       )}

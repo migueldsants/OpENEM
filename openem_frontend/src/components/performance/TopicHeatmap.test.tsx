@@ -67,9 +67,9 @@ describe('TopicHeatmap (issue #43)', () => {
     );
     // Título/aria-label de cada tópico com a taxa.
     expect(
-      screen.getByTitle('Funções — 80% (8/10)'),
+      screen.getByTitle('Funções: 80% (8/10)'),
     ).toBeInTheDocument();
-    expect(screen.getByTitle('Geometria — sem respostas ainda')).toBeInTheDocument();
+    expect(screen.getByTitle('Geometria: sem respostas ainda')).toBeInTheDocument();
     // Resumo da matéria: 2 tópicos com respostas (80% e 30%) → 55% médio.
     expect(screen.getByText(/2\/3 tópicos · 55% médio/)).toBeInTheDocument();
   });
@@ -79,7 +79,7 @@ describe('TopicHeatmap (issue #43)', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /Matemática e suas Tecnologias/ }),
     );
-    fireEvent.click(screen.getByTitle('Funções — 80% (8/10)'));
+    fireEvent.click(screen.getByTitle('Funções: 80% (8/10)'));
     expect(navigate).toHaveBeenCalledWith('/questoes?topicId=t1');
   });
 

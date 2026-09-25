@@ -56,7 +56,7 @@ export function PomodoroTimer() {
         </NavLink>
         <div className="min-w-0 flex-1">
           <NavLink to="/pomodoro" className="font-display font-bold">
-            Modo Foco
+            Pomodoro
           </NavLink>
           <p className="text-xs text-muted">
             {todayMinutes !== null ? `${todayMinutes} min de foco hoje` : label}
@@ -79,7 +79,7 @@ export function PomodoroTimer() {
       {!idle && (
         <div className="mt-3 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-data text-3xl font-extrabold tabular-nums">
+            <span className="font-data text-3xl font-bold tabular-nums">
               {fmtClock(remaining)}
             </span>
             <span className="text-xs font-semibold text-muted">{label}</span>
@@ -106,7 +106,7 @@ export function PomodoroTimer() {
                   </>
                 )}
               </button>
-              <button onClick={stop} className="btn btn-ghost text-red">
+              <button onClick={stop} className="btn btn-ghost text-danger">
                 <IconX width={14} height={14} /> Abandonar
               </button>
             </div>
@@ -138,13 +138,13 @@ export function PomodoroTimer() {
               ? 'Registrando sessão…'
               : saved
                 ? `Sessão registrada${
-                    saved.subjectName ? ` — ${saved.subjectName}` : ''
+                    saved.subjectName ? ` (${saved.subjectName})` : ''
                   }! Faça uma pausa de ${
                     longBreak ? config.longBreakMin : config.breakMin
                   } min.`
                 : `Pausa de ${
                     longBreak ? config.longBreakMin : config.breakMin
-                  } minutos — respire e alongue.`}
+                  } minutos. Respire e alongue.`}
           </p>
           <button onClick={skipBreak} className="btn btn-primary">
             Nova sessão

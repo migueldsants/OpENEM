@@ -2,7 +2,23 @@
 // nomes usados na base. O shim traduz a API antiga (width/height/filled) para a
 // do Phosphor (size/weight), então os call sites seguem funcionando.
 import {
+  ArrowClockwise,
+  ArrowCounterClockwise,
+  ArrowsClockwise,
+  Books,
+  Calculator,
+  Certificate,
+  ClipboardText,
+  Crown,
   Cursor,
+  Dna,
+  Flask,
+  Medal,
+  MedalMilitary,
+  PenNib,
+  PersonSimpleRun,
+  Printer,
+  Scroll,
   ArrowUpRight,
   Atom,
   BookOpen,
@@ -10,6 +26,7 @@ import {
   CaretLeft,
   CaretRight,
   CaretDown,
+  CaretUp,
   ChartLineUp,
   ChatsCircle,
   Check,
@@ -106,6 +123,7 @@ export const IconX = shim(X, 'bold');
 export const IconChevronLeft = shim(CaretLeft, 'bold');
 export const IconChevronRight = shim(CaretRight, 'bold');
 export const IconChevronDown = shim(CaretDown, 'bold');
+export const IconChevronUp = shim(CaretUp, 'bold');
 export const IconFilter = shim(SlidersHorizontal, 'bold');
 export const IconFlame = shim(Flame, 'fill');
 export const IconBolt = shim(Lightning, 'fill');
@@ -160,3 +178,24 @@ export const IconAlert = shim(Warning, 'fill');
 // Modo Foco / Pomodoro (issue #41).
 export const IconPlay = shim(Play, 'fill');
 export const IconPause = shim(Pause, 'fill');
+
+// Conquistas — o catálogo da API manda uma chave de ícone (antes era emoji);
+// `lib/achievement-icon` resolve a chave para um destes.
+export const IconCrown = shim(Crown, 'duotone');
+export const IconMedal = shim(Medal, 'duotone');
+export const IconMedalMilitary = shim(MedalMilitary, 'duotone');
+export const IconCertificate = shim(Certificate, 'duotone');
+export const IconClipboard = shim(ClipboardText, 'duotone');
+export const IconPenNib = shim(PenNib, 'duotone');
+export const IconRepeat = shim(ArrowsClockwise, 'bold');
+export const IconUndo = shim(ArrowCounterClockwise, 'bold');
+export const IconRedo = shim(ArrowClockwise, 'bold');
+export const IconBooks = shim(Books, 'duotone');
+export const IconRun = shim(PersonSimpleRun, 'duotone');
+// Matérias dos decks de flashcards (mesma resolução de chave).
+export const IconDna = shim(Dna, 'duotone');
+export const IconScroll = shim(Scroll, 'duotone');
+export const IconCalculator = shim(Calculator, 'duotone');
+export const IconFlask = shim(Flask, 'duotone');
+// Impressão dos cadernos em PDF.
+export const IconPrinter = shim(Printer, 'duotone');

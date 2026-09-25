@@ -1,8 +1,10 @@
 // Modal de exportação do Quadro de Estudos (issue #32).
 // Permite configurar fundo (grid/dots/sem fundo) e escala antes de exportar.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ExportOptions } from '../board/export';
+import { IconX } from '../components/icons';
+import { Portal, useDialog } from '../components/Modal';
 
 export interface ExportSettings extends ExportOptions {
   background: 'grid' | 'dots' | 'blank';
@@ -17,41 +19,54 @@ interface ExportModalProps {
 
 const SCALES = [1, 2, 3, 4];
 
-export default function ExportModal({ open, onClose, onExport }: ExportModalProps) {
+export default function ExportModal({ open, ...props }: ExportModalProps) {
+  if (!open) return null;
+  return <ExportDialog {...props} />;
+}
+
+function ExportDialog({ onClose, onExport }: Omit<ExportModalProps, 'open'>) {
   const [background, setBackground] = useState<ExportSettings['background']>('grid');
   const [scale, setScale] = useState(2);
-
-  if (!open) return null;
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialog(panelRef, onClose);
 
   function handleExport(kind: 'openem' | 'png' | 'svg' | 'pdf') {
     onExport(kind, { background, scale });
   }
 
   return (
-    <>
+    <Portal>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
         aria-hidden
       />
-      {/* Modal */}
-      <div className="fixed inset-0 z-[80] grid place-items-center p-4">
+      {/* Modal: o clique fora do painel cai nesta camada, que fica por cima do backdrop. */}
+      <div
+        className="fixed inset-0 z-[80] grid place-items-center p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
         <div
-          className="w-full max-w-sm overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow)]"
-          onClick={(e) => e.stopPropagation()}
+          ref={panelRef}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-modal-title"
+          className="w-full max-w-sm overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow)] outline-none"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="font-display text-base font-bold">Exportar quadro</h2>
+            <h2 id="export-modal-title" className="font-display text-base font-bold">
+              Exportar quadro
+            </h2>
             <button
               onClick={onClose}
               className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-fg"
               aria-label="Fechar"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 4l8 8M12 4l-8 8" />
-              </svg>
+              <IconX width={16} height={16} />
             </button>
           </div>
 
@@ -99,13 +114,13 @@ export default function ExportModal({ open, onClose, onExport }: ExportModalProp
                   </button>
                 ))}
               </div>
-              <p className="mt-1 text-[11px] text-muted">
+              <p className="mt-1 text-xs text-muted">
                 {scale}x gera imagem {scale}× maior que o tamanho original.
               </p>
             </fieldset>
           </div>
 
-          {/* Footer — botões de export */}
+          {/* Rodapé: botões de export */}
           <div className="flex flex-col gap-1 border-t border-line px-3 py-3">
             {([
               ['openem', 'Exportar .openem', 'Formato nativo (lossless)'],
@@ -125,6 +140,6 @@ export default function ExportModal({ open, onClose, onExport }: ExportModalProp
           </div>
         </div>
       </div>
-    </>
+    </Portal>
   );
 }

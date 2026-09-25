@@ -68,7 +68,7 @@ describe('PomodoroTimer (issue #41)', () => {
   it('idle: mostra minutos de hoje e select de matéria', async () => {
     renderTimer();
     await flush();
-    expect(screen.getByText('Modo Foco')).toBeInTheDocument();
+    expect(screen.getByText('Pomodoro')).toBeInTheDocument();
     expect(screen.getByText('0 min de foco hoje')).toBeInTheDocument();
     expect(screen.getByLabelText('Matéria da sessão')).toBeInTheDocument();
     expect(screen.getByText(/Focar 25 min/)).toBeInTheDocument();

@@ -9,6 +9,8 @@ import {
 } from '../api';
 import { useAuth } from '../auth';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { PageHeader } from '../components/PageHeader';
+import { Skeleton } from '../components/Skeleton';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
   IconCalendar,
@@ -18,6 +20,7 @@ import {
 } from '../components/icons';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
+import { dayIndexOf, startOfDay } from '../lib/plan';
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
 
@@ -28,12 +31,6 @@ const MAX_MINUTES = 1440;
 const MINUTE_PRESETS = [30, 60, 90, 120] as const;
 /** Durações oferecidas ao editar um bloco. */
 const BLOCK_PRESETS = [15, 30, 45, 60, 90, 120] as const;
-
-function startOfDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
 
 function addDays(d: Date, n: number): Date {
   const x = new Date(d);
@@ -53,14 +50,6 @@ function fmtDay(d: Date): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(
     d.getMonth() + 1,
   ).padStart(2, '0')}`;
-}
-
-/** Índice do dia de hoje dentro do plano (negativo = plano começa no futuro). */
-function dayIndexOf(plan: StudyPlan, today = new Date()): number {
-  const planStart = startOfDay(new Date(plan.createdAt));
-  return Math.round(
-    (startOfDay(today).getTime() - planStart.getTime()) / 86_400_000,
-  );
 }
 
 /**
@@ -120,7 +109,7 @@ function SessionBlock({
             value={session.minutes}
             onChange={(e) => onRetime(session, Number(e.target.value))}
             aria-label={`Duração de ${session.label}`}
-            className="input min-w-0 flex-1 px-1.5 py-1 text-[11px]"
+            className="input min-w-0 flex-1 px-1.5 py-1 text-xs"
           >
             {[...new Set([...BLOCK_PRESETS, session.minutes])]
               .sort((a, b) => a - b)
@@ -133,7 +122,7 @@ function SessionBlock({
           <button
             onClick={() => onRemove(session)}
             aria-label={`Remover ${session.label}`}
-            className="grid size-6 shrink-0 place-items-center rounded text-muted transition-colors hover:bg-red/10 hover:text-red"
+            className="grid size-6 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <IconTrash width={12} height={12} />
           </button>
@@ -152,7 +141,7 @@ function SessionBlock({
         onClick={() => onToggle(session)}
         aria-pressed={session.done}
         aria-label={`${session.done ? 'Desmarcar' : 'Concluir'} ${session.label}`}
-        className={`grid size-4 shrink-0 place-items-center rounded border transition-colors ${
+        className={`grid size-4 shrink-0 place-items-center rounded-lg border transition-colors ${
           session.done
             ? 'border-transparent bg-brand text-brand-ink'
             : 'border-line hover:border-brand'
@@ -167,14 +156,14 @@ function SessionBlock({
       <button
         onClick={() => setEditing(true)}
         aria-label={`Renomear ${session.label}`}
-        title={`${session.label} · ${session.minutes} min — clique para renomear`}
+        title={`${session.label} · ${session.minutes} min. Clique para renomear`}
         className={`min-w-0 flex-1 truncate text-left text-xs ${
           session.done ? 'text-muted line-through' : AREA_TEXT[area]
         }`}
       >
         {session.label}
       </button>
-      <span className="shrink-0 font-data text-[10px] tabular-nums text-muted">
+      <span className="shrink-0 font-data text-xs tabular-nums text-muted">
         {session.minutes}
       </span>
     </li>
@@ -230,7 +219,7 @@ function DayCell({
     >
       <header className="flex items-baseline justify-between gap-1">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
             {WEEKDAYS[(date.getDay() + 6) % 7]}
           </p>
           <p className="font-data text-xs font-bold tabular-nums">
@@ -239,12 +228,12 @@ function DayCell({
         </div>
         <span className="flex shrink-0 items-center gap-1.5">
           {total > 0 && (
-            <span className="font-data text-[10px] tabular-nums text-muted">
+            <span className="font-data text-xs tabular-nums text-muted">
               {total}min
             </span>
           )}
           {isToday && (
-            <span className="rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-bold text-brand-ink">
+            <span className="rounded-full bg-brand px-1.5 py-0.5 text-xs font-bold text-brand-ink">
               hoje
             </span>
           )}
@@ -287,7 +276,7 @@ function DayCell({
           <button
             onClick={() => setAdding(true)}
             aria-label={`Adicionar bloco em ${fmtDay(date)}`}
-            className="flex w-full items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] text-muted transition-colors hover:bg-surface-2 hover:text-brand"
+            className="flex w-full items-center gap-1 rounded-lg px-1.5 py-1 text-xs text-muted transition-colors hover:bg-surface-2 hover:text-brand"
           >
             <IconPlus width={11} height={11} />
             adicionar
@@ -310,6 +299,9 @@ export default function Cronograma() {
   );
   const [loading, setLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  // A primeira carga ainda não voltou: sem isto o "Monte sua semana" piscava
+  // para quem já tem cronograma.
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [award, setAward] = useState<GamificationDelta | null>(null);
   const [confirming, setConfirming] = useState<'regen' | 'clear' | null>(null);
@@ -333,6 +325,8 @@ export default function Cronograma() {
             : 'Não foi possível carregar o cronograma.',
         );
       }
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -500,17 +494,11 @@ export default function Cronograma() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-5">
-        <div>
-          <p className="eyebrow">Plano de estudos</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Cronograma
-          </h1>
-          <p className="mt-2 max-w-lg text-sm text-muted text-pretty">
-            Clique em qualquer bloco para renomear, ou em “adicionar” para
-            escrever o que quiser — matéria do ENEM, idioma, aula do cursinho.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Plano de estudos"
+        title="Cronograma"
+        subtitle="Clique em qualquer bloco para renomear, ou em “adicionar” para escrever o que quiser: matéria do ENEM, idioma, aula do cursinho."
+      >
 
         <div className="card card-raised p-4">
           <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
@@ -518,7 +506,7 @@ export default function Cronograma() {
               <span className="eyebrow" id="minutes-label">
                 Tempo por dia
               </span>
-              <div className="mt-1.5 flex items-center gap-2">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <input
                   type="number"
                   min={MIN_MINUTES}
@@ -570,9 +558,9 @@ export default function Cronograma() {
                       : setConfirming('clear')
                   }
                   disabled={loading}
-                  className={`btn btn-ghost ${confirming === 'clear' ? 'text-red' : ''}`}
+                  className={`btn btn-ghost ${confirming === 'clear' ? 'text-danger' : ''}`}
                 >
-                  {confirming === 'clear' ? 'Confirmar — apaga tudo' : 'Limpar'}
+                  {confirming === 'clear' ? 'Confirmar: apagar tudo' : 'Limpar'}
                 </button>
               )}
               {confirming !== 'clear' && (
@@ -585,12 +573,12 @@ export default function Cronograma() {
                       : void generate()
                   }
                   disabled={loading || !minutesValid}
-                  className={`btn ${confirming === 'regen' ? 'btn-ghost text-red' : 'btn-primary'}`}
+                  className={`btn ${confirming === 'regen' ? 'btn-ghost text-danger' : 'btn-primary'}`}
                 >
                   {loading
                     ? 'Montando…'
                     : confirming === 'regen'
-                      ? 'Confirmar — substitui a semana'
+                      ? 'Confirmar: substituir a semana'
                       : total > 0
                         ? 'Gerar semana'
                         : 'Gerar cronograma'}
@@ -599,12 +587,12 @@ export default function Cronograma() {
             </div>
           </div>
           {!minutesValid && (
-            <p id="minutes-hint" className="mt-2 text-xs text-red">
+            <p id="minutes-hint" className="mt-2 text-xs text-danger">
               Entre {MIN_MINUTES} e {MAX_MINUTES} minutos.
             </p>
           )}
         </div>
-      </header>
+      </PageHeader>
 
       <ErrorBanner
         message={error}
@@ -618,7 +606,7 @@ export default function Cronograma() {
       )}
 
       {expired && (
-        <div className="card flex flex-wrap items-center gap-3 p-4 ring-1 ring-hum/30">
+        <div className="card flex flex-wrap items-center gap-3 p-4 ring-1 ring-warning/30">
           <div className="min-w-0 flex-1">
             <p className="font-display text-sm font-bold">
               Este cronograma já terminou
@@ -663,7 +651,7 @@ export default function Cronograma() {
                     aria-hidden
                   />
                   {shortSubject(s.label)}
-                  <span className="font-data text-[0.65rem] text-muted">
+                  <span className="font-data text-xs text-muted">
                     {s.minutes}min
                   </span>
                 </li>
@@ -671,7 +659,7 @@ export default function Cronograma() {
             </ul>
           </div>
           {todayDone && (
-            <span className="chip shrink-0 bg-nat/12 text-nat">
+            <span className="chip shrink-0 bg-success/12 text-success">
               <IconCheck width={13} height={13} /> concluído
             </span>
           )}
@@ -692,7 +680,16 @@ export default function Cronograma() {
         ))}
       </datalist>
 
-      {plan === null ? (
+      {!loaded ? (
+        <div
+          className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7"
+          aria-busy
+        >
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} className="h-40" />
+          ))}
+        </div>
+      ) : plan === null ? (
         loadFailed ? null : (
           <section className="card p-8 text-center">
             <span className="mx-auto grid size-20 place-items-center rounded-2xl bg-brand/12 text-brand">
@@ -745,7 +742,7 @@ export default function Cronograma() {
 
       {plan !== null && total === 0 && (
         <p className="text-center text-sm text-muted">
-          Calendário vazio — use “adicionar” em qualquer dia, ou gere uma semana
+          Calendário vazio. Use “adicionar” em qualquer dia, ou gere uma semana
           automaticamente.
         </p>
       )}

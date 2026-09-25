@@ -2,7 +2,7 @@
 
 /* ----------------------------------------------------------------------------
    OpENEM — sistema de design
-   Marca em índigo; as cinco áreas do conhecimento do ENEM são o sistema de cor
+   Marca em vermelho-rosado (tema padrão); as cinco áreas do ENEM são o sistema de cor
    do conteúdo (Matemática, Natureza, Humanas, Linguagens, Redação).
 ---------------------------------------------------------------------------- */
 
@@ -12,13 +12,43 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+}
 
-  /* Áreas do conhecimento — mesma família de saturação, iguais nos dois temas. */
-  --color-mat: #3e82f7; /* Matemática */
-  --color-nat: #13b981; /* Ciências da Natureza */
-  --color-hum: #f59e3c; /* Ciências Humanas */
-  --color-lin: #9a6bf0; /* Linguagens */
-  --color-red: #f2587a; /* Redação */
+/* ----------------------------------------------------------------------------
+   Áreas do conhecimento e cores de estado. Um tom por lado (claro/escuro),
+   calibrado para >= 4,5:1 como texto sobre bg/surface/surface-2 de TODOS os
+   temas daquele lado, e para `text-bg` sobre o preenchimento sólido
+   (`bg-hum text-bg`). No claro é a cor-base escurecida para o preto; no
+   escuro, clareada para o branco (mesmo matiz). Base: mat #3e82f7,
+   nat #13b981, hum #f59e3c, lin #9a6bf0, red #f2587a, danger #e5484d.
+
+   `red` é a área Redação; erro é `danger`. Sucesso e aviso reaproveitam
+   natureza (verde) e humanas (laranja). `gold` e `plat` são das ligas.
+---------------------------------------------------------------------------- */
+:root {
+  --mat: #2e63bf;
+  --nat: #087752;
+  --hum: #905b1f;
+  --lin: #7651ba;
+  --red: #b43f59;
+  --danger: #b8383c;
+  --gold: #84611f;
+  --plat: #287085;
+}
+[data-theme$='-dark'],
+[data-theme='custom'][data-scheme='dark'] {
+  --mat: #669dfb;
+  --nat: #13b981;
+  --hum: #f59e3c;
+  --lin: #ac8bf5;
+  --red: #f7708a;
+  --danger: #f07774;
+  --gold: #e0a83c;
+  --plat: #3fa7c4;
+}
+:root {
+  --success: var(--nat);
+  --warning: var(--hum);
 }
 
 /* =============================================================================
@@ -38,7 +68,7 @@
   --fg: #211b26;
   --muted: #6b6473;
   --line: #ece5ee;
-  --brand: #e0234e;
+  --brand: #d91748;
   --brand-2: #ff5a7d;
   --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(40, 14, 22, 0.05), 0 10px 28px rgba(40, 14, 22, 0.07);
@@ -56,7 +86,16 @@
   --line: #322a3d;
   --brand: #fb5277;
   --brand-2: #ff86a6;
-  --brand-ink: #ffffff;
+  --brand-ink: #15111c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Personalizado: as cores vêm inline (theme-custom.ts). Daqui só sai o
+   lado escuro, escolhido pela luminância do fundo (data-scheme). ---- */
+[data-theme='custom'][data-scheme='dark'] {
+  color-scheme: dark;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
@@ -70,9 +109,9 @@
   --surface: #faf5e9;
   --surface-2: #f0e8d4;
   --fg: #43352a;
-  --muted: #8a7a64;
+  --muted: #756650;
   --line: #e3d8bf;
-  --brand: #b45309;
+  --brand: #af4e00;
   --brand-2: #d97706;
   --brand-ink: #fff8ed;
   --shadow: 0 1px 2px rgba(67, 53, 42, 0.06), 0 10px 28px rgba(67, 53, 42, 0.08);
@@ -106,7 +145,7 @@
   --fg: #0a0a0a;
   --muted: #5a5a5a;
   --line: #dadada;
-  --brand: #00b377;
+  --brand: #007e46;
   --brand-2: #0d9488;
   --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 10px 28px rgba(0, 0, 0, 0.1);
@@ -138,7 +177,7 @@
   --surface: #ffffff;
   --surface-2: #f1f7fd;
   --fg: #0b1e3f;
-  --muted: #5a7095;
+  --muted: #596f93;
   --line: #d2e2f1;
   --brand: #2563eb;
   --brand-2: #3b82f6;
@@ -156,9 +195,9 @@
   --fg: #e6eef9;
   --muted: #93a8c7;
   --line: #24406a;
-  --brand: #3b82f6;
+  --brand: #4188fd;
   --brand-2: #60a5fa;
-  --brand-ink: #ffffff;
+  --brand-ink: #0b1626;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
     0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
@@ -190,7 +229,7 @@
   --fg: #ede9f7;
   --muted: #9a93b5;
   --line: #322f54;
-  --brand: #8b5cf6;
+  --brand: #986bff;
   --brand-2: #a78bfa;
   --brand-ink: #0f0a1f;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
@@ -206,9 +245,9 @@
   --surface: #ffffff;
   --surface-2: #f2f9f2;
   --fg: #0e2b16;
-  --muted: #5f8268;
+  --muted: #55785e;
   --line: #d3e8d3;
-  --brand: #16a34a;
+  --brand: #00822a;
   --brand-2: #22c55e;
   --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(14, 43, 22, 0.06), 0 10px 28px rgba(14, 43, 22, 0.08);
@@ -240,11 +279,11 @@
   --surface: #fffdf4;
   --surface-2: #f9f1d6;
   --fg: #33280a;
-  --muted: #8a7438;
+  --muted: #816b2f;
   --line: #ece0b8;
-  --brand: #d4a017;
+  --brand: #996700;
   --brand-2: #eab308;
-  --brand-ink: #2a1d04;
+  --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(51, 40, 10, 0.06), 0 10px 28px rgba(51, 40, 10, 0.08);
   --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
     0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
@@ -274,9 +313,9 @@
   --surface: #ffffff;
   --surface-2: #fff5ef;
   --fg: #2a1107;
-  --muted: #9a6a52;
+  --muted: #94644c;
   --line: #f3d4c2;
-  --brand: #ff6b35;
+  --brand: #cb3900;
   --brand-2: #f43f7a;
   --brand-ink: #ffffff;
   --shadow: 0 1px 2px rgba(42, 17, 7, 0.06), 0 10px 28px rgba(42, 17, 7, 0.08);
@@ -344,6 +383,16 @@
   --color-brand: var(--brand);
   --color-brand-2: var(--brand-2);
   --color-brand-ink: var(--brand-ink);
+  --color-mat: var(--mat);
+  --color-nat: var(--nat);
+  --color-hum: var(--hum);
+  --color-lin: var(--lin);
+  --color-red: var(--red);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-gold: var(--gold);
+  --color-plat: var(--plat);
 }
 
 @layer base {
@@ -393,15 +442,15 @@
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 1.1rem;
+    border-radius: 1rem;
   }
   .card-raised {
     box-shadow: var(--shadow);
   }
 
   .eyebrow {
-    font-size: 0.68rem;
-    letter-spacing: 0.13em;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     font-weight: 600;
     color: var(--muted);
@@ -454,7 +503,7 @@
     width: 100%;
     background: var(--surface-2);
     border: 1px solid var(--line);
-    border-radius: 0.7rem;
+    border-radius: 0.75rem;
     padding: 0.6rem 0.8rem;
     color: var(--fg);
     font-size: 0.9rem;
@@ -473,7 +522,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    border-radius: 0.7rem;
+    border-radius: 0.75rem;
     font-weight: 600;
     font-size: 0.9rem;
     padding: 0.6rem 1rem;
@@ -533,7 +582,7 @@
     gap: 0.25rem;
   }
   .seg > button {
-    border-radius: 0.55rem;
+    border-radius: 0.5rem;
     padding: 0.4rem 0.9rem;
     font-size: 0.85rem;
     font-weight: 600;
@@ -552,7 +601,6 @@
   [tabindex]:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
-    border-radius: 0.4rem;
   }
 
   /* Placeholder animado para estados de carregamento (skeleton). */
@@ -560,7 +608,7 @@
     position: relative;
     overflow: hidden;
     background: var(--surface-2);
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
   }
   .skeleton::after {
     content: '';
@@ -588,7 +636,7 @@
   }
 }
 .animate-rise {
-  animation: rise 0.4s ease both;
+  animation: rise 0.4s ease backwards;
 }
 
 /* Bottom-sheet "Mais" da tabbar mobile (issue #21). */
@@ -687,7 +735,7 @@
   .slab {
     background: var(--surface-2);
     border: 1px solid var(--line);
-    border-radius: 0.85rem;
+    border-radius: 1rem;
   }
 
   /* Textura do cartão-resposta: grade de bolhas bem suave (camada decorativa). */
@@ -700,20 +748,26 @@
   }
 
   /* Gradientes de liga (Bronze → Diamante). */
+  /* Metais claros: texto escuro por cima. Diamante segue a marca. */
   .league-bronze {
     background-image: linear-gradient(135deg, #c98a4b, #e6b079);
+    color: #241a10;
   }
   .league-prata {
     background-image: linear-gradient(135deg, #9aa3b2, #cdd4e0);
+    color: #241a10;
   }
   .league-ouro {
     background-image: linear-gradient(135deg, #e0a83c, #f4cf5a);
+    color: #241a10;
   }
   .league-platina {
     background-image: linear-gradient(135deg, #5fb0c9, #9bd7e6);
+    color: #241a10;
   }
   .league-diamante {
     background-image: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: var(--brand-ink);
   }
 }
 
@@ -728,8 +782,11 @@
     transform: none;
   }
 }
+/* `backwards`, não `both`: um transform que fica preso depois da animação
+   faz o wrapper virar o bloco de contenção de todo `position: fixed` da
+   página, e os modais passam a cobrir só a área do conteúdo. */
 .animate-route {
-  animation: routeIn 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: routeIn 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
 /* Reveal no scroll (a classe é adicionada via IntersectionObserver). */
@@ -747,7 +804,7 @@
   opacity: 0;
 }
 .reveal-in {
-  animation: reveal 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: reveal 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
   animation-delay: var(--delay, 0ms);
 }
 
@@ -766,7 +823,7 @@
   }
 }
 .animate-pop {
-  animation: pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 /* Brilho que percorre a barra de XP. */
@@ -780,4 +837,64 @@
 }
 .animate-shimmer {
   animation: shimmer 2.4s ease-in-out infinite;
+}
+
+/* =============================================================================
+   Sidebar — cabe em qualquer altura de janela.
+   As 17 telas do menu pedem ~800px; um notebook 1366x768 tem 768, e com a
+   escala de 125% do Windows sobram 614px de viewport CSS. Sem rolagem própria,
+   Perfil, o cartão de XP e o botão Sair ficavam fora da tela, inalcançáveis.
+   ============================================================================= */
+
+/* A lista rola; a marca e o rodapé (usuário, tema, sair) ficam fixos. */
+.sidebar-nav {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted) 35%, transparent) transparent;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--muted) 30%, transparent);
+  border-radius: 999px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--muted) 55%, transparent);
+}
+/* Esmaece o pé enquanto houver tela abaixo do corte (o App marca o atributo).
+   A barra de rolagem do Windows é sobreposta: sem isso o menu parece acabar. */
+.sidebar-nav[data-more] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+}
+
+/* Janela baixa (notebook, janela dividida, celular deitado): aperta o ritmo
+   vertical para caber tudo sem rolagem. Fora de @layer de propósito — precisa
+   vencer as utilitárias do Tailwind (py-2, mt-7). */
+@media (min-width: 768px) and (max-height: 920px) {
+  .sidebar {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+  .sidebar-nav {
+    margin-top: 1rem;
+  }
+  .sidebar-nav a {
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+  }
+  .sidebar-section {
+    padding-top: 0.6rem;
+  }
+}
+
+/* Mais baixa ainda: o cartão de XP dá lugar ao menu — o nível continua na tela
+   Progresso, a um clique. */
+@media (min-width: 768px) and (max-height: 620px) {
+  .sidebar-progress {
+    display: none;
+  }
 }

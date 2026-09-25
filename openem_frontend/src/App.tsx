@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './auth';
 import {
@@ -12,23 +12,27 @@ import {
   IconFormula,
   IconGame,
   IconChart,
+  IconClipboard,
   IconHome,
   IconLogout,
   IconMore,
   IconPen,
   IconPlay,
+  IconRepeat,
   IconStack,
   IconStar,
   IconTimer,
   IconTrophy,
   IconUser,
 } from './components/icons';
-import { MoreSheet, type NavItem } from './components/MoreSheet';
+import { AchievementToastHost } from './components/AchievementToast';
+import { MoreSheet, porSecao, type NavItem } from './components/MoreSheet';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PomodoroFloating } from './components/PomodoroFloating';
 import RouteTransition from './components/RouteTransition';
 import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
+import { useIsImmersive } from './immersive';
 import { PomodoroProvider } from './pomodoro';
 import { leagueStyle } from './lib/gamification';
 import Comunidade from './pages/Comunidade';
@@ -57,34 +61,38 @@ import Videos from './pages/Videos';
 // Editor do Quadro é lazy: mantém mathlive+katex num chunk separado (issue #32).
 const QuadroEditorPage = lazy(() => import('./pages/QuadroEditorPage'));
 
-// `mobile` controla a presença na tabbar do mobile: 'primary' = atalho visível
-// (5 no total, cabem em 360px); 'more' = dentro do bottom-sheet "Mais". A
-// sidebar do desktop mostra todos (NAV). A issue #21 introduz o botão "Mais"
-// para agrupar Progresso, Comunidade, Cronograma, Redação e Favoritos.
+// Menu agrupado pelo que o aluno quer fazer. A sidebar mostra tudo, com o
+// título de cada seção; no mobile, `mobile: 'primary'` são os 5 atalhos da
+// tabbar (cabem em 360px) e o resto vai para o "Mais" (issue #21), nos
+// mesmos grupos. Revisão e Desempenho ficavam fora de qualquer menu.
 const NAV: NavItem[] = [
   { to: '/', label: 'Início', Icon: IconHome, end: true, mobile: 'primary' },
-  // Métricas que antes ocupavam a Home (que agora é só um hub).
-  { to: '/painel', label: 'Painel', Icon: IconChart, mobile: 'primary' },
-  { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary' },
-  { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary' },
-  // Cedeu o lugar na tabbar para o Painel (continua no "Mais").
-  { to: '/games', label: 'Games', Icon: IconGame, mobile: 'more' },
-  { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more' },
-  { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: 'more' },
-  { to: '/conquistas', label: 'Conquistas', Icon: IconStar, mobile: 'more' },
-  { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more' },
-  { to: '/pomodoro', label: 'Pomodoro', Icon: IconClock, mobile: 'more' },
-  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more' },
-  { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more' },
-  { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more' },
-  { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more' },
-  { to: '/videos', label: 'Vídeos', Icon: IconPlay, mobile: 'more' },
-  { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more' },
-  { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'primary' },
+  { to: '/painel', label: 'Painel', Icon: IconClipboard, mobile: 'primary' },
+
+  { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary', section: 'Estudar' },
+  { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary', section: 'Estudar' },
+  { to: '/revisao', label: 'Revisão', Icon: IconRepeat, mobile: 'primary', section: 'Estudar' },
+  { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more', section: 'Estudar' },
+  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more', section: 'Estudar' },
+  { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more', section: 'Estudar' },
+
+  { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more', section: 'Planejar' },
+  { to: '/pomodoro', label: 'Pomodoro', Icon: IconClock, mobile: 'more', section: 'Planejar' },
+  { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more', section: 'Planejar' },
+  { to: '/videos', label: 'Vídeos', Icon: IconPlay, mobile: 'more', section: 'Planejar' },
+  { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more', section: 'Planejar' },
+
+  { to: '/desempenho', label: 'Desempenho', Icon: IconChart, mobile: 'more', section: 'Acompanhar' },
+  // Conquistas mora dentro do Progresso ("Ver todas"): duas entradas para o
+  // mesmo assunto só dividiam a atenção.
+  { to: '/progresso', label: 'Progresso', Icon: IconTrophy, mobile: 'more', section: 'Acompanhar' },
+
+  { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more', section: 'Social' },
+  { to: '/games', label: 'Games', Icon: IconGame, mobile: 'more', section: 'Social' },
+
+  { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'more', section: 'Conta' },
 ];
 
-// 5 atalhos visíveis na barra inferior + 1 botão "Mais" (6 slots, igual ao
-// layout anterior — não aperta em 360px). Telas em 'more' ficam a 2 taps.
 const MOBILE_PRIMARY = NAV.filter((n) => n.mobile === 'primary');
 const MOBILE_MORE = NAV.filter((n) => n.mobile === 'more');
 
@@ -110,11 +118,11 @@ function SidebarProgress() {
   return (
     <NavLink
       to="/progresso"
-      className="lift card mb-3 block p-3 hover:shadow-[var(--shadow)]"
+      className="sidebar-progress lift card mb-3 block p-3 hover:shadow-[var(--shadow)]"
     >
       <div className="flex items-center gap-2.5">
         <span
-          className={`grid size-9 shrink-0 place-items-center rounded-xl text-white shadow-sm ${league.gradient}`}
+          className={`grid size-9 shrink-0 place-items-center rounded-xl shadow-sm ${league.gradient}`}
         >
           <IconTrophy width={18} height={18} filled />
         </span>
@@ -159,7 +167,7 @@ function TopbarProgress() {
         {g.level}
       </span>
       {g.currentStreak > 0 && (
-        <span className="flex items-center gap-1 text-red">
+        <span className="flex items-center gap-1 text-warning">
           <IconFlame width={13} height={13} filled />
           {g.currentStreak}
         </span>
@@ -169,44 +177,83 @@ function TopbarProgress() {
 }
 
 function Sidebar({ email, onLogout }: { email?: string; onLogout: () => void }) {
+  const navRef = useRef<HTMLElement>(null);
+  // Em janela baixa a lista de telas rola, mas o Windows usa barra de rolagem
+  // sobreposta (só aparece no hover): sem um esmaecimento no pé, o menu parece
+  // simplesmente acabar no item cortado.
+  const [navHasMore, setNavHasMore] = useState(false);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const check = () =>
+      setNavHasMore(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    if (typeof ResizeObserver === 'undefined') {
+      return () => el.removeEventListener('scroll', check);
+    }
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', check);
+      ro.disconnect();
+    };
+  }, []);
+
   return (
-    <aside className="hidden md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-line md:bg-sidebar md:px-4 md:py-5">
-      <Wordmark className="px-2" />
-      <nav className="mt-7 flex flex-col gap-1">
-        {NAV.map(({ to, label, Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-surface-2 text-fg'
-                  : 'text-muted hover:bg-surface-2 hover:text-fg'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span
-                  className={`h-5 w-0.5 rounded-full transition-colors ${
-                    isActive ? 'bg-brand' : 'bg-transparent'
-                  }`}
-                />
-                <Icon
-                  width={20}
-                  height={20}
-                  weight={isActive ? 'fill' : 'duotone'}
-                  className={isActive ? 'text-brand' : ''}
-                />
-                {label}
-              </>
+    <aside className="sidebar hidden md:sticky md:top-0 md:flex md:h-screen md:w-60 md:shrink-0 md:flex-col md:overflow-hidden md:border-r md:border-line md:bg-sidebar md:px-4 md:py-5">
+      <Wordmark className="shrink-0 px-2" />
+      {/* A lista rola sozinha e o ritmo vertical encolhe em janela baixa (ver
+          index.css): as telas e os títulos de seção pedem ~850px, um notebook 1366x768 tem 768 e
+          com a escala de 125% do Windows sobram 614. Sem isso, Perfil, o
+          cartão de XP e o botão Sair ficavam fora da tela. */}
+      <nav
+        ref={navRef}
+        data-more={navHasMore ? '' : undefined}
+        className="sidebar-nav mt-7 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto"
+      >
+        {porSecao(NAV).map(([secao, grupo]) => (
+          <div key={secao ?? '_'} className="flex flex-col gap-1">
+            {secao && (
+              <p className="sidebar-section eyebrow px-3 pb-0.5 pt-4">{secao}</p>
             )}
-          </NavLink>
+            {grupo.map(({ to, label, Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-surface-2 text-fg'
+                      : 'text-muted hover:bg-surface-2 hover:text-fg'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`h-5 w-0.5 rounded-full transition-colors ${
+                        isActive ? 'bg-brand' : 'bg-transparent'
+                      }`}
+                    />
+                    <Icon
+                      width={20}
+                      height={20}
+                      weight={isActive ? 'fill' : 'duotone'}
+                      className={isActive ? 'text-brand' : ''}
+                    />
+                    {label}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 
-      <div className="mt-auto">
+      <div className="mt-auto shrink-0 pt-3">
         <SidebarProgress />
         <div className="flex items-center gap-2 border-t border-line pt-4">
           <div className="grid size-9 place-items-center rounded-full bg-brand/12 font-display text-sm font-bold text-brand">
@@ -220,7 +267,7 @@ function Sidebar({ email, onLogout }: { email?: string; onLogout: () => void }) 
             onClick={onLogout}
             aria-label="Sair"
             title="Sair"
-            className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-red"
+            className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-danger"
           >
             <IconLogout width={18} height={18} />
           </button>
@@ -233,11 +280,15 @@ function Sidebar({ email, onLogout }: { email?: string; onLogout: () => void }) 
 export default function App() {
   const { authenticated, logout, me } = useAuth();
   const focusMode = me?.profile?.focusMode ?? false;
+  // Simulado correndo etc.: some com a navegação sem remontar a página.
+  const immersive = useIsImmersive();
   // Bottom-sheet "Mais" da tabbar mobile (issue #21).
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
   // Botão "Mais" fica destacado quando a rota atual é uma tela secundária.
-  const moreActive = MOBILE_MORE.some((n) => n.to === location.pathname);
+  const moreActive =
+    location.pathname === '/conquistas' ||
+    MOBILE_MORE.some((n) => n.to === location.pathname);
   // Telas que precisam de mais largura que a coluna de leitura padrao.
   const wide = location.pathname === '/cronograma';
   // Usuários recém-cadastrados (onboarded=false) passam pelo onboarding antes do app.
@@ -320,7 +371,7 @@ export default function App() {
   if (focusMode) {
     return (
       <PomodoroProvider>
-        <div className="min-h-screen bg-bg text-fg">
+        <div className="min-h-dvh bg-bg text-fg">
           <div className="mx-auto max-w-2xl px-5 py-8">
             <div className="mb-5 flex items-center justify-between text-xs text-muted">
               <span>Modo sem distrações ativo</span>
@@ -331,6 +382,7 @@ export default function App() {
             <RouteTransition>{content}</RouteTransition>
           </div>
           <PomodoroFloating />
+          <AchievementToastHost />
         </div>
       </PomodoroProvider>
     );
@@ -338,12 +390,13 @@ export default function App() {
 
   return (
     <PomodoroProvider>
-    <div className="min-h-screen bg-bg text-fg md:flex">
+    <div className="min-h-dvh bg-bg text-fg md:flex">
       <OfflineIndicator />
-      <Sidebar email={me?.email} onLogout={logout} />
+      {!immersive && <Sidebar email={me?.email} onLogout={logout} />}
 
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-dvh flex-1 flex-col">
         {/* Barra superior — só no mobile. */}
+        {!immersive && (
         <header className="topbar sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-bg/85 px-4 py-3 backdrop-blur md:hidden">
           <Wordmark />
           <div className="ml-auto flex items-center gap-2">
@@ -353,16 +406,21 @@ export default function App() {
               onClick={logout}
               aria-label="Sair"
               title="Sair"
-              className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-red"
+              className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-danger"
             >
               <IconLogout width={18} height={18} />
             </button>
           </div>
         </header>
+        )}
 
         <main className="flex-1 px-4 pb-24 pt-6 md:px-10 md:pb-12 md:pt-10">
           {/* O cronograma é uma grade de 7 dias: 768px espremem as colunas. */}
-          <div className={`mx-auto ${wide ? 'max-w-[1700px]' : 'max-w-3xl'}`}>
+          <div
+            className={`mx-auto ${
+              wide ? 'max-w-[1700px]' : 'max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
+            }`}
+          >
             <RouteTransition>{content}</RouteTransition>
           </div>
         </main>
@@ -370,6 +428,7 @@ export default function App() {
 
       {/* Navegação inferior — padrão mobile (Android). 5 atalhos + botão "Mais"
           que abre um bottom-sheet com as telas secundárias (issue #21). */}
+      {!immersive && (
       <nav className="tabbar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/90 backdrop-blur md:hidden">
         <div
           className="grid"
@@ -384,7 +443,7 @@ export default function App() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-2.5 text-[0.68rem] font-medium transition-colors ${
+                `flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
                   isActive ? 'text-brand' : 'text-muted'
                 }`
               }
@@ -409,7 +468,7 @@ export default function App() {
             onClick={() => setMoreOpen(true)}
             aria-label="Mais telas"
             aria-expanded={moreOpen}
-            className={`flex flex-col items-center gap-1 py-2.5 text-[0.68rem] font-medium transition-colors ${
+            className={`flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
               moreActive ? 'text-brand' : 'text-muted'
             }`}
           >
@@ -422,6 +481,7 @@ export default function App() {
           </button>
         </div>
       </nav>
+      )}
 
       {moreOpen && (
         <MoreSheet items={MOBILE_MORE} onClose={() => setMoreOpen(false)} />
@@ -429,6 +489,8 @@ export default function App() {
 
       {/* Pop-up do cronômetro — segue o usuário por todas as telas. */}
       <PomodoroFloating />
+      {/* Conquistas desbloqueadas: acima de tudo, fora da tela que as disparou. */}
+      <AchievementToastHost />
     </div>
     </PomodoroProvider>
   );

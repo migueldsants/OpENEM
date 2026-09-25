@@ -11,19 +11,19 @@ export function OfflineIndicator() {
 
   const message = !online
     ? pending > 0
-      ? `Você está offline — ${pending} ${
+      ? `Você está offline. ${pending} ${
           pending === 1 ? 'ação pendente' : 'ações pendentes'
         } serão sincronizadas quando a conexão voltar.`
-      : 'Você está offline — mostrando dados salvos.'
+      : 'Você está offline. Mostrando dados salvos.'
     : syncing
       ? 'Sincronizando suas ações…'
-      : 'Conexão restaurada — tudo sincronizado.';
+      : 'Conexão restaurada. Tudo sincronizado.';
 
   return (
     <div
       role="status"
       className={`fixed inset-x-0 top-0 z-40 px-3 py-1.5 text-center text-xs font-medium ${
-        online ? 'bg-nat text-white' : 'bg-hum text-fg'
+        online ? 'bg-success text-bg' : 'bg-warning text-bg'
       }`}
     >
       {message}

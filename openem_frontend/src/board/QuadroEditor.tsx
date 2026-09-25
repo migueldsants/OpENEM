@@ -23,6 +23,8 @@ import {
   IconText,
   IconZoomIn,
   IconZoomOut,
+  IconUndo,
+  IconRedo,
 } from '../components/icons';
 import { cryptoRandomId } from './serialize';
 import { BoardSVG } from './render';
@@ -1264,7 +1266,7 @@ export function QuadroEditor({
         {/* Cor do texto (sticky) */}
         {selectedSingle?.kind === 'sticky' && (
           <div className="flex items-center gap-1 px-1">
-            <span className="text-[10px] text-muted">Texto</span>
+            <span className="text-xs text-muted">Texto</span>
             {COLORS.map((c) => (
               <button
                 key={c}
@@ -1306,7 +1308,7 @@ export function QuadroEditor({
               setStrokeWidth(w);
               applyStyle({ strokeWidth: w });
             }}
-            className="w-12 rounded-md border border-line bg-transparent px-1 py-0.5 text-center text-xs font-data tabular-nums outline-none focus:border-brand"
+            className="w-12 rounded-lg border border-line bg-transparent px-1 py-0.5 text-center text-xs font-data tabular-nums outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
             title="Espessura do pincel"
           />
         </div>
@@ -1338,7 +1340,8 @@ export function QuadroEditor({
             onClick={undo}
             className="btn btn-ghost px-2 py-1 text-xs disabled:opacity-40"
           >
-            ↶ Desfazer
+            <IconUndo width={14} height={14} />
+            Desfazer
           </button>
           <button
             type="button"
@@ -1347,7 +1350,8 @@ export function QuadroEditor({
             onClick={redo}
             className="btn btn-ghost px-2 py-1 text-xs disabled:opacity-40"
           >
-            ↷ Refazer
+            <IconRedo width={14} height={14} />
+            Refazer
           </button>
           <button
             type="button"
@@ -1504,7 +1508,7 @@ export function QuadroEditor({
             title="Aproximar"
             aria-label="Aproximar"
             onClick={() => zoomBy(1.2)}
-            className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
+            className="grid size-8 place-items-center rounded-lg text-fg hover:bg-surface-2"
           >
             <IconZoomIn width={18} height={18} aria-hidden />
           </button>
@@ -1516,7 +1520,7 @@ export function QuadroEditor({
               setZoom(1);
               setPan({ x: 0, y: 0 });
             }}
-            className="px-1 py-0.5 text-center font-data text-[11px] leading-none text-muted hover:text-fg"
+            className="px-1 py-0.5 text-center font-data text-xs leading-none text-muted hover:text-fg"
           >
             {Math.round(zoom * 100)}%
           </button>
@@ -1525,7 +1529,7 @@ export function QuadroEditor({
             title="Afastar"
             aria-label="Afastar"
             onClick={() => zoomBy(1 / 1.2)}
-            className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
+            className="grid size-8 place-items-center rounded-lg text-fg hover:bg-surface-2"
           >
             <IconZoomOut width={18} height={18} aria-hidden />
           </button>
@@ -1535,7 +1539,7 @@ export function QuadroEditor({
             title="Ajustar à tela"
             aria-label="Ajustar à tela"
             onClick={fitToContent}
-            className="grid size-8 place-items-center rounded-md text-fg hover:bg-surface-2"
+            className="grid size-8 place-items-center rounded-lg text-fg hover:bg-surface-2"
           >
             <IconFit width={18} height={18} aria-hidden />
           </button>
@@ -1783,7 +1787,7 @@ function CtxItem({
       onClick={onClick}
       disabled={disabled}
       className={`flex w-full items-center px-3 py-1.5 text-left text-sm transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent ${
-        danger ? 'text-red' : 'text-fg'
+        danger ? 'text-danger' : 'text-fg'
       }`}
     >
       {children}
@@ -1792,12 +1796,36 @@ function CtxItem({
 }
 
 // --- Seletor de ponta de linha/seta ---
-const TIP_GLYPH: Record<ArrowTip, string> = {
-  none: '—',
-  arrow: '▶',
-  dot: '●',
-  bar: '▮',
+// Prévia desenhada em SVG: mostra a ponta de verdade e não depende da fonte
+// (os glifos anteriores viravam emoji colorido em alguns sistemas).
+const TIP_LABEL: Record<ArrowTip, string> = {
+  none: 'reta',
+  arrow: 'seta',
+  dot: 'bolinha',
+  bar: 'barra',
 };
+function TipGlyph({ tip }: { tip: ArrowTip }) {
+  return (
+    <svg width={20} height={12} viewBox="0 0 20 12" aria-hidden focusable="false">
+      <line
+        x1={2}
+        y1={6}
+        x2={tip === 'none' ? 18 : 13}
+        y2={6}
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      {tip === 'arrow' && (
+        <path d="M12 2.5 L18.5 6 L12 9.5 Z" fill="currentColor" />
+      )}
+      {tip === 'dot' && <circle cx={15.5} cy={6} r={3} fill="currentColor" />}
+      {tip === 'bar' && (
+        <rect x={14} y={2} width={3} height={8} rx={0.5} fill="currentColor" />
+      )}
+    </svg>
+  );
+}
 function TipSelector({
   label,
   value,
@@ -1809,18 +1837,18 @@ function TipSelector({
 }) {
   return (
     <div className="seg">
-      <span className="px-1 text-[10px] text-muted">{label}</span>
+      <span className="px-1 text-xs text-muted">{label}</span>
       {ARROW_TIPS.map((t) => (
         <button
           key={t}
           type="button"
-          title={t}
-          aria-label={`Ponta ${label}: ${t}`}
+          title={TIP_LABEL[t]}
+          aria-label={`Ponta ${label}: ${TIP_LABEL[t]}`}
           data-active={value === t}
           onClick={() => onChange(t)}
-          className="px-1.5 text-xs"
+          className="grid place-items-center px-1.5"
         >
-          {TIP_GLYPH[t]}
+          <TipGlyph tip={t} />
         </button>
       ))}
     </div>

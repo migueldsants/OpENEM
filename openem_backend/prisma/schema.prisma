@@ -607,7 +607,7 @@ model FlashcardDeck {
   topic       String?
   subtheme    String?
   weight      Int         @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
-  icon        String      @default("📚")
+  icon        String      @default("books")
   upvotes     Int         @default(0)
   downvotes   Int         @default(0)
   createdAt   DateTime    @default(now())

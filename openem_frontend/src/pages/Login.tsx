@@ -16,7 +16,7 @@ function AnswerRow({ correct }: { correct: number }) {
       {letters.map((l, i) => (
         <span
           key={l}
-          className={`grid size-7 place-items-center rounded-full border text-[0.7rem] font-semibold ${
+          className={`grid size-7 place-items-center rounded-full border text-xs font-semibold ${
             i === correct
               ? 'border-transparent bg-brand text-brand-ink'
               : 'border-line text-muted'
@@ -66,8 +66,8 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
-      <div className="mx-auto grid min-h-screen max-w-5xl items-center gap-10 px-6 py-10 md:grid-cols-2 md:gap-16">
+    <div className="min-h-dvh bg-bg text-fg">
+      <div className="mx-auto grid min-h-dvh max-w-5xl items-center gap-10 px-6 py-10 md:grid-cols-2 md:gap-16">
         {/* Hero */}
         <section className="animate-rise">
           <div className="flex items-center gap-3">
@@ -77,22 +77,13 @@ export default function Login() {
                 ENEM
               </span>
             </span>
-            <span
-              className={`chip ml-1 ${
-                health === 'offline' ? 'text-red' : 'text-muted'
-              }`}
-            >
-              <span
-                className={`size-2 rounded-full ${
-                  health === 'online'
-                    ? 'bg-nat'
-                    : health === 'offline'
-                      ? 'bg-red'
-                      : 'bg-muted'
-                }`}
-              />
-              API {health}
-            </span>
+            {/* Só avisa quando algo está errado: "API online" não diz nada ao aluno. */}
+            {health === 'offline' && (
+              <span className="chip ml-1 text-danger" role="status">
+                <span className="size-2 rounded-full bg-danger" />
+                Servidor fora do ar
+              </span>
+            )}
             <div className="ml-auto">
               <ThemeToggle />
             </div>

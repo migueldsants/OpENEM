@@ -30,7 +30,7 @@ function GoalBar({ g }: { g: WeeklyGoal }) {
     <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
       <div
         className={`h-full rounded-full transition-[width] ${
-          g.completed ? 'bg-nat' : 'bg-gradient-to-r from-brand to-brand-2'
+          g.completed ? 'bg-success' : 'bg-gradient-to-r from-brand to-brand-2'
         }`}
         style={{ width: `${pct}%` }}
       />
@@ -75,7 +75,7 @@ function NewGoalForm({
 
   return (
     <div className="mt-3 space-y-2.5 border-t border-line pt-3">
-      {error && <p className="text-xs text-red">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
       <label className="block text-xs font-medium text-muted">
         Matéria (opcional)
         <select
@@ -208,7 +208,7 @@ export function WeeklyGoalsCard() {
 
       {goals.length === 0 && !adding ? (
         <p className="mt-2 text-sm text-muted">
-          Defina uma meta — ex.: resolver 20 questões de Matemática nesta
+          Defina uma meta, por exemplo: resolver 20 questões de Matemática nesta
           semana.
         </p>
       ) : (
@@ -218,11 +218,11 @@ export function WeeklyGoalsCard() {
               <div className="flex items-center justify-between gap-2 text-sm">
                 <span className="flex min-w-0 items-center gap-1.5">
                   {g.completed && (
-                    <IconCheck width={14} height={14} className="text-nat" />
+                    <IconCheck width={14} height={14} className="text-success" />
                   )}
                   <span
                     className={`truncate font-medium ${
-                      g.completed ? 'text-nat' : ''
+                      g.completed ? 'text-success' : ''
                     }`}
                   >
                     {goalScope(g)}
@@ -242,7 +242,7 @@ export function WeeklyGoalsCard() {
                   <button
                     onClick={() => void removeGoal(g.id)}
                     aria-label={`Remover meta ${goalScope(g)}`}
-                    className="grid size-6 place-items-center rounded text-muted transition-colors hover:bg-red/10 hover:text-red"
+                    className="grid size-6 place-items-center rounded-lg text-muted transition-colors hover:bg-danger/10 hover:text-danger"
                   >
                     <IconTrash width={13} height={13} />
                   </button>

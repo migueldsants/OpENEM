@@ -6,7 +6,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { clearCustomInlineStyles } from './theme-custom';
+import {
+  applyCustomTheme,
+  clearCustomInlineStyles,
+  customScheme,
+  loadCustom,
+} from './theme-custom';
 
 /** Família de tema (a "paleta"). Cada família tem versão light e dark. */
 export type ThemeFamily =
@@ -32,14 +37,14 @@ export const FAMILIES: {
   label: string;
   swatch: [string, string];
 }[] = [
-  { key: 'default', label: 'Padrão', swatch: ['#f5f1f6', '#e0234e'] },
-  { key: 'sepia', label: 'Sépia', swatch: ['#f4ecd8', '#b45309'] },
+  { key: 'default', label: 'Padrão', swatch: ['#f5f1f6', '#d91748'] },
+  { key: 'sepia', label: 'Sépia', swatch: ['#f4ecd8', '#af4e00'] },
   { key: 'oled', label: 'Black', swatch: ['#000000', '#00e5a0'] },
   { key: 'azure', label: 'Azul', swatch: ['#eaf3fb', '#2563eb'] },
   { key: 'indigo', label: 'Roxo', swatch: ['#f3f0fb', '#8b5cf6'] },
-  { key: 'forest', label: 'Verde', swatch: ['#eef7ee', '#16a34a'] },
-  { key: 'gold', label: 'Dourado', swatch: ['#fbf6e3', '#d4a017'] },
-  { key: 'fire', label: 'Fogo', swatch: ['#fff0e8', '#ff6b35'] },
+  { key: 'forest', label: 'Verde', swatch: ['#eef7ee', '#00822a'] },
+  { key: 'gold', label: 'Dourado', swatch: ['#fbf6e3', '#996700'] },
+  { key: 'fire', label: 'Fogo', swatch: ['#fff0e8', '#cb3900'] },
   { key: 'contrast', label: 'Contraste', swatch: ['#ffffff', '#ffcc00'] },
 ];
 
@@ -66,7 +71,9 @@ const STORAGE_KEY = 'openem.theme';
 const FAMILY_KEYS = FAMILIES.map((f) => f.key);
 
 function parseTheme(t: string): { family: ThemeFamily; variant: ThemeVariant } | null {
-  if (t === 'custom') return { family: 'custom', variant: 'dark' };
+  if (t === 'custom') {
+    return { family: 'custom', variant: customScheme(loadCustom() ?? {}) };
+  }
   const dash = t.lastIndexOf('-');
   if (dash < 0) return null;
   const fam = t.slice(0, dash) as ThemeFamily;
@@ -95,7 +102,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const variant = parsed?.variant ?? 'dark';
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    const root = document.documentElement;
+    root.dataset.theme = theme;
+    // O custom vive em estilos inline: aplicado aqui, e não só na tela de
+    // Perfil, ele sobrevive ao reload em qualquer página.
+    if (theme === 'custom') applyCustomTheme(loadCustom() ?? {});
+    else clearCustomInlineStyles();
+    // A barra do navegador/PWA acompanha o fundo do tema escolhido.
+    const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+    if (bg) {
+      document
+        .querySelectorAll('meta[name="theme-color"]')
+        .forEach((m) => m.setAttribute('content', bg));
+    }
   }, [theme]);
 
   const setTheme = useCallback((t: Theme) => {
