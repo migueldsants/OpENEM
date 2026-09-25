@@ -300,33 +300,6 @@ export type XpHistory =
   | { enabled: false }
   | { enabled: true; logs: XpLogEntry[]; byDay: { day: string; xp: number }[] };
 
-// ---- Games (issue #18) ----
-export interface GameLevel {
-  key: string;
-  label: string;
-}
-export interface GameCatalogItem {
-  key: string;
-  name: string;
-  description: string;
-  scoring: string;
-  levels: GameLevel[];
-}
-export interface GameScoreResult {
-  id: string;
-  gameKey: string;
-  score: number;
-  level: number;
-  durationSec: number;
-  createdAt: string;
-  gamification?: GamificationDelta;
-}
-export interface LeaderboardEntry {
-  userId: string;
-  displayName: string;
-  bestScore: number;
-  plays: number;
-}
 export interface Recommendation {
   question: Question;
   reason: string;
@@ -1288,19 +1261,4 @@ export const api = {
       `/gamification/leaderboard?scope=${scope}&limit=${limit}`,
     ),
 
-  gameCatalog: () => request<GameCatalogItem[]>('/games'),
-  submitGameScore: (
-    gameKey: string,
-    score: number,
-    level: number,
-    durationSec: number,
-  ) =>
-    request<GameScoreResult>('/games/scores', {
-      method: 'POST',
-      body: { gameKey, score, level, durationSec },
-    }),
-  gameLeaderboard: (key: string, limit = 10) =>
-    request<LeaderboardEntry[]>(`/games/${key}/leaderboard?limit=${limit}`),
-  globalLeaderboard: (limit = 10) =>
-    request<LeaderboardEntry[]>(`/games/leaderboard?limit=${limit}`),
 };
