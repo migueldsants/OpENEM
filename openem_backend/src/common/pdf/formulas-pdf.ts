@@ -8,11 +8,12 @@
  *   - a fonte é a Inter embutida, e não a Helvetica do PDF, que não tem Δ, ≈,
  *     ≠ nem ↔ (e as explicações usam todos).
  *
- * Ordem: capa, sumário, e as fórmulas agrupadas por matéria e assunto, cada
- * uma num cartão com a expressão em destaque, a explicação e a legenda de
- * cada símbolo. Os cartões ficam numa grade de linhas: os dois de cada
- * linha têm a mesma altura e as faixas internas alinhadas (título, fórmula,
- * explicação, legenda), e nenhum cartão é partido entre páginas.
+ * Ordem: capa, sumário, e as fórmulas agrupadas por matéria e, dentro dela,
+ * por assunto: cada assunto tem o próprio título e a própria grade de
+ * cartões (expressão em destaque, explicação e legenda de cada símbolo). Os
+ * dois cartões de cada linha têm a mesma altura e as faixas internas
+ * alinhadas (título, fórmula, explicação, legenda), e nenhum cartão é
+ * partido entre páginas.
  */
 
 import { dirname, join } from 'node:path';
@@ -235,13 +236,9 @@ const CARD = {
   descSize: 8.5,
 };
 
-/** Rótulo do assunto no topo do cartão (uma linha, mesma altura em todos). */
-const TOPIC_H = 14;
-
 function alturaDoCartao(f: Faixas): number {
   return (
     CARD.pad +
-    TOPIC_H +
     f.title +
     CARD.gap +
     f.strip +
@@ -327,19 +324,6 @@ function planCard(
         .stroke(theme.line);
 
       let cy = y + CARD.pad;
-      // O assunto vai no próprio cartão: a grade corre contínua pela matéria
-      // inteira, sem linha pela metade quando um assunto tem só uma fórmula.
-      doc
-        .font(FONT.bold)
-        .fontSize(6.6)
-        .fillColor(theme.brand)
-        .text((f.topicName ?? 'Outras fórmulas').toUpperCase(), x + x0, cy, {
-          width: inner,
-          characterSpacing: 0.7,
-          lineBreak: false,
-          ellipsis: true,
-        });
-      cy += TOPIC_H;
       doc
         .font(FONT.semibold)
         .fontSize(CARD.titleSize)
@@ -832,19 +816,46 @@ export function renderFormulasPdf(
     y = topo;
   };
 
+  /** Título do assunto: barra da marca, nome e contagem, na largura toda. */
+  const ASSUNTO = 34;
+  const drawAssunto = (nome: string, total: number) => {
+    doc.roundedRect(MARGIN.left, y + 3, 3, 16, 1.5).fill(theme.brand);
+    doc
+      .font(FONT.bold)
+      .fontSize(11.5)
+      .fillColor(theme.fg)
+      .text(nome, MARGIN.left + 11, y + 4, {
+        width: CONTENT_W - 110,
+        lineBreak: false,
+        ellipsis: true,
+      });
+    const n = plural(total, 'fórmula', 'fórmulas');
+    doc.font(FONT.medium).fontSize(8.5).fillColor(theme.muted);
+    doc.text(n, MARGIN.left + CONTENT_W - doc.widthOfString(n), y + 7, {
+      lineBreak: false,
+    });
+    doc
+      .moveTo(MARGIN.left, y + 24)
+      .lineTo(MARGIN.left + CONTENT_W, y + 24)
+      .lineWidth(0.6)
+      .stroke(theme.line);
+  };
+
   for (const g of grupos) {
-    // A matéria inteira vira uma grade contínua (na ordem dos assuntos), em
-    // linhas com as faixas iguais. O assunto vai escrito em cada cartão.
-    const itens = g.topics.flatMap((t) => t.items);
-    const linhas = rows(
-      itens.map((f) => ({ f, card: planCard(doc, f, colW, theme, options) })),
-      colunas,
-    ).map((par) => ({ par, linha: planLinha(par.map((p) => p.card)) }));
+    // Cada assunto é uma seção: título na largura toda e, embaixo, a grade
+    // dos cartões dele em linhas com as faixas iguais.
+    const assuntos = g.topics.map((t) => ({
+      t,
+      linhas: rows(
+        t.items.map((f) => planCard(doc, f, colW, theme, options)),
+        colunas,
+      ).map(planLinha),
+    }));
 
     // Faixa da matéria, na largura toda: só começa a página se couber junto
-    // com a primeira linha de cartões.
-    const primeira = linhas[0]?.linha.height ?? 0;
-    if (y + FAIXA + primeira > pe && y > topo) novaPagina();
+    // com o título do primeiro assunto e a primeira linha de cartões.
+    const primeira = assuntos[0]?.linhas[0]?.height ?? 0;
+    if (y + FAIXA + ASSUNTO + primeira > pe && y > topo) novaPagina();
     const grad = doc.linearGradient(MARGIN.left, y, MARGIN.left + CONTENT_W, y);
     grad.stop(0, theme.brand).stop(1, theme.brand2);
     doc.roundedRect(MARGIN.left, y, CONTENT_W, FAIXA - 10, 8).fill(grad);
@@ -873,28 +884,32 @@ export function renderFormulasPdf(
       materiaDaPagina.set(paginaAtual, g.subject);
     y += FAIXA;
 
-    const assuntosVistos = new Set<string>();
-    for (const { par, linha } of linhas) {
-      if (y + linha.height > pe && y > topo) novaPagina();
+    for (const { t, linhas } of assuntos) {
+      // O título do assunto nunca fica sozinho no pé da página.
+      if (y + ASSUNTO + linhas[0].height > pe && y > topo) novaPagina();
       if (!materiaDaPagina.has(paginaAtual))
         materiaDaPagina.set(paginaAtual, g.subject);
-      par.forEach(({ f, card }, i) => {
-        // Sumário: a página do assunto é a do primeiro cartão dele.
-        const assunto = f.topicName ?? 'Outras fórmulas';
-        if (!assuntosVistos.has(assunto)) {
-          assuntosVistos.add(assunto);
-          const total =
-            g.topics.find((t) => t.name === assunto)?.items.length ?? 0;
-          entradas.push({
-            label: assunto,
-            page: paginaAtual,
-            level: 1,
-            count: total,
-          });
-        }
-        card.draw(MARGIN.left + i * (colW + GUTTER), y, linha.faixas);
+      drawAssunto(t.name, t.items.length);
+      entradas.push({
+        label: t.name,
+        page: paginaAtual,
+        level: 1,
+        count: t.items.length,
       });
-      y += linha.height + CARD_GAP;
+      y += ASSUNTO;
+
+      for (const linha of linhas) {
+        if (y + linha.height > pe && y > topo) {
+          novaPagina();
+          if (!materiaDaPagina.has(paginaAtual))
+            materiaDaPagina.set(paginaAtual, g.subject);
+        }
+        linha.cards.forEach((card, i) =>
+          card.draw(MARGIN.left + i * (colW + GUTTER), y, linha.faixas),
+        );
+        y += linha.height + CARD_GAP;
+      }
+      y += SECTION_GAP - CARD_GAP;
     }
     y += SECTION_GAP;
   }
