@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { formulasPdfBuffer } from '../common/pdf/formulas-pdf';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFormulaDto } from './dto/create-formula.dto';
+import { FormulasPdfDto } from './dto/formulas-pdf.dto';
 import { QueryFormulasDto } from './dto/query-formulas.dto';
 
 /** Uma linha da legenda: o que o símbolo representa e em que unidade. */
@@ -175,4 +181,80 @@ export class FormulasService {
     await this.prisma.userFormula.create({ data: { userId, formulaId } });
     return { favorited: true };
   }
+
+  /**
+   * Caderno de fórmulas em PDF. Os filtros se combinam (matérias, assuntos,
+   * favoritas e a lista exata vinda da tela); a ordem é a mesma da tela.
+   */
+  async pdf(
+    userId: string,
+    dto: FormulasPdfDto,
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const where: Record<string, unknown> = {};
+    if (dto.subjectIds?.length) where.subjectId = { in: dto.subjectIds };
+    if (dto.topicIds?.length) where.topicId = { in: dto.topicIds };
+
+    const ids: string[][] = [];
+    if (dto.formulaIds) ids.push(dto.formulaIds);
+    if (dto.onlyFavorites) {
+      const favoritas = await this.prisma.userFormula.findMany({
+        where: { userId },
+        select: { formulaId: true },
+      });
+      ids.push(favoritas.map((x) => x.formulaId));
+    }
+    if (ids.length) {
+      where.id = { in: ids.reduce((a, b) => a.filter((id) => b.includes(id))) };
+    }
+
+    const rows = await this.prisma.formula.findMany({
+      where,
+      orderBy: [
+        { subject: { name: 'asc' } },
+        { topic: { name: 'asc' } },
+        { title: 'asc' },
+      ],
+      select: FORMULA_SELECT,
+    });
+    if (rows.length === 0) {
+      throw new BadRequestException(
+        'Nenhuma fórmula nesse recorte. Escolha pelo menos uma.',
+      );
+    }
+
+    const title = dto.title?.trim() || 'Fórmulas do ENEM';
+    const buffer = await formulasPdfBuffer(
+      rows.map((r) => ({
+        title: r.title,
+        latex: r.latex,
+        description: r.description,
+        subjectName: r.subject?.name ?? 'Outras',
+        topicName: r.topic?.name ?? null,
+        symbols: r.symbols,
+      })),
+      {
+        title,
+        theme: dto.theme,
+        brandColor: dto.brandColor,
+        cover: dto.cover,
+        toc: dto.toc,
+        legend: dto.legend,
+        descriptions: dto.descriptions,
+        twoColumns: dto.twoColumns,
+        studentName: dto.studentName,
+      },
+    );
+    return { buffer, filename: `${slug(title) || 'formulas'}.pdf` };
+  }
+}
+
+/** "Fórmulas do ENEM" → "formulas-do-enem" (nome do arquivo baixado). */
+function slug(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
 }

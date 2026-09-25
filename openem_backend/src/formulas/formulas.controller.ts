@@ -2,16 +2,21 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  HttpCode,
   Param,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateFormulaDto } from './dto/create-formula.dto';
+import { FormulasPdfDto } from './dto/formulas-pdf.dto';
 import { QueryFormulasDto } from './dto/query-formulas.dto';
 import { FormulasService } from './formulas.service';
 
@@ -32,6 +37,27 @@ export class FormulasController {
     @Query() query: QueryFormulasDto,
   ) {
     return this.formulasService.list(user.userId, query);
+  }
+
+  @Post('pdf')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Caderno de fórmulas em PDF: capa, sumário, fórmulas desenhadas do LaTeX e legenda',
+  })
+  @Header('Content-Type', 'application/pdf')
+  async pdf(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: FormulasPdfDto,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } = await this.formulasService.pdf(
+      user.userId,
+      dto,
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.end(buffer);
   }
 
   @Get(':id')
