@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { api, type FlashcardDeckBrief, type FlashcardForecastDay, type FlashcardItem, type FlashcardPreview, type FlashcardStats } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { PageHeader } from '../components/PageHeader';
 import { Markdown } from '../components/Markdown';
+import { useDialog } from '../components/Modal';
 import {
   IconAtom,
   IconBook,
@@ -17,8 +19,9 @@ import {
   IconStack,
   IconTrash,
   IconX,
+  IconChevronUp,
 } from '../components/icons';
-import { SkeletonCard } from '../components/Skeleton';
+import { SkeletonCard, SkeletonText } from '../components/Skeleton';
 import {
   areaKey,
   shortArea,
@@ -47,18 +50,18 @@ const SUBJECT_AREAS = [
 ];
 
 const GRADES = [
-  { label: 'Esqueci', quality: 1, cls: 'border-red/40 text-red hover:bg-red/10' },
-  { label: 'Difícil', quality: 3, cls: 'border-hum/40 text-hum hover:bg-hum/10' },
+  { label: 'Esqueci', quality: 1, cls: 'border-danger/40 text-danger hover:bg-danger/10' },
+  { label: 'Difícil', quality: 3, cls: 'border-warning/40 text-warning hover:bg-warning/10' },
   { label: 'Bom', quality: 4, cls: 'border-brand/40 text-brand hover:bg-brand/10' },
-  { label: 'Fácil', quality: 5, cls: 'border-nat/40 text-nat hover:bg-nat/10' },
+  { label: 'Fácil', quality: 5, cls: 'border-success/40 text-success hover:bg-success/10' },
 ];
 
 type Tab = 'study' | 'tree' | 'mine';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'study', label: 'Estudar' },
-  { key: 'tree', label: 'Decks Prontos' },
-  { key: 'mine', label: 'Meus Decks' },
+  { key: 'tree', label: 'Decks prontos' },
+  { key: 'mine', label: 'Meus decks' },
 ];
 
 // =============================================================================
@@ -78,9 +81,9 @@ function StatsBar({ stats, forecast }: { stats: FlashcardStats | null; forecast:
   const maxFc = Math.max(...forecast.map((f) => f.count), 1);
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs">
-      <StatPill label="Vencidos" value={stats.overdue} accent={stats.overdue > 0 ? 'text-red' : ''} />
-      <StatPill label="Streak" value={`${stats.streak}d`} accent="text-hum" />
-      <StatPill label="Retenção" value={`${stats.retention}%`} accent="text-nat" />
+      <StatPill label="Vencidos" value={stats.overdue} accent={stats.overdue > 0 ? 'text-danger' : ''} />
+      <StatPill label="Streak" value={`${stats.streak}d`} accent="text-warning" />
+      <StatPill label="Retenção" value={`${stats.retention}%`} accent="text-success" />
       <StatPill label="Maduros" value={stats.mature} />
       {/* Mini gráfico inline de 7 dias */}
       {forecast.length > 0 && (
@@ -194,7 +197,7 @@ function StudyCard({
             )}
           </div>
           {card.overdue ? (
-            <span className="chip text-red">atrasado</span>
+            <span className="chip text-danger">atrasado</span>
           ) : card.repetition === 0 ? (
             <span className="chip text-brand">novo</span>
           ) : (
@@ -250,7 +253,7 @@ function StudyCard({
                 >
                   <span>{saving ? '…' : g.label}</span>
                   {interval != null && !saving && (
-                    <span className="text-[0.65rem] font-normal opacity-70">
+                    <span className="text-xs font-normal opacity-70">
                       {fmtInterval(interval)}
                     </span>
                   )}
@@ -325,7 +328,7 @@ function HoverStudyButton({ count, onStudy }: { count: number; onStudy: () => vo
     <button
       onClick={(e) => { e.stopPropagation(); onStudy(); }}
       title={`Estudar ${count} cards`}
-      className="btn btn-primary shrink-0 rounded-full px-2.5 py-0.5 text-[0.66rem] font-semibold transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+      className="btn btn-primary shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100"
     >
       Estudar
     </button>
@@ -341,21 +344,23 @@ function VoteButtons({
   onVote: (vote: 'up' | 'down') => void;
 }) {
   return (
-    <span className="inline-flex shrink-0 items-center overflow-hidden rounded-full border border-line text-[0.66rem] font-semibold tabular-nums">
+    <span className="inline-flex shrink-0 items-center overflow-hidden rounded-full border border-line text-xs font-semibold tabular-nums">
       <button
         onClick={(e) => { e.stopPropagation(); onVote('up'); }}
-        title={`Upvote (${deck.upvotes})`}
-        className="px-1.5 py-0.5 text-nat transition-colors hover:bg-nat/10"
+        title={`Votar a favor (${deck.upvotes})`}
+        aria-label={`Votar a favor (${deck.upvotes})`}
+        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-success transition-colors hover:bg-success/10"
       >
-        ▲ {deck.upvotes}
+        <IconChevronUp width={12} height={12} /> {deck.upvotes}
       </button>
       <span className="h-3 w-px bg-line" />
       <button
         onClick={(e) => { e.stopPropagation(); onVote('down'); }}
-        title={`Downvote (${deck.downvotes})`}
-        className="px-1.5 py-0.5 text-red transition-colors hover:bg-red/10"
+        title={`Votar contra (${deck.downvotes})`}
+        aria-label={`Votar contra (${deck.downvotes})`}
+        className="grid place-items-center px-1.5 py-0.5 text-danger transition-colors hover:bg-danger/10"
       >
-        ▼
+        <IconChevronDown width={12} height={12} />
       </button>
     </span>
   );
@@ -364,19 +369,19 @@ function VoteButtons({
 /** Resumo de progresso: novos / vistos / revistos. */
 function ProgressHint({ progress }: { progress: { newCards: number; seen: number; reviewed: number } }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[0.68rem] tabular-nums">
+    <span className="inline-flex items-center gap-1.5 text-xs tabular-nums">
       {progress.newCards > 0 && (
         <span className="text-brand" title={`${progress.newCards} novos`}>
           {progress.newCards} novo{progress.newCards !== 1 ? 's' : ''}
         </span>
       )}
       {progress.seen > progress.reviewed && (
-        <span className="text-hum" title={`${progress.seen - progress.reviewed} vistos 1x`}>
+        <span className="text-warning" title={`${progress.seen - progress.reviewed} vistos 1x`}>
           {progress.seen - progress.reviewed} visto{progress.seen - progress.reviewed !== 1 ? 's' : ''}
         </span>
       )}
       {progress.reviewed > 0 && (
-        <span className="text-nat" title={`${progress.reviewed} revistos 2x+`}>
+        <span className="text-success" title={`${progress.reviewed} revistos 2x+`}>
           {progress.reviewed} revisado{progress.reviewed !== 1 ? 's' : ''}
         </span>
       )}
@@ -472,7 +477,7 @@ function DeckTree({
         <div className="min-w-0 flex-1">
           <p className="font-display text-base font-bold text-fg">Revisar tudo</p>
           <p className="text-xs text-muted">
-            {decks.length} decks · {totalCount} cards · mistura todas as áreas com prioridade Pareto
+            {decks.length} decks · {totalCount} cards · mistura todas as áreas, priorizando o que mais cai
           </p>
         </div>
         <button
@@ -606,7 +611,7 @@ function DeckTree({
                                             <span className="min-w-0 flex-1 truncate text-sm text-fg">
                                               {d.title}
                                               {d.weight >= 4 && (
-                                                <span className="ml-1.5 inline-flex items-center rounded bg-hum/12 px-1 py-0.5 text-[0.58rem] font-semibold text-hum align-middle">
+                                                <span className="ml-1.5 inline-flex items-center rounded-lg bg-warning/12 px-1 py-0.5 text-xs font-semibold text-warning align-middle">
                                                   P{d.weight}
                                                 </span>
                                               )}
@@ -699,7 +704,8 @@ function CreateDeckModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
-  useOnEscape(true, onClose);
+  const painelRef = useRef<HTMLDivElement>(null);
+  useDialog(painelRef, onClose);
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -746,7 +752,9 @@ function CreateDeckModal({
       aria-label={editDeck ? 'Editar deck' : 'Novo deck'}
     >
       <div
-        className="card card-raised w-full max-w-md animate-rise"
+        ref={painelRef}
+        tabIndex={-1}
+        className="card card-raised w-full max-w-md outline-none animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -869,7 +877,8 @@ function ManageDeckModal({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const frontRef = useRef<HTMLInputElement>(null);
-  useOnEscape(true, onClose);
+  const painelRef = useRef<HTMLDivElement>(null);
+  useDialog(painelRef, onClose);
 
   useEffect(() => {
     frontRef.current?.focus();
@@ -935,7 +944,9 @@ function ManageDeckModal({
       aria-label={`Gerenciar cards de ${deck.title}`}
     >
       <div
-        className="card card-raised flex max-h-[85vh] w-full max-w-lg flex-col animate-rise"
+        ref={painelRef}
+        tabIndex={-1}
+        className="card card-raised flex max-h-[85vh] w-full max-w-lg flex-col outline-none animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -966,7 +977,7 @@ function ManageDeckModal({
           <textarea
             value={back}
             onChange={(e) => setBack(e.target.value)}
-            placeholder="Verso (resposta) — aceita Markdown"
+            placeholder="Verso (resposta), aceita Markdown"
             rows={2}
             className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           />
@@ -985,10 +996,14 @@ function ManageDeckModal({
         {/* Lista de cards */}
         <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto px-5">
           {cards === null ? (
-            <li className="py-6 text-center text-sm text-muted">Carregando…</li>
+            <li className="space-y-3 py-4" aria-busy>
+              <SkeletonText width="80%" />
+              <SkeletonText width="65%" />
+              <SkeletonText width="72%" />
+            </li>
           ) : cards.length === 0 ? (
             <li className="py-6 text-center text-sm text-muted">
-              Deck vazio — adicione o primeiro card acima.
+              Deck vazio. Adicione o primeiro card acima.
             </li>
           ) : (
             cards.map((c) => (
@@ -1002,8 +1017,8 @@ function ManageDeckModal({
                   disabled={busy}
                   className={`shrink-0 rounded-lg border px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
                     confirmDelete === c.id
-                      ? 'border-red/50 bg-red/10 text-red'
-                      : 'border-line text-muted hover:border-red/40 hover:text-red'
+                      ? 'border-danger/50 bg-danger/10 text-danger'
+                      : 'border-line text-muted hover:border-danger/40 hover:text-danger'
                   }`}
                 >
                   {confirmDelete === c.id ? 'Confirmar?' : 'Apagar'}
@@ -1086,6 +1101,7 @@ function DeckMenu({
         ref={btnRef}
         onClick={toggle}
         title="Opções do deck"
+        aria-label="Opções do deck"
         aria-haspopup="menu"
         aria-expanded={pos !== null}
         className={`grid size-7 shrink-0 place-items-center rounded-lg border transition-colors ${
@@ -1146,7 +1162,7 @@ function DeckMenu({
                 disabled={busy}
                 onClick={() => void remove()}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors disabled:opacity-60 ${
-                  confirming ? 'bg-red/10 text-red' : 'text-red hover:bg-red/10'
+                  confirming ? 'bg-danger/10 text-danger' : 'text-danger hover:bg-danger/10'
                 }`}
               >
                 <IconTrash width={16} height={16} />
@@ -1324,22 +1340,18 @@ export default function Flashcards() {
   }
 
   return (
-    <div className="space-y-5 pb-28 md:pb-24">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Revisão ativa</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            Flashcards
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Repetição espaçada com prioridade Pareto — vencidos primeiro, depois novos por peso.
-          </p>
-        </div>
-        <button onClick={() => setCreateOpen(true)} className="btn btn-ghost shrink-0">
-          <IconPlus width={18} height={18} />
-          Novo deck
-        </button>
-      </header>
+    <div className="space-y-6 pb-28 md:pb-24">
+      <PageHeader
+        eyebrow="Memorização"
+        title="Flashcards"
+        subtitle="Repetição espaçada: primeiro os cards vencidos, depois os novos dos assuntos que mais caem no ENEM."
+        actions={
+          <button onClick={() => setCreateOpen(true)} className="btn btn-ghost">
+            <IconPlus width={18} height={18} />
+            Novo deck
+          </button>
+        }
+      />
 
       {/* Tabs */}
       <div className="seg w-fit">
@@ -1371,7 +1383,7 @@ export default function Flashcards() {
               /* Sessão concluída — resumo */
               <>
                 <div className="card p-6 text-center animate-rise">
-                  <p className="font-display text-2xl font-bold text-nat">{doneCount}</p>
+                  <p className="font-display text-2xl font-bold text-success">{doneCount}</p>
                   <p className="text-sm text-muted">
                     {doneCount === 1 ? 'card estudado' : 'cards estudados'} nesta sessão
                   </p>
@@ -1395,7 +1407,7 @@ export default function Flashcards() {
                   title="Tudo em dia!"
                   description="Nenhum card vencido ou novo agora. As próximas revisões chegam conforme o agendamento (hoje, 1, 3 ou 7 dias)."
                   action={{ label: 'Explorar decks prontos', onClick: () => setTab('tree') }}
-                  tip="Explore outros escopos na aba Decks Prontos"
+                  tip="Explore outros escopos na aba Decks prontos"
                 />
                 <StatsBar stats={stats} forecast={forecast} />
               </>
@@ -1410,7 +1422,7 @@ export default function Flashcards() {
                     {queue.length} {queue.length === 1 ? 'card' : 'cards'} na sua fila
                   </p>
                   <p className="mt-1 text-sm text-muted">
-                    Vencidos primeiro, depois novos por peso Pareto.
+                    Vencidos primeiro, depois os novos dos assuntos que mais caem.
                   </p>
                   <button
                     onClick={() => void startSession()}
@@ -1419,7 +1431,7 @@ export default function Flashcards() {
                     Começar sessão
                   </button>
                   <p className="mt-2.5 text-xs text-muted">
-                    Ou escolha um escopo específico na aba Decks Prontos
+                    Ou escolha um escopo específico na aba Decks prontos
                   </p>
                 </div>
                 <StatsBar stats={stats} forecast={forecast} />

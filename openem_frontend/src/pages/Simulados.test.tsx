@@ -189,7 +189,7 @@ describe('Simulados — montador por tema', () => {
     fireEvent.change(select, { target: { value: 'subj-mat' } });
     fireEvent.click(await screen.findByText('Funções'));
     fireEvent.click(screen.getByText('Salvar'));
-    fireEvent.change(screen.getByPlaceholderText(/Nome do simulado/), {
+    fireEvent.change(screen.getByLabelText(/Nome do simulado/), {
       target: { value: 'Só funções' },
     });
     fireEvent.click(screen.getAllByText('Salvar')[1]);
@@ -451,5 +451,51 @@ describe('Simulados — retomar', () => {
       ).not.toBeInTheDocument(),
     );
     expect(localStorage.getItem('openem.simulado.ativo')).toBeNull();
+  });
+});
+
+describe('Simulados — prova em andamento', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    vi.mocked(api.simulationTemplates).mockResolvedValue([]);
+    vi.mocked(api.subjects).mockResolvedValue(SUBJECTS as never);
+    vi.mocked(api.startSimulation).mockResolvedValue(START_RESPONSE as never);
+    vi.mocked(api.simulationPreview).mockResolvedValue(PREVIEW as never);
+  });
+
+  async function iniciar() {
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Matemática' }));
+    await aguardaPreview();
+    fireEvent.click(screen.getByText('Iniciar simulado'));
+    await screen.findByText(/Questão 1 de 1/);
+  }
+
+  it('entra em modo imersivo (sem a navegação do app) enquanto a prova corre', async () => {
+    const { useIsImmersive } = await import('../immersive');
+    const vistos: boolean[] = [];
+    function Espiao() {
+      vistos.push(useIsImmersive());
+      return null;
+    }
+    render(<Espiao />);
+    await iniciar();
+    expect(vistos[vistos.length - 1]).toBe(true);
+  });
+
+  it('"Sair" pede confirmação e avisa que o relógio continua', async () => {
+    await iniciar();
+    fireEvent.click(screen.getByRole('button', { name: 'Sair' }));
+    // Ainda na prova: o primeiro toque só arma a saída.
+    expect(screen.getByText(/Questão 1 de 1/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/o cronômetro continua correndo/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sair mesmo?' }));
+    expect(
+      await screen.findByText(/Retomar simulado em andamento/),
+    ).toBeInTheDocument();
   });
 });

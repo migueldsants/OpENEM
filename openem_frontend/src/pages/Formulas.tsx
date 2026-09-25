@@ -15,6 +15,7 @@ import {
   IconCopy,
   IconExpand,
   IconFormula,
+  IconPrinter,
   IconStar,
 } from '../components/icons';
 import Reveal from '../components/Reveal';
@@ -26,6 +27,8 @@ import {
   compareSubjects,
   shortSubject,
 } from '../lib/areas';
+import { PageHeader } from '../components/PageHeader';
+import { FormulasPdfModal } from '../components/FormulasPdfModal';
 
 /** Copia um LaTeX e sinaliza o sucesso por ~1,5s. */
 function useCopyLatex(): [string | null, (f: Formula) => void] {
@@ -73,7 +76,7 @@ function FormulaCard({
           onClick={onCopy}
           aria-label={`Copiar LaTeX de ${formula.title}`}
           className={`grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
-            copied ? 'bg-nat/12 text-nat' : 'text-muted hover:bg-surface-2 hover:text-fg'
+            copied ? 'bg-success/12 text-success' : 'text-muted hover:bg-surface-2 hover:text-fg'
           }`}
         >
           {copied ? (
@@ -93,8 +96,8 @@ function FormulaCard({
           aria-pressed={formula.favorited}
           className={`grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
             formula.favorited
-              ? 'bg-hum/12 text-hum'
-              : 'text-muted hover:bg-surface-2 hover:text-hum'
+              ? 'bg-warning/12 text-warning'
+              : 'text-muted hover:bg-surface-2 hover:text-warning'
           }`}
         >
           <IconStar width={16} height={16} filled={formula.favorited} />
@@ -144,6 +147,7 @@ export default function Formulas() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [pdfAberto, setPdfAberto] = useState(false);
   // Matérias começam abertas (viram um índice de assuntos); assuntos começam
   // fechados, senão a cola inteira vira uma página quilométrica.
   const [subjectOpen, setSubjectOpen] = useState<Record<string, boolean>>({});
@@ -291,16 +295,24 @@ export default function Formulas() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Cheat sheet</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Fórmulas
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
-          As fórmulas essenciais de todas as matérias — busque, favorite e
-          revise antes da prova.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Consulta rápida"
+        title="Fórmulas"
+        subtitle="As fórmulas essenciais de todas as matérias. Busque, favorite e revise antes da prova."
+        actions={
+          <button onClick={() => setPdfAberto(true)} className="btn btn-ghost">
+            <IconPrinter width={18} height={18} />
+            Baixar PDF
+          </button>
+        }
+      />
+      {pdfAberto && (
+        <FormulasPdfModal
+          onClose={() => setPdfAberto(false)}
+          initialSubjectId={subjectId || undefined}
+          initialOnlyFavorites={onlyFavorites}
+        />
+      )}
 
       {/* Busca + filtros: acompanham a rolagem, é a ação principal da tela. */}
       <div className="filterbar -mx-4 space-y-2.5 px-4 py-3 md:-mx-10 md:px-10">
@@ -456,7 +468,7 @@ export default function Formulas() {
                               {topicName || 'Outras'}
                             </h3>
                             <span className="h-px flex-1 bg-line" aria-hidden />
-                            <span className="shrink-0 font-data text-[0.65rem] text-muted">
+                            <span className="shrink-0 font-data text-xs text-muted">
                               {list.length}
                             </span>
                           </button>

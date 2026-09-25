@@ -47,7 +47,7 @@ export function parseOpenEm(text: string): Board {
   const obj = data as Record<string, unknown>;
   if (obj.type !== BOARD_TYPE) {
     throw new OpenEmParseError(
-      'Arquivo .openem inválido (tipo incorreto — não é um quadro de estudos).',
+      'Arquivo .openem inválido: não é um quadro de estudos.',
     );
   }
   const version = obj.schemaVersion;

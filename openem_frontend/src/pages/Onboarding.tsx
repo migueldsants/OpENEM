@@ -54,7 +54,7 @@ export default function Onboarding() {
   if (done) {
     return (
       <div className="mx-auto max-w-md px-5 py-10 text-center animate-pop">
-        <span className="mx-auto grid size-24 place-items-center rounded-3xl bg-brand/12 text-brand animate-pop">
+        <span className="mx-auto grid size-24 place-items-center rounded-2xl bg-brand/12 text-brand animate-pop">
           <IconCheck width={56} height={56} filled />
         </span>
         <h1 className="mt-5 font-display text-3xl font-extrabold tracking-tight">

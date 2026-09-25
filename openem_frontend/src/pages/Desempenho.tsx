@@ -13,6 +13,7 @@ import { IconTrophy } from '../components/icons';
 import { TopicHeatmap } from '../components/performance/TopicHeatmap';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
+import { PageHeader } from '../components/PageHeader';
 
 /** Gráfico de linha leve (SVG puro) da precisão ao longo dos dias, com
  *  eixo Y rotulado (0/50/100%) e tooltip ao passar o mouse sobre cada ponto. */
@@ -54,7 +55,7 @@ function AccuracyChart({ points }: { points: PerformancePoint[] }) {
       {[0, 50, 100].map((g) => (
         <span
           key={g}
-          className="pointer-events-none absolute left-0 -translate-y-1/2 text-[9px] text-muted"
+          className="pointer-events-none absolute left-0 -translate-y-1/2 text-xs text-muted"
           style={{ top: `${(gridY(g) / H) * 100}%` }}
         >
           {g}%
@@ -273,9 +274,12 @@ export default function Desempenho() {
       : copy.sort((a, b) => b.total - a.total || a.accuracy - b.accuracy);
   }, [perf, topicSort]);
 
+  // O título fica de pé em todos os estados: sem ele a página "pulava" quando
+  // os dados chegavam.
   if (loading) {
     return (
-      <div className="space-y-5" aria-busy>
+      <div className="space-y-6" aria-busy>
+        <PageHeader eyebrow="Suas estatísticas" title="Desempenho" />
         <div className="grid grid-cols-3 gap-3">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />
@@ -289,20 +293,18 @@ export default function Desempenho() {
 
   if (error) {
     return (
-      <ErrorBanner message={error} />
+      <div className="space-y-6">
+        <PageHeader eyebrow="Suas estatísticas" title="Desempenho" />
+        <ErrorBanner message={error} />
+      </div>
     );
   }
 
   const answered = perf?.overall.total ?? 0;
   if (!perf || answered === 0) {
     return (
-      <div className="space-y-5">
-        <header>
-          <p className="eyebrow">Desempenho</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            Suas estatísticas
-          </h1>
-        </header>
+      <div className="space-y-6">
+        <PageHeader eyebrow="Suas estatísticas" title="Desempenho" />
         <EmptyState
           icon={IconTrophy}
           title="Ainda sem dados"
@@ -323,17 +325,11 @@ export default function Desempenho() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="eyebrow">Desempenho</p>
-            <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-              Suas estatísticas
-            </h1>
-            <p className="mt-1 text-sm text-muted">
-              Acompanhe sua evolução e onde vale reforçar.
-            </p>
-          </div>
+      <PageHeader
+        eyebrow="Suas estatísticas"
+        title="Desempenho"
+        subtitle="Acompanhe sua evolução e onde vale reforçar."
+        actions={
           <div className="seg" role="group" aria-label="Filtro de período">
             {PERIODS.map((p) => (
               <button
@@ -346,8 +342,8 @@ export default function Desempenho() {
               </button>
             ))}
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <Stat
@@ -361,8 +357,8 @@ export default function Desempenho() {
           label="nas últimas 20"
           accent={
             perf.recent.accuracy >= perf.overall.accuracy
-              ? 'text-nat'
-              : 'text-hum'
+              ? 'text-success'
+              : 'text-warning'
           }
         />
       </div>
@@ -467,7 +463,7 @@ export default function Desempenho() {
               Mapa de calor por tópico
             </h2>
             <p className="mt-0.5 text-xs text-muted">
-              Todos os assuntos da taxonomia — clique num tópico para praticar.
+              Todos os assuntos do ENEM. Clique num assunto para praticar.
             </p>
           </div>
           <button
@@ -483,7 +479,7 @@ export default function Desempenho() {
         {/* Horas de foco por matéria (issue #41). */}
         {heatmapOpen && focusBySubject && focusBySubject.length > 0 && (
           <div className="mt-4 rounded-xl border border-line p-3">
-            <p className="eyebrow">Modo Foco — últimos 30 dias</p>
+            <p className="eyebrow">Pomodoro nos últimos 30 dias</p>
             <ul className="mt-2 space-y-2">
               {focusBySubject.slice(0, 5).map((f) => {
                 const max = Math.max(...focusBySubject.map((x) => x.minutes));

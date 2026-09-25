@@ -15,6 +15,7 @@ import { SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { areaSourceName, subjectLabel, topicLabel } from '../lib/question';
+import { PageHeader } from '../components/PageHeader';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -62,7 +63,7 @@ function FavoriteCard({
         <button
           onClick={onRemove}
           aria-label="Remover dos favoritos"
-          className="grid size-9 shrink-0 place-items-center rounded-lg border border-transparent bg-hum/15 text-hum transition-colors hover:bg-hum/25"
+          className="grid size-9 shrink-0 place-items-center rounded-lg border border-transparent bg-warning/15 text-warning transition-colors hover:bg-warning/25"
         >
           <IconStar width={18} height={18} filled />
         </button>
@@ -75,9 +76,9 @@ function FavoriteCard({
           const isWrongPick = !!result && isChosen && !result.isCorrect;
           const state = result
             ? isCorrect
-              ? 'border-nat bg-nat/10'
+              ? 'border-success bg-success/10'
               : isWrongPick
-                ? 'border-red bg-red/10'
+                ? 'border-danger bg-danger/10'
                 : 'border-line opacity-60'
             : isChosen
               ? 'border-brand bg-brand/8'
@@ -91,7 +92,7 @@ function FavoriteCard({
               className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors disabled:cursor-default ${state}`}
             >
               <span
-                className={`grid size-6 shrink-0 place-items-center rounded-md text-xs font-semibold ${
+                className={`grid size-6 shrink-0 place-items-center rounded-lg text-xs font-semibold ${
                   isChosen && !result
                     ? 'bg-brand text-brand-ink'
                     : 'bg-surface-2 text-muted'
@@ -101,10 +102,10 @@ function FavoriteCard({
               </span>
               <span className="min-w-0 flex-1">{alt.text}</span>
               {result && isCorrect && (
-                <IconCheck width={16} height={16} className="shrink-0 text-nat" />
+                <IconCheck width={16} height={16} className="shrink-0 text-success" />
               )}
               {isWrongPick && (
-                <IconX width={16} height={16} className="shrink-0 text-red" />
+                <IconX width={16} height={16} className="shrink-0 text-danger" />
               )}
             </button>
           );
@@ -124,12 +125,12 @@ function FavoriteCard({
       ) : (
         <div
           className={`border-t px-4 py-3 ${
-            result.isCorrect ? 'border-nat/30 bg-nat/5' : 'border-red/30 bg-red/5'
+            result.isCorrect ? 'border-success/30 bg-success/5' : 'border-danger/30 bg-danger/5'
           }`}
         >
           <p
             className={`text-sm font-semibold ${
-              result.isCorrect ? 'text-nat' : 'text-red'
+              result.isCorrect ? 'text-success' : 'text-danger'
             }`}
           >
             {result.isCorrect ? 'Você acertou!' : 'Não foi dessa vez.'}
@@ -180,16 +181,12 @@ export default function Favoritos() {
   }
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Favoritas</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          Questões salvas
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Suas questões marcadas para revisitar quando quiser.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Questões salvas"
+        title="Favoritos"
+        subtitle="Suas questões marcadas para revisitar quando quiser."
+      />
 
       {error && (
         <ErrorBanner message={error} />
@@ -211,7 +208,7 @@ export default function Favoritos() {
               <IconStar
                 width={14}
                 height={14}
-                className="inline align-text-bottom text-hum"
+                className="inline align-text-bottom text-warning"
               />{' '}
               ao responder em{' '}
               <NavLink to="/questoes" className="font-medium text-brand">

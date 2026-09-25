@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconBoard, IconImage as ImageIcon } from '../components/icons';
+import { PageHeader } from '../components/PageHeader';
+import { IconBoard, IconImage as ImageIcon, IconMore } from '../components/icons';
 import { BoardSVG } from '../board/render';
 import { boardsBBox } from '../board/transform';
 import {
@@ -54,7 +55,7 @@ function Thumb({ board }: { board: Board }) {
     ) : null;
   const b = boardsBBox(board.elements);
   return (
-    <div className="aspect-video overflow-hidden rounded-t-[1.1rem] bg-bg">
+    <div className="aspect-video overflow-hidden rounded-t-2xl bg-bg">
       <BoardSVG
         board={board}
         width={300}
@@ -169,40 +170,36 @@ export default function Quadro() {
   }
 
   return (
-    <div className="space-y-4 pb-28 md:pb-12">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Ferramentas de estudo</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            Quadro de Estudos
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Fórmulas, rascunhos e diagramas — salvos no dispositivo.
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            onClick={() => importRef.current?.click()}
-            className="btn btn-ghost"
-          >
-            Importar
-          </button>
-          <button onClick={newBoard} className="btn btn-primary">
-            Novo quadro
-          </button>
-          <input
-            ref={importRef}
-            type="file"
-            accept=".openem,application/json"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onImport(f);
-              e.target.value = '';
-            }}
-          />
-        </div>
-      </header>
+    <div className="space-y-6 pb-28 md:pb-12">
+      <PageHeader
+        eyebrow="Quadro de estudos"
+        title="Quadro"
+        subtitle="Fórmulas, rascunhos e diagramas, salvos no dispositivo."
+        actions={
+          <>
+            <button
+              onClick={() => importRef.current?.click()}
+              className="btn btn-ghost"
+            >
+              Importar
+            </button>
+            <button onClick={newBoard} className="btn btn-primary">
+              Novo quadro
+            </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept=".openem,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onImport(f);
+                e.target.value = '';
+              }}
+            />
+          </>
+        }
+      />
 
       {error && (
         <ErrorBanner message={error} />
@@ -240,7 +237,7 @@ export default function Quadro() {
                       if (e.key === 'Enter') onRename(b.id);
                       if (e.key === 'Escape') setRenaming(null);
                     }}
-                    className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-sm font-semibold"
+                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-sm font-semibold"
                   />
                 ) : (
                   <button
@@ -261,7 +258,7 @@ export default function Quadro() {
                     aria-label="Mais ações"
                     className="grid size-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2"
                   >
-                    <span className="text-lg leading-none">⋯</span>
+                    <IconMore width={18} height={18} />
                   </button>
                   {menuFor === b.id && (
                     <>
@@ -349,7 +346,7 @@ function MenuItem({
       onClick={onClick}
       disabled={disabled}
       className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2 disabled:opacity-50 ${
-        danger ? 'text-red' : 'text-fg'
+        danger ? 'text-danger' : 'text-fg'
       }`}
     >
       {icon}

@@ -13,6 +13,7 @@ vi.mock('../api', () => ({
     exams: vi.fn(),
     questionFacets: vi.fn(),
     questions: vi.fn(),
+    answer: vi.fn(),
   },
 }));
 vi.mock('../auth', () => ({
@@ -130,7 +131,7 @@ describe('Questões — filtros e busca por código', () => {
     renderPage();
     await screen.findByText('ENEM-2023-136');
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
-    const painel = within(await screen.findByRole('complementary'));
+    const painel = within(await screen.findByRole('dialog', { name: 'Filtros' }));
 
     // Áreas com a contagem de questões.
     expect(painel.getByRole('button', { name: /^Matemática 600/ })).toBeInTheDocument();
@@ -152,7 +153,7 @@ describe('Questões — filtros e busca por código', () => {
     renderPage();
     await screen.findByText('ENEM-2023-136');
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
-    const painel = within(await screen.findByRole('complementary'));
+    const painel = within(await screen.findByRole('dialog', { name: 'Filtros' }));
 
     fireEvent.click(painel.getByRole('button', { name: /^Matemática 600/ }));
 
@@ -163,7 +164,7 @@ describe('Questões — filtros e busca por código', () => {
     renderPage();
     await screen.findByText('ENEM-2023-136');
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
-    const painel = within(await screen.findByRole('complementary'));
+    const painel = within(await screen.findByRole('dialog', { name: 'Filtros' }));
 
     fireEvent.click(painel.getByRole('button', { name: /^Matemática 600/ }));
     fireEvent.change(painel.getByLabelText('Prova'), { target: { value: '2023' } });
@@ -173,5 +174,51 @@ describe('Questões — filtros e busca por código', () => {
       expect(ultimaBusca().subjectAreaId).toBe('a-mat');
       expect(ultimaBusca().examSlug).toBe('2023');
     });
+  });
+});
+
+describe('Questões — responder pelo teclado e leitor de tela', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(api.subjects).mockResolvedValue(SUBJECTS as never);
+    vi.mocked(api.favorites).mockResolvedValue([]);
+    vi.mocked(api.questionNotes).mockResolvedValue([]);
+    vi.mocked(api.exams).mockResolvedValue([]);
+    vi.mocked(api.questionFacets).mockResolvedValue({
+      total: 1,
+      areas: [],
+      topics: [],
+      exams: [],
+    });
+    vi.mocked(api.questions).mockResolvedValue({
+      items: [QUESTAO],
+      meta: { total: 1, page: 1, limit: 10, pages: 1 },
+    } as never);
+    vi.mocked(api.answer).mockResolvedValue({
+      isCorrect: false,
+      correctAlternativeId: 'a2',
+      explanation: null,
+    } as never);
+  });
+
+  it('anuncia o erro com a letra certa e o foco continua no botão de ação', async () => {
+    renderPage();
+    await screen.findByText('ENEM-2023-136');
+
+    const alternativa = screen.getByRole('button', { name: /um/ });
+    fireEvent.click(alternativa);
+    expect(alternativa).toHaveAttribute('aria-pressed', 'true');
+
+    const acao = screen.getByRole('button', { name: 'Responder' });
+    acao.focus();
+    fireEvent.click(acao);
+
+    expect(
+      await screen.findByText('Não foi dessa vez. A resposta certa é a B.'),
+    ).toHaveAttribute('aria-live', 'polite');
+    // O mesmo elemento vira "Próxima": o foco não cai para o body.
+    expect(acao).toHaveTextContent('Próxima');
+    expect(document.activeElement).toBe(acao);
+    expect(screen.getByText('(resposta correta)')).toBeInTheDocument();
   });
 });

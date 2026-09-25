@@ -156,7 +156,7 @@ describe('Games (issue #18)', () => {
       expect(api.gameLeaderboard).toHaveBeenCalledWith('palavras-cruzadas', 10);
     });
     expect(
-      await screen.findByRole('heading', { name: 'Ranking — Palavras Cruzadas' }),
+      await screen.findByRole('heading', { name: 'Ranking: Palavras Cruzadas' }),
     ).toBeInTheDocument();
   });
 

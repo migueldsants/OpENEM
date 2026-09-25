@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, type QuestionNote } from '../api';
 import { IconCheck, IconTrash, IconX } from './icons';
+import { useDialog } from './Modal';
 
 interface Props {
   questionId: string;
@@ -21,6 +22,8 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const painelRef = useRef<HTMLDivElement>(null);
+  useDialog(painelRef, onClose);
 
   useEffect(() => {
     void (async () => {
@@ -74,7 +77,6 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') void save();
   }
 
@@ -87,7 +89,9 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
       aria-label="Anotação pessoal"
     >
       <div
-        className="card card-raised w-full max-w-lg animate-rise"
+        ref={painelRef}
+        tabIndex={-1}
+        className="card card-raised w-full max-w-lg outline-none animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -123,7 +127,7 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
             Ctrl+Enter para salvar
           </p>
           {error && (
-            <p className="mt-2 rounded-lg bg-red/10 px-3 py-2 text-sm text-red">
+            <p className="mt-2 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
               {error}
             </p>
           )}
@@ -134,7 +138,7 @@ export function QuestNoteModal({ questionId, questionStatement, onClose }: Props
             <button
               onClick={() => void remove()}
               disabled={saving}
-              className="btn btn-ghost text-red"
+              className="btn btn-ghost text-danger"
             >
               <IconTrash width={16} height={16} />
               Excluir

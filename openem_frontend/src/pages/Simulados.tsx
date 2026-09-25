@@ -34,6 +34,8 @@ import {
   subjectLabel,
   topicLabel,
 } from '../lib/question';
+import { PageHeader } from '../components/PageHeader';
+import { useImmersive } from '../immersive';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const STORAGE_KEY = 'openem.simulado.ativo';
@@ -410,17 +412,12 @@ function TemplateList({
   const salvos = templates.filter((t) => t.owned);
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Simulados</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          Treine no padrão ENEM
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Faça uma prova oficial dia por dia, monte o seu por tema ou baixe
-          qualquer um em PDF para imprimir.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Treine no padrão ENEM"
+        title="Simulados"
+        subtitle="Faça uma prova oficial dia por dia, monte o seu por tema ou baixe qualquer um em PDF para imprimir."
+      />
 
       {resumeAvailable && (
         <button
@@ -494,7 +491,7 @@ function TemplateList({
         <EmptyState
           icon={IconBook}
           title="Nenhuma prova oficial disponível ainda"
-          description="As provas entram com a importação do banco do ENEM (npm run db:import:enem)."
+          description="As provas oficiais ainda não foram carregadas neste servidor."
           tip="Enquanto isso, monte um simulado personalizado acima"
         />
       )}
@@ -541,7 +538,17 @@ function Player({
   const [now, setNow] = useState(Date.now());
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Sair" em dois toques: o progresso fica salvo, mas o relógio não para.
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
   const enteredAt = useRef(Date.now());
+  // Prova com relógio correndo: sem menu, tabbar ou barra do app em volta.
+  useImmersive();
+
+  useEffect(() => {
+    if (!confirmandoSaida) return;
+    const t = setTimeout(() => setConfirmandoSaida(false), 5000);
+    return () => clearTimeout(t);
+  }, [confirmandoSaida]);
 
   const startedMs = Date.parse(start.startedAt);
   const elapsedSec = Math.floor((now - startedMs) / 1000);
@@ -630,10 +637,16 @@ function Player({
 
   return (
     <div className="space-y-4">
-      {/* Cabeçalho fixo com progresso e cronômetro. */}
-      <div className="flex items-center gap-3">
-        <button onClick={onAbort} className="btn btn-ghost shrink-0">
-          Sair
+      {/* Cabeçalho fixo com progresso e cronômetro: o tempo fica sempre à vista. */}
+      <div className="sticky top-0 z-10 -mx-4 flex items-center gap-3 border-b border-line bg-bg/90 px-4 py-2.5 backdrop-blur md:-mx-10 md:px-10">
+        <button
+          onClick={() =>
+            confirmandoSaida ? onAbort() : setConfirmandoSaida(true)
+          }
+          className={`btn shrink-0 ${confirmandoSaida ? 'btn-ghost text-danger' : 'btn-ghost'}`}
+          aria-describedby={confirmandoSaida ? 'aviso-saida' : undefined}
+        >
+          {confirmandoSaida ? 'Sair mesmo?' : 'Sair'}
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between text-xs text-muted">
@@ -651,13 +664,20 @@ function Player({
         </div>
         <span
           className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 font-display text-sm font-bold tabular-nums ${
-            lowTime ? 'bg-red/12 text-red' : 'bg-surface-2 text-fg'
+            lowTime ? 'bg-danger/12 text-danger' : 'bg-surface-2 text-fg'
           }`}
         >
           <IconClock width={16} height={16} />
           {remaining != null ? formatClock(remaining) : formatClock(elapsedSec)}
         </span>
       </div>
+
+      {confirmandoSaida && (
+        <p id="aviso-saida" role="status" className="text-sm text-muted">
+          Suas respostas ficam salvas e você retoma pela lista de simulados, mas
+          o cronômetro continua correndo.
+        </p>
+      )}
 
       {/* Questão atual */}
       <div className="card card-raised overflow-hidden">
@@ -674,7 +694,7 @@ function Player({
                 <span className="text-muted">· {topicLabel(current)}</span>
               )}
               {codeLabel(current) && (
-                <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.7rem] tracking-tight text-muted">
+                <span className="rounded-lg bg-surface-2 px-1.5 py-0.5 font-mono text-xs tracking-tight text-muted">
                   {codeLabel(current)}
                 </span>
               )}
@@ -708,7 +728,7 @@ function Player({
                 }`}
               >
                 <span
-                  className={`grid size-6 shrink-0 place-items-center rounded-md text-xs font-semibold ${
+                  className={`grid size-6 shrink-0 place-items-center rounded-lg text-xs font-semibold ${
                     isChosen
                       ? 'bg-brand text-brand-ink'
                       : 'bg-surface-2 text-muted'
@@ -722,7 +742,7 @@ function Player({
                       src={alt.imageUrl}
                       alt={`Alternativa ${alt.letter ?? LETTERS[i]}`}
                       loading="lazy"
-                      className="h-auto max-w-full rounded"
+                      className="h-auto max-w-full rounded-lg"
                     />
                   ) : (
                     alt.text
@@ -773,11 +793,11 @@ function Player({
               key={q.id}
               onClick={() => go(i)}
               aria-label={`Ir para a questão ${i + 1}`}
-              className={`grid size-8 place-items-center rounded-md text-xs font-semibold transition-colors ${
+              className={`grid size-8 place-items-center rounded-lg text-xs font-semibold transition-colors ${
                 active
                   ? 'bg-brand text-brand-ink'
                   : done
-                    ? 'bg-nat/15 text-nat'
+                    ? 'bg-success/15 text-success'
                     : 'bg-surface-2 text-muted hover:text-fg'
               }`}
             >
@@ -807,13 +827,8 @@ function Result({
   );
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Resultado</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          Simulado finalizado
-        </h1>
-      </header>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Resultado" title="Simulado finalizado" />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="card p-4">
@@ -876,7 +891,7 @@ function Result({
                         {subjectLabel(q)}
                       </span>
                       {q.code && (
-                        <span className="font-mono text-[0.7rem] text-muted">
+                        <span className="font-mono text-xs text-muted">
                           {q.code}
                         </span>
                       )}
@@ -889,9 +904,9 @@ function Result({
                     <span
                       className={`grid size-8 shrink-0 place-items-center rounded-lg ${
                         detail.isCorrect
-                          ? 'bg-nat/15 text-nat'
+                          ? 'bg-success/15 text-success'
                           : detail.chosenId
-                            ? 'bg-red/12 text-red'
+                            ? 'bg-danger/12 text-danger'
                             : 'bg-surface-2 text-muted'
                       }`}
                     >
@@ -912,16 +927,16 @@ function Result({
                       detail.chosenId === alt.id &&
                       !detail.isCorrect;
                     const cls = isCorrect
-                      ? 'border-nat bg-nat/10'
+                      ? 'border-success bg-success/10'
                       : isWrongPick
-                        ? 'border-red bg-red/10'
+                        ? 'border-danger bg-danger/10'
                         : 'border-line opacity-70';
                     return (
                       <div
                         key={alt.id}
                         className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${cls}`}
                       >
-                        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-surface-2 text-xs font-semibold text-muted">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-surface-2 text-xs font-semibold text-muted">
                           {letterOf(alt, i)}
                         </span>
                         <span className="min-w-0 flex-1">
@@ -930,7 +945,7 @@ function Result({
                               src={alt.imageUrl}
                               alt={`Alternativa ${letterOf(alt, i)}`}
                               loading="lazy"
-                              className="h-auto max-w-full rounded"
+                              className="h-auto max-w-full rounded-lg"
                             />
                           ) : (
                             alt.text
@@ -940,14 +955,14 @@ function Result({
                           <IconCheck
                             width={16}
                             height={16}
-                            className="shrink-0 text-nat"
+                            className="shrink-0 text-success"
                           />
                         )}
                         {isWrongPick && (
                           <IconX
                             width={16}
                             height={16}
-                            className="shrink-0 text-red"
+                            className="shrink-0 text-danger"
                           />
                         )}
                       </div>

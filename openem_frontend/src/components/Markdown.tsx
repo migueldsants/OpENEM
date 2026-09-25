@@ -26,9 +26,12 @@ export function Markdown({
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[rehypeKatex]}
         components={{
-          img: ({ node: _node, ...props }) => (
+          // Imagem de prova sem descrição (`![](url)`) não pode sumir para o
+          // leitor de tela: ao menos diz que ali há uma figura.
+          img: ({ node: _node, alt, ...props }) => (
             <img
               {...props}
+              alt={alt?.trim() ? alt : 'Imagem do enunciado'}
               loading="lazy"
               decoding="async"
               className="mx-auto my-3 h-auto max-w-full rounded-lg"

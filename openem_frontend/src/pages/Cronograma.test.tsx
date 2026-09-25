@@ -206,7 +206,7 @@ describe('Cronograma — calendário customizável (issue #46)', () => {
     expect(api.clearStudyPlan).not.toHaveBeenCalled();
 
     fireEvent.click(
-      screen.getByRole('button', { name: /Confirmar — apaga tudo/ }),
+      screen.getByRole('button', { name: /Confirmar: apagar tudo/ }),
     );
     await waitFor(() => expect(api.clearStudyPlan).toHaveBeenCalled());
   });
@@ -220,7 +220,7 @@ describe('Cronograma — calendário customizável (issue #46)', () => {
     expect(api.generateStudyPlan).not.toHaveBeenCalled();
 
     fireEvent.click(
-      screen.getByRole('button', { name: /Confirmar — substitui a semana/ }),
+      screen.getByRole('button', { name: /Confirmar: substituir a semana/ }),
     );
     await waitFor(() => expect(api.generateStudyPlan).toHaveBeenCalled());
   });

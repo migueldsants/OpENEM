@@ -17,7 +17,10 @@ import {
 import { EmptyState } from '../components/EmptyState';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { useGamification } from '../gamification';
+import { AchievementIcon } from '../lib/achievement-icon';
 import { leagueStyle } from '../lib/gamification';
+import { ErrorBanner } from '../components/ErrorBanner';
+import { PageHeader } from '../components/PageHeader';
 
 type SummaryData = Extract<GamificationSummary, { enabled: true }> & {
   nextLevelXp: number;
@@ -93,7 +96,7 @@ function StreakRow({
       <div className="card flex items-center gap-3 p-4">
         <span
           className={`grid size-10 place-items-center rounded-xl ${
-            active ? 'bg-red/12 text-red' : 'bg-surface-2 text-muted'
+            active ? 'bg-warning/12 text-warning' : 'bg-surface-2 text-muted'
           }`}
         >
           <IconFlame width={22} height={22} filled={active} />
@@ -200,7 +203,7 @@ function AchievementProgressBar({ item }: { item: AchievementView }) {
   const pct = Math.round(item.progress * 100);
   return (
     <span className="mt-1.5 block">
-      <span className="flex items-center justify-between text-[0.68rem] text-muted">
+      <span className="flex items-center justify-between text-xs text-muted">
         <span>{item.unlocked ? 'Desbloqueada' : `${pct}%`}</span>
         <span className="font-semibold text-brand">+{item.xp} XP</span>
       </span>
@@ -214,7 +217,7 @@ function AchievementProgressBar({ item }: { item: AchievementView }) {
   );
 }
 
-/** Card de conquista — emoji temático + cor própria (issue #48). */
+/** Card de conquista — ícone temático + cor própria (issue #48). */
 export function AchievementCard({
   a,
   compact = false,
@@ -241,11 +244,11 @@ export function AchievementCard({
       <div className="flex items-start gap-3">
         <span
           className={`grid ${compact ? 'size-8' : 'size-11'} shrink-0 place-items-center rounded-lg ${
-            a.unlocked ? 'bg-brand/15' : 'bg-surface-2'
-          } ${compact ? 'text-lg' : 'text-2xl'}`}
+            a.unlocked ? 'bg-brand/15 text-brand' : 'bg-surface-2 text-muted'
+          }`}
           aria-hidden
         >
-          {a.icon}
+          <AchievementIcon name={a.icon} size={compact ? 17 : 23} />
         </span>
         <div className="min-w-0 flex-1">
           <p className={`text-sm font-medium ${a.unlocked ? a.color : ''}`}>
@@ -253,14 +256,14 @@ export function AchievementCard({
           </p>
           <p className="text-xs text-muted">{a.description}</p>
           {a.unlocked && a.unlockedAt && !compact && (
-            <p className="mt-0.5 text-[0.65rem] text-muted">
+            <p className="mt-0.5 text-xs text-muted">
               Desbloqueada{' '}
               {new Date(a.unlockedAt).toLocaleDateString('pt-BR')}
             </p>
           )}
         </div>
         <span
-          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[0.65rem] font-bold ${
+          className={`shrink-0 rounded-lg px-1.5 py-0.5 text-xs font-bold ${
             a.unlocked ? 'bg-brand/12 text-brand' : 'bg-surface-2 text-muted'
           }`}
         >
@@ -293,8 +296,8 @@ function AchievementsGrid({
         <div className="card card-raised border-l-4 border-brand p-4">
           <p className="eyebrow">Próxima conquista</p>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xl" aria-hidden>
-              {next.icon}
+            <span className="text-brand" aria-hidden>
+              <AchievementIcon name={next.icon} size={20} />
             </span>
             <p className="font-display text-sm font-bold">{next.name}</p>
           </div>
@@ -361,7 +364,7 @@ function ActivityFeed({ history }: { history: XpHistory }) {
             key={log.id}
             className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-surface-2"
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-brand/12 text-brand">
+            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-brand/12 text-brand">
               <IconBolt width={14} height={14} filled />
             </span>
             <span className="min-w-0 flex-1">
@@ -446,13 +449,13 @@ function LeaderboardSection() {
               >
                 <span
                   aria-hidden
-                  className={`grid size-7 shrink-0 place-items-center rounded-md text-xs font-bold tabular-nums ${
+                  className={`grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold tabular-nums ${
                     i === 0
                       ? 'bg-mat/15 text-mat'
                       : i === 1
                         ? 'bg-surface-2 text-muted'
                         : i === 2
-                          ? 'bg-hum/15 text-hum'
+                          ? 'bg-warning/15 text-warning'
                           : 'bg-surface-2 text-muted'
                   }`}
                 >
@@ -462,12 +465,12 @@ function LeaderboardSection() {
                   {e.displayName}
                 </span>
                 <span className="shrink-0 text-xs text-muted">
-                  Nv {e.level}
+                  Nível {e.level}
                 </span>
                 <span className="shrink-0 font-display font-bold tabular-nums text-brand">
                   {e.xp.toLocaleString('pt-BR')}
                 </span>
-                <span className="sr-only">— ver perfil</span>
+                <span className="sr-only">, ver perfil</span>
               </button>
             </li>
           ))}
@@ -485,6 +488,7 @@ export default function Progresso() {
   const [achievements, setAchievements] = useState<AchievementView[]>([]);
   const [history, setHistory] = useState<XpHistory | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -495,8 +499,13 @@ export default function Progresso() {
         ]);
         setAchievements(a);
         setHistory(h);
-      } catch {
-        /* silencioso */
+      } catch (err) {
+        // Sem aviso, a falha parecia "nenhuma conquista ainda".
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar suas conquistas.',
+        );
       } finally {
         setLoading(false);
       }
@@ -524,17 +533,14 @@ export default function Progresso() {
     localSummary && localSummary.enabled ? withNextLevel(localSummary) : null;
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Sua jornada</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          Progresso
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Ganhe XP estudando — questões, simulados, redações, revisões e
-          sessões do cronograma contam.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Sua jornada"
+        title="Progresso"
+        subtitle="Ganhe XP estudando: questões, simulados, redações, revisões e sessões do cronograma contam."
+      />
+
+      <ErrorBanner message={error} />
 
       {loading ? (
         <div className="space-y-5" aria-busy>

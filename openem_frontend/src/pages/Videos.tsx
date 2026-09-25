@@ -17,6 +17,7 @@ import { SkeletonCard } from '../components/Skeleton';
 import Reveal from '../components/Reveal';
 import { areaKey, AREA_DOT, AREA_TEXT, shortSubject } from '../lib/areas';
 import { embedUrl, fmtTimestamp, parseTimestamp } from '../lib/video';
+import { PageHeader } from '../components/PageHeader';
 
 /** Player + notas com timestamp clicável (issue #37). */
 function VideoDetail({
@@ -39,7 +40,7 @@ function VideoDetail({
     if (!noteText.trim()) return;
     const ts = parseTimestamp(noteTs);
     if (ts === null) {
-      setError('Instante inválido — use 90, 1:30 ou 1:30:00 (máx. 24h).');
+      setError('Instante inválido. Use 90, 1:30 ou 1:30:00 (máx. 24h).');
       return;
     }
     setError(null);
@@ -157,7 +158,7 @@ function VideoDetail({
             width={14}
             height={14}
             filled={video.watched}
-            className={video.watched ? 'text-nat' : ''}
+            className={video.watched ? 'text-success' : ''}
           />
           {video.watched ? 'Assistido' : 'Marcar assistido'}
         </button>
@@ -191,7 +192,7 @@ function VideoDetail({
             <li key={n.id} className="flex items-start gap-2 text-sm">
               <button
                 onClick={() => setSeekTo(n.timestampSec)}
-                className="shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-data text-[11px] font-bold tabular-nums text-brand hover:bg-brand/10"
+                className="shrink-0 rounded-lg bg-surface-2 px-1.5 py-0.5 font-data text-xs font-bold tabular-nums text-brand hover:bg-brand/10"
                 title={`Pular o vídeo para ${fmtTimestamp(n.timestampSec)}`}
               >
                 {fmtTimestamp(n.timestampSec)}
@@ -200,7 +201,7 @@ function VideoDetail({
               <button
                 onClick={() => void removeNote(n)}
                 aria-label={`Remover nota ${fmtTimestamp(n.timestampSec)}`}
-                className="shrink-0 text-muted transition-colors hover:text-red"
+                className="shrink-0 text-muted transition-colors hover:text-danger"
               >
                 <IconTrash width={13} height={13} />
               </button>
@@ -208,7 +209,7 @@ function VideoDetail({
           ))}
           {video.notes.length === 0 && (
             <li className="text-sm text-muted">
-              Nenhuma nota — marque instantes importantes durante o vídeo.
+              Nenhuma nota. Marque instantes importantes durante o vídeo.
             </li>
           )}
         </ul>
@@ -306,12 +307,12 @@ function VideoCard({
       </button>
       {/* Selos ficam fora do botão: dentro dele o aria-label os esconderia. */}
       {video.watched && (
-        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-nat px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-bg shadow">
           <IconCheck width={11} height={11} aria-hidden /> Assistido
         </span>
       )}
       {video.notes.length > 0 && (
-        <span className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-black/65 px-2 py-0.5 font-data text-[10px] font-semibold text-white">
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-black/65 px-2 py-0.5 font-data text-xs font-semibold text-white">
           {video.notes.length} {video.notes.length === 1 ? 'nota' : 'notas'}
         </span>
       )}
@@ -332,8 +333,8 @@ function VideoCard({
             aria-pressed={video.watched}
             className={`grid size-8 place-items-center rounded-lg transition-colors ${
               video.watched
-                ? 'bg-nat/12 text-nat'
-                : 'text-muted hover:bg-surface-2 hover:text-nat'
+                ? 'bg-success/12 text-success'
+                : 'text-muted hover:bg-surface-2 hover:text-success'
             }`}
           >
             <IconCheck width={15} height={15} />
@@ -341,7 +342,7 @@ function VideoCard({
           <button
             onClick={onRemove}
             aria-label={`Remover ${video.title}`}
-            className="grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-red/10 hover:text-red"
+            className="grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <IconTrash width={15} height={15} />
           </button>
@@ -449,16 +450,11 @@ export default function Videos() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Videoteca</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Vídeos
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
-          Cole links de aulas do YouTube, organize por matéria e anote
-          instantes importantes.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Videoteca"
+        title="Vídeos"
+        subtitle="Cole links de aulas do YouTube, organize por matéria e anote instantes importantes."
+      />
 
       <ErrorBanner message={error} onRetry={() => void load()} />
 

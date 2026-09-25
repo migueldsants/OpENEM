@@ -35,7 +35,7 @@ export function AnnotateOverlay({
         setBoard(
           createBoard({
             id: cryptoRandomId(),
-            title: `Anotações — ${questionTitle.slice(0, 60)}`,
+            title: `Anotações: ${questionTitle.slice(0, 60)}`,
             questionId,
           }),
         );

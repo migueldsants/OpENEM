@@ -50,12 +50,34 @@ export function readCurrentTokens(): ThemeJson {
   return out;
 }
 
+/**
+ * Claro ou escuro, pela luminância do fundo. O tema personalizado não tem
+ * variante própria, mas `color-scheme` (barras de rolagem, controles nativos)
+ * e as sombras precisam saber de qual lado ele está.
+ */
+export function customScheme(json: ThemeJson): 'light' | 'dark' {
+  const m = /^#?([0-9a-f]{6})$/i.exec((json.bg ?? '').trim());
+  if (!m) return 'light';
+  const n = parseInt(m[1], 16);
+  const canal = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const l =
+    0.2126 * canal((n >> 16) & 255) +
+    0.7152 * canal((n >> 8) & 255) +
+    0.0722 * canal(n & 255);
+  // 0,18 ≈ cinza médio (#767676): o ponto em que texto claro e escuro empatam.
+  return l < 0.18 ? 'dark' : 'light';
+}
+
 /** Aplica um tema customizado como estilos inline no <html>. */
 export function applyCustomTheme(json: ThemeJson) {
   const root = document.documentElement;
-  for (const [k, v] of Object.entries(json)) {
-    root.style.setProperty(`--${k}`, v);
+  for (const t of TOKENS) {
+    if (json[t.key]) root.style.setProperty(`--${t.key}`, json[t.key]);
   }
+  root.dataset.scheme = customScheme(json);
 }
 
 /** Remove TODOS os estilos inline de tokens customizados do <html>. */
@@ -64,6 +86,7 @@ export function clearCustomInlineStyles() {
   for (const t of TOKENS) {
     root.style.removeProperty(`--${t.key}`);
   }
+  delete root.dataset.scheme;
 }
 
 /** Valida um JSON bruto, mantendo só chaves conhecidas. Lança se vazio. */

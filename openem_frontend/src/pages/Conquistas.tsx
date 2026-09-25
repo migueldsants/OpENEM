@@ -5,6 +5,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { IconTrophy } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { AchievementCard } from './Progresso';
+import { PageHeader } from '../components/PageHeader';
 
 /** Conquistas agrupadas por categoria (issue #48). */
 const CATEGORIES: { key: string; label: string; codes: string[] }[] = [
@@ -88,15 +89,11 @@ export default function Conquistas() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Seu troféu</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Conquistas
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-muted">
-          Cada marco vale XP bônus — quanto mais difícil, maior a recompensa.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Seu troféu"
+        title="Conquistas"
+        subtitle="Cada marco vale XP bônus. Quanto mais difícil, maior a recompensa."
+      />
 
       <ErrorBanner message={error} />
 

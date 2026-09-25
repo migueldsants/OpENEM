@@ -20,12 +20,14 @@ import {
   IconSparkle,
   IconTarget,
   IconTrophy,
+  IconCheck,
 } from '../components/icons';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { WeeklyGoalsCard } from '../components/WeeklyGoalsCard';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
 import { areaSourceName, subjectLabel, topicLabel } from '../lib/question';
 import { leagueStyle } from '../lib/gamification';
+import { PageHeader } from '../components/PageHeader';
 
 const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
 
@@ -73,7 +75,7 @@ function ProgressWidget({
           </div>
         </div>
         {data.currentStreak > 0 && (
-          <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-red">
+          <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-warning">
             <IconFlame width={18} height={18} filled />
             {data.currentStreak}
           </span>
@@ -121,8 +123,9 @@ function DailyChallengeCard({
           </button>
         )}
         {data.claimed && (
-          <span className="shrink-0 text-sm font-semibold text-nat">
-            Concluído ✓
+          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-success">
+            <IconCheck width={16} height={16} />
+            Concluído
           </span>
         )}
       </div>
@@ -218,18 +221,12 @@ export default function Painel() {
       : null;
 
   return (
-    <div className="space-y-7">
-      <header>
-        <p className="eyebrow">Painel</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          {name ? `Seu progresso, ${name}` : 'Seu progresso'}
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-muted">
-          {hasData
-            ? 'Veja onde você está forte e onde vale reforçar.'
-            : 'Responda algumas questões para começar a ver seu desempenho aqui.'}
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={name ? `Olá, ${name}` : 'Visão geral'}
+        title="Painel"
+        subtitle={hasData ? 'Veja onde você está forte e onde vale reforçar.' : 'Responda algumas questões para começar a ver seu desempenho aqui.'}
+      />
 
       <ErrorBanner
         message={loadError}
@@ -239,7 +236,8 @@ export default function Painel() {
       {game?.enabled && <ProgressWidget data={game} />}
 
       {daily === null ? (
-        <Skeleton className="h-20" />
+        // Com falha na carga o erro já está no topo: skeleton eterno enganaria.
+        !loadError && <Skeleton className="h-20" />
       ) : (
         daily?.enabled && (
           <DailyChallengeCard
@@ -262,7 +260,7 @@ export default function Painel() {
         ) : (
           <>
             <Stat
-              value={hasData ? `${perf!.overall.accuracy}%` : '—'}
+              value={hasData ? `${perf!.overall.accuracy}%` : '-'}
               label="de acerto"
               accent="text-brand"
             />
@@ -270,7 +268,7 @@ export default function Painel() {
             <Stat
               value={String(review.length)}
               label="para revisar"
-              accent={review.length ? 'text-hum' : 'text-fg'}
+              accent={review.length ? 'text-warning' : 'text-fg'}
             />
           </>
         )}
@@ -280,9 +278,9 @@ export default function Painel() {
       {review.length > 0 && (
         <NavLink
           to="/revisao"
-          className="card card-raised flex items-center gap-3 p-4 ring-1 ring-hum/30 transition-transform hover:-translate-y-0.5"
+          className="card card-raised flex items-center gap-3 p-4 ring-1 ring-warning/30 transition-transform hover:-translate-y-0.5"
         >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-hum/12 text-hum">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-warning/12 text-warning">
             <IconClock width={22} height={22} />
           </span>
           <span className="min-w-0 flex-1">
@@ -419,7 +417,11 @@ export default function Painel() {
               return (
                 <li key={r.question.id}>
                   <NavLink
-                    to="/questoes"
+                    to={
+                      r.question.topic
+                        ? `/questoes?topicId=${encodeURIComponent(r.question.topic.id)}`
+                        : '/questoes'
+                    }
                     className="block rounded-lg border border-line p-3 transition-colors hover:bg-surface-2"
                   >
                     <p className="flex items-center gap-2 text-xs">
@@ -459,7 +461,7 @@ export default function Painel() {
             <span className="block font-data font-bold tabular-nums">
               {hotThread.replies}
             </span>
-            <span className="text-[10px] text-muted">
+            <span className="text-xs text-muted">
               {hotThread.replies === 1 ? 'resposta' : 'respostas'}
             </span>
           </span>

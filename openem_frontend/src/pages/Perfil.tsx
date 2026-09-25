@@ -4,6 +4,7 @@ import { useAuth } from '../auth';
 import ThemeCustomizer from '../components/ThemeCustomizer';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { FAMILIES, useTheme } from '../theme';
+import { PageHeader } from '../components/PageHeader';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -85,13 +86,8 @@ export default function Perfil() {
   }
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Conta</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-          Perfil
-        </h1>
-      </header>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Conta" title="Perfil" />
 
       {error && (
         <ErrorBanner message={error} />

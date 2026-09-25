@@ -16,6 +16,7 @@ import {
 import { AREA_DOT, AREA_TEXT, areaKey } from '../lib/areas';
 import { fmtClock, fmtMinutes, PRESETS } from '../lib/pomodoro';
 import { usePomodoro } from '../pomodoro';
+import { PageHeader } from '../components/PageHeader';
 
 const HISTORY_DAYS = 30;
 
@@ -82,7 +83,7 @@ function MinuteField({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card p-3.5">
-      <p className="font-data text-xl font-extrabold tabular-nums">{value}</p>
+      <p className="font-data text-xl font-bold tabular-nums">{value}</p>
       <p className="mt-0.5 text-xs text-muted">{label}</p>
     </div>
   );
@@ -147,7 +148,7 @@ export default function Pomodoro() {
 
   const focusing = mode === 'focus';
   const idle = mode === 'idle';
-  const tone = idle || focusing ? 'text-brand' : 'text-nat';
+  const tone = idle || focusing ? 'text-brand' : 'text-success';
 
   const phaseLabel = idle
     ? 'Pronto para focar'
@@ -177,16 +178,11 @@ export default function Pomodoro() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Modo Foco</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Pomodoro
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-muted text-pretty">
-          Blocos de foco cronometrados com pausas curtas. Cada ciclo concluído
-          vira minutos de estudo e XP — e o cronômetro te acompanha pelo app.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Sessões de foco"
+        title="Pomodoro"
+        subtitle="Blocos de foco cronometrados com pausas curtas. Cada ciclo concluído vira minutos de estudo e XP, e o cronômetro te acompanha pelo app."
+      />
 
       {/* ---- Relógio ---- */}
       <Reveal>
@@ -199,7 +195,7 @@ export default function Pomodoro() {
               className={tone}
             >
               <span className="flex flex-col items-center">
-                <span className="font-data text-5xl font-extrabold tabular-nums sm:text-6xl">
+                <span className="font-data text-5xl font-bold tabular-nums sm:text-6xl">
                   {fmtClock(remaining)}
                 </span>
                 <span className="mt-1 text-xs font-semibold text-muted">
@@ -268,7 +264,7 @@ export default function Pomodoro() {
                       </>
                     )}
                   </button>
-                  <button onClick={stop} className="btn btn-ghost text-red">
+                  <button onClick={stop} className="btn btn-ghost text-danger">
                     <IconX width={14} height={14} /> Abandonar
                   </button>
                 </>
@@ -286,7 +282,7 @@ export default function Pomodoro() {
                   ? 'Registrando sessão…'
                   : saved
                     ? `Sessão registrada${
-                        saved.subjectName ? ` — ${saved.subjectName}` : ''
+                        saved.subjectName ? ` (${saved.subjectName})` : ''
                       }! Levante, beba água, alongue.`
                     : 'Levante, beba água, alongue.'}
               </p>
@@ -346,7 +342,7 @@ export default function Pomodoro() {
                     >
                       {active && <IconCheck width={13} height={13} />}
                       {p.label}
-                      <span className="ml-1 font-data text-[0.7rem] opacity-70">
+                      <span className="ml-1 font-data text-xs opacity-70">
                         {p.hint}
                       </span>
                     </button>
@@ -398,7 +394,7 @@ export default function Pomodoro() {
 
               {!idle && (
                 <p className="text-xs text-muted">
-                  As mudanças valem a partir do próximo ciclo — o atual segue com
+                  As mudanças valem a partir do próximo ciclo; o atual segue com
                   a duração em que começou.
                 </p>
               )}
@@ -414,7 +410,7 @@ export default function Pomodoro() {
           <div className="grid grid-cols-3 gap-3">
             <Stat
               label="hoje"
-              value={todayMinutes !== null ? fmtMinutes(todayMinutes) : '—'}
+              value={todayMinutes !== null ? fmtMinutes(todayMinutes) : '-'}
             />
             <Stat label={`em ${HISTORY_DAYS} dias`} value={fmtMinutes(totalMinutes)} />
             <Stat label="sessões" value={String(history?.length ?? 0)} />

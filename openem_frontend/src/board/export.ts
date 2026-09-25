@@ -321,7 +321,7 @@ export async function printPDF(board: Board, opts?: ExportOptions): Promise<void
     downloadDataUrl(png, `${escapeHtml(board.title).replace(/[^\w-]+/g, '_') || 'quadro'}.png`);
     return;
   }
-  w.document.write(`<!doctype html><html><head><title>${escapeHtml(board.title)} — PDF</title><style>@page{size:A4;margin:12mm}html,body{margin:0}img{max-width:100%;max-height:100%;display:block;margin:auto}</style></head><body><img src="${png}"/></body></html>`);
+  w.document.write(`<!doctype html><html><head><title>${escapeHtml(board.title)} (PDF)</title><style>@page{size:A4;margin:12mm}html,body{margin:0}img{max-width:100%;max-height:100%;display:block;margin:auto}</style></head><body><img src="${png}"/></body></html>`);
   w.document.close();
   w.focus();
   setTimeout(() => {

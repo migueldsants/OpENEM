@@ -10,9 +10,9 @@ export interface LeagueStyle {
 
 export const LEAGUE_STYLE: Record<string, LeagueStyle> = {
   BRONZE: {
-    text: 'text-hum',
-    soft: 'bg-hum/12',
-    ring: 'ring-hum/30',
+    text: 'text-warning',
+    soft: 'bg-warning/12',
+    ring: 'ring-warning/30',
     gradient: 'league-bronze',
   },
   PRATA: {
@@ -22,15 +22,15 @@ export const LEAGUE_STYLE: Record<string, LeagueStyle> = {
     gradient: 'league-prata',
   },
   OURO: {
-    text: 'text-mat',
-    soft: 'bg-mat/12',
-    ring: 'ring-mat/30',
+    text: 'text-gold',
+    soft: 'bg-gold/12',
+    ring: 'ring-gold/30',
     gradient: 'league-ouro',
   },
   PLATINA: {
-    text: 'text-lin',
-    soft: 'bg-lin/12',
-    ring: 'ring-lin/30',
+    text: 'text-plat',
+    soft: 'bg-plat/12',
+    ring: 'ring-plat/30',
     gradient: 'league-platina',
   },
   DIAMANTE: {

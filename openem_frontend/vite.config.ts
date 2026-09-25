@@ -14,8 +14,9 @@ export default defineConfig({
         name: 'OpENEM',
         short_name: 'OpENEM',
         description: 'Preparação gratuita e personalizada para o ENEM',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        // Fundo do tema padrão escuro (o mesmo do meta theme-color do index.html).
+        theme_color: '#15111c',
+        background_color: '#15111c',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -66,6 +67,23 @@ export default defineConfig({
                 maxEntries: 400,
                 maxAgeSeconds: 60 * 60 * 24 * 90,
               },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Fontes do Google: a folha de estilo muda (novas versões), os
+            // arquivos .woff2 não. Sem isto o app offline cai na fonte do
+            // sistema e muda de cara.
+            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-css' },
+          },
+          {
+            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

@@ -1,4 +1,12 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -13,6 +21,7 @@ import { useAuth } from '../auth';
 import { EmptyState } from '../components/EmptyState';
 import { QuestionExplanation } from '../components/QuestionExplanation';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { PageHeader } from '../components/PageHeader';
 import { GamificationFeedback } from '../components/GamificationFeedback';
 import {
   IconBoard,
@@ -23,9 +32,12 @@ import {
   IconNote,
   IconStack,
   IconStar,
+  IconTarget,
   IconX,
 } from '../components/icons';
 import { QuestNoteModal } from '../components/QuestNoteModal';
+import { DockOffset } from '../components/DockOffset';
+import { useDialog } from '../components/Modal';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import { useGamification } from '../gamification';
 import { areaKey, AREA_DOT, AREA_TEXT } from '../lib/areas';
@@ -45,6 +57,17 @@ const AnnotateOverlay = lazy(() =>
 );
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+/** Frase para leitor de tela: o resultado e, no erro, a letra certa. */
+function anuncioResultado(
+  result: AnswerResult,
+  alternatives: { id: string; letter?: string | null }[],
+): string {
+  if (result.isCorrect) return 'Você acertou!';
+  const i = alternatives.findIndex((a) => a.id === result.correctAlternativeId);
+  if (i < 0) return 'Não foi dessa vez.';
+  return `Não foi dessa vez. A resposta certa é a ${alternatives[i].letter ?? LETTERS[i]}.`;
+}
 
 interface AnswerState {
   chosen: string | null;
@@ -87,7 +110,7 @@ function QuestionView({
               <span className="text-muted">· {topicLabel(question)}</span>
             )}
             {codeLabel(question) && (
-              <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.7rem] tracking-tight text-muted">
+              <span className="rounded-lg bg-surface-2 px-1.5 py-0.5 font-mono text-xs tracking-tight text-muted">
                 {codeLabel(question)}
               </span>
             )}
@@ -114,7 +137,7 @@ function QuestionView({
             title={hasNote ? 'Ver/editar anotação' : 'Adicionar nota'}
             className={`grid size-9 place-items-center rounded-lg border transition-colors ${
               hasNote
-                ? 'border-transparent bg-hum/15 text-hum'
+                ? 'border-transparent bg-warning/15 text-warning'
                 : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
             }`}
           >
@@ -136,7 +159,7 @@ function QuestionView({
             }
             className={`grid size-9 place-items-center rounded-lg border transition-colors ${
               favorited
-                ? 'border-transparent bg-hum/15 text-hum'
+                ? 'border-transparent bg-warning/15 text-warning'
                 : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
             }`}
           >
@@ -152,10 +175,10 @@ function QuestionView({
           const isWrongPick = !!result && isChosen && !result.isCorrect;
           const stateCls = result
             ? isCorrect
-              ? 'border-nat bg-nat/10'
+              ? 'border-success bg-success/10'
               : isWrongPick
-                ? 'border-red bg-red/10'
-                : 'border-line opacity-60'
+                ? 'border-danger bg-danger/10'
+                : 'border-line text-muted'
             : isChosen
               ? 'border-brand bg-brand/8'
               : 'border-line hover:bg-surface-2';
@@ -164,11 +187,12 @@ function QuestionView({
               key={alt.id}
               type="button"
               disabled={!!result}
+              aria-pressed={result ? undefined : isChosen}
               onClick={() => onChoose(alt.id)}
               className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors disabled:cursor-default ${stateCls}`}
             >
               <span
-                className={`grid size-6 shrink-0 place-items-center rounded-md text-xs font-semibold ${
+                className={`grid size-6 shrink-0 place-items-center rounded-lg text-xs font-semibold ${
                   isChosen && !result
                     ? 'bg-brand text-brand-ink'
                     : 'bg-surface-2 text-muted'
@@ -183,32 +207,43 @@ function QuestionView({
                     alt={`Alternativa ${alt.letter ?? LETTERS[i]}`}
                     loading="lazy"
                     decoding="async"
-                    className="h-auto max-w-full rounded"
+                    className="h-auto max-w-full rounded-lg"
                   />
                 ) : (
                   alt.text
                 )}
               </span>
               {result && isCorrect && (
-                <IconCheck width={16} height={16} className="shrink-0 text-nat" />
+                <>
+                  <IconCheck width={16} height={16} className="shrink-0 text-success" />
+                  <span className="sr-only">(resposta correta)</span>
+                </>
               )}
               {isWrongPick && (
-                <IconX width={16} height={16} className="shrink-0 text-red" />
+                <>
+                  <IconX width={16} height={16} className="shrink-0 text-danger" />
+                  <span className="sr-only">(sua resposta)</span>
+                </>
               )}
             </button>
           );
         })}
       </div>
 
+      {/* Sempre montado: região viva criada junto com o texto nem sempre é lida. */}
+      <p className="sr-only" aria-live="polite">
+        {result ? anuncioResultado(result, question.alternatives) : ''}
+      </p>
+
       {result && (
         <div
           className={`border-t px-4 py-3 sm:px-5 ${
-            result.isCorrect ? 'border-nat/30 bg-nat/5' : 'border-red/30 bg-red/5'
+            result.isCorrect ? 'border-success/30 bg-success/5' : 'border-danger/30 bg-danger/5'
           }`}
         >
           <p
             className={`text-sm font-semibold ${
-              result.isCorrect ? 'text-nat' : 'text-red'
+              result.isCorrect ? 'text-success' : 'text-danger'
             }`}
           >
             {result.isCorrect ? 'Você acertou!' : 'Não foi dessa vez.'}
@@ -277,6 +312,8 @@ function FilterDrawer({
   onApply: (f: Filtros) => void;
 }) {
   const [f, setF] = useState<Filtros>(initial);
+  const painelRef = useRef<HTMLElement>(null);
+  useDialog(painelRef, onClose, open);
 
   // Re-semeia o staging sempre que o drawer abre.
   useEffect(() => {
@@ -342,7 +379,14 @@ function FilterDrawer({
         onClick={onClose}
         aria-hidden
       />
-      <aside className="absolute inset-y-0 right-0 flex w-[88%] max-w-sm flex-col bg-surface shadow-xl animate-rise">
+      <aside
+        ref={painelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filtros"
+        className="absolute inset-y-0 right-0 flex w-[88%] max-w-sm flex-col bg-surface shadow-xl outline-none animate-rise"
+      >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="font-display text-lg font-bold">Filtros</h2>
           <button
@@ -732,27 +776,22 @@ export default function Questoes() {
   const answered = !!state.result;
 
   return (
-    <div className="space-y-4 pb-28 md:pb-24">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Banco de questões</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
-            Questões comentadas
-          </h1>
-        </div>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="btn btn-ghost shrink-0"
-        >
-          <IconFilter width={18} height={18} />
-          Filtros
-          {activeFilters > 0 && (
-            <span className="grid size-5 place-items-center rounded-full bg-brand text-xs font-bold text-brand-ink">
-              {activeFilters}
-            </span>
-          )}
-        </button>
-      </header>
+    <div className="space-y-6 pb-28 md:pb-24">
+      <PageHeader
+        eyebrow="Banco oficial do ENEM"
+        title="Questões"
+        actions={
+          <button onClick={() => setDrawerOpen(true)} className="btn btn-ghost">
+            <IconFilter width={18} height={18} />
+            Filtros
+            {activeFilters > 0 && (
+              <span className="grid size-5 place-items-center rounded-full bg-brand text-xs font-bold text-brand-ink">
+                {activeFilters}
+              </span>
+            )}
+          </button>
+        }
+      />
 
       {/* Busca pelo código da questão: ENEM-2023-136, "2023 136", "2023". */}
       <div className="relative">
@@ -789,11 +828,12 @@ export default function Questoes() {
           )}
           {topicId && (
             <span className="chip">
-              🎯 {topicName ?? 'Assunto'}
+              <IconTarget width={14} height={14} />
+              {topicName ?? 'Assunto'}
               <button
                 onClick={clearTopicFilter}
                 aria-label="Remover filtro de assunto"
-                className="ml-0.5 text-muted hover:text-red"
+                className="ml-0.5 text-muted hover:text-danger"
               >
                 ×
               </button>
@@ -862,10 +902,12 @@ export default function Questoes() {
         />
       )}
 
-      {/* Barra de ação fixa — acima da tabbar no mobile. */}
+      {/* Barra de ação fixa, acima da tabbar no mobile. No desktop acompanha a
+          coluna de conteúdo (sidebar 15rem + respiro 2.5rem, mesma largura). */}
       {current && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[4.75rem] z-20 px-4 md:bottom-4 md:pl-64">
-          <div className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-3 rounded-2xl border border-line bg-surface/90 px-3 py-2.5 shadow-[var(--shadow)] backdrop-blur">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[4.75rem] z-20 px-4 md:bottom-4 md:pl-[17.5rem] md:pr-10">
+          <DockOffset />
+          <div className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-3 rounded-2xl border border-line bg-surface/90 px-3 py-2.5 shadow-[var(--shadow)] backdrop-blur xl:max-w-4xl 2xl:max-w-5xl">
             <button
               onClick={() => setIdx((i) => Math.max(0, i - 1))}
               disabled={!canPrev}
@@ -880,27 +922,25 @@ export default function Questoes() {
                 {idx + 1}
                 <span className="text-muted"> / {total || items.length}</span>
               </p>
-              <p className="text-[0.68rem] text-muted">{answeredCount} respondidas</p>
+              <p className="text-xs text-muted">{answeredCount} respondidas</p>
             </div>
 
-            {answered ? (
-              <button
-                onClick={goNext}
-                disabled={!canNext || loading}
-                className="btn btn-primary shrink-0"
-              >
-                {loading ? 'Carregando…' : 'Próxima'}
-                <IconChevronRight width={18} height={18} />
-              </button>
-            ) : (
-              <button
-                onClick={submit}
-                disabled={!state.chosen}
-                className="btn btn-primary shrink-0"
-              >
-                Responder
-              </button>
-            )}
+            {/* Um botão só, que muda de papel: trocar o elemento derrubaria o
+                foco de quem responde pelo teclado. */}
+            <button
+              onClick={answered ? goNext : submit}
+              disabled={answered ? !canNext || loading : !state.chosen}
+              className="btn btn-primary shrink-0"
+            >
+              {answered ? (
+                <>
+                  {loading ? 'Carregando…' : 'Próxima'}
+                  <IconChevronRight width={18} height={18} />
+                </>
+              ) : (
+                'Responder'
+              )}
+            </button>
           </div>
         </div>
       )}
