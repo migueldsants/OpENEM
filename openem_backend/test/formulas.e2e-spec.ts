@@ -149,4 +149,55 @@ describe('Fórmulas / cheat sheet (issue #38, e2e)', () => {
   it('sem token retorna 401', async () => {
     await request(app.getHttpServer()).get('/api/v1/formulas').expect(401);
   });
+
+  describe('POST /formulas/pdf (caderno de fórmulas)', () => {
+    /** Resposta binária: o supertest não junta o corpo sem um parser. */
+    const binario = (
+      res: NodeJS.ReadableStream,
+      cb: (err: Error | null, body: Buffer) => void,
+    ) => {
+      const partes: Buffer[] = [];
+      res.on('data', (c: Buffer) => partes.push(c));
+      res.on('end', () => cb(null, Buffer.concat(partes)));
+    };
+
+    it('gera o PDF das fórmulas escolhidas, com nome de arquivo', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/formulas/pdf')
+        .set(auth())
+        .send({ formulaIds: [bhaskaraId], title: 'Minha cola', cover: false })
+        .buffer(true)
+        .parse(binario)
+        .expect(200);
+      expect(res.headers['content-type']).toContain('application/pdf');
+      expect(res.headers['content-disposition']).toContain(
+        'filename="minha-cola.pdf"',
+      );
+      expect((res.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+    }, 30_000);
+
+    it('seleção vazia é recusada com mensagem, e não vira PDF em branco', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/formulas/pdf')
+        .set(auth())
+        .send({ formulaIds: [] })
+        .expect(400);
+      expect(res.body.message).toMatch(/Nenhuma fórmula/);
+    });
+
+    it('cor inválida é recusada pela validação', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/formulas/pdf')
+        .set(auth())
+        .send({ brandColor: 'vermelho' })
+        .expect(400);
+    });
+
+    it('sem token retorna 401', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/formulas/pdf')
+        .send({})
+        .expect(401);
+    });
+  });
 });

@@ -132,6 +132,10 @@ describe('xpForSimulation', () => {
       POINTS.simulationBase + POINTS.simulationSpeedBonus,
     );
   });
+
+  it('exatamente 60% do limite já não ganha bônus', () => {
+    expect(xpForSimulation(0, 0.6)).toBe(POINTS.simulationBase);
+  });
 });
 
 describe('xpForEssay', () => {

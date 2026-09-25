@@ -45,6 +45,14 @@ describe('formula-selection', () => {
     expect(topicKey(LISTA[2])).toBe('sem-assunto:mat');
   });
 
+  it('fórmulas do mesmo assunto ficam no mesmo grupo', () => {
+    const g = groupBySubject([f('x'), f('y'), f('z', { topicId: 't2', topicName: 'Porcentagem' })]);
+    expect(g[0].topics.map((t) => [t.name, t.formulas.map((x) => x.id)])).toEqual([
+      ['Funções', ['x', 'y']],
+      ['Porcentagem', ['z']],
+    ]);
+  });
+
   it('marcar a matéria liga todos os assuntos; de novo, desliga', () => {
     const [mat] = groupBySubject(LISTA);
     let sel = toggleSubject(mat, new Set());
