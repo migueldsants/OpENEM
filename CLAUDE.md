@@ -86,6 +86,7 @@ Whole stack: `docker compose up --build` from the repo root.
 - A global `ValidationPipe` (whitelist + transform) is enabled; use `class-validator` DTOs.
 - `PrismaModule` is `@Global()` — inject `PrismaService` anywhere without re-importing.
 - Config comes from `.env` via `@nestjs/config` (`DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT`); see `.env.example`. Never commit `.env`.
+- Rate limiting counts by `req.ip`. Behind a reverse proxy set `TRUST_PROXY` to the number of proxies in front of the API (`src/common/trust-proxy.ts`; Docker Compose uses `1` for the frontend's nginx, which sends `X-Forwarded-For`). Without it every user shares the proxy's IP and one attacker can lock everyone out of login; never enable it without a proxy in front (clients would forge the header) — that is why Compose publishes port 3000 only on `127.0.0.1`.
 - New feature modules are added to the `imports` array of `AppModule` (`src/app.module.ts`). Prefer the Nest CLI (`npx nest g module/controller/service <name>`).
 - Prisma uses **v6** (pinned): the classic `url = env("DATABASE_URL")` datasource. Do not upgrade to Prisma 7 without migrating to its config-file/driver-adapter model.
 

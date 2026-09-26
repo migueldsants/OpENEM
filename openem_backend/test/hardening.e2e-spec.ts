@@ -3,14 +3,18 @@ import {
   RequestMethod,
   ValidationPipe,
 } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { parseTrustProxy } from './../src/common/trust-proxy';
 
 // Hardening (issue #49): validação de posse do simulationId, rate limiting
 // do auth e transação/idempotência do finish(). Os limites de throttle são
 // maiores que os do controller para não flakar por conta de outros specs.
+// Também guarda as correções do pentest:
+// - rate limiting pelo IP real atrás de proxy (TRUST_PROXY)
 describe('Hardening (e2e)', () => {
   let app: INestApplication<App>;
   let tokenA: string;
@@ -199,5 +203,89 @@ describe('Hardening (e2e)', () => {
   it('GET /health permanece acessível mesmo com throttle', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);
     expect(res.body.status).toBe('ok');
+  });
+
+  describe('rate limiting atrás de proxy (TRUST_PROXY)', () => {
+    // Instância dedicada por teste: o storage do throttler é in-memory por app.
+    async function appDedicada(trustProxy?: string) {
+      const moduleFixture = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+      const dedicada =
+        moduleFixture.createNestApplication<NestExpressApplication>();
+      dedicada.enableShutdownHooks();
+      const valor = parseTrustProxy(trustProxy);
+      if (valor !== undefined) dedicada.set('trust proxy', valor);
+      dedicada.setGlobalPrefix('api/v1', {
+        exclude: [
+          { path: '', method: RequestMethod.GET },
+          { path: 'health', method: RequestMethod.GET },
+        ],
+      });
+      await dedicada.init();
+      return dedicada;
+    }
+
+    /** Esgota o limite de login (10/min) a partir de um IP. */
+    async function esgotaLogin(dedicada: NestExpressApplication, ip: string) {
+      for (let i = 0; i < 10; i++) {
+        await request(dedicada.getHttpServer())
+          .post('/api/v1/auth/login')
+          .set('X-Forwarded-For', ip)
+          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+          .expect(401);
+      }
+    }
+
+    it('com o proxy confiável, o atacante não bloqueia o login dos outros', async () => {
+      const dedicada = await appDedicada('1');
+      try {
+        await esgotaLogin(dedicada, '203.0.113.10');
+        // O próprio atacante fica bloqueado...
+        await request(dedicada.getHttpServer())
+          .post('/api/v1/auth/login')
+          .set('X-Forwarded-For', '203.0.113.10')
+          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+          .expect(429);
+        // ...e o aluno, em outro IP, entra normalmente.
+        const aluno = await request(dedicada.getHttpServer())
+          .post('/api/v1/auth/login')
+          .set('X-Forwarded-For', '198.51.100.20')
+          .send({ email: emailA, password: 'senhaForte123' })
+          .expect(200);
+        expect(aluno.body.accessToken).toBeDefined();
+      } finally {
+        await dedicada.close();
+      }
+    });
+
+    it('vale o endereço que o proxy acrescenta, não o que o cliente escreve', async () => {
+      const dedicada = await appDedicada('1');
+      try {
+        // O nginx acrescenta o IP real ao fim da lista; o início é do cliente.
+        await esgotaLogin(dedicada, '1.1.1.1, 203.0.113.10');
+        await request(dedicada.getHttpServer())
+          .post('/api/v1/auth/login')
+          .set('X-Forwarded-For', '9.9.9.9, 203.0.113.10')
+          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+          .expect(429);
+      } finally {
+        await dedicada.close();
+      }
+    });
+
+    it('sem TRUST_PROXY, X-Forwarded-For forjado não escapa do limite', async () => {
+      const dedicada = await appDedicada(undefined);
+      try {
+        await esgotaLogin(dedicada, '203.0.113.10');
+        await request(dedicada.getHttpServer())
+          .post('/api/v1/auth/login')
+          .set('X-Forwarded-For', '198.51.100.20')
+          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+          .expect(429);
+      } finally {
+        await dedicada.close();
+      }
+    });
   });
 });
