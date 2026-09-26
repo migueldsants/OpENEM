@@ -34,6 +34,7 @@ model User {
   flashcardDecks      FlashcardDeck[]
   flashcardReviews    FlashcardReview[]
   weeklyGoals         WeeklyGoal[]
+  formulas            Formula[]
   formulaFavorites    UserFormula[]
   focusSessions       FocusSession[]
   videos              Video[]
@@ -363,9 +364,15 @@ model WeeklyGoal {
 
 // Fórmula essencial catalogada (a maioria é builtIn, via seed). `latex`
 // guarda a expressão em LaTeX para renderizar no MathLive/KaTeX.
+//
+// O catálogo (isBuiltIn) aparece para todos; a fórmula personalizada, só para
+// quem a criou (ownerId). O título é único por dono, e não no banco inteiro:
+// um título global deixava um aluno ocupar o nome de uma fórmula que o seed
+// ainda ia criar. No catálogo (ownerId nulo) quem garante o título único é o
+// seed, porque o índice único trata cada NULL como distinto.
 model Formula {
   id          String          @id @default(cuid())
-  title       String          @unique
+  title       String
   latex       String
   description String?
   subjectId   String
@@ -373,10 +380,13 @@ model Formula {
   topicId     String?
   topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: SetNull)
   isBuiltIn   Boolean         @default(true)
+  ownerId     String?
+  owner       User?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime        @default(now())
   favoritedBy UserFormula[]
   symbols     FormulaSymbol[]
 
+  @@unique([ownerId, title])
   @@index([subjectId])
   @@index([title])
 }

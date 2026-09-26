@@ -855,7 +855,20 @@ export const FORMULA_TOPICS: Record<string, string> = {
   'Estrutura da redação ENEM': 'Estrutura dissertativa',
 };
 
-/** Semeia as fórmulas por upsert (idempotente). Retorna quantas gravou. */
+/**
+ * Fórmula do catálogo com esse título. O título só é único por dono (ver
+ * schema.prisma), então a busca fica no catálogo: sem esse recorte, uma
+ * fórmula personalizada com o mesmo nome seria atualizada no lugar da do seed
+ * e o catálogo sumiria para os outros alunos.
+ */
+function doCatalogo(prisma: PrismaClient, title: string) {
+  return prisma.formula.findFirst({
+    where: { title, ownerId: null, isBuiltIn: true },
+    select: { id: true },
+  });
+}
+
+/** Semeia as fórmulas (idempotente). Retorna quantas gravou. */
 export async function seedFormulas(prisma: PrismaClient): Promise<number> {
   let count = 0;
   for (const f of FORMULAS) {
@@ -886,8 +899,8 @@ export async function seedFormulas(prisma: PrismaClient): Promise<number> {
 
     if (f.formerTitle) {
       const [atual, antiga] = await Promise.all([
-        prisma.formula.findUnique({ where: { title: f.title } }),
-        prisma.formula.findUnique({ where: { title: f.formerTitle } }),
+        doCatalogo(prisma, f.title),
+        doCatalogo(prisma, f.formerTitle),
       ]);
       if (antiga && !atual) {
         await prisma.formula.update({
@@ -897,24 +910,23 @@ export async function seedFormulas(prisma: PrismaClient): Promise<number> {
       }
     }
 
-    const formula = await prisma.formula.upsert({
-      where: { title: f.title },
-      update: {
-        latex: f.latex,
-        description: f.description ?? null,
-        subjectId: subject.id,
-        topicId: topic?.id ?? null,
-      },
-      create: {
-        title: f.title,
-        latex: f.latex,
-        description: f.description ?? null,
-        subjectId: subject.id,
-        topicId: topic?.id ?? null,
-        isBuiltIn: true,
-      },
-      select: { id: true },
-    });
+    const dados = {
+      latex: f.latex,
+      description: f.description ?? null,
+      subjectId: subject.id,
+      topicId: topic?.id ?? null,
+    };
+    const existente = await doCatalogo(prisma, f.title);
+    const formula = existente
+      ? await prisma.formula.update({
+          where: { id: existente.id },
+          data: dados,
+          select: { id: true },
+        })
+      : await prisma.formula.create({
+          data: { title: f.title, ...dados, isBuiltIn: true },
+          select: { id: true },
+        });
 
     // Legenda: recria do zero a cada seed para refletir edições no catálogo.
     const symbols = FORMULA_SYMBOLS[f.title];
