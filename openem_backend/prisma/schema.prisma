@@ -27,7 +27,6 @@ model User {
   achievements        UserAchievement[]
   dailyChallenges     DailyChallengeLog[]
   xpLogs              XpLog[]
-  gameScores          GameScore[]
   forumThreads        ForumThread[]
   forumPosts          ForumPost[]
   postLikes           ForumPostLike[]
@@ -663,20 +662,4 @@ model FlashcardReview {
 
   @@unique([userId, flashcardId])
   @@index([userId, dueAt]) // fila "vencidos primeiro"
-}
-
-// ---- Fase 3 (avançado) — Games (issue #18) ----
-
-// Pontuação de um usuário em um minigame (uma linha por partida).
-model GameScore {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameKey     String // chave do GameDefinition (catálogo em código)
-  score       Int
-  level       Int // nível alcançado no minigame
-  durationSec Int
-  createdAt   DateTime @default(now())
-
-  @@index([gameKey, score]) // leaderboard por jogo
 }

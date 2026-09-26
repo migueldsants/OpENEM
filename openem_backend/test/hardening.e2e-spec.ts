@@ -16,6 +16,7 @@ import { parseTrustProxy } from './../src/common/trust-proxy';
 // Também guarda as correções do pentest:
 // - rate limiting pelo IP real atrás de proxy (TRUST_PROXY)
 // - simulado corrigido só pelas próprias questões
+// - minigames fora da API
 describe('Hardening (e2e)', () => {
   let app: INestApplication<App>;
   let tokenA: string;
@@ -367,5 +368,17 @@ describe('Hardening (e2e)', () => {
         await dedicada.close();
       }
     });
+  });
+
+  it('as rotas de minigame saíram da API', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/games/scores')
+      .set(auth(tokenA))
+      .send({ gameKey: 'calculo-mental', score: 100000, level: 1 })
+      .expect(404);
+    await request(app.getHttpServer())
+      .get('/api/v1/games')
+      .set(auth(tokenA))
+      .expect(404);
   });
 });

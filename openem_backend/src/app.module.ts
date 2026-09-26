@@ -12,7 +12,6 @@ import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
 import { GamificationModule } from './gamification/gamification.module';
-import { GamesModule } from './games/games.module';
 import { HealthModule } from './health/health.module';
 import { PerformanceModule } from './performance/performance.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -63,7 +62,6 @@ import { VideosModule } from './videos/videos.module';
     GamificationModule,
     RecommendationModule,
     CommunityModule,
-    GamesModule,
     WeeklyGoalsModule,
     FormulasModule,
     PomodoroModule,
