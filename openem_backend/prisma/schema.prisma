@@ -33,6 +33,7 @@ model User {
   questionNotes       QuestionNote[]
   flashcardDecks      FlashcardDeck[]
   flashcardReviews    FlashcardReview[]
+  deckVotes           FlashcardDeckVote[]
   weeklyGoals         WeeklyGoal[]
   formulas            Formula[]
   formulaFavorites    UserFormula[]
@@ -622,25 +623,41 @@ model ForumPostLike {
 
 // Conjunto de flashcards (público ou privado do usuário).
 model FlashcardDeck {
-  id          String      @id @default(cuid())
+  id          String              @id @default(cuid())
   userId      String?
-  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
   description String
-  isPublic    Boolean     @default(false)
+  isPublic    Boolean             @default(false)
   // subject = nome do Subject; topic = matéria; subtheme = subtema dentro da matéria
   subject     String
   topic       String?
   subtheme    String?
-  weight      Int         @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
-  icon        String      @default("books")
-  upvotes     Int         @default(0)
-  downvotes   Int         @default(0)
-  createdAt   DateTime    @default(now())
+  weight      Int                 @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
+  icon        String              @default("books")
+  upvotes     Int                 @default(0)
+  downvotes   Int                 @default(0)
+  createdAt   DateTime            @default(now())
   flashcards  Flashcard[]
+  votes       FlashcardDeckVote[]
 
   @@index([isPublic, upvotes]) // ordenação por popularidade
   @@index([subject])
+}
+
+// Voto de um aluno num deck público: um por aluno e por deck. Os totais seguem
+// em upvotes/downvotes (a ordenação usa eles); esta tabela é o que impede votar
+// de novo. Votos anteriores a ela já estão nos totais e não têm linha aqui.
+model FlashcardDeckVote {
+  id        String        @id @default(cuid())
+  deckId    String
+  deck      FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vote      String // up | down
+  createdAt DateTime      @default(now())
+
+  @@unique([deckId, userId])
 }
 
 model Flashcard {

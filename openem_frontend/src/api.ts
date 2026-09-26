@@ -533,6 +533,13 @@ export interface FlashcardDeckBrief {
   createdAt: string;
   _count: { flashcards: number };
 }
+/** Totais do deck depois do voto: o servidor conta um voto por aluno. */
+export interface DeckVoteResult {
+  id: string;
+  upvotes: number;
+  downvotes: number;
+  myVote: 'up' | 'down';
+}
 export interface FlashcardItem {
   flashcardId: string;
   front: string;
@@ -1140,7 +1147,7 @@ export const api = {
       method: 'DELETE',
     }),
   voteDeck: (deckId: string, vote: 'up' | 'down') =>
-    request(`/flashcards/decks/${deckId}/vote`, {
+    request<DeckVoteResult>(`/flashcards/decks/${deckId}/vote`, {
       method: 'POST',
       body: { vote },
     }),

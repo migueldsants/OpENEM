@@ -1,8 +1,10 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildStudyQueue,
@@ -12,6 +14,14 @@ import {
 import { CreateDeckDto } from './dto/create-deck.dto';
 import { UpdateDeckDto } from './dto/update-deck.dto';
 import { CreateFlashcardDto } from './dto/create-flashcard.dto';
+
+export type DeckVote = 'up' | 'down';
+
+/** Contador do deck que cada sentido de voto move. */
+const COUNTER: Record<DeckVote, 'upvotes' | 'downvotes'> = {
+  up: 'upvotes',
+  down: 'downvotes',
+};
 
 @Injectable()
 export class FlashcardsService {
@@ -88,15 +98,62 @@ export class FlashcardsService {
     return deck;
   }
 
-  /** Vota em um deck público. */
-  async voteDeck(deckId: string, vote: 'up' | 'down') {
-    const field = vote === 'up' ? 'upvotes' : 'downvotes';
-    const deck = await this.prisma.flashcardDeck.update({
+  /**
+   * Vota em um deck público. Vale um voto por aluno: repetir o voto não conta
+   * de novo, e trocar de sentido move o voto de um contador para o outro.
+   * Antes cada requisição somava 1, e dava para inflar ou derrubar qualquer
+   * deck no ranking, até os privados.
+   */
+  async voteDeck(userId: string, deckId: string, vote: DeckVote) {
+    const deck = await this.prisma.flashcardDeck.findUnique({
       where: { id: deckId },
-      data: { [field]: { increment: 1 } },
-      select: { id: true, upvotes: true, downvotes: true },
+      select: { isPublic: true },
     });
-    return deck;
+    if (!deck) throw new NotFoundException('Deck não encontrado');
+    if (!deck.isPublic) {
+      throw new ForbiddenException('Só é possível votar em decks públicos');
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const anterior = await tx.flashcardDeckVote.findUnique({
+          where: { deckId_userId: { deckId, userId } },
+          select: { id: true, vote: true },
+        });
+        const incremento = { upvotes: 0, downvotes: 0 };
+        if (!anterior) {
+          await tx.flashcardDeckVote.create({
+            data: { deckId, userId, vote },
+          });
+          incremento[COUNTER[vote]] = 1;
+        } else if (anterior.vote !== vote) {
+          await tx.flashcardDeckVote.update({
+            where: { id: anterior.id },
+            data: { vote },
+          });
+          incremento[COUNTER[vote]] = 1;
+          incremento[COUNTER[anterior.vote as DeckVote]] = -1;
+        }
+        const atualizado = await tx.flashcardDeck.update({
+          where: { id: deckId },
+          data: {
+            upvotes: { increment: incremento.upvotes },
+            downvotes: { increment: incremento.downvotes },
+          },
+          select: { id: true, upvotes: true, downvotes: true },
+        });
+        return { ...atualizado, myVote: vote };
+      });
+    } catch (e) {
+      // Dois votos simultâneos do mesmo aluno: o índice único barra o segundo.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('Seu voto neste deck já foi registrado');
+      }
+      throw e;
+    }
   }
 
   // ---- Flashcards ----

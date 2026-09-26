@@ -17,6 +17,7 @@ import { parseTrustProxy } from './../src/common/trust-proxy';
 // - rate limiting pelo IP real atrás de proxy (TRUST_PROXY)
 // - simulado corrigido só pelas próprias questões
 // - minigames fora da API
+// - um voto por aluno em deck público
 describe('Hardening (e2e)', () => {
   let app: INestApplication<App>;
   let tokenA: string;
@@ -367,6 +368,64 @@ describe('Hardening (e2e)', () => {
       } finally {
         await dedicada.close();
       }
+    });
+  });
+
+  describe('voto em deck de flashcards', () => {
+    async function criaDeck(token: string, isPublic: boolean) {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/flashcards/decks')
+        .set(auth(token))
+        .send({
+          title: `Deck ${isPublic ? 'público' : 'privado'}`,
+          description: 'e2e',
+          subject: 'Matemática e suas Tecnologias',
+          isPublic,
+        })
+        .expect(201);
+      return res.body.id as string;
+    }
+
+    function vota(token: string, deckId: string, vote: string) {
+      return request(app.getHttpServer())
+        .post(`/api/v1/flashcards/decks/${deckId}/vote`)
+        .set(auth(token))
+        .send({ vote });
+    }
+
+    it('conta um voto por aluno, e trocar de sentido move o voto', async () => {
+      const deckId = await criaDeck(tokenB, true);
+
+      for (let i = 0; i < 5; i++) {
+        await vota(tokenA, deckId, 'down').expect(201);
+      }
+      const repetido = await vota(tokenA, deckId, 'down').expect(201);
+      expect(repetido.body).toMatchObject({
+        upvotes: 0,
+        downvotes: 1,
+        myVote: 'down',
+      });
+
+      const trocado = await vota(tokenA, deckId, 'up').expect(201);
+      expect(trocado.body).toMatchObject({ upvotes: 1, downvotes: 0 });
+
+      // O voto de outro aluno soma por conta própria.
+      const outro = await vota(tokenB, deckId, 'up').expect(201);
+      expect(outro.body).toMatchObject({ upvotes: 2, downvotes: 0 });
+    });
+
+    it('deck privado não recebe voto (403)', async () => {
+      const deckId = await criaDeck(tokenB, false);
+      await vota(tokenA, deckId, 'down').expect(403);
+    });
+
+    it('deck inexistente responde 404, e não 500', async () => {
+      await vota(tokenA, 'nao-existe', 'up').expect(404);
+    });
+
+    it('voto fora de up/down é recusado pela validação', async () => {
+      const deckId = await criaDeck(tokenB, true);
+      await vota(tokenA, deckId, 'banana').expect(400);
     });
   });
 
