@@ -240,7 +240,9 @@ describe('Fase 2 â€” pÃ³s-MVP (e2e)', () => {
         ],
       })
       .expect(201);
-    expect(finish.body.total).toBe(1);
+    // O total é o do simulado inteiro: as questões não entregues contam em
+    // branco. A repetida conta uma vez só.
+    expect(finish.body.total).toBe(start.body.questions.length);
     expect(finish.body.correct).toBe(1);
   });
 

@@ -15,6 +15,7 @@ import { parseTrustProxy } from './../src/common/trust-proxy';
 // maiores que os do controller para não flakar por conta de outros specs.
 // Também guarda as correções do pentest:
 // - rate limiting pelo IP real atrás de proxy (TRUST_PROXY)
+// - simulado corrigido só pelas próprias questões
 describe('Hardening (e2e)', () => {
   let app: INestApplication<App>;
   let tokenA: string;
@@ -120,13 +121,92 @@ describe('Hardening (e2e)', () => {
       .send({ templateId: 'seed-template-math' })
       .expect(201);
 
-    const q = await firstQuestion();
+    const q = start.body.questions[0];
     const res = await request(app.getHttpServer())
       .post('/api/v1/answers')
       .set(auth(tokenA))
       .send({ questionId: q.id, chosenId: null, simulationId: start.body.id })
       .expect(201);
     expect(res.body).toHaveProperty('isCorrect');
+  });
+
+  it('POST /answers recusa questão que não faz parte do simulado (400)', async () => {
+    const start = await request(app.getHttpServer())
+      .post('/api/v1/simulations')
+      .set(auth(tokenA))
+      .send({ templateId: 'seed-template-math' })
+      .expect(201);
+    const doSimulado = new Set(
+      start.body.questions.map((q: { id: string }) => q.id),
+    );
+
+    const list = await request(app.getHttpServer())
+      .get('/api/v1/questions?limit=50')
+      .set(auth(tokenA))
+      .expect(200);
+    const intrusa = list.body.items.find(
+      (q: { id: string }) => !doSimulado.has(q.id),
+    );
+    expect(intrusa).toBeDefined();
+
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/answers')
+      .set(auth(tokenA))
+      .send({ questionId: intrusa.id, simulationId: start.body.id })
+      .expect(400);
+    expect(res.body.message).toMatch(/não faz parte do simulado/);
+  });
+
+  it('finish() corrige só as questões do simulado: intrusa não conta, faltante fica em branco', async () => {
+    const start = await request(app.getHttpServer())
+      .post('/api/v1/simulations')
+      .set(auth(tokenA))
+      .send({ templateId: 'seed-template-math' })
+      .expect(201);
+    const questoes: { id: string }[] = start.body.questions;
+    expect(questoes.length).toBeGreaterThan(1);
+    const doSimulado = new Set(questoes.map((q) => q.id));
+
+    // Gabarito de questões de fora do simulado (ele é público pela API).
+    const list = await request(app.getHttpServer())
+      .get('/api/v1/questions?limit=50')
+      .set(auth(tokenA))
+      .expect(200);
+    const intrusas = list.body.items
+      .filter((q: { id: string }) => !doSimulado.has(q.id))
+      .slice(0, 5);
+    expect(intrusas.length).toBeGreaterThan(0);
+    const answers = [
+      // Só a primeira questão do simulado, e certa.
+      {
+        questionId: questoes[0].id,
+        chosenId: await correctAlternativeId(questoes[0].id),
+      },
+    ];
+    for (const q of intrusas) {
+      answers.push({
+        questionId: q.id,
+        chosenId: await correctAlternativeId(q.id),
+      });
+    }
+
+    const finish = await request(app.getHttpServer())
+      .post(`/api/v1/simulations/${start.body.id}/finish`)
+      .set(auth(tokenA))
+      .send({ answers })
+      .expect(201);
+    expect(finish.body.total).toBe(questoes.length);
+    expect(finish.body.correct).toBe(1);
+    expect(
+      finish.body.details.map((d: { questionId: string }) => d.questionId),
+    ).toEqual(questoes.map((q) => q.id));
+
+    // Uma resposta gravada por questão do simulado, nenhuma para as intrusas.
+    const sim = await request(app.getHttpServer())
+      .get(`/api/v1/simulations/${start.body.id}`)
+      .set(auth(tokenA))
+      .expect(200);
+    expect(sim.body.answersCount).toBe(questoes.length);
   });
 
   it('finish() é atômico: segunda finalização não duplica respostas', async () => {

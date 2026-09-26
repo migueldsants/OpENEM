@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AnswersService } from './answers.service';
 
 function makePrismaMock() {
@@ -138,6 +142,8 @@ describe('AnswersService', () => {
         prisma.simulation.findUnique.mockResolvedValue({
           userId: 'u1',
           finishedAt: null,
+          _count: { questions: 2 },
+          questions: [{ id: 'sq1' }],
         });
         prisma.answer.create.mockResolvedValue({});
 
@@ -149,6 +155,60 @@ describe('AnswersService', () => {
         expect(res.isCorrect).toBe(true);
         expect(prisma.answer.create).toHaveBeenCalledWith({
           data: expect.objectContaining({ simulationId: 'sim-meu' }),
+        });
+        // A busca procura a questão respondida dentro da lista do simulado.
+        expect(prisma.simulation.findUnique).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sim-meu' },
+            select: expect.objectContaining({
+              questions: {
+                where: { questionId: 'q1' },
+                select: { id: true },
+              },
+            }),
+          }),
+        );
+      });
+
+      it('retorna 400 para questão que não faz parte do simulado', async () => {
+        const { service, prisma } = makeService();
+        prisma.question.findUnique.mockResolvedValue(QUESTION);
+        prisma.simulation.findUnique.mockResolvedValue({
+          userId: 'u1',
+          finishedAt: null,
+          _count: { questions: 2 },
+          questions: [],
+        });
+
+        const resposta = service.create('u1', {
+          questionId: 'q1',
+          simulationId: 'sim-meu',
+        });
+        await expect(resposta).rejects.toBeInstanceOf(BadRequestException);
+        await expect(resposta).rejects.toThrow(
+          'Esta questão não faz parte do simulado',
+        );
+        expect(prisma.answer.create).not.toHaveBeenCalled();
+      });
+
+      it('simulado antigo, sem lista de questões, segue aceitando', async () => {
+        const { service, prisma } = makeService();
+        prisma.question.findUnique.mockResolvedValue(QUESTION);
+        prisma.simulation.findUnique.mockResolvedValue({
+          userId: 'u1',
+          finishedAt: null,
+          _count: { questions: 0 },
+          questions: [],
+        });
+        prisma.answer.create.mockResolvedValue({});
+
+        await service.create('u1', {
+          questionId: 'q1',
+          chosenId: 'a2',
+          simulationId: 'sim-antigo',
+        });
+        expect(prisma.answer.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({ simulationId: 'sim-antigo' }),
         });
       });
     });

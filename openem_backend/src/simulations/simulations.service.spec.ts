@@ -161,6 +161,41 @@ describe('SimulationsService', () => {
       expect(res.id).toBe('sim-1');
       expect(res.questionCount).toBe(1);
       expect(res.questions[0].alternatives[0]).not.toHaveProperty('isCorrect');
+
+      // A lista sorteada fica gravada, na ordem da prova: é ela que o finish()
+      // corrige.
+      const data = prisma.simulation.create.mock.calls[0][0].data;
+      expect(data).toMatchObject({
+        userId: 'u1',
+        templateId: 'seed-template-math',
+      });
+      const gravadas = data.questions.createMany.data;
+      expect(gravadas).toHaveLength(2);
+      expect(gravadas.map((q: { position: number }) => q.position)).toEqual([
+        0, 1,
+      ]);
+      for (const q of gravadas) {
+        expect(['q1', 'q2', 'q3']).toContain(q.questionId);
+      }
+      expect(gravadas[0].questionId).not.toBe(gravadas[1].questionId);
+    });
+
+    it('não grava a mesma questão duas vezes se o sorteio repetir uma linha', async () => {
+      const { service, prisma } = makeService();
+      prisma.simulationTemplate.findUnique.mockResolvedValue(TEMPLATE);
+      // As duas posições sorteadas devolvem a mesma linha (tabela mudou
+      // durante o sorteio).
+      mockPool(prisma, [{ topicId: 't1', ids: ['q1', 'q1'] }]);
+      prisma.simulation.create.mockResolvedValue({
+        id: 'sim-1',
+        startedAt: new Date(),
+      });
+
+      await service.start('u1', { templateId: 'seed-template-math' });
+      const data = prisma.simulation.create.mock.calls[0][0].data;
+      expect(data.questions.createMany.data).toEqual([
+        { questionId: 'q1', position: 0 },
+      ]);
     });
 
     describe('simulado personalizado por tema', () => {
@@ -555,6 +590,8 @@ describe('SimulationsService', () => {
   });
 
   describe('finish()', () => {
+    // Sem `questions`: simulado anterior à lista gravada, corrigido pelo que
+    // foi entregue. O caso com a lista tem testes próprios abaixo.
     function simulationRow(overrides: Record<string, unknown> = {}) {
       return {
         id: 'sim-1',
@@ -562,6 +599,7 @@ describe('SimulationsService', () => {
         startedAt: new Date('2026-01-01T00:00:00Z'),
         finishedAt: null,
         template: { timeLimitMin: 30 },
+        questions: [],
         ...overrides,
       };
     }
@@ -670,6 +708,122 @@ describe('SimulationsService', () => {
         expect.any(Date),
         { simulationsCount: 1 },
       );
+    });
+
+    describe('com a lista de questões gravada', () => {
+      const Q1 = {
+        id: 'q1',
+        topicId: 't1',
+        explanation: 'e1',
+        discrimination: null,
+        irtDifficulty: null,
+        guessing: null,
+        alternatives: [
+          { id: 'a1', isCorrect: false },
+          { id: 'a2', isCorrect: true },
+        ],
+      };
+      const Q2 = {
+        ...Q1,
+        id: 'q2',
+        topicId: 't2',
+        explanation: 'e2',
+        alternatives: [{ id: 'b1', isCorrect: true }],
+      };
+
+      function arrange() {
+        const ctx = makeService();
+        ctx.prisma.simulation.findUnique.mockResolvedValue(
+          simulationRow({
+            questions: [{ questionId: 'q1' }, { questionId: 'q2' }],
+          }),
+        );
+        ctx.prisma.question.findMany.mockResolvedValue([Q1, Q2]);
+        const tx = {
+          simulation: {
+            findUnique: jest.fn().mockResolvedValue({ finishedAt: null }),
+            update: jest.fn().mockResolvedValue({}),
+          },
+          answer: { create: jest.fn().mockResolvedValue({}) },
+        };
+        ctx.prisma.$transaction.mockImplementation(
+          (fn: (t: unknown) => unknown) => fn(tx),
+        );
+        return { ...ctx, tx };
+      }
+
+      it('lê a lista na ordem da prova', async () => {
+        const { service, prisma } = arrange();
+        await service.finish('u1', 'sim-1', { answers: [] });
+        expect(prisma.simulation.findUnique).toHaveBeenCalledWith({
+          where: { id: 'sim-1' },
+          include: {
+            template: { select: { timeLimitMin: true } },
+            questions: {
+              select: { questionId: true },
+              orderBy: { position: 'asc' },
+            },
+          },
+        });
+      });
+
+      it('ignora questão de fora do simulado, mesmo com a resposta certa', async () => {
+        const { service, prisma, tx, gamification } = arrange();
+
+        const res = await service.finish('u1', 'sim-1', {
+          answers: [
+            { questionId: 'q1', chosenId: 'a2' },
+            { questionId: 'intrusa', chosenId: 'certa' },
+            { questionId: 'q2', chosenId: 'b1' },
+          ],
+        });
+
+        expect(prisma.question.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: { in: ['q1', 'q2'] } } }),
+        );
+        expect(res.total).toBe(2);
+        expect(res.correct).toBe(2);
+        expect(res.details.map((d) => d.questionId)).toEqual(['q1', 'q2']);
+        expect(tx.answer.create).toHaveBeenCalledTimes(2);
+        expect(tx.simulation.update).toHaveBeenCalledWith({
+          where: { id: 'sim-1' },
+          data: expect.objectContaining({ rawScore: 2 }),
+        });
+        expect(gamification.recordActivity).toHaveBeenCalledWith(
+          'u1',
+          'SIMULATION',
+          expect.any(Number),
+          '2 acerto(s) em 2 questões',
+          expect.any(Date),
+          { simulationsCount: 1 },
+        );
+      });
+
+      it('questão não entregue conta como em branco no total', async () => {
+        const { service, tx } = arrange();
+
+        const res = await service.finish('u1', 'sim-1', {
+          answers: [{ questionId: 'q1', chosenId: 'a2' }],
+        });
+
+        expect(res.total).toBe(2);
+        expect(res.correct).toBe(1);
+        expect(res.percentage).toBe(50);
+        expect(res.details[1]).toMatchObject({
+          questionId: 'q2',
+          isCorrect: false,
+          chosenId: null,
+          correctAlternativeId: 'b1',
+        });
+        expect(tx.answer.create).toHaveBeenNthCalledWith(2, {
+          data: expect.objectContaining({
+            questionId: 'q2',
+            chosenId: undefined,
+            isCorrect: false,
+            simulationId: 'sim-1',
+          }),
+        });
+      });
     });
 
     it('segunda finalização concorrente dentro da transação é rejeitada', async () => {
