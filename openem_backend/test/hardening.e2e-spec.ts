@@ -18,6 +18,7 @@ import { parseTrustProxy } from './../src/common/trust-proxy';
 // - simulado corrigido só pelas próprias questões
 // - minigames fora da API
 // - um voto por aluno em deck público
+// - teto no texto da redação
 describe('Hardening (e2e)', () => {
   let app: INestApplication<App>;
   let tokenA: string;
@@ -439,5 +440,17 @@ describe('Hardening (e2e)', () => {
       .get('/api/v1/games')
       .set(auth(tokenA))
       .expect(404);
+  });
+
+  it('redação acima do teto de caracteres é recusada (400)', async () => {
+    const prompts = await request(app.getHttpServer())
+      .get('/api/v1/essays/prompts')
+      .set(auth(tokenA))
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/api/v1/essays/submissions')
+      .set(auth(tokenA))
+      .send({ promptId: prompts.body[0].id, content: 'a'.repeat(8001) })
+      .expect(400);
   });
 });
