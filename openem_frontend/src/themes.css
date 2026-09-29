@@ -1,0 +1,703 @@
+/* =============================================================================
+   Temas do OpENEM: cada família tem variante clara (light) e escura (dark).
+   O seletor escolhe a família; o toggle claro/escuro troca a variante.
+   Convenção: [data-theme='familia-light'] | [data-theme='familia-dark'].
+
+   Família nova mexe em 3 lugares: este arquivo, FAMILIES em src/theme.tsx e
+   a lista do script de boot no index.html. theme-boot.test.ts e
+   theme-palettes.test.ts (contraste AAA/AA de cada lado) seguram os três.
+
+   Os seletores valem em qualquer elemento, não só no <html>: a galeria de
+   temas usa <div data-theme="..."> para mostrar a prévia de cada paleta.
+   ============================================================================= */
+
+/* ---- Padrão (marca vermelho-rosado NestJS) ---- */
+[data-theme='default-light'],
+:root {
+  color-scheme: light;
+  --bg: #f5f1f6;
+  --sidebar: #efeaf1;
+  --surface: #ffffff;
+  --surface-2: #faf6fa;
+  --fg: #211b26;
+  --muted: #6b6473;
+  --line: #ece5ee;
+  --brand: #d91748;
+  --brand-2: #ff5a7d;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(40, 14, 22, 0.05), 0 10px 28px rgba(40, 14, 22, 0.07);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='default-dark'] {
+  color-scheme: dark;
+  --bg: #15111c;
+  --sidebar: #1a1524;
+  --surface: #1e1926;
+  --surface-2: #2a2335;
+  --fg: #ece7f1;
+  --muted: #a59cb0;
+  --line: #322a3d;
+  --brand: #fb5277;
+  --brand-2: #ff86a6;
+  --brand-ink: #15111c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Personalizado: as cores dos dois lados vêm inline (theme-custom.ts).
+   Daqui só saem sombra e brilho; o lado claro usa os do :root. ---- */
+[data-theme='custom-dark'] {
+  color-scheme: dark;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Sépia (papel/leitura) ---- */
+[data-theme='sepia-light'] {
+  color-scheme: light;
+  --bg: #f4ecd8;
+  --sidebar: #ece3cc;
+  --surface: #faf5e9;
+  --surface-2: #f0e8d4;
+  --fg: #43352a;
+  --muted: #70624c;
+  --line: #e3d8bf;
+  --brand: #af4e00;
+  --brand-2: #d97706;
+  --brand-ink: #fff8ed;
+  --shadow: 0 1px 2px rgba(67, 53, 42, 0.06), 0 10px 28px rgba(67, 53, 42, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='sepia-dark'] {
+  color-scheme: dark;
+  --bg: #2a2118;
+  --sidebar: #241c14;
+  --surface: #33291d;
+  --surface-2: #3d3122;
+  --fg: #f0e6d2;
+  --muted: #b8a786;
+  --line: #4a3d2c;
+  --brand: #f59e0b;
+  --brand-2: #fbbf24;
+  --brand-ink: #1a1206;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Black (OLED): preto puro com verde-menta ---- */
+[data-theme='oled-light'] {
+  color-scheme: light;
+  --bg: #f4f4f4;
+  --sidebar: #ededed;
+  --surface: #ffffff;
+  --surface-2: #f7f7f7;
+  --fg: #0a0a0a;
+  --muted: #555555;
+  --line: #e0e0e0;
+  --brand: #007a4d;
+  --brand-2: #0d9488;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 10px 28px rgba(0, 0, 0, 0.1);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 20%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 24%, transparent);
+}
+[data-theme='oled-dark'] {
+  color-scheme: dark;
+  /* Pixel apagado no OLED: fundo e sidebar em preto absoluto. */
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #161616;
+  --fg: #f5f5f5;
+  --muted: #8a8a8a;
+  --line: #1f1f1f;
+  --brand: #00e5a0;
+  --brand-2: #4dd0ff;
+  --brand-ink: #04130d;
+  /* Sombra some no preto: o relevo vem do contorno. */
+  --shadow: 0 0 0 1px var(--line);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 40%, transparent),
+    0 0 32px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+/* ---- Azul (azure — azul vivo) ---- */
+[data-theme='azure-light'] {
+  color-scheme: light;
+  --bg: #eaf3fb;
+  --sidebar: #dde9f6;
+  --surface: #ffffff;
+  --surface-2: #f1f7fd;
+  --fg: #0b1e3f;
+  --muted: #51678b;
+  --line: #d2e2f1;
+  --brand: #2563eb;
+  --brand-2: #3b82f6;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(11, 30, 63, 0.06), 0 10px 28px rgba(11, 30, 63, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='azure-dark'] {
+  color-scheme: dark;
+  --bg: #0b1626;
+  --sidebar: #102036;
+  --surface: #122447;
+  --surface-2: #1a3260;
+  --fg: #e6eef9;
+  --muted: #93a8c7;
+  --line: #24406a;
+  --brand: #4188fd;
+  --brand-2: #60a5fa;
+  --brand-ink: #0b1626;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Roxo/Índigo ---- */
+[data-theme='indigo-light'] {
+  color-scheme: light;
+  --bg: #f3f0fb;
+  --sidebar: #ebe6f7;
+  --surface: #ffffff;
+  --surface-2: #f7f4fc;
+  --fg: #1e1830;
+  --muted: #6b6388;
+  --line: #e2dbf0;
+  --brand: #7c3aed;
+  --brand-2: #8b5cf6;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(30, 24, 48, 0.06), 0 10px 28px rgba(30, 24, 48, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='indigo-dark'] {
+  color-scheme: dark;
+  --bg: #13131f;
+  --sidebar: #1a1a2e;
+  --surface: #1e1e34;
+  --surface-2: #2a2a45;
+  --fg: #ede9f7;
+  --muted: #9a93b5;
+  --line: #322f54;
+  --brand: #986bff;
+  --brand-2: #a78bfa;
+  --brand-ink: #0f0a1f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Verde (forest — esmeralda) ---- */
+[data-theme='forest-light'] {
+  color-scheme: light;
+  --bg: #eef7ee;
+  --sidebar: #e2f1e2;
+  --surface: #ffffff;
+  --surface-2: #f2f9f2;
+  --fg: #0e2b16;
+  --muted: #4f7258;
+  --line: #d3e8d3;
+  --brand: #00822a;
+  --brand-2: #22c55e;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(14, 43, 22, 0.06), 0 10px 28px rgba(14, 43, 22, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='forest-dark'] {
+  color-scheme: dark;
+  --bg: #0a1a0f;
+  --sidebar: #0e2417;
+  --surface: #0f2a1a;
+  --surface-2: #163a26;
+  --fg: #e6f4ea;
+  --muted: #8fb59c;
+  --line: #1f4530;
+  --brand: #22c55e;
+  --brand-2: #4ade80;
+  --brand-ink: #04230f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Dourado (gold — âmbar) ---- */
+[data-theme='gold-light'] {
+  color-scheme: light;
+  --bg: #fbf6e3;
+  --sidebar: #f5edd0;
+  --surface: #fffdf4;
+  --surface-2: #f9f1d6;
+  --fg: #33280a;
+  --muted: #7c662a;
+  --line: #ece0b8;
+  --brand: #996700;
+  --brand-2: #eab308;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(51, 40, 10, 0.06), 0 10px 28px rgba(51, 40, 10, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='gold-dark'] {
+  color-scheme: dark;
+  --bg: #1a1605;
+  --sidebar: #221d08;
+  --surface: #2a2310;
+  --surface-2: #3a3016;
+  --fg: #f7efcf;
+  --muted: #c2a85e;
+  --line: #4a3d1c;
+  --brand: #eab308;
+  --brand-2: #facc15;
+  --brand-ink: #1a1305;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Fogo (red+pink+amber+orange) ---- */
+[data-theme='fire-light'] {
+  color-scheme: light;
+  --bg: #fff0e8;
+  --sidebar: #fbe3d6;
+  --surface: #ffffff;
+  --surface-2: #fff5ef;
+  --fg: #2a1107;
+  --muted: #8a5b43;
+  --line: #f3d4c2;
+  --brand: #cb3900;
+  --brand-2: #f43f7a;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(42, 17, 7, 0.06), 0 10px 28px rgba(42, 17, 7, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='fire-dark'] {
+  color-scheme: dark;
+  --bg: #1a0a06;
+  --sidebar: #250c08;
+  --surface: #2a0f0a;
+  --surface-2: #3a1610;
+  --fg: #fdeee4;
+  --muted: #d39a82;
+  --line: #5a261c;
+  --brand: #ff7a3c;
+  --brand-2: #ff4d6d;
+  --brand-ink: #1a0a06;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Contraste (acessibilidade WCAG AAA) ---- */
+[data-theme='contrast-light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --sidebar: #f5f5f5;
+  --surface: #ffffff;
+  --surface-2: #ededed;
+  --fg: #000000;
+  --muted: #333333;
+  --line: #666666;
+  --brand: #b8000a;
+  --brand-2: #c2410c;
+  --brand-ink: #ffffff;
+  --shadow: 0 0 0 1px #000000;
+  --glow: 0 0 0 2px var(--brand), 0 0 0 4px #000000;
+}
+[data-theme='contrast-dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #0d0d0d;
+  --surface-2: #1a1a1a;
+  --fg: #ffffff;
+  --muted: #d4d4d4;
+  --line: #404040;
+  --brand: #ffcc00;
+  --brand-2: #00e5ff;
+  --brand-ink: #000000;
+  --shadow: 0 0 0 1px #ffffff, 0 0 0 2px #000000;
+  --glow: 0 0 0 2px var(--brand), 0 0 0 4px #000000;
+}
+
+/* =============================================================================
+   Criativos e OLED
+   ============================================================================= */
+
+/* ---- Cyberpunk: magenta e ciano neon, cantos retos, títulos em mono ---- */
+[data-theme='cyberpunk-light'] {
+  color-scheme: light;
+  --bg: #f4f1fb;
+  --sidebar: #ece7f8;
+  --surface: #ffffff;
+  --surface-2: #f8f5fd;
+  --fg: #1a1030;
+  --muted: #5f5480;
+  --line: #ddd4f0;
+  --brand: #c0008f;
+  --brand-2: #0086a8;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(26, 16, 48, 0.06), 0 10px 28px rgba(26, 16, 48, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='cyberpunk-dark'] {
+  color-scheme: dark;
+  --bg: #0d0b1a;
+  --sidebar: #110e22;
+  --surface: #16122b;
+  --surface-2: #221b3d;
+  --fg: #f2ecff;
+  --muted: #a99cc9;
+  --line: #3a2d63;
+  --brand: #ff2ec4;
+  --brand-2: #25e6ff;
+  --brand-ink: #14061a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 55%, transparent),
+    0 0 24px color-mix(in oklab, var(--brand) 45%, transparent),
+    0 0 60px color-mix(in oklab, var(--brand-2) 22%, transparent);
+}
+
+/* ---- Synthwave: pôr do sol retrô em roxo, rosa e laranja ---- */
+[data-theme='synthwave-light'] {
+  color-scheme: light;
+  --bg: #fbf2fb;
+  --sidebar: #f5e7f5;
+  --surface: #ffffff;
+  --surface-2: #fdf6fd;
+  --fg: #2a1238;
+  --muted: #75547f;
+  --line: #efd9ef;
+  --brand: #c2187a;
+  --brand-2: #b45309;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(42, 18, 56, 0.06), 0 10px 28px rgba(42, 18, 56, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='synthwave-dark'] {
+  color-scheme: dark;
+  --bg: #1a1033;
+  --sidebar: #1f133d;
+  --surface: #241645;
+  --surface-2: #2f1d57;
+  --fg: #fbeaff;
+  --muted: #c1a7d9;
+  --line: #45296f;
+  --brand: #ff6ec7;
+  --brand-2: #ffb454;
+  --brand-ink: #1a0b24;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 55%, transparent),
+    0 0 24px color-mix(in oklab, var(--brand) 45%, transparent),
+    0 0 60px color-mix(in oklab, var(--brand-2) 22%, transparent);
+}
+
+/* ---- Terminal: fósforo verde de monitor antigo, cantos retos, títulos em mono ---- */
+[data-theme='terminal-light'] {
+  color-scheme: light;
+  --bg: #eef5ee;
+  --sidebar: #e4eee4;
+  --surface: #fbfefb;
+  --surface-2: #f3f8f3;
+  --fg: #0b2414;
+  --muted: #3f6b4c;
+  --line: #d0e2d3;
+  --brand: #007a3d;
+  --brand-2: #4d7c0f;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(11, 36, 20, 0.06), 0 10px 28px rgba(11, 36, 20, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='terminal-dark'] {
+  color-scheme: dark;
+  --bg: #050c07;
+  --sidebar: #07100a;
+  --surface: #0a150d;
+  --surface-2: #112016;
+  --fg: #c8ffd9;
+  --muted: #6fbf8a;
+  --line: #1b3a24;
+  --brand: #39ff88;
+  --brand-2: #b3ff5c;
+  --brand-ink: #03140a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 55%, transparent),
+    0 0 24px color-mix(in oklab, var(--brand) 45%, transparent),
+    0 0 60px color-mix(in oklab, var(--brand-2) 22%, transparent);
+}
+
+/* ---- Ártico: azul-gelo frio sobre neutros acinzentados ---- */
+[data-theme='arctic-light'] {
+  color-scheme: light;
+  --bg: #eef2f6;
+  --sidebar: #e5ebf1;
+  --surface: #ffffff;
+  --surface-2: #f5f8fa;
+  --fg: #1c2530;
+  --muted: #525e70;
+  --line: #d8e0e8;
+  --brand: #2f6f8f;
+  --brand-2: #5e81ac;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(28, 37, 48, 0.06), 0 10px 28px rgba(28, 37, 48, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='arctic-dark'] {
+  color-scheme: dark;
+  --bg: #1b2029;
+  --sidebar: #1f2530;
+  --surface: #232a36;
+  --surface-2: #2b3342;
+  --fg: #eceff4;
+  --muted: #a3adbf;
+  --line: #384254;
+  --brand: #88c0d0;
+  --brand-2: #81a1c1;
+  --brand-ink: #10202a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Sakura: rosa de cerejeira, cantos bem redondos ---- */
+[data-theme='sakura-light'] {
+  color-scheme: light;
+  --bg: #fdf1f4;
+  --sidebar: #f9e6ec;
+  --surface: #ffffff;
+  --surface-2: #fff6f8;
+  --fg: #33161f;
+  --muted: #7a5360;
+  --line: #f3d8e0;
+  --brand: #c2185b;
+  --brand-2: #e0689a;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(51, 22, 31, 0.06), 0 10px 28px rgba(51, 22, 31, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='sakura-dark'] {
+  color-scheme: dark;
+  --bg: #1c1216;
+  --sidebar: #22151b;
+  --surface: #28181f;
+  --surface-2: #34202a;
+  --fg: #fbe9ef;
+  --muted: #c9a2b1;
+  --line: #4a2d3a;
+  --brand: #ff8fb8;
+  --brand-2: #ffc2d6;
+  --brand-ink: #2a0d18;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Oceano: azul-petróleo de mar profundo ---- */
+[data-theme='ocean-light'] {
+  color-scheme: light;
+  --bg: #eaf6f6;
+  --sidebar: #ddeff0;
+  --surface: #ffffff;
+  --surface-2: #f2fafa;
+  --fg: #08262b;
+  --muted: #466b70;
+  --line: #cfe5e6;
+  --brand: #00707a;
+  --brand-2: #0e7490;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(8, 38, 43, 0.06), 0 10px 28px rgba(8, 38, 43, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='ocean-dark'] {
+  color-scheme: dark;
+  --bg: #061a1f;
+  --sidebar: #082128;
+  --surface: #0a262e;
+  --surface-2: #11333d;
+  --fg: #dff7f7;
+  --muted: #8dbcc0;
+  --line: #1b4550;
+  --brand: #2dd4bf;
+  --brand-2: #38bdf8;
+  --brand-ink: #03201d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.4);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 26%, transparent),
+    0 16px 44px color-mix(in oklab, var(--brand) 30%, transparent);
+}
+
+/* ---- Eclipse (OLED): preto puro com âmbar ---- */
+[data-theme='eclipse-light'] {
+  color-scheme: light;
+  --bg: #fbf6ec;
+  --sidebar: #f5eedf;
+  --surface: #fffdf8;
+  --surface-2: #fbf7ee;
+  --fg: #231a08;
+  --muted: #6e5a36;
+  --line: #eadfc6;
+  --brand: #9a5b00;
+  --brand-2: #b45309;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(35, 26, 8, 0.06), 0 10px 28px rgba(35, 26, 8, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='eclipse-dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #0b0906;
+  --surface-2: #17130c;
+  --fg: #fff4e0;
+  --muted: #b39b75;
+  --line: #2a2214;
+  --brand: #ffb020;
+  --brand-2: #ff7a1a;
+  --brand-ink: #1a0f00;
+  /* Sombra some no preto: o relevo vem do contorno. */
+  --shadow: 0 0 0 1px var(--line);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 40%, transparent),
+    0 0 32px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+/* ---- Abissal (OLED): preto puro com ciano-gelo ---- */
+[data-theme='abyss-light'] {
+  color-scheme: light;
+  --bg: #eef4f8;
+  --sidebar: #e4edf3;
+  --surface: #ffffff;
+  --surface-2: #f5f9fc;
+  --fg: #0b1a26;
+  --muted: #4a6173;
+  --line: #d6e2ea;
+  --brand: #006a94;
+  --brand-2: #4f46e5;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(11, 26, 38, 0.06), 0 10px 28px rgba(11, 26, 38, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='abyss-dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #05090c;
+  --surface-2: #0e151b;
+  --fg: #e8f6ff;
+  --muted: #86a3b8;
+  --line: #1a2630;
+  --brand: #5cd6ff;
+  --brand-2: #8f9dff;
+  --brand-ink: #00151f;
+  /* Sombra some no preto: o relevo vem do contorno. */
+  --shadow: 0 0 0 1px var(--line);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 40%, transparent),
+    0 0 32px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+/* ---- Brasa (OLED): preto puro com laranja-brasa ---- */
+[data-theme='ember-light'] {
+  color-scheme: light;
+  --bg: #fdf3ef;
+  --sidebar: #f8e8e1;
+  --surface: #ffffff;
+  --surface-2: #fef7f4;
+  --fg: #2b100a;
+  --muted: #7a4b3f;
+  --line: #f1d9cf;
+  --brand: #b83a12;
+  --brand-2: #c2410c;
+  --brand-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(43, 16, 10, 0.06), 0 10px 28px rgba(43, 16, 10, 0.08);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
+    0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+[data-theme='ember-dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #0c0605;
+  --surface-2: #1a0e0b;
+  --fg: #fff0ea;
+  --muted: #bf8f80;
+  --line: #2d1813;
+  --brand: #ff6a3d;
+  --brand-2: #ffb347;
+  --brand-ink: #1f0700;
+  /* Sombra some no preto: o relevo vem do contorno. */
+  --shadow: 0 0 0 1px var(--line);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--brand) 40%, transparent),
+    0 0 32px color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+/* =============================================================================
+   Efeitos leves dos temas criativos
+   Tipografia e cantos são tokens: a fonte de destaque (`font-display`) e os
+   raios do Tailwind (`rounded-*`) leem variáveis, então basta redefini-las.
+   Brilho e scanlines são decoração: somem com html[data-fx='off'] (chave
+   "Efeitos visuais" da tela de Temas) e com prefers-contrast: more.
+   ============================================================================= */
+
+/* Cantos retos e títulos em mono: Cyberpunk e Terminal. */
+[data-theme^='cyberpunk-'],
+[data-theme^='terminal-'] {
+  --font-display: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.3rem;
+  --radius-2xl: 0.4rem;
+  --radius-3xl: 0.5rem;
+}
+
+/* Cantos bem redondos: Sakura. */
+[data-theme^='sakura-'] {
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.4rem;
+  --radius-3xl: 2rem;
+}
+
+/* Decoração só para quem não pediu mais contraste ao sistema. */
+@media (prefers-contrast: no-preference) {
+  /* Neon: o botão principal brilha nos criativos escuros. */
+  html:not([data-fx='off'])[data-theme='cyberpunk-dark'] .btn-primary,
+  html:not([data-fx='off'])[data-theme='synthwave-dark'] .btn-primary,
+  html:not([data-fx='off'])[data-theme='terminal-dark'] .btn-primary {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--brand) 60%, transparent),
+      0 0 18px color-mix(in oklab, var(--brand) 45%, transparent);
+  }
+  html:not([data-fx='off'])[data-theme='cyberpunk-dark'] .text-gradient,
+  html:not([data-fx='off'])[data-theme='terminal-dark'] .text-gradient {
+    filter: drop-shadow(0 0 10px color-mix(in oklab, var(--brand) 45%, transparent));
+  }
+
+  /* Scanlines de monitor CRT: camada fixa, sem eventos de ponteiro e sem
+     animação (não repinta ao rolar). */
+  html:not([data-fx='off'])[data-theme='cyberpunk-dark'] body::after,
+  html:not([data-fx='off'])[data-theme='terminal-dark'] body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0.03) 0 1px,
+      transparent 1px 3px
+    );
+  }
+}
