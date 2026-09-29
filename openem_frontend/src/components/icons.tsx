@@ -41,6 +41,9 @@ import {
   Flame,
   BoundingBox,
   GlobeHemisphereWest,
+  Palette,
+  UploadSimple,
+  MagicWand,
   Hand,
   Heart,
   Highlighter,
@@ -158,6 +161,9 @@ export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
 export const IconAtom = shim(Atom, 'duotone');
 export const IconGlobe = shim(GlobeHemisphereWest, 'duotone');
+export const IconPalette = shim(Palette, 'duotone');
+export const IconShare = shim(UploadSimple, 'bold');
+export const IconWand = shim(MagicWand, 'duotone');
 export const IconSticky = shim(Note, 'duotone');
 export const IconNote = shim(NotePencil, 'duotone');
 export const IconTrash = shim(Trash, 'duotone');

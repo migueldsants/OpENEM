@@ -337,6 +337,29 @@ export interface ToggleLikeResult {
   liked: boolean;
   likes: number;
 }
+
+/** Tema de cores salvo no servidor (tela Temas). Cores sempre #rrggbb. */
+export interface SavedTheme {
+  id: string;
+  name: string;
+  light: Record<string, string>;
+  dark: Record<string, string>;
+  isPublic: boolean;
+  likes: number;
+  liked: boolean;
+  mine: boolean;
+  /** Nome de exibição do autor. */
+  author: string;
+  publishedAt: string | null;
+  updatedAt: string;
+}
+export interface ThemeInput {
+  name: string;
+  light: Record<string, string>;
+  dark: Record<string, string>;
+  isPublic?: boolean;
+}
+export type CommunityThemeSort = 'popular' | 'recent';
 export interface PublicProfile {
   id: string;
   displayName: string;
@@ -1252,6 +1275,25 @@ export const api = {
       `/community/threads/${threadId}/posts/${postId}/like`,
       { method: 'POST' },
     ),
+
+  myThemes: () => request<SavedTheme[]>('/themes/mine'),
+  communityThemes: (sort: CommunityThemeSort = 'popular', take = 30, skip = 0) =>
+    request<SavedTheme[]>(`/themes/community?sort=${sort}&take=${take}&skip=${skip}`),
+  createTheme: (input: ThemeInput) =>
+    request<SavedTheme>('/themes', { method: 'POST', body: input }),
+  updateTheme: (id: string, input: Partial<ThemeInput>) =>
+    request<SavedTheme>(`/themes/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: input,
+    }),
+  deleteTheme: (id: string) =>
+    request<{ removed: boolean }>(`/themes/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
+  toggleThemeLike: (id: string) =>
+    request<ToggleLikeResult>(`/themes/${encodeURIComponent(id)}/like`, {
+      method: 'POST',
+    }),
 
   publicProfile: (userId: string) =>
     request<PublicProfile>(`/users/${userId}/profile`),
