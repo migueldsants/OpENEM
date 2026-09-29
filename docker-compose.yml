@@ -17,6 +17,10 @@ services:
       # Gere um segredo forte (ex.: `openssl rand -hex 32`) e exporte antes do up.
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no .env (openssl rand -hex 32)}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      # O nginx do frontend é o único proxy à frente da API. Sem isso o rate
+      # limiting vê só o IP do container e trata o site inteiro como um cliente
+      # (10 senhas erradas bloqueariam o login de todos).
+      - TRUST_PROXY=1
       # Correção de redação por IA (Fase 3) — opcionais. Sem nenhuma chave
       # configurada a correção por IA fica indisponível e o app recai na rubrica
       # manual. Ver openem_backend/.env.example para detalhes de cada provedor.
@@ -29,7 +33,10 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-}
     ports:
-      - '3000:3000'
+      # Só na máquina local: com TRUST_PROXY ligado, quem chegasse direto na
+      # porta 3000 pela rede poderia forjar o X-Forwarded-For e escapar do rate
+      # limiting. De fora, o acesso é pelo nginx (porta 8080).
+      - '127.0.0.1:3000:3000'
     volumes:
       - sqlite-data:/data
     healthcheck:

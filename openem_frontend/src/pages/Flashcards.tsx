@@ -1297,14 +1297,23 @@ export default function Flashcards() {
     }
   }
 
-  // Voto (up/down) em deck público — atualização otimista do deck votado.
+  // Voto (up/down) em deck público — atualização otimista do deck votado. O
+  // servidor conta um voto por aluno (repetir não soma, trocar move o voto),
+  // então a tela assume os totais que ele devolve.
   async function vote(deck: FlashcardDeckBrief, v: 'up' | 'down') {
     const field = v === 'up' ? 'upvotes' : 'downvotes';
     const bump = (d: FlashcardDeckBrief) =>
       d.id === deck.id ? { ...d, [field]: d[field] + 1 } : d;
     setPublicDecks((cur) => cur.map(bump));
     try {
-      await api.voteDeck(deck.id, v);
+      const totais = await api.voteDeck(deck.id, v);
+      setPublicDecks((cur) =>
+        cur.map((d) =>
+          d.id === deck.id
+            ? { ...d, upvotes: totais.upvotes, downvotes: totais.downvotes }
+            : d,
+        ),
+      );
     } catch {
       // Reverte em caso de erro (rede/permissão).
       setPublicDecks((cur) =>

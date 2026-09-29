@@ -9,6 +9,7 @@ import { dayAreas, dayRange } from '../common/enem-import/mapping';
 import { CalibratedItem, triScoreFromItems } from '../common/irt';
 import { allocateByWeight, sampleOffsets } from '../common/sampling';
 import { shuffle } from '../common/shuffle';
+import { answersToGrade } from '../common/simulation-answers';
 import { xpForSimulation } from '../common/gamification';
 import {
   GamificationDelta,
@@ -419,18 +420,33 @@ export class SimulationsService {
       savedTemplateId = salvo.id;
     }
 
+    // A lista de questões fica gravada: é ela que o finish() corrige. O Set
+    // protege o índice único caso o sorteio repita uma linha (uma importação
+    // rodando ao mesmo tempo desloca os offsets).
+    const questionIds = [...new Set(ids)];
     const simulation = await this.prisma.simulation.create({
-      data: { userId, templateId },
+      data: {
+        userId,
+        templateId,
+        questions: {
+          createMany: {
+            data: questionIds.map((questionId, position) => ({
+              questionId,
+              position,
+            })),
+          },
+        },
+      },
     });
 
     const encontradas = await this.prisma.question.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: questionIds } },
       // Sem gabarito durante a prova.
       select: QUESTION_PUBLIC_SELECT,
     });
     // O `in` devolve na ordem do banco; a prova segue a ordem escolhida (a do
     // caderno na prova oficial, a do sorteio nas demais).
-    const posicao = new Map(ids.map((id, i) => [id, i]));
+    const posicao = new Map(questionIds.map((id, i) => [id, i]));
     const questions = encontradas.sort(
       (a, b) => (posicao.get(a.id) ?? 0) - (posicao.get(b.id) ?? 0),
     );
@@ -662,7 +678,13 @@ export class SimulationsService {
   ): Promise<SimulationFinishResult> {
     const simulation = await this.prisma.simulation.findUnique({
       where: { id },
-      include: { template: { select: { timeLimitMin: true } } },
+      include: {
+        template: { select: { timeLimitMin: true } },
+        questions: {
+          select: { questionId: true },
+          orderBy: { position: 'asc' },
+        },
+      },
     });
     if (!simulation) {
       throw new NotFoundException('Simulado não encontrado');
@@ -674,11 +696,13 @@ export class SimulationsService {
       throw new BadRequestException('Simulado já finalizado');
     }
 
-    // Deduplica por questão (última resposta vence): evita inflar rawScore/triScore
-    // e duplicar Answers/atualizações SM-2 se o cliente reenviar a mesma questão.
-    const dedup = new Map<string, (typeof dto.answers)[number]>();
-    for (const a of dto.answers) dedup.set(a.questionId, a);
-    const answers = [...dedup.values()];
+    // Só as questões do simulado entram, uma vez cada (a última resposta
+    // vence): sem isso o cliente inflava rawScore, triScore e XP entregando
+    // questões de fora ou a mesma questão repetida.
+    const answers = answersToGrade(
+      dto.answers,
+      simulation.questions.map((q) => q.questionId),
+    );
 
     const questionIds = answers.map((a) => a.questionId);
     const questions = await this.prisma.question.findMany({

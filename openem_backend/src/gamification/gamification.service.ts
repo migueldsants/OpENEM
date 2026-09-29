@@ -20,14 +20,16 @@ import {
   xpToReachLevel,
 } from '../common/gamification';
 
-/** Chaves de ação registradas no XpLog (issue #17). */
+/**
+ * Chaves de ação registradas no XpLog (issue #17). O histórico ainda pode ter
+ * linhas 'GAME', do GamesModule que foi removido.
+ */
 export type XpAction =
   | 'ANSWER'
   | 'SIMULATION'
   | 'ESSAY'
   | 'REVIEW'
   | 'STUDY_SESSION'
-  | 'GAME'
   | 'DAILY_CHALLENGE'
   | 'ACHIEVEMENT';
 

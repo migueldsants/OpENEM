@@ -73,9 +73,15 @@ export class FlashcardsController {
   }
 
   @Post('decks/:deckId/vote')
-  @ApiOperation({ summary: 'Vota (up/down) em um deck público' })
-  voteDeck(@Param('deckId') deckId: string, @Body() dto: VoteDeckDto) {
-    return this.flashcards.voteDeck(deckId, dto.vote);
+  @ApiOperation({
+    summary: 'Vota (up/down) em um deck público — um voto por aluno',
+  })
+  voteDeck(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('deckId') deckId: string,
+    @Body() dto: VoteDeckDto,
+  ) {
+    return this.flashcards.voteDeck(user.userId, deckId, dto.vote);
   }
 
   @Patch('decks/:deckId')

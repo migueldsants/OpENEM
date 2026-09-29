@@ -139,6 +139,95 @@ describe('Fórmulas / cheat sheet (issue #38, e2e)', () => {
       .expect(404);
   });
 
+  describe('fórmula personalizada é só de quem criou', () => {
+    let outro: string;
+    let subjectId: string;
+    let privadaId: string;
+    const doOutro = () => ({ Authorization: `Bearer ${outro}` });
+
+    beforeAll(async () => {
+      const reg = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email: `formulas_outro_${Date.now()}@exemplo.com`,
+          password: 'senhaForte123',
+        })
+        .expect(201);
+      outro = reg.body.accessToken;
+
+      const subjects = await request(app.getHttpServer())
+        .get('/api/v1/subjects')
+        .set(auth())
+        .expect(200);
+      subjectId = subjects.body.find((s: { name: string }) =>
+        s.name.includes('Matem'),
+      ).id;
+
+      const criada = await request(app.getHttpServer())
+        .post('/api/v1/formulas')
+        .set(auth())
+        .send({
+          title: 'Acesse openem-premium.xyz',
+          latex: 'x',
+          subjectId,
+        })
+        .expect(201);
+      privadaId = criada.body.id;
+    });
+
+    it('aparece na lista do dono e não na de outro aluno', async () => {
+      const doDono = await request(app.getHttpServer())
+        .get('/api/v1/formulas')
+        .set(auth())
+        .expect(200);
+      expect(doDono.body.map((f: { id: string }) => f.id)).toContain(privadaId);
+
+      const deOutro = await request(app.getHttpServer())
+        .get('/api/v1/formulas')
+        .set(doOutro())
+        .expect(200);
+      expect(deOutro.body.map((f: { id: string }) => f.id)).not.toContain(
+        privadaId,
+      );
+      // O outro aluno, que não criou nenhuma, vê só o catálogo — o mesmo do dono.
+      const catalogo = (lista: { id: string; isBuiltIn: boolean }[]) =>
+        lista.filter((f) => f.isBuiltIn).map((f) => f.id);
+      expect(
+        deOutro.body.every((f: { isBuiltIn: boolean }) => f.isBuiltIn),
+      ).toBe(true);
+      expect(catalogo(deOutro.body)).toEqual(catalogo(doDono.body));
+    });
+
+    it('outro aluno não abre, não favorita e não imprime a fórmula', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/formulas/${privadaId}`)
+        .set(doOutro())
+        .expect(404);
+      await request(app.getHttpServer())
+        .post(`/api/v1/formulas/${privadaId}/favorite`)
+        .set(doOutro())
+        .expect(404);
+      await request(app.getHttpServer())
+        .post('/api/v1/formulas/pdf')
+        .set(doOutro())
+        .send({ formulaIds: [privadaId] })
+        .expect(400);
+    });
+
+    it('o mesmo aluno não repete título (409), mas outro aluno pode usá-lo', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/formulas')
+        .set(auth())
+        .send({ title: 'Acesse openem-premium.xyz', latex: 'y', subjectId })
+        .expect(409);
+      await request(app.getHttpServer())
+        .post('/api/v1/formulas')
+        .set(doOutro())
+        .send({ title: 'Acesse openem-premium.xyz', latex: 'y', subjectId })
+        .expect(201);
+    });
+  });
+
   it('favoritar fórmula inexistente retorna 404', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/formulas/nao-existe/favorite')

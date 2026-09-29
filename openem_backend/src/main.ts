@@ -6,12 +6,20 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { parseTrustProxy } from './common/trust-proxy';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Hooks de shutdown (issue #49): limpa recursos do Prisma/Throttler no SIGTERM.
   app.enableShutdownHooks();
+
+  // Proxy reverso: o rate limiting conta por req.ip, que só é o IP do aluno
+  // quando o Express confia no proxy da frente (ver common/trust-proxy).
+  const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+  if (trustProxy !== undefined) {
+    app.set('trust proxy', trustProxy);
+  }
 
   // Headers de segurança (issue #49): helmet com CSP compatível com o frontend
   // (Swagger UI precisa de scripts inline no /api).

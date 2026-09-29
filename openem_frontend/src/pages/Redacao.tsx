@@ -451,6 +451,8 @@ export default function Redacao() {
             required
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            // Mesmo teto da API (ESSAY_MAX_LENGTH): a folha do ENEM tem 30 linhas.
+            maxLength={8000}
             rows={8}
             placeholder="Escreva sua redação dissertativo-argumentativa…"
             className="input mt-1.5 resize-y"
