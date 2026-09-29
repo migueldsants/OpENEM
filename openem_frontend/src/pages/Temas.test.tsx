@@ -58,7 +58,7 @@ beforeEach(() => {
 describe('Temas', () => {
   it('galeria agrupa as famílias e aplica a escolhida', () => {
     renderPage();
-    for (const grupo of ['Clássicos', 'Criativos', 'OLED', 'Acessibilidade']) {
+    for (const grupo of ['Clássicos', 'Customizados', 'OLED', 'Acessibilidade']) {
       expect(screen.getByRole('heading', { name: grupo })).toBeInTheDocument();
     }
     fireEvent.click(screen.getByRole('button', { name: /Cyberpunk/ }));

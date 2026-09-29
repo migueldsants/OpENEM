@@ -46,15 +46,11 @@ export type Theme = `${ThemeFamily}-${ThemeVariant}`;
 export type ThemeGroup = 'classicos' | 'criativos' | 'oled' | 'acessibilidade';
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const THEME_GROUPS: { key: ThemeGroup; label: string; hint: string }[] = [
-  { key: 'classicos', label: 'Clássicos', hint: 'Paletas sóbrias para estudar horas a fio.' },
-  { key: 'criativos', label: 'Criativos', hint: 'Mais personalidade: neon, retrô, gelo e flor.' },
-  {
-    key: 'oled',
-    label: 'OLED',
-    hint: 'No escuro, preto absoluto: poupa bateria em telas OLED.',
-  },
-  { key: 'acessibilidade', label: 'Acessibilidade', hint: 'Contraste máximo.' },
+export const THEME_GROUPS: { key: ThemeGroup; label: string }[] = [
+  { key: 'classicos', label: 'Clássicos' },
+  { key: 'criativos', label: 'Customizados' },
+  { key: 'oled', label: 'OLED' },
+  { key: 'acessibilidade', label: 'Acessibilidade' },
 ];
 
 /**

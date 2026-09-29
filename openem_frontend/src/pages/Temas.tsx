@@ -102,7 +102,6 @@ export default function Temas() {
       <div className="space-y-6">
         <PageHeader
           title={editing.id ? 'Editar tema' : 'Novo tema'}
-          subtitle="Monte o lado claro e o escuro. O botão de sol/lua do topo alterna entre eles."
         />
         <ThemeEditor
           initial={editing}
@@ -131,7 +130,6 @@ export default function Temas() {
     <div className="space-y-6">
       <PageHeader
         title="Temas"
-        subtitle="Escolha uma paleta, crie a sua com lado claro e escuro, ou use as da comunidade."
         actions={
           <button type="button" onClick={startNew} className="btn btn-primary">
             <IconPlus width={18} height={18} aria-hidden />
@@ -244,12 +242,9 @@ function Gallery({ onCreate }: { onCreate: () => void }) {
 
       {THEME_GROUPS.map((g) => (
         <section key={g.key} aria-labelledby={`g-${g.key}`} className="space-y-3">
-          <div>
-            <h2 id={`g-${g.key}`} className="font-display text-lg font-bold">
-              {g.label}
-            </h2>
-            <p className="text-sm text-muted">{g.hint}</p>
-          </div>
+          <h2 id={`g-${g.key}`} className="font-display text-lg font-bold">
+            {g.label}
+          </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {FAMILIES.filter((f) => f.group === g.key).map((f) => (
               <ThemeOption
