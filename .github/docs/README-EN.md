@@ -133,6 +133,19 @@ columns, a cover with the project's brand and description, an answer sheet to
 fill in by pen, the answer key at the end and, if you want, the explanations.
 The booklet takes the colour theme you pick in the app (or a custom colour).
 
+### Colour themes
+
+The **Temas** screen gathers the app's palettes, all with a light and a dark
+side (the sun/moon button at the top switches between them): the classic
+ones, creative ones such as Cyberpunk, Synthwave and Terminal (with their own
+corners, display font and glow, which can be turned off under "Efeitos
+visuais") and ones designed for **OLED** screens, with true black in dark
+mode. Students can also build their own theme from a single colour, with
+both sides generated at readable contrast, save it to their account and, if
+they want, publish it to the **community**, where others can use, copy and
+like it. A test checks the contrast (text, brand and subject-area colours) of
+every built-in palette.
+
 ### Tests
 
 ```bash
