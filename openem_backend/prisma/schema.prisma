@@ -27,14 +27,15 @@ model User {
   achievements        UserAchievement[]
   dailyChallenges     DailyChallengeLog[]
   xpLogs              XpLog[]
-  gameScores          GameScore[]
   forumThreads        ForumThread[]
   forumPosts          ForumPost[]
   postLikes           ForumPostLike[]
   questionNotes       QuestionNote[]
   flashcardDecks      FlashcardDeck[]
   flashcardReviews    FlashcardReview[]
+  deckVotes           FlashcardDeckVote[]
   weeklyGoals         WeeklyGoal[]
+  formulas            Formula[]
   formulaFavorites    UserFormula[]
   focusSessions       FocusSession[]
   videos              Video[]
@@ -115,24 +116,24 @@ model ExamYear {
 }
 
 model Question {
-  id                String         @id @default(cuid())
+  id                String               @id @default(cuid())
   /// Chave estável da origem externa: "enem:<slug-da-prova>:<pasta-da-questão>".
   /// Nula em questões autorais/seed — em SQLite o índice único aceita vários NULLs.
-  externalId        String?        @unique
+  externalId        String?              @unique
   /// Código legível da questão oficial: "ENEM-2023-136", "ENEM-2023R-136",
   /// "ENEM-2023-001-ING". Buscável pelo aluno.
-  code              String?        @unique
+  code              String?              @unique
   /// Número no caderno oficial (1..180): ordena o simulado da prova e define
   /// o dia (1–90 no primeiro, 91–180 no segundo).
   number            Int?
-  source            String         @default("AUTORAL") // AUTORAL | ENEM_DEV
+  source            String               @default("AUTORAL") // AUTORAL | ENEM_DEV
   /// Texto de apoio da questão, em Markdown (pode conter imagens e LaTeX).
   statement         String
   /// O comando da questão ("Qual é a massa..."), quando vem separado do apoio.
   questionPrompt    String?
   /// Idioma da questão de língua estrangeira: null | "ingles" | "espanhol".
   language          String?
-  difficulty        Int            @default(3) // 1..5 (questões por nível)
+  difficulty        Int                  @default(3) // 1..5 (questões por nível)
   /// Nulo enquanto não houver comentário — as questões oficiais chegam sem ele.
   explanation       String?
   /// Origem do comentário: "seed" | "humano" | "ai:<provedor>". Alimenta o aviso da UI.
@@ -140,18 +141,19 @@ model Question {
   /// Área do conhecimento. É o que a questão tem antes de ser classificada em
   /// matéria/tópico — por isso o topicId abaixo é opcional.
   subjectAreaId     String?
-  subjectArea       SubjectArea?   @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
+  subjectArea       SubjectArea?         @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
   topicId           String?
   /// SetNull (e não Cascade): o seed remove áreas fora da TAXONOMY, e em cascata
   /// isso apagaria todo o banco de questões importadas.
-  topic             Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  topic             Topic?               @relation(fields: [topicId], references: [id], onDelete: SetNull)
   examYearId        String?
-  examYear          ExamYear?      @relation(fields: [examYearId], references: [id])
+  examYear          ExamYear?            @relation(fields: [examYearId], references: [id])
   alternatives      Alternative[]
   answers           Answer[]
   favorites         Favorite[]
   forumThreads      ForumThread[]
   notes             QuestionNote[]
+  simulations       SimulationQuestion[]
 
   // Parâmetros TRI (modelo logístico de 3 parâmetros) — nullable até haver calibração (Fase 2)
   discrimination Float? // a — discriminação
@@ -237,16 +239,32 @@ model SimulationTemplate {
 }
 
 model Simulation {
-  id         String             @id @default(cuid())
+  id         String               @id @default(cuid())
   userId     String
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   templateId String
-  template   SimulationTemplate @relation(fields: [templateId], references: [id])
-  startedAt  DateTime           @default(now())
+  template   SimulationTemplate   @relation(fields: [templateId], references: [id])
+  startedAt  DateTime             @default(now())
   finishedAt DateTime?
   rawScore   Float?
   triScore   Float? // [PLACEHOLDER Fase 2]
   answers    Answer[]
+  questions  SimulationQuestion[]
+}
+
+// Questões sorteadas para um simulado, na ordem da prova. É o que o finish()
+// corrige: sem essa lista o cliente podia entregar questões de fora do simulado
+// (o gabarito é público) e inflar nota, XP e ranking. Simulados anteriores a
+// esta tabela não têm linhas aqui e seguem corrigidos pelo que foi entregue.
+model SimulationQuestion {
+  id           String     @id @default(cuid())
+  simulationId String
+  simulation   Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  position     Int
+
+  @@unique([simulationId, questionId])
 }
 
 model Answer {
@@ -349,9 +367,15 @@ model WeeklyGoal {
 
 // Fórmula essencial catalogada (a maioria é builtIn, via seed). `latex`
 // guarda a expressão em LaTeX para renderizar no MathLive/KaTeX.
+//
+// O catálogo (isBuiltIn) aparece para todos; a fórmula personalizada, só para
+// quem a criou (ownerId). O título é único por dono, e não no banco inteiro:
+// um título global deixava um aluno ocupar o nome de uma fórmula que o seed
+// ainda ia criar. No catálogo (ownerId nulo) quem garante o título único é o
+// seed, porque o índice único trata cada NULL como distinto.
 model Formula {
   id          String          @id @default(cuid())
-  title       String          @unique
+  title       String
   latex       String
   description String?
   subjectId   String
@@ -359,10 +383,13 @@ model Formula {
   topicId     String?
   topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: SetNull)
   isBuiltIn   Boolean         @default(true)
+  ownerId     String?
+  owner       User?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime        @default(now())
   favoritedBy UserFormula[]
   symbols     FormulaSymbol[]
 
+  @@unique([ownerId, title])
   @@index([subjectId])
   @@index([title])
 }
@@ -598,25 +625,41 @@ model ForumPostLike {
 
 // Conjunto de flashcards (público ou privado do usuário).
 model FlashcardDeck {
-  id          String      @id @default(cuid())
+  id          String              @id @default(cuid())
   userId      String?
-  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
   description String
-  isPublic    Boolean     @default(false)
+  isPublic    Boolean             @default(false)
   // subject = nome do Subject; topic = matéria; subtheme = subtema dentro da matéria
   subject     String
   topic       String?
   subtheme    String?
-  weight      Int         @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
-  icon        String      @default("books")
-  upvotes     Int         @default(0)
-  downvotes   Int         @default(0)
-  createdAt   DateTime    @default(now())
+  weight      Int                 @default(3) // peso Pareto 1..5 (5 = alta incidência ENEM)
+  icon        String              @default("books")
+  upvotes     Int                 @default(0)
+  downvotes   Int                 @default(0)
+  createdAt   DateTime            @default(now())
   flashcards  Flashcard[]
+  votes       FlashcardDeckVote[]
 
   @@index([isPublic, upvotes]) // ordenação por popularidade
   @@index([subject])
+}
+
+// Voto de um aluno num deck público: um por aluno e por deck. Os totais seguem
+// em upvotes/downvotes (a ordenação usa eles); esta tabela é o que impede votar
+// de novo. Votos anteriores a ela já estão nos totais e não têm linha aqui.
+model FlashcardDeckVote {
+  id        String        @id @default(cuid())
+  deckId    String
+  deck      FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vote      String // up | down
+  createdAt DateTime      @default(now())
+
+  @@unique([deckId, userId])
 }
 
 model Flashcard {
@@ -648,22 +691,6 @@ model FlashcardReview {
 
   @@unique([userId, flashcardId])
   @@index([userId, dueAt]) // fila "vencidos primeiro"
-}
-
-// ---- Fase 3 (avançado) — Games (issue #18) ----
-
-// Pontuação de um usuário em um minigame (uma linha por partida).
-model GameScore {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameKey     String // chave do GameDefinition (catálogo em código)
-  score       Int
-  level       Int // nível alcançado no minigame
-  durationSec Int
-  createdAt   DateTime @default(now())
-
-  @@index([gameKey, score]) // leaderboard por jogo
 }
 
 /// Tema de cores criado pelo aluno (tela Temas). Guarda os dois lados

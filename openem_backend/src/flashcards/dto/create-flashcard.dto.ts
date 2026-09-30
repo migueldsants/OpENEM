@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsIn, IsInt, Min, Max } from 'class-validator';
 
 export class CreateFlashcardDto {
   @ApiProperty({ description: 'Frente do card (Markdown — pergunta)' })
@@ -26,8 +26,7 @@ export class ReviewFlashcardDto {
 }
 
 export class VoteDeckDto {
-  @ApiProperty({ description: 'Voto: up ou down' })
-  @IsString()
-  @IsNotEmpty()
+  @ApiProperty({ enum: ['up', 'down'], description: 'Voto: up ou down' })
+  @IsIn(['up', 'down'])
   vote!: 'up' | 'down';
 }

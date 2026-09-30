@@ -1,8 +1,10 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { formulasPdfBuffer } from '../common/pdf/formulas-pdf';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFormulaDto } from './dto/create-formula.dto';
@@ -39,6 +41,7 @@ const FORMULA_SELECT = {
   subjectId: true,
   topicId: true,
   isBuiltIn: true,
+  ownerId: true,
   subject: { select: { name: true } },
   topic: { select: { name: true } },
   symbols: {
@@ -55,10 +58,29 @@ type FormulaRow = {
   subjectId: string;
   topicId: string | null;
   isBuiltIn: boolean;
+  ownerId: string | null;
   subject: { name: string } | null;
   topic: { name: string } | null;
   symbols: { symbol: string; meaning: string; unit: string | null }[];
 };
+
+/**
+ * Fórmulas que o aluno enxerga: o catálogo inteiro e as personalizadas dele.
+ * Antes do ownerId a personalizada aparecia para todos, o que servia para
+ * espalhar spam e links de phishing. As criadas nessa época não têm dono
+ * conhecido e ficam ocultas.
+ */
+function visibleTo(userId: string): Prisma.FormulaWhereInput {
+  return { OR: [{ isBuiltIn: true }, { ownerId: userId }] };
+}
+
+/** A mesma regra de visibleTo, para uma linha já carregada. */
+function canSee(
+  row: { isBuiltIn: boolean; ownerId: string | null },
+  userId: string,
+): boolean {
+  return row.isBuiltIn || row.ownerId === userId;
+}
 
 @Injectable()
 export class FormulasService {
@@ -91,7 +113,7 @@ export class FormulasService {
     });
     const favoritedIds = new Set(favorited.map((f) => f.formulaId));
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { AND: [visibleTo(userId)] };
     if (query.subjectId) where.subjectId = query.subjectId;
     if (query.topicId) where.topicId = query.topicId;
     if (query.onlyFavorites) where.id = { in: [...favoritedIds] };
@@ -129,11 +151,14 @@ export class FormulasService {
         select: { id: true },
       }),
     ]);
-    if (!row) throw new NotFoundException('Fórmula não encontrada');
+    // A personalizada de outro aluno responde como inexistente.
+    if (!row || !canSee(row, userId)) {
+      throw new NotFoundException('Fórmula não encontrada');
+    }
     return this.toView(row, new Set(fav ? [id] : []));
   }
 
-  /** Fórmula personalizada do usuário (isBuiltIn=false). */
+  /** Fórmula personalizada do usuário (isBuiltIn=false), só para ele. */
   async create(userId: string, dto: CreateFormulaDto): Promise<FormulaView> {
     // Valida matéria/assunto: FK quebrada viraria 500 genérico do Prisma.
     const subject = await this.prisma.subject.findUnique({
@@ -148,17 +173,30 @@ export class FormulasService {
       });
       if (!topic) throw new NotFoundException('Assunto não encontrado');
     }
-    const formula = await this.prisma.formula.create({
-      data: {
-        title: dto.title,
-        latex: dto.latex,
-        description: dto.description ?? null,
-        subjectId: dto.subjectId,
-        topicId: dto.topicId ?? null,
-        isBuiltIn: false,
-      },
-      select: FORMULA_SELECT,
-    });
+    let formula: FormulaRow;
+    try {
+      formula = await this.prisma.formula.create({
+        data: {
+          title: dto.title,
+          latex: dto.latex,
+          description: dto.description ?? null,
+          subjectId: dto.subjectId,
+          topicId: dto.topicId ?? null,
+          isBuiltIn: false,
+          ownerId: userId,
+        },
+        select: FORMULA_SELECT,
+      });
+    } catch (e) {
+      // O título é único por dono (ownerId + title).
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('Você já tem uma fórmula com esse nome');
+      }
+      throw e;
+    }
     return this.toView(formula, new Set());
   }
 
@@ -166,9 +204,11 @@ export class FormulasService {
   async toggleFavorite(userId: string, formulaId: string) {
     const formula = await this.prisma.formula.findUnique({
       where: { id: formulaId },
-      select: { id: true },
+      select: { isBuiltIn: true, ownerId: true },
     });
-    if (!formula) throw new NotFoundException('Fórmula não encontrada');
+    if (!formula || !canSee(formula, userId)) {
+      throw new NotFoundException('Fórmula não encontrada');
+    }
 
     const existing = await this.prisma.userFormula.findUnique({
       where: { userId_formulaId: { userId, formulaId } },
@@ -190,7 +230,8 @@ export class FormulasService {
     userId: string,
     dto: FormulasPdfDto,
   ): Promise<{ buffer: Buffer; filename: string }> {
-    const where: Record<string, unknown> = {};
+    // Pedir o id da personalizada de outro aluno não a coloca no caderno.
+    const where: Record<string, unknown> = { AND: [visibleTo(userId)] };
     if (dto.subjectIds?.length) where.subjectId = { in: dto.subjectIds };
     if (dto.topicIds?.length) where.topicId = { in: dto.topicIds };
 

@@ -49,7 +49,16 @@ export class AnswersService {
     if (dto.simulationId) {
       const simulation = await this.prisma.simulation.findUnique({
         where: { id: dto.simulationId },
-        select: { userId: true, finishedAt: true },
+        select: {
+          userId: true,
+          finishedAt: true,
+          // Basta saber se o simulado tem a lista e se a questão está nela.
+          _count: { select: { questions: true } },
+          questions: {
+            where: { questionId: question.id },
+            select: { id: true },
+          },
+        },
       });
       if (!simulation) {
         throw new NotFoundException('Simulado não encontrado');
@@ -59,6 +68,14 @@ export class AnswersService {
       }
       if (simulation.finishedAt) {
         throw new BadRequestException('Simulado já finalizado');
+      }
+      // Simulados anteriores à lista de questões não a têm e seguem aceitando
+      // qualquer questão; os demais só aceitam as próprias.
+      if (
+        simulation._count.questions > 0 &&
+        simulation.questions.length === 0
+      ) {
+        throw new BadRequestException('Esta questão não faz parte do simulado');
       }
     }
 
