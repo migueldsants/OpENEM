@@ -98,6 +98,7 @@ Whole stack: `docker compose up --build` from the repo root.
 ## Conventions
 
 - **Conventional Commits** (`feat:`, `fix:`, `docs:`, …).
+- Nunca coloque o link da sessão (`Claude-Session: …` ou `https://claude.ai/code/session_…`) em mensagens de commit nem em descrições de PR.
 - Branch off `main`; never commit directly to `main`. Use `feature/<name>` or `fix/<name>`.
 - Licensed under **AGPL-3.0** — contributions are licensed under the same.
 - Security issues are reported by email (see `SECURITY.md`), never via public GitHub issues.
