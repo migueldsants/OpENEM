@@ -41,6 +41,8 @@ model User {
   videos              Video[]
   videoNotes          VideoNote[]
   simulationTemplates SimulationTemplate[]
+  themes              UserTheme[]
+  themeLikes          UserThemeLike[]
 }
 
 model Profile {
@@ -689,4 +691,40 @@ model FlashcardReview {
 
   @@unique([userId, flashcardId])
   @@index([userId, dueAt]) // fila "vencidos primeiro"
+}
+
+/// Tema de cores criado pelo aluno (tela Temas). Guarda os dois lados
+/// (claro/escuro) como JSON com os 10 tokens, sempre `#rrggbb`: as cores são
+/// aplicadas com style.setProperty no navegador de quem usa o tema, inclusive
+/// de outros alunos quando ele é publicado (ver common/theme-tokens.ts).
+model UserTheme {
+  id          String          @id @default(cuid())
+  ownerId     String
+  owner       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  light       String
+  dark        String
+  /// Nasce privado; publicado aparece na aba Comunidade.
+  isPublic    Boolean         @default(false)
+  /// Total de curtidas. A tabela UserThemeLike só impede a segunda curtida.
+  likes       Int             @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  likeRows    UserThemeLike[]
+
+  @@unique([ownerId, name])
+  @@index([isPublic, likes])
+  @@index([isPublic, publishedAt])
+}
+
+model UserThemeLike {
+  id        String    @id @default(cuid())
+  themeId   String
+  theme     UserTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([themeId, userId])
 }

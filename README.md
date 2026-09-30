@@ -131,6 +131,18 @@ ENEM: duas colunas, capa com a marca e a descrição do projeto, cartão-respost
 para preencher à caneta, gabarito no fim e, se você quiser, os comentários. A
 cor do caderno é a do tema que você escolher no app (ou uma cor livre).
 
+### Temas de cor
+
+A tela **Temas** reúne as paletas do app, todas com lado claro e escuro (o
+botão de sol/lua do topo alterna entre eles): as clássicas, criativas como
+Cyberpunk, Synthwave e Terminal (com cantos, fonte de destaque e brilho
+próprios, que dá para desligar em "Efeitos visuais") e as pensadas para
+telas **OLED**, com preto absoluto no escuro. O aluno também monta o próprio
+tema a partir de uma cor, com os dois lados gerados já com contraste de
+leitura, salva na conta e, se quiser, publica na **comunidade**, onde os
+outros podem usar, copiar e curtir. Um teste confere o contraste (texto,
+marca e cores das áreas) de cada paleta pronta.
+
 ### Testes
 
 ```bash

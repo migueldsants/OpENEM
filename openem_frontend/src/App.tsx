@@ -23,6 +23,7 @@ import {
   IconTimer,
   IconTrophy,
   IconUser,
+  IconPalette,
 } from './components/icons';
 import { AchievementToastHost } from './components/AchievementToast';
 import { MoreSheet, porSecao, type NavItem } from './components/MoreSheet';
@@ -35,6 +36,7 @@ import { useIsImmersive } from './immersive';
 import { PomodoroProvider } from './pomodoro';
 import { leagueStyle } from './lib/gamification';
 import Comunidade from './pages/Comunidade';
+import Temas from './pages/Temas';
 import Conquistas from './pages/Conquistas';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
@@ -88,6 +90,7 @@ const NAV: NavItem[] = [
   { to: '/comunidade', label: 'Comunidade', Icon: IconChat, mobile: 'more', section: 'Social' },
 
   { to: '/perfil', label: 'Perfil', Icon: IconUser, mobile: 'more', section: 'Conta' },
+  { to: '/temas', label: 'Temas', Icon: IconPalette, mobile: 'more', section: 'Conta' },
 ];
 
 const MOBILE_PRIMARY = NAV.filter((n) => n.mobile === 'primary');
@@ -323,6 +326,7 @@ export default function App() {
       <Route path="/redacao" element={<Redacao />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
+      <Route path="/temas" element={<Temas />} />
       <Route path="/usuarios/:id" element={<PerfilPublico />} />
       <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/flashcards" element={<Flashcards />} />

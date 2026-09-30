@@ -27,6 +27,7 @@ import { WeeklyGoalsModule } from './weekly-goals/weekly-goals.module';
 import { FormulasModule } from './formulas/formulas.module';
 import { PomodoroModule } from './pomodoro/pomodoro.module';
 import { VideosModule } from './videos/videos.module';
+import { ThemesModule } from './themes/themes.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { VideosModule } from './videos/videos.module';
     FormulasModule,
     PomodoroModule,
     VideosModule,
+    ThemesModule,
   ],
   controllers: [AppController],
   providers: [

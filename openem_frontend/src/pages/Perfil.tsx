@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import ThemeCustomizer from '../components/ThemeCustomizer';
+import { NavLink } from 'react-router-dom';
+import { ThemePreview } from '../components/ThemePreview';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
@@ -46,7 +47,11 @@ function Switch({
 
 export default function Perfil() {
   const { me, refreshMe } = useAuth();
-  const { family, variant, setFamily, setVariant } = useTheme();
+  const { family, variant, custom, setVariant } = useTheme();
+  const currentName =
+    family === 'custom'
+      ? (custom?.name ?? 'Personalizado')
+      : (FAMILIES.find((f) => f.key === family)?.label ?? 'Padrão');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,12 +156,24 @@ export default function Perfil() {
       </div>
 
       <div className="card p-4">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-wrap items-center gap-4">
+          <ThemePreview
+            theme={family === 'custom' ? undefined : `${family}-${variant}`}
+            tokens={family === 'custom' ? custom?.[variant] : undefined}
+            variant={variant}
+            className="w-32 shrink-0"
+          />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Aparência</p>
             <p className="mt-0.5 text-xs text-muted">
-              Escolha a paleta e a variante (claro/escuro).
+              Tema atual: <span className="font-semibold text-fg">{currentName}</span>
             </p>
+            <NavLink
+              to="/temas"
+              className="mt-1.5 inline-block text-sm font-semibold text-brand hover:underline"
+            >
+              Ver todos os temas
+            </NavLink>
           </div>
           {/* Toggle claro/escuro rápido */}
           <div className="seg">
@@ -174,30 +191,7 @@ export default function Perfil() {
             </button>
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {FAMILIES.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFamily(f.key)}
-              className={`flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors ${
-                family === f.key
-                  ? 'border-brand ring-1 ring-brand'
-                  : 'border-line hover:bg-surface-2'
-              }`}
-            >
-              <span
-                className="size-9 rounded-lg border border-line"
-                style={{
-                  background: `linear-gradient(135deg, ${f.swatch[0]} 50%, ${f.swatch[1]} 50%)`,
-                }}
-              />
-              <span className="text-xs font-medium">{f.label}</span>
-            </button>
-          ))}
-        </div>
       </div>
-
-      <ThemeCustomizer />
 
       <div className="card p-2">
         <div className="flex items-center gap-3 p-3">
