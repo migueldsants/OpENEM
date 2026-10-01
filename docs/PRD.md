@@ -11,7 +11,7 @@
 | **Versão** | 1.1 |
 | **Licença** | AGPL-3.0 |
 
-> **Sobre este documento.** Este PRD planeja a aplicação **completa** — frontend, backend, banco de dados, infraestrutura de CI/CD em Docker e estratégia de testes automatizados — respeitando as escolhas tecnológicas já estabelecidas no repositório (NestJS, TypeScript, Tailwind, Swagger) e as decisões solicitadas (Prisma + SQLite nas migrations por enquanto, Docker Compose, testes integrados ao CI/CD). Itens que ainda não podem ser definidos aparecem marcados como **`[PLACEHOLDER]`**. As decisões de produto derivam da pesquisa primária em [`references/personas.md`](../references/personas.md) e [`references/insights.md`](../references/insights.md) (34 respondentes válidos, nov–dez/2025).
+> **Sobre este documento.** Este PRD planeja a aplicação **completa** — frontend, backend, banco de dados, infraestrutura de CI/CD em Docker e estratégia de testes automatizados — respeitando as escolhas tecnológicas já estabelecidas no repositório (NestJS, TypeScript, Tailwind, Swagger) e as decisões solicitadas (Prisma + SQLite nas migrations por enquanto, Docker Compose, testes integrados ao CI/CD). Itens que ainda não podem ser definidos aparecem marcados como **`[PLACEHOLDER]`**. As decisões de produto derivam de uma pesquisa primária com o público-alvo (34 respondentes válidos, nov–dez/2025); as respostas não são versionadas, para preservar a privacidade dos participantes.
 
 ---
 
@@ -115,7 +115,7 @@ A pesquisa primária (nov–dez/2025) validou a demanda e o backend já está em
 
 ## 4. Personas
 
-Detalhamento completo em [`references/personas.md`](../references/personas.md). Resumo dos arquétipos que guiam o produto:
+Resumo dos arquétipos que guiam o produto:
 
 | Persona | Idade | Objetivo | Tempo/dia | Foco principal | Maior dor |
 |---|---|---|---|---|---|
