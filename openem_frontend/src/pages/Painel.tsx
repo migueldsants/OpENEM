@@ -233,240 +233,249 @@ export default function Painel() {
         onRetry={() => setReloadKey((k) => k + 1)}
       />
 
-      {game?.enabled && <ProgressWidget data={game} />}
+      {/* Duas colunas no monitor largo: o dia (nível, desafio, metas,
+          revisão) e a análise (áreas, reforço, recomendações). A ordem no
+          DOM é a do celular, então lá nada muda. */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
+        <div className="space-y-6">
+          {game?.enabled && <ProgressWidget data={game} />}
 
-      {daily === null ? (
-        // Com falha na carga o erro já está no topo: skeleton eterno enganaria.
-        !loadError && <Skeleton className="h-20" />
-      ) : (
-        daily?.enabled && (
-          <DailyChallengeCard
-            data={daily}
-            onClaim={() => void claimDaily()}
-            claiming={claiming}
-          />
-        )
-      )}
+          {daily === null ? (
+            // Com falha na carga o erro já está no topo: skeleton eterno enganaria.
+            !loadError && <Skeleton className="h-20" />
+          ) : (
+            daily?.enabled && (
+              <DailyChallengeCard
+                data={daily}
+                onClaim={() => void claimDaily()}
+                claiming={claiming}
+              />
+            )
+          )}
 
-      <WeeklyGoalsCard />
+          <WeeklyGoalsCard />
 
-      <div className="grid grid-cols-3 gap-3">
-        {loadingPerf ? (
-          <>
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-          </>
-        ) : (
-          <>
-            <Stat
-              value={hasData ? `${perf!.overall.accuracy}%` : '-'}
-              label="de acerto"
-              accent="text-brand"
-            />
-            <Stat value={String(answered)} label="respondidas" />
-            <Stat
-              value={String(review.length)}
-              label="para revisar"
-              accent={review.length ? 'text-warning' : 'text-fg'}
-            />
-          </>
-        )}
-      </div>
+          <div className="grid grid-cols-3 gap-3">
+            {loadingPerf ? (
+              <>
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+              </>
+            ) : (
+              <>
+                <Stat
+                  value={hasData ? `${perf!.overall.accuracy}%` : '-'}
+                  label="de acerto"
+                  accent="text-brand"
+                />
+                <Stat value={String(answered)} label="respondidas" />
+                <Stat
+                  value={String(review.length)}
+                  label="para revisar"
+                  accent={review.length ? 'text-warning' : 'text-fg'}
+                />
+              </>
+            )}
+          </div>
 
-      {/* Revisão devida — chamada direta quando há assuntos vencidos. */}
-      {review.length > 0 && (
-        <NavLink
-          to="/revisao"
-          className="card card-raised flex items-center gap-3 p-4 ring-1 ring-warning/30 transition-transform hover:-translate-y-0.5"
-        >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-warning/12 text-warning">
-            <IconClock width={22} height={22} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-bold">
-              Revisar agora
-            </span>
-            <span className="text-xs text-muted">
-              {review.length}{' '}
-              {review.length === 1 ? 'assunto vencido' : 'assuntos vencidos'} na
-              sua fila
-            </span>
-          </span>
-        </NavLink>
-      )}
+          {/* Revisão devida — chamada direta quando há assuntos vencidos. */}
+          {review.length > 0 && (
+            <NavLink
+              to="/revisao"
+              className="card card-raised flex items-center gap-3 p-4 ring-1 ring-warning/30 transition-transform hover:-translate-y-0.5"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-warning/12 text-warning">
+                <IconClock width={22} height={22} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display font-bold">
+                  Revisar agora
+                </span>
+                <span className="text-xs text-muted">
+                  {review.length}{' '}
+                  {review.length === 1 ? 'assunto vencido' : 'assuntos vencidos'} na
+                  sua fila
+                </span>
+              </span>
+            </NavLink>
+          )}
 
-      {/* Próxima revisão agendada — só quando a fila de vencidos está vazia. */}
-      {review.length === 0 && nextReview && (
-        <NavLink
-          to="/revisao"
-          className="card flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
-        >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
-            <IconCalendar width={22} height={22} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-bold">
-              Próxima revisão
-            </span>
-            <span className="text-xs text-muted">
-              {nextReview.topic.name} · {relativeDate(nextReview.dueAt)}
-            </span>
-          </span>
-          <span className="chip shrink-0 bg-surface-2 text-muted">
-            {nextReview.topic.subject.name}
-          </span>
-        </NavLink>
-      )}
-
-      {/* Desempenho por área — o coração do painel. */}
-      <section className="card p-5">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-lg font-bold">Desempenho por área</h2>
-          <NavLink to="/desempenho" className="text-xs font-medium text-brand">
-            Ver completo
-          </NavLink>
+          {/* Próxima revisão agendada — só quando a fila de vencidos está vazia. */}
+          {review.length === 0 && nextReview && (
+            <NavLink
+              to="/revisao"
+              className="card flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
+                <IconCalendar width={22} height={22} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display font-bold">
+                  Próxima revisão
+                </span>
+                <span className="text-xs text-muted">
+                  {nextReview.topic.name} · {relativeDate(nextReview.dueAt)}
+                </span>
+              </span>
+              <span className="chip shrink-0 bg-surface-2 text-muted">
+                {nextReview.topic.subject.name}
+              </span>
+            </NavLink>
+          )}
         </div>
 
-        {loadingPerf ? (
-          <ul className="mt-4 space-y-3" aria-label="Carregando desempenho">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <li key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <SkeletonText width="35%" />
-                  <SkeletonText width="15%" />
-                </div>
-                <Skeleton className="h-2" />
-              </li>
-            ))}
-          </ul>
-        ) : hasData && perf!.bySubject.length > 0 ? (
-          <ul className="mt-4 space-y-3">
-            {perf!.bySubject.map((s) => {
-              const area = areaKey(s.name);
-              return (
-                <li key={s.id}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <span className={`size-2.5 rounded-full ${AREA_DOT[area]}`} />
-                      {s.name.replace(' e suas Tecnologias', '')}
-                    </span>
-                    <span className="tabular-nums text-muted">
-                      {s.correct}/{s.total} · {s.accuracy}%
-                    </span>
-                  </div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className={`h-full rounded-full ${AREA_DOT[area]}`}
-                      style={{ width: `${s.accuracy}%` }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <EmptyState
-            icon={IconTrophy}
-            title="Sem dados ainda"
-            description={
-              <>
-                Responda sua primeira questão em{' '}
-                <NavLink to="/questoes" className="font-medium text-brand">
-                  Questões
-                </NavLink>{' '}
-                para ver suas estatísticas.
-              </>
-            }
-            tip="Cada resposta alimenta seu desempenho por área"
-            bare
-          />
-        )}
-      </section>
+        <div className="space-y-6">
+          {/* Desempenho por área — o coração do painel. */}
+          <section className="card p-5">
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-display text-lg font-bold">Desempenho por área</h2>
+              <NavLink to="/desempenho" className="text-xs font-medium text-brand">
+                Ver completo
+              </NavLink>
+            </div>
 
-      {/* Pontos a reforçar — só quando há sinal. */}
-      {hasData && perf!.weakestTopics.length > 0 && (
-        <section className="card p-5">
-          <h2 className="font-display text-lg font-bold">A reforçar</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Assuntos com menor acerto até agora.
-          </p>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {perf!.weakestTopics.slice(0, 5).map((t) => (
-              <li key={t.id} className="chip">
-                {t.name}
-                <span className="tabular-nums text-muted">{t.accuracy}%</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+            {loadingPerf ? (
+              <ul className="mt-4 space-y-3" aria-label="Carregando desempenho">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <SkeletonText width="35%" />
+                      <SkeletonText width="15%" />
+                    </div>
+                    <Skeleton className="h-2" />
+                  </li>
+                ))}
+              </ul>
+            ) : hasData && perf!.bySubject.length > 0 ? (
+              <ul className="mt-4 space-y-3">
+                {perf!.bySubject.map((s) => {
+                  const area = areaKey(s.name);
+                  return (
+                    <li key={s.id}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2">
+                          <span className={`size-2.5 rounded-full ${AREA_DOT[area]}`} />
+                          {s.name.replace(' e suas Tecnologias', '')}
+                        </span>
+                        <span className="tabular-nums text-muted">
+                          {s.correct}/{s.total} · {s.accuracy}%
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
+                        <div
+                          className={`h-full rounded-full ${AREA_DOT[area]}`}
+                          style={{ width: `${s.accuracy}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState
+                icon={IconTrophy}
+                title="Sem dados ainda"
+                description={
+                  <>
+                    Responda sua primeira questão em{' '}
+                    <NavLink to="/questoes" className="font-medium text-brand">
+                      Questões
+                    </NavLink>{' '}
+                    para ver suas estatísticas.
+                  </>
+                }
+                tip="Cada resposta alimenta seu desempenho por área"
+                bare
+              />
+            )}
+          </section>
 
-      {/* Recomendado para você — questões dos assuntos com mais erros. */}
-      {recs.length > 0 && (
-        <section className="card p-5">
-          <div className="flex items-center gap-2">
-            <IconSparkle width={18} height={18} className="text-brand" />
-            <h2 className="font-display text-lg font-bold">
-              Recomendado para você
-            </h2>
-          </div>
-          <ul className="mt-3 space-y-2.5">
-            {recs.map((r) => {
-              const area = areaKey(areaSourceName(r.question));
-              return (
-                <li key={r.question.id}>
-                  <NavLink
-                    to={
-                      r.question.topic
-                        ? `/questoes?topicId=${encodeURIComponent(r.question.topic.id)}`
-                        : '/questoes'
-                    }
-                    className="block rounded-lg border border-line p-3 transition-colors hover:bg-surface-2"
-                  >
-                    <p className="flex items-center gap-2 text-xs">
-                      <span className={`size-2 rounded-full ${AREA_DOT[area]}`} />
-                      <span className={`font-semibold ${AREA_TEXT[area]}`}>
-                        {topicLabel(r.question) ?? subjectLabel(r.question)}
-                      </span>
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-sm">
-                      {r.question.statement}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">{r.reason}</p>
-                  </NavLink>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+          {/* Pontos a reforçar — só quando há sinal. */}
+          {hasData && perf!.weakestTopics.length > 0 && (
+            <section className="card p-5">
+              <h2 className="font-display text-lg font-bold">A reforçar</h2>
+              <p className="mt-0.5 text-xs text-muted">
+                Assuntos com menor acerto até agora.
+              </p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {perf!.weakestTopics.slice(0, 5).map((t) => (
+                  <li key={t.id} className="chip">
+                    {t.name}
+                    <span className="tabular-nums text-muted">{t.accuracy}%</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {/* Fórum em alta — tópico com mais respostas (proxy de "quente"). */}
-      {hotThread && (
-        <NavLink
-          to="/comunidade"
-          className="card card-raised flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
-        >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-lin/12 text-lin">
-            <IconChat width={22} height={22} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-bold">Fórum em alta</span>
-            <span className="block truncate text-xs text-muted">
-              {hotThread.title}
-            </span>
-          </span>
-          <span className="shrink-0 text-right">
-            <span className="block font-data font-bold tabular-nums">
-              {hotThread.replies}
-            </span>
-            <span className="text-xs text-muted">
-              {hotThread.replies === 1 ? 'resposta' : 'respostas'}
-            </span>
-          </span>
-        </NavLink>
-      )}
+          {/* Recomendado para você — questões dos assuntos com mais erros. */}
+          {recs.length > 0 && (
+            <section className="card p-5">
+              <div className="flex items-center gap-2">
+                <IconSparkle width={18} height={18} className="text-brand" />
+                <h2 className="font-display text-lg font-bold">
+                  Recomendado para você
+                </h2>
+              </div>
+              <ul className="mt-3 space-y-2.5">
+                {recs.map((r) => {
+                  const area = areaKey(areaSourceName(r.question));
+                  return (
+                    <li key={r.question.id}>
+                      <NavLink
+                        to={
+                          r.question.topic
+                            ? `/questoes?topicId=${encodeURIComponent(r.question.topic.id)}`
+                            : '/questoes'
+                        }
+                        className="block rounded-lg border border-line p-3 transition-colors hover:bg-surface-2"
+                      >
+                        <p className="flex items-center gap-2 text-xs">
+                          <span className={`size-2 rounded-full ${AREA_DOT[area]}`} />
+                          <span className={`font-semibold ${AREA_TEXT[area]}`}>
+                            {topicLabel(r.question) ?? subjectLabel(r.question)}
+                          </span>
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-sm">
+                          {r.question.statement}
+                        </p>
+                        <p className="mt-1 text-xs text-muted">{r.reason}</p>
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          {/* Fórum em alta — tópico com mais respostas (proxy de "quente"). */}
+          {hotThread && (
+            <NavLink
+              to="/comunidade"
+              className="card card-raised flex items-center gap-3 p-4 transition-transform hover:-translate-y-0.5"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-lin/12 text-lin">
+                <IconChat width={22} height={22} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display font-bold">Fórum em alta</span>
+                <span className="block truncate text-xs text-muted">
+                  {hotThread.title}
+                </span>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block font-data font-bold tabular-nums">
+                  {hotThread.replies}
+                </span>
+                <span className="text-xs text-muted">
+                  {hotThread.replies === 1 ? 'resposta' : 'respostas'}
+                </span>
+              </span>
+            </NavLink>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

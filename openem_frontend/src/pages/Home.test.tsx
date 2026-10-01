@@ -85,4 +85,96 @@ describe('Home', () => {
     );
     expect(screen.queryByLabelText(/para revisar/)).not.toBeInTheDocument();
   });
+
+  describe('coluna Hoje (monitor largo)', () => {
+    const hoje = () => within(screen.getByRole('complementary', { name: 'Hoje' }));
+
+    it('lista os blocos de hoje do cronograma, com os feitos marcados', async () => {
+      const dayIndex = 0;
+      vi.mocked(api.studyPlan).mockResolvedValue({
+        id: 'p', minutesPerDay: 60, createdAt: new Date().toISOString(),
+        sessions: [
+          { id: 'a', label: 'Matemática', dayIndex, minutes: 60, done: true, position: 0, subject: null },
+          { id: 'b', label: 'Biologia', dayIndex, minutes: 30, done: false, position: 1, subject: null },
+          { id: 'c', label: 'Física', dayIndex: 3, minutes: 45, done: false, position: 0, subject: null },
+        ],
+      } as never);
+      renderHome();
+      expect(await hoje().findByText('1 de 2 blocos feitos')).toBeInTheDocument();
+      expect(hoje().getByText('Biologia')).toBeInTheDocument();
+      expect(hoje().getByText('30 min')).toBeInTheDocument();
+      expect(hoje().getByLabelText('feito')).toBeInTheDocument();
+      expect(hoje().queryByText('Física')).not.toBeInTheDocument();
+      expect(hoje().getByText('Cronograma').closest('a')).toHaveAttribute(
+        'href',
+        '/cronograma',
+      );
+    });
+
+    it('escreve a data de hoje por extenso', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 1, 12));
+      try {
+        renderHome();
+        expect(await hoje().findByText('quinta-feira, 1 de outubro')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('sem pendências, diz que está em dia e não abre lista de blocos', async () => {
+      renderHome();
+      expect(await hoje().findByText('Nenhum assunto vencido')).toBeInTheDocument();
+      expect(hoje().getByText('Nenhum bloco para hoje')).toBeInTheDocument();
+      // Só a lista de itens do dia: nada de sublista vazia de blocos.
+      expect(hoje().getAllByRole('list')).toHaveLength(1);
+    });
+
+    it('usa singular e plural certos', async () => {
+      vi.mocked(api.reviewQueue).mockResolvedValue([{}, {}] as never);
+      vi.mocked(api.studyPlan).mockResolvedValue({
+        id: 'p', minutesPerDay: 60, createdAt: new Date().toISOString(),
+        sessions: [
+          { id: 'a', label: 'Química', dayIndex: 0, minutes: 30, done: true, position: 0, subject: null },
+        ],
+      } as never);
+      renderHome();
+      expect(await hoje().findByText('2 assuntos vencidos')).toBeInTheDocument();
+      expect(hoje().getByText('1 de 1 bloco feito')).toBeInTheDocument();
+      expect(hoje().getByText('Química')).toHaveClass('line-through');
+    });
+
+    it('a bolinha do bloco usa a cor da matéria, com o nome como reserva', async () => {
+      vi.mocked(api.studyPlan).mockResolvedValue({
+        id: 'p', minutesPerDay: 60, createdAt: new Date().toISOString(),
+        sessions: [
+          { id: 'a', label: 'Bloco livre', dayIndex: 0, minutes: 30, done: false, position: 0, subject: { id: 'm', name: 'Matemática' } },
+          { id: 'b', label: 'Biologia', dayIndex: 0, minutes: 30, done: false, position: 1, subject: null },
+        ],
+      } as never);
+      renderHome();
+      const livre = await hoje().findByText('Bloco livre');
+      expect(livre.previousElementSibling).toHaveClass('bg-mat');
+      expect(hoje().getByText('Biologia').previousElementSibling).toHaveClass('bg-nat');
+    });
+
+    it('mostra a revisão e a recomendação como ações', async () => {
+      vi.mocked(api.reviewQueue).mockResolvedValue([{}] as never);
+      vi.mocked(api.recommendations).mockResolvedValue([
+        {
+          question: {
+            topic: { id: 't 1', name: 'Funções', subject: { id: 'm', name: 'Matemática' } },
+          },
+          reason: 'Você errou 3 de 4 em Funções.',
+        },
+      ] as never);
+      renderHome();
+      expect(await hoje().findByText('1 assunto vencido')).toBeInTheDocument();
+      expect(hoje().getByText('Nenhum bloco para hoje')).toBeInTheDocument();
+      expect(hoje().getByText('Funções').closest('a')).toHaveAttribute(
+        'href',
+        '/questoes?topicId=t%201',
+      );
+    });
+  });
 });

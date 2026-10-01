@@ -156,7 +156,7 @@ export default function Conquistas() {
             return (
               <section key={cat.key} className="card p-5">
                 <h2 className="font-display text-lg font-bold">{cat.label}</h2>
-                <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                <ul className="mt-3 grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-3">
                   {catItems.map((a) => (
                     <AchievementCard key={a.code} a={a} />
                   ))}
