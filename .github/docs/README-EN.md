@@ -103,8 +103,7 @@ npm run db:classify:keywords -- --dry-run --sample=20  # review the decisions
 npm run db:classify:keywords
 ```
 
-With an AI provider configured (the same one used for essay grading), two more
-features become available:
+With an AI provider configured, two more features become available:
 
 *   **On-demand explanation**: the "Ver comentário" button generates the
     explanation the first time someone asks for it and stores it for everyone
@@ -145,6 +144,15 @@ both sides generated at readable contrast, save it to their account and, if
 they want, publish it to the **community**, where others can use, copy and
 like it. A test checks the contrast (text, brand and subject-area colours) of
 every built-in palette.
+
+### Tools
+
+The **Ferramentas** screen lists open projects on GitHub that complement
+OpENEM: the [ENEM essay grader](https://github.com/migueldsants/AI-Skill-Corretor-Redacao-ENEM),
+a skill for AI agents that scores each competency while quoting INEP's
+official reference matrix, and the [updated ENEM API](https://github.com/migueldsants/updated-enem-api),
+where the question bank comes from. To add a project, edit
+`openem_frontend/src/lib/tools.ts`.
 
 ### Tests
 

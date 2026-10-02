@@ -15,7 +15,7 @@ import {
   IconHome,
   IconLogout,
   IconMore,
-  IconPen,
+  IconToolbox,
   IconPlay,
   IconRepeat,
   IconStack,
@@ -41,6 +41,7 @@ import Temas from './pages/Temas';
 import Conquistas from './pages/Conquistas';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
+import Ferramentas from './pages/Ferramentas';
 import Favoritos from './pages/Favoritos';
 import Flashcards from './pages/Flashcards';
 import Formulas from './pages/Formulas';
@@ -54,7 +55,6 @@ import PerfilPublico from './pages/PerfilPublico';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
 import Quadro from './pages/Quadro';
-import Redacao from './pages/Redacao';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
 import Videos from './pages/Videos';
@@ -74,7 +74,7 @@ const NAV: NavItem[] = [
   { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary', section: 'Estudar' },
   { to: '/revisao', label: 'Revisão', Icon: IconRepeat, mobile: 'primary', section: 'Estudar' },
   { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more', section: 'Estudar' },
-  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more', section: 'Estudar' },
+  { to: '/ferramentas', label: 'Ferramentas', Icon: IconToolbox, mobile: 'more', section: 'Estudar' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more', section: 'Estudar' },
 
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more', section: 'Planejar' },
@@ -323,7 +323,7 @@ export default function App() {
       <Route path="/conquistas" element={<Conquistas />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/pomodoro" element={<Pomodoro />} />
-      <Route path="/redacao" element={<Redacao />} />
+      <Route path="/ferramentas" element={<Ferramentas />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/temas" element={<Temas />} />
@@ -457,7 +457,7 @@ export default function App() {
           ))}
 
           {/* Botão "Mais": abre o bottom-sheet com Progresso, Comunidade,
-              Cronograma, Redação e Favoritos (todas a 2 taps). */}
+              Cronograma, Ferramentas e Favoritos (todas a 2 taps). */}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}

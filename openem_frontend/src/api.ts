@@ -654,50 +654,6 @@ export interface StudyPlan {
   createdAt: string;
   sessions: StudySession[];
 }
-export interface EssayPrompt {
-  id: string;
-  title: string;
-  theme: string;
-  instructions: string;
-  year: number | null;
-}
-/** Destaque de um erro sobre o texto da redação (start/end null = não localizado). */
-export interface EssayAnnotation {
-  competency: number; // 1..5
-  start: number | null;
-  end: number | null;
-  excerpt: string;
-  comment: string;
-  suggestion: string;
-}
-export interface EssayEvaluation {
-  c1: number;
-  c2: number;
-  c3: number;
-  c4: number;
-  c5: number;
-  total: number;
-  feedback: string | null;
-  competencyFeedback?: Record<'c1' | 'c2' | 'c3' | 'c4' | 'c5', string> | null;
-  annotations?: EssayAnnotation[] | null;
-  gamification?: GamificationDelta;
-}
-export interface EssaySubmissionSummary {
-  id: string;
-  submittedAt: string;
-  prompt: { id: string; title: string; theme: string };
-  evaluation: Pick<
-    EssayEvaluation,
-    'total' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5'
-  > | null;
-}
-export interface EssaySubmissionDetail {
-  id: string;
-  submittedAt: string;
-  content: string;
-  prompt: { id: string; title: string; theme: string; instructions: string };
-  evaluation: EssayEvaluation | null;
-}
 /** Recorte de um simulado personalizado (mesmos campos do backend). */
 export interface SimulationFilters {
   subjectAreaIds?: string[];
@@ -1228,28 +1184,6 @@ export const api = {
     }),
   /** Esvazia o cronograma, mantendo o plano para edição manual. */
   clearStudyPlan: () => request<StudyPlan>('/study-plan', { method: 'DELETE' }),
-
-  essayPrompts: () => request<EssayPrompt[]>('/essays/prompts'),
-  submitEssay: (promptId: string, content: string) =>
-    request<{
-      id: string;
-      promptId: string;
-      submittedAt: string;
-      gamification?: GamificationDelta;
-    }>('/essays/submissions', {
-      method: 'POST',
-      body: { promptId, content },
-    }),
-  essaySubmissions: () =>
-    request<EssaySubmissionSummary[]>('/essays/submissions'),
-  essaySubmission: (id: string) =>
-    request<EssaySubmissionDetail>(`/essays/submissions/${id}`),
-  essayAiAvailable: () =>
-    request<{ available: boolean }>('/essays/ai-available'),
-  evaluateEssayWithAi: (id: string) =>
-    request<EssayEvaluation>(`/essays/submissions/${id}/ai-evaluation`, {
-      method: 'POST',
-    }),
 
   gamification: () => request<GamificationSummary>('/gamification/me'),
   achievements: () => request<AchievementView[]>('/gamification/achievements'),

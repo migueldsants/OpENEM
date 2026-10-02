@@ -97,7 +97,7 @@ export default function Login() {
             .
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
-            Simulados fiéis ao ENEM, redação com nota por competência e um
+            Simulados fiéis ao ENEM, as questões oficiais das provas e um
             cronograma que prioriza onde você mais erra. Gratuito, de verdade.
           </p>
 

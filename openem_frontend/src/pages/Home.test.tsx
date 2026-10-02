@@ -45,7 +45,7 @@ describe('Home', () => {
       ['Simulados', '/simulados'],
       ['Painel', '/painel'],
       ['Revisão', '/revisao'],
-      ['Redação', '/redacao'],
+      ['Ferramentas', '/ferramentas'],
       ['Pomodoro', '/pomodoro'],
     ]) {
       expect(nav.getByText(nome).closest('a')).toHaveAttribute('href', rota);

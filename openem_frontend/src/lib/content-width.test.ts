@@ -13,7 +13,7 @@ describe('contentWidth', () => {
   });
 
   it('o resto fica na coluna de leitura, inclusive subrotas', () => {
-    for (const p of ['/questoes', '/redacao', '/revisao', '/perfil', '/painel/x']) {
+    for (const p of ['/questoes', '/ferramentas', '/revisao', '/perfil', '/painel/x']) {
       expect(contentWidth(p)).toBe('leitura');
     }
   });

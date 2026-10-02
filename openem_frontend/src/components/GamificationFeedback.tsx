@@ -28,8 +28,8 @@ function destaque(g: GamificationDelta): string | null {
  * Feedback de gamificação depois de uma ação (issue #17): uma linha com o XP
  * (e o combo, se houver) e no máximo um destaque. As conquistas saem só no
  * toast (issue #48); repetir em badge aqui triplicava a mesma informação.
- * Compartilhado entre Questões, Favoritos, Revisão, Simulados, Redação,
- * Cronograma e Pomodoro.
+ * Compartilhado entre Questões, Favoritos, Revisão, Simulados, Cronograma e
+ * Pomodoro.
  */
 export function GamificationFeedback({ g }: { g: GamificationDelta }) {
   const brilho = destaque(g);

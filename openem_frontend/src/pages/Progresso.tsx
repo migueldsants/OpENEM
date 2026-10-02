@@ -537,7 +537,7 @@ export default function Progresso() {
       <PageHeader
         eyebrow="Sua jornada"
         title="Progresso"
-        subtitle="Ganhe XP estudando: questões, simulados, redações, revisões e sessões do cronograma contam."
+        subtitle="Ganhe XP estudando: questões, simulados, revisões e sessões do cronograma contam."
       />
 
       <ErrorBanner message={error} />

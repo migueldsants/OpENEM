@@ -1,7 +1,7 @@
 /**
  * Largura máxima da área de conteúdo, por tipo de tela.
  *
- * - Leitura (padrão): enunciado, redação e formulários pedem linha curta.
+ * - Leitura (padrão): enunciado e formulários pedem linha curta.
  * - Painel: telas de cartões e gráficos aproveitam monitor largo e se dividem
  *   em duas colunas a partir do `xl` (cada uma decide onde).
  * - Grade: o cronograma é uma grade de 7 dias, e 768px espremem as colunas.
