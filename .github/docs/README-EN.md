@@ -164,3 +164,10 @@ npm test            # unit
 npm run test:e2e    # end-to-end (creates an isolated test SQLite database)
 ```
 
+
+## Contributors
+
+*   **[Miguel dos Santos Miranda](https://github.com/migueldsants)**: creator and maintainer.
+*   **[Claude](https://claude.com/claude-code)** (Claude Code, by Anthropic): AI assistant that contributes code, tests and documentation. Its commits carry the `Co-Authored-By: Claude` line.
+
+Want to be listed here? See the [contributing guide](CONTRIBUTING-EN.md).
