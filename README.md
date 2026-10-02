@@ -149,7 +149,7 @@ OpENEM: o [corretor de redação do Enem](https://github.com/migueldsants/AI-Ski
 uma skill para agentes de IA que dá nota por competência citando a Matriz de
 Referência do Inep, e a [API ENEM atualizada](https://github.com/migueldsants/updated-enem-api),
 de onde vem o banco de questões. Cada cartão mostra quantas estrelas o
-projeto tem e um botão **Dar estrela**, que leva ao GitHub: é o jeito mais
+projeto tem, num botão **Estrela** que leva ao GitHub: é o jeito mais
 simples de apoiar. A contagem é buscada pelo servidor, com cache de uma hora.
 Para acrescentar um projeto, edite `openem_backend/src/tools/tools-catalog.ts`.
 

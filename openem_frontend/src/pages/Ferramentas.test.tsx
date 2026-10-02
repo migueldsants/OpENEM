@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import Ferramentas from './Ferramentas';
-import { rotuloEstrelas } from '../lib/estrelas';
+import { numeroEstrelas, rotuloEstrelas } from '../lib/estrelas';
 import { api, type Tool } from '../api';
 
 vi.mock('../api', () => ({ api: { tools: vi.fn() } }));
@@ -28,11 +28,12 @@ describe('Ferramentas', () => {
     vi.mocked(api.tools).mockReset();
   });
 
-  it('cada cartão tem o botão de dar estrela, que abre o repositório numa aba nova', async () => {
+  it('cada cartão tem o botão "Estrela", que abre o repositório numa aba nova', async () => {
     vi.mocked(api.tools).mockResolvedValue([corretor, dataset]);
     render(<Ferramentas />);
     const lista = within(await screen.findByRole('list', { name: 'Repositórios' }));
-    const botoes = lista.getAllByRole('link', { name: /^Dar estrela a/ });
+    const botoes = lista.getAllByRole('link', { name: /^Estrela:/ });
+    for (const a of botoes) expect(a).toHaveTextContent(/^Estrela$/);
     expect(botoes.map((a) => a.getAttribute('href'))).toEqual([corretor.url, dataset.url]);
     for (const a of botoes) {
       expect(a).toHaveAttribute('target', '_blank');
@@ -43,7 +44,8 @@ describe('Ferramentas', () => {
   it('mostra a contagem de estrelas, que leva à lista de quem deu estrela', async () => {
     vi.mocked(api.tools).mockResolvedValue([corretor]);
     render(<Ferramentas />);
-    const contagem = await screen.findByRole('link', { name: /12 estrelas/ });
+    const contagem = await screen.findByRole('link', { name: /^12 estrelas/ });
+    expect(contagem).toHaveTextContent(/^12$/);
     expect(contagem).toHaveAttribute('href', `${corretor.url}/stargazers`);
     expect(contagem).toHaveAttribute('target', '_blank');
   });
@@ -52,9 +54,9 @@ describe('Ferramentas', () => {
     vi.mocked(api.tools).mockResolvedValue([dataset]);
     render(<Ferramentas />);
     expect(
-      await screen.findByRole('link', { name: /Dar estrela a API ENEM/ }),
+      await screen.findByRole('link', { name: /^Estrela: API ENEM/ }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/\d estrelas?/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /estrelas?: ver quem/ })).not.toBeInTheDocument();
   });
 
   it('mostra nome, repositório, descrição e rótulos', async () => {
@@ -69,7 +71,7 @@ describe('Ferramentas', () => {
   it('convida a dar estrela', async () => {
     vi.mocked(api.tools).mockResolvedValue([corretor]);
     render(<Ferramentas />);
-    expect(await screen.findByText(/Deixe uma estrela/)).toBeInTheDocument();
+    expect(await screen.findByText(/Uma estrela no GitHub/)).toBeInTheDocument();
   });
 
   it('erro de rede mostra o aviso com "Tentar de novo"', async () => {
@@ -91,5 +93,10 @@ describe('rotuloEstrelas', () => {
     expect(rotuloEstrelas(12)).toBe('12 estrelas');
     // O Intl separa "1,2" de "mil" com espaço não separável: não quebra a linha.
     expect(rotuloEstrelas(1234)).toBe('1,2\u00a0mil estrelas');
+  });
+
+  it('o número do botão vem sem a palavra', () => {
+    expect(numeroEstrelas(27)).toBe('27');
+    expect(numeroEstrelas(1234)).toBe('1,2\u00a0mil');
   });
 });
