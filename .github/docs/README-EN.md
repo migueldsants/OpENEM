@@ -151,8 +151,10 @@ The **Ferramentas** screen lists open projects on GitHub that complement
 OpENEM: the [ENEM essay grader](https://github.com/migueldsants/AI-Skill-Corretor-Redacao-ENEM),
 a skill for AI agents that scores each competency while quoting INEP's
 official reference matrix, and the [updated ENEM API](https://github.com/migueldsants/updated-enem-api),
-where the question bank comes from. To add a project, edit
-`openem_frontend/src/lib/tools.ts`.
+where the question bank comes from. Each card shows how many stars the
+project has and a **Dar estrela** (star it) button that opens GitHub: the
+simplest way to support it. The count is fetched by the server, with a
+one-hour cache. To add a project, edit `openem_backend/src/tools/tools-catalog.ts`.
 
 ### Tests
 

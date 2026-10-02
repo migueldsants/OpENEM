@@ -654,6 +654,17 @@ export interface StudyPlan {
   createdAt: string;
   sessions: StudySession[];
 }
+/** Ferramenta aberta no GitHub (tela Ferramentas). */
+export interface Tool {
+  name: string;
+  /** `dono/repositório` no GitHub. */
+  repo: string;
+  description: string;
+  tags: string[];
+  url: string;
+  /** null quando o servidor ainda não conseguiu falar com o GitHub. */
+  stars: number | null;
+}
 /** Recorte de um simulado personalizado (mesmos campos do backend). */
 export interface SimulationFilters {
   subjectAreaIds?: string[];
@@ -1184,6 +1195,8 @@ export const api = {
     }),
   /** Esvazia o cronograma, mantendo o plano para edição manual. */
   clearStudyPlan: () => request<StudyPlan>('/study-plan', { method: 'DELETE' }),
+
+  tools: () => request<Tool[]>('/tools'),
 
   gamification: () => request<GamificationSummary>('/gamification/me'),
   achievements: () => request<AchievementView[]>('/gamification/achievements'),
