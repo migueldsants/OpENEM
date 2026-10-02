@@ -160,3 +160,10 @@ Para acrescentar um projeto, edite `openem_backend/src/tools/tools-catalog.ts`.
 npm test            # unitários
 npm run test:e2e    # end-to-end (cria um banco SQLite de teste isolado)
 ```
+
+## Contribuidores
+
+*   **[Miguel dos Santos Miranda](https://github.com/migueldsants)**: criador e mantenedor.
+*   **[Claude](https://claude.com/claude-code)** (Claude Code, da Anthropic): assistente de IA que contribui com código, testes e documentação. Os commits dele levam a linha `Co-Authored-By: Claude`.
+
+Quer aparecer aqui? Veja o [guia de contribuição](CONTRIBUTING.md).
