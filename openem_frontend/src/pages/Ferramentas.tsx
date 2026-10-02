@@ -37,7 +37,7 @@ export default function Ferramentas() {
       <PageHeader
         eyebrow="Código aberto"
         title="Ferramentas"
-        subtitle="Projetos abertos que complementam o OpENEM. Gostou de algum? Uma estrela no GitHub é de graça e ajuda o projeto a chegar a mais estudantes."
+        subtitle="Projetos abertos que complementam o OpENEM. Gostou? Uma estrela no GitHub ajuda o projeto a chegar a mais estudantes."
       />
 
       <ErrorBanner
@@ -67,20 +67,23 @@ export default function Ferramentas() {
 
 function FerramentaCard({ tool: t }: { tool: Tool }) {
   return (
-    <article className="card flex h-full flex-col gap-3 p-5">
+    <article className="card flex h-full flex-col gap-3 p-4 sm:p-5">
       <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand">
+        {/* No celular o ícone espremia o título e cortava o repositório. */}
+        <span className="hidden size-11 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand sm:grid">
           <IconGithub width={22} height={22} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="font-display font-bold leading-snug">{t.name}</h2>
-          <p className="mt-0.5 truncate font-data text-xs text-muted">{t.repo}</p>
+          <p className="mt-0.5 font-data text-xs text-muted sm:truncate">
+            <RepoNome repo={t.repo} />
+          </p>
         </div>
       </div>
 
       <p className="text-sm text-muted text-pretty">{t.description}</p>
 
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <ul className="flex flex-wrap gap-2" aria-label="Rótulos">
           {t.tags.map((r) => (
             <li key={r} className="chip">
@@ -95,19 +98,37 @@ function FerramentaCard({ tool: t }: { tool: Tool }) {
 }
 
 /**
+ * `dono/repo` que, no celular, quebra depois da barra e não no meio do nome:
+ * cada parte é um bloco em linha, que só quebra por dentro se não couber
+ * numa linha inteira.
+ */
+function RepoNome({ repo }: { repo: string }) {
+  const barra = repo.indexOf('/');
+  if (barra < 0) return <>{repo}</>;
+  return (
+    <>
+      <span className="inline-block">{repo.slice(0, barra + 1)}</span>
+      <span className="inline-block max-w-full break-words">
+        {repo.slice(barra + 1)}
+      </span>
+    </>
+  );
+}
+
+/**
  * Botão no formato do GitHub: "Estrela" abre o repositório (onde fica a
  * estrela) e o número abre a lista de quem já deu. Sem número, só o botão.
  */
 function BotaoEstrela({ tool: t }: { tool: Tool }) {
   const parte =
-    'inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors hover:bg-surface-2';
+    'inline-flex items-center gap-1.5 px-3 py-2 transition-colors hover:bg-surface-2 sm:py-1.5';
   return (
-    <div className="inline-flex shrink-0 overflow-hidden rounded-lg border border-line text-sm font-semibold">
+    <div className="flex w-full shrink-0 overflow-hidden rounded-lg border border-line text-sm font-semibold sm:inline-flex sm:w-auto">
       <a
         href={t.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${parte} hover:text-brand`}
+        className={`${parte} flex-1 justify-center hover:text-brand sm:flex-none`}
         aria-label={`Estrela: ${t.name} no GitHub (abre numa nova aba)`}
       >
         <IconStar width={16} height={16} className="text-brand" />
