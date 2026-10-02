@@ -28,6 +28,7 @@ import { FormulasModule } from './formulas/formulas.module';
 import { PomodoroModule } from './pomodoro/pomodoro.module';
 import { VideosModule } from './videos/videos.module';
 import { ThemesModule } from './themes/themes.module';
+import { ToolsModule } from './tools/tools.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { ThemesModule } from './themes/themes.module';
     PomodoroModule,
     VideosModule,
     ThemesModule,
+    ToolsModule,
   ],
   controllers: [AppController],
   providers: [

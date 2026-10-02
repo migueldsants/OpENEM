@@ -319,7 +319,7 @@ function AchievementsGrid({
         <p className="mt-0.5 text-xs text-muted">
           {items.filter((a) => a.unlocked).length}/{items.length} desbloqueadas
         </p>
-        <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
+        <ul className="mt-4 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
           {items.slice(0, 6).map((a) => (
             <AchievementCard key={a.code} a={a} compact />
           ))}
@@ -537,7 +537,7 @@ export default function Progresso() {
       <PageHeader
         eyebrow="Sua jornada"
         title="Progresso"
-        subtitle="Ganhe XP estudando: questões, simulados, redações, revisões e sessões do cronograma contam."
+        subtitle="Ganhe XP estudando: questões, simulados, revisões e sessões do cronograma contam."
       />
 
       <ErrorBanner message={error} />
@@ -555,10 +555,15 @@ export default function Progresso() {
         <>
           <XpCard data={data} />
           <StreakRow current={data.currentStreak} longest={data.longestStreak} />
-          <LeaderboardSection />
-          {history && <XpHistoryChart history={history} />}
-          <AchievementsGrid items={achievements} />
-          {history && <ActivityFeed history={history} />}
+          {/* Em pares no monitor largo; no celular, a mesma ordem empilhada. */}
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
+            <LeaderboardSection />
+            {history && <XpHistoryChart history={history} />}
+          </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
+            <AchievementsGrid items={achievements} />
+            {history && <ActivityFeed history={history} />}
+          </div>
         </>
       ) : (
         <EmptyState

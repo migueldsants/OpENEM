@@ -15,7 +15,7 @@ import {
   IconHome,
   IconLogout,
   IconMore,
-  IconPen,
+  IconToolbox,
   IconPlay,
   IconRepeat,
   IconStack,
@@ -34,12 +34,14 @@ import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
 import { useIsImmersive } from './immersive';
 import { PomodoroProvider } from './pomodoro';
+import { CONTENT_MAX_W, contentWidth } from './lib/content-width';
 import { leagueStyle } from './lib/gamification';
 import Comunidade from './pages/Comunidade';
 import Temas from './pages/Temas';
 import Conquistas from './pages/Conquistas';
 import Cronograma from './pages/Cronograma';
 import Desempenho from './pages/Desempenho';
+import Ferramentas from './pages/Ferramentas';
 import Favoritos from './pages/Favoritos';
 import Flashcards from './pages/Flashcards';
 import Formulas from './pages/Formulas';
@@ -53,7 +55,6 @@ import PerfilPublico from './pages/PerfilPublico';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
 import Quadro from './pages/Quadro';
-import Redacao from './pages/Redacao';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
 import Videos from './pages/Videos';
@@ -73,7 +74,7 @@ const NAV: NavItem[] = [
   { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary', section: 'Estudar' },
   { to: '/revisao', label: 'Revisão', Icon: IconRepeat, mobile: 'primary', section: 'Estudar' },
   { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more', section: 'Estudar' },
-  { to: '/redacao', label: 'Redação', Icon: IconPen, mobile: 'more', section: 'Estudar' },
+  { to: '/ferramentas', label: 'Ferramentas', Icon: IconToolbox, mobile: 'more', section: 'Estudar' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more', section: 'Estudar' },
 
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more', section: 'Planejar' },
@@ -289,8 +290,7 @@ export default function App() {
   const moreActive =
     location.pathname === '/conquistas' ||
     MOBILE_MORE.some((n) => n.to === location.pathname);
-  // Telas que precisam de mais largura que a coluna de leitura padrao.
-  const wide = location.pathname === '/cronograma';
+  const maxWidth = CONTENT_MAX_W[contentWidth(location.pathname)];
   // Usuários recém-cadastrados (onboarded=false) passam pelo onboarding antes do app.
   const needsOnboarding = authenticated && me && me.profile !== null && !me.profile.onboarded;
 
@@ -323,7 +323,7 @@ export default function App() {
       <Route path="/conquistas" element={<Conquistas />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/pomodoro" element={<Pomodoro />} />
-      <Route path="/redacao" element={<Redacao />} />
+      <Route path="/ferramentas" element={<Ferramentas />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/temas" element={<Temas />} />
@@ -415,12 +415,7 @@ export default function App() {
         )}
 
         <main className="flex-1 px-4 pb-24 pt-6 md:px-10 md:pb-12 md:pt-10">
-          {/* O cronograma é uma grade de 7 dias: 768px espremem as colunas. */}
-          <div
-            className={`mx-auto ${
-              wide ? 'max-w-[1700px]' : 'max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
-            }`}
-          >
+          <div className={`mx-auto ${maxWidth}`}>
             <RouteTransition>{content}</RouteTransition>
           </div>
         </main>
@@ -462,7 +457,7 @@ export default function App() {
           ))}
 
           {/* Botão "Mais": abre o bottom-sheet com Progresso, Comunidade,
-              Cronograma, Redação e Favoritos (todas a 2 taps). */}
+              Cronograma, Ferramentas e Favoritos (todas a 2 taps). */}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}

@@ -390,70 +390,73 @@ export default function Desempenho() {
         )}
       </section>
 
-      {/* Por área */}
-      <section className="card p-5">
-        <h2 className="font-display text-lg font-bold">Por área</h2>
-        <ul className="mt-4 space-y-3">
-          {perf.bySubject.map((s) => (
-            <AreaBar
-              key={s.id}
-              name={s.name}
-              correct={s.correct}
-              total={s.total}
-              accuracy={s.accuracy}
-            />
-          ))}
-        </ul>
-      </section>
+      {/* Por área e por assunto lado a lado no monitor largo. */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
+        {/* Por área */}
+        <section className="card p-5">
+          <h2 className="font-display text-lg font-bold">Por área</h2>
+          <ul className="mt-4 space-y-3">
+            {perf.bySubject.map((s) => (
+              <AreaBar
+                key={s.id}
+                name={s.name}
+                correct={s.correct}
+                total={s.total}
+                accuracy={s.accuracy}
+              />
+            ))}
+          </ul>
+        </section>
 
-      {/* Por assunto */}
-      <section className="card p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold">Por assunto</h2>
-          <div className="seg">
-            <button
-              data-active={topicSort === 'weakest'}
-              onClick={() => setTopicSort('weakest')}
-            >
-              A reforçar
-            </button>
-            <button
-              data-active={topicSort === 'most'}
-              onClick={() => setTopicSort('most')}
-            >
-              Mais praticados
-            </button>
+        {/* Por assunto */}
+        <section className="card p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-bold">Por assunto</h2>
+            <div className="seg">
+              <button
+                data-active={topicSort === 'weakest'}
+                onClick={() => setTopicSort('weakest')}
+              >
+                A reforçar
+              </button>
+              <button
+                data-active={topicSort === 'most'}
+                onClick={() => setTopicSort('most')}
+              >
+                Mais praticados
+              </button>
+            </div>
           </div>
-        </div>
-        <ul className="mt-4 space-y-2.5">
-          {sortedTopics.map((t) => {
-            const area = areaKey(t.subjectName);
-            return (
-              <li key={t.id}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="min-w-0 flex-1 truncate">
-                    {t.name}
-                    {t.subjectName && (
-                      <span className={`ml-1.5 text-xs ${AREA_TEXT[area]}`}>
-                        {t.subjectName.replace(' e suas Tecnologias', '')}
-                      </span>
-                    )}
-                  </span>
-                  <span className="ml-2 shrink-0 tabular-nums text-muted">
-                    {t.correct}/{t.total} · {t.accuracy}%
-                  </span>
-                </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    className={`h-full rounded-full ${AREA_DOT[area]}`}
-                    style={{ width: `${t.accuracy}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+          <ul className="mt-4 space-y-2.5">
+            {sortedTopics.map((t) => {
+              const area = areaKey(t.subjectName);
+              return (
+                <li key={t.id}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="min-w-0 flex-1 truncate">
+                      {t.name}
+                      {t.subjectName && (
+                        <span className={`ml-1.5 text-xs ${AREA_TEXT[area]}`}>
+                          {t.subjectName.replace(' e suas Tecnologias', '')}
+                        </span>
+                      )}
+                    </span>
+                    <span className="ml-2 shrink-0 tabular-nums text-muted">
+                      {t.correct}/{t.total} · {t.accuracy}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                    <div
+                      className={`h-full rounded-full ${AREA_DOT[area]}`}
+                      style={{ width: `${t.accuracy}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      </div>
 
       {/* Mapa de calor por tópico (issue #43) — grid da taxonomia completa. */}
       <section className="card p-5">

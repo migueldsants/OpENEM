@@ -40,8 +40,10 @@ import {
   Exam,
   Flame,
   BoundingBox,
+  GithubLogo,
   GlobeHemisphereWest,
   Palette,
+  Toolbox,
   UploadSimple,
   MagicWand,
   Hand,
@@ -115,6 +117,8 @@ export const IconHome = shim(House, 'duotone');
 export const IconStack = shim(Exam, 'duotone');
 export const IconCalendar = shim(CalendarBlank, 'duotone');
 export const IconPen = shim(NotePencil, 'duotone');
+export const IconToolbox = shim(Toolbox, 'duotone');
+export const IconGithub = shim(GithubLogo, 'regular');
 export const IconUser = shim(User, 'duotone');
 export const IconTrophy = shim(Trophy, 'duotone');
 

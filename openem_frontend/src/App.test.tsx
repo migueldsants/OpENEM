@@ -73,7 +73,7 @@ describe('Tabbar mobile — botão Mais (issue #21)', () => {
       'Progresso',
       'Comunidade',
       'Cronograma',
-      'Redação',
+      'Ferramentas',
       'Favoritos',
       'Desempenho',
       'Perfil',

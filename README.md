@@ -102,8 +102,7 @@ npm run db:classify:keywords -- --dry-run --sample=20  # veja as decisões antes
 npm run db:classify:keywords
 ```
 
-Com um provedor de IA configurado (o mesmo da correção de redação), outros dois
-recursos ficam disponíveis:
+Com um provedor de IA configurado, outros dois recursos ficam disponíveis:
 
 *   **Comentário sob demanda**: o botão "Ver comentário" gera a explicação na
     primeira vez que alguém pede e a grava para os próximos.
@@ -142,6 +141,17 @@ tema a partir de uma cor, com os dois lados gerados já com contraste de
 leitura, salva na conta e, se quiser, publica na **comunidade**, onde os
 outros podem usar, copiar e curtir. Um teste confere o contraste (texto,
 marca e cores das áreas) de cada paleta pronta.
+
+### Ferramentas
+
+A tela **Ferramentas** lista projetos abertos no GitHub que complementam o
+OpENEM: o [corretor de redação do Enem](https://github.com/migueldsants/AI-Skill-Corretor-Redacao-ENEM),
+uma skill para agentes de IA que dá nota por competência citando a Matriz de
+Referência do Inep, e a [API ENEM atualizada](https://github.com/migueldsants/updated-enem-api),
+de onde vem o banco de questões. Cada cartão mostra quantas estrelas o
+projeto tem, num botão **Estrela** que leva ao GitHub: é o jeito mais
+simples de apoiar. A contagem é buscada pelo servidor, com cache de uma hora.
+Para acrescentar um projeto, edite `openem_backend/src/tools/tools-catalog.ts`.
 
 ### Testes
 
