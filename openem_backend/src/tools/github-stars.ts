@@ -5,6 +5,9 @@
  * do ENEM: o CSP do app só libera a própria origem, e o GitHub não precisa
  * saber o IP de cada aluno. O cache faz o número de chamadas ao GitHub não
  * depender do número de alunos (a API sem token aceita 60 por hora por IP).
+ *
+ * A chamada é anônima de propósito: nenhum token ou credencial do projeto
+ * sai daqui, e o GitHub só vê o IP do servidor. Um teste trava os cabeçalhos.
  */
 
 /** Contagem de estrelas, ou null quando o GitHub não respondeu. */

@@ -20,8 +20,21 @@ describe('fetchGithubStars', () => {
     await expect(fetchGithubStars('dono/repo')).resolves.toBe(42);
     const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://api.github.com/repos/dono/repo');
-    expect(init.headers).toMatchObject({ 'User-Agent': 'OpENEM' });
     expect(init.signal).toBeDefined();
+  });
+
+  it('chama a API pública sem autenticação e sem nada do aluno', async () => {
+    const fn = mockFetch(() => resposta(true, { stargazers_count: 1 }));
+    await fetchGithubStars('dono/repo');
+    const [, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
+    // Exatamente estes cabeçalhos: nada de token, cookie ou dado de quem pediu.
+    expect(init.headers).toEqual({
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'OpENEM',
+    });
+    expect(init.method ?? 'GET').toBe('GET');
+    expect(init.body).toBeUndefined();
+    expect(init.credentials).toBeUndefined();
   });
 
   it('resposta de erro do GitHub vira null', async () => {
