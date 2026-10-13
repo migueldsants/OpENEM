@@ -23,14 +23,6 @@ import { StudyPlanService } from './study-plan.service';
 export class StudyPlanController {
   constructor(private readonly studyPlanService: StudyPlanService) {}
 
-  @Post('generate')
-  @ApiOperation({
-    summary: 'Gera o cronograma a partir do desempenho e do tempo disponível',
-  })
-  generate(@CurrentUser() user: AuthenticatedUser) {
-    return this.studyPlanService.generate(user.userId);
-  }
-
   @Get()
   @ApiOperation({
     summary: 'Retorna o cronograma atual com as sessões por dia',
@@ -73,7 +65,7 @@ export class StudyPlanController {
 
   @Delete()
   @ApiOperation({
-    summary: 'Esvazia o cronograma, mantendo o plano para edição',
+    summary: 'Recomeça o cronograma vazio, com a semana a partir de hoje',
   })
   clear(@CurrentUser() user: AuthenticatedUser) {
     return this.studyPlanService.clear(user.userId);

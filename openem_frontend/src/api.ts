@@ -1171,8 +1171,6 @@ export const api = {
     request<DeckProgressMap>('/flashcards/decks/progress'),
 
   studyPlan: () => request<StudyPlan>('/study-plan'),
-  generateStudyPlan: () =>
-    request<StudyPlan>('/study-plan/generate', { method: 'POST' }),
   /** Edita um bloco: nome, duração, dia ou conclusão. */
   updateSession: (
     id: string,
@@ -1193,7 +1191,7 @@ export const api = {
     request<{ removed: boolean }>(`/study-plan/sessions/${id}`, {
       method: 'DELETE',
     }),
-  /** Esvazia o cronograma, mantendo o plano para edição manual. */
+  /** Recomeça o cronograma vazio, com a semana a partir de hoje. */
   clearStudyPlan: () => request<StudyPlan>('/study-plan', { method: 'DELETE' }),
 
   tools: () => request<Tool[]>('/tools'),

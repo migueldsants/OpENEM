@@ -20,22 +20,14 @@ vi.mock('../api', () => {
     HttpError,
     api: {
       studyPlan: vi.fn(),
-      generateStudyPlan: vi.fn(),
       clearStudyPlan: vi.fn(),
       addSession: vi.fn(),
       updateSession: vi.fn(),
       removeSession: vi.fn(),
-      updateProfile: vi.fn(),
       subjects: vi.fn(),
     },
   };
 });
-vi.mock('../auth', () => ({
-  useAuth: () => ({
-    me: { profile: { minutesPerDay: 60 } },
-    refreshMe: vi.fn(),
-  }),
-}));
 vi.mock('../gamification', () => ({
   useGamification: () => ({ refresh: vi.fn(), summary: null }),
 }));
@@ -211,28 +203,29 @@ describe('Cronograma — calendário customizável (issue #46)', () => {
     await waitFor(() => expect(api.clearStudyPlan).toHaveBeenCalled());
   });
 
-  it('gerar sobre um plano existente exige confirmação', async () => {
+  it('não oferece geração automática', async () => {
     vi.mocked(api.studyPlan).mockResolvedValue(makePlan());
-    vi.mocked(api.generateStudyPlan).mockResolvedValue(makePlan());
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Gerar semana' }));
-    expect(api.generateStudyPlan).not.toHaveBeenCalled();
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /Confirmar: substituir a semana/ }),
-    );
-    await waitFor(() => expect(api.generateStudyPlan).toHaveBeenCalled());
+    await screen.findByRole('button', { name: 'Limpar' });
+    expect(screen.queryByRole('button', { name: /Gerar/ })).toBeNull();
+    expect(screen.queryByRole('spinbutton')).toBeNull();
   });
 
-  it('sem plano oferece gerar ou começar do zero', async () => {
+  it('sem plano, começa a semana pelo primeiro bloco', async () => {
     vi.mocked(api.studyPlan).mockRejectedValue(new HttpError(404, 'no plan'));
+    vi.mocked(api.addSession).mockResolvedValue(session());
     renderPage();
 
     expect(await screen.findByText('Monte sua semana')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Começar do zero/ }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gerar/ })).toBeNull();
+    // Sem bloco nenhum não há o que limpar.
+    expect(screen.queryByRole('button', { name: 'Limpar' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Começar a semana/ }));
+    await waitFor(() =>
+      expect(api.addSession).toHaveBeenCalledWith('Matemática', 0),
+    );
   });
 
   it('erro de rede não se disfarça de "sem cronograma"', async () => {
@@ -241,23 +234,6 @@ describe('Cronograma — calendário customizável (issue #46)', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Boom');
     expect(screen.queryByText('Monte sua semana')).not.toBeInTheDocument();
-  });
-
-  it('minutos fora da faixa do backend bloqueiam a geração', async () => {
-    vi.mocked(api.studyPlan).mockRejectedValue(new HttpError(404, 'no plan'));
-    renderPage();
-
-    await screen.findByText('Monte sua semana');
-    const input = screen.getByRole('spinbutton');
-    fireEvent.change(input, { target: { value: '3' } });
-
-    expect(screen.getByText(/Entre 5 e 1440 minutos/)).toBeInTheDocument();
-    expect(
-      screen
-        .getAllByRole('button', { name: 'Gerar cronograma' })
-        .some((b) => (b as HTMLButtonElement).disabled),
-    ).toBe(true);
-    expect(api.generateStudyPlan).not.toHaveBeenCalled();
   });
 
   it('avisa quando o cronograma já terminou', async () => {
@@ -269,5 +245,17 @@ describe('Cronograma — calendário customizável (issue #46)', () => {
     expect(
       await screen.findByText('Este cronograma já terminou'),
     ).toBeInTheDocument();
+
+    // A saída é recomeçar vazio, com a semana a partir de hoje.
+    vi.mocked(api.clearStudyPlan).mockResolvedValue(makePlan([]));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Começar nova semana' }),
+    );
+    await waitFor(() => expect(api.clearStudyPlan).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Este cronograma já terminou'),
+      ).not.toBeInTheDocument(),
+    );
   });
 });

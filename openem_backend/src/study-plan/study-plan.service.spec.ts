@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { StudyPlanService } from './study-plan.service';
 
 const SUBJECTS = [
@@ -32,69 +28,12 @@ function makeService() {
       Promise.all(ops as Promise<unknown>[]),
     ),
   } as any;
-  const performance = { overview: jest.fn() };
   const gamification = { recordActivity: jest.fn().mockResolvedValue(null) };
-  const service = new StudyPlanService(prisma, performance, gamification);
-  return { service, prisma, performance, gamification };
+  const service = new StudyPlanService(prisma, gamification);
+  return { service, prisma, gamification };
 }
 
 describe('StudyPlanService', () => {
-  describe('generate()', () => {
-    it('prioriza as matérias dos assuntos fracos e completa com o resto', async () => {
-      const { service, prisma, performance } = makeService();
-      prisma.profile.findUnique.mockResolvedValue({ minutesPerDay: 120 });
-      performance.overview.mockResolvedValue({
-        weakestTopics: [{ id: 't1', name: 'Óptica', subjectName: 'Física' }],
-      });
-      prisma.studyPlan.deleteMany.mockResolvedValue({ count: 1 });
-      prisma.studyPlan.create.mockResolvedValue({});
-      prisma.studyPlan.findUnique.mockResolvedValue({
-        id: 'plan-1',
-        minutesPerDay: 120,
-        sessions: [],
-      });
-
-      const res = await service.generate('u1');
-      expect(res.id).toBe('plan-1');
-      const createArg = prisma.studyPlan.create.mock.calls[0][0];
-      // 120 min/dia em blocos de 60 = 2 blocos × 7 dias.
-      expect(createArg.data.sessions.create).toHaveLength(14);
-      // Física é a matéria mais fraca, então abre a semana.
-      expect(createArg.data.sessions.create[0].label).toBe('Física');
-      expect(createArg.data.sessions.create[0].subjectId).toBe('fis');
-    });
-
-    it('sem histórico cobre todas as matérias do catálogo', async () => {
-      const { service, prisma, performance } = makeService();
-      prisma.profile.findUnique.mockResolvedValue(null); // default 60 min
-      performance.overview.mockResolvedValue({ weakestTopics: [] });
-      prisma.studyPlan.deleteMany.mockResolvedValue({ count: 0 });
-      prisma.studyPlan.create.mockResolvedValue({});
-      prisma.studyPlan.findUnique.mockResolvedValue({
-        id: 'plan-2',
-        minutesPerDay: 60,
-        sessions: [],
-      });
-
-      await service.generate('u1');
-      const blocks = prisma.studyPlan.create.mock.calls[0][0].data.sessions
-        .create as { label: string }[];
-      // Regressão: antes a semana inteira caía em duas ou três matérias.
-      expect(new Set(blocks.map((b) => b.label)).size).toBe(SUBJECTS.length);
-    });
-
-    it('sem matérias no banco recusa gerar', async () => {
-      const { service, prisma, performance } = makeService();
-      prisma.profile.findUnique.mockResolvedValue({ minutesPerDay: 60 });
-      prisma.subject.findMany.mockResolvedValue([]);
-      performance.overview.mockResolvedValue({ weakestTopics: [] });
-
-      await expect(service.generate('u1')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
-    });
-  });
-
   describe('get()', () => {
     it('404 quando não há plano', async () => {
       const { service, prisma } = makeService();
@@ -278,22 +217,37 @@ describe('StudyPlanService', () => {
   });
 
   describe('clear()', () => {
-    it('esvazia os blocos mas mantém o plano', async () => {
+    it('recria o plano vazio, para a semana recomeçar hoje', async () => {
       const { service, prisma } = makeService();
-      prisma.studyPlan.findUnique
-        .mockResolvedValueOnce({ id: 'plan-1' })
-        .mockResolvedValueOnce({
-          id: 'plan-1',
-          minutesPerDay: 60,
-          sessions: [],
-        });
-      prisma.studySession.deleteMany.mockResolvedValue({ count: 14 });
+      prisma.profile.findUnique.mockResolvedValue({ minutesPerDay: 90 });
+      prisma.studyPlan.deleteMany.mockResolvedValue({ count: 1 });
+      prisma.studyPlan.create.mockResolvedValue({});
+      prisma.studyPlan.findUnique.mockResolvedValue({
+        id: 'plan-novo',
+        minutesPerDay: 90,
+        sessions: [],
+      });
 
       const res = await service.clear('u1');
-      expect(prisma.studySession.deleteMany).toHaveBeenCalledWith({
-        where: { planId: 'plan-1' },
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.studyPlan.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'u1' },
       });
-      expect(res.sessions).toEqual([]);
+      expect(prisma.studyPlan.create).toHaveBeenCalledWith({
+        data: { userId: 'u1', minutesPerDay: 90 },
+      });
+      expect(res).toMatchObject({ id: 'plan-novo', sessions: [] });
+    });
+
+    it('sem perfil usa 60 minutos', async () => {
+      const { service, prisma } = makeService();
+      prisma.profile.findUnique.mockResolvedValue(null);
+      prisma.studyPlan.findUnique.mockResolvedValue({ id: 'p', sessions: [] });
+
+      await service.clear('u1');
+      expect(prisma.studyPlan.create).toHaveBeenCalledWith({
+        data: { userId: 'u1', minutesPerDay: 60 },
+      });
     });
   });
 });

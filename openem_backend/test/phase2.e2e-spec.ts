@@ -108,18 +108,24 @@ describe('Fase 2 â€” pÃ³s-MVP (e2e)', () => {
       .expect(404);
   });
 
-  it('gera o cronograma e marca uma sessÃ£o como concluÃ­da', async () => {
-    const gen = await request(app.getHttpServer())
+  it('monta o cronograma e marca uma sessÃ£o como concluÃ­da', async () => {
+    // Não há geração automática: o plano nasce com o primeiro bloco.
+    await request(app.getHttpServer())
       .post('/api/v1/study-plan/generate')
       .set(auth())
+      .expect(404);
+    await request(app.getHttpServer())
+      .post('/api/v1/study-plan/sessions')
+      .set(auth())
+      .send({ label: 'Matemática', dayIndex: 0 })
       .expect(201);
-    expect(gen.body.sessions.length).toBeGreaterThan(0);
-    expect(gen.body).toHaveProperty('minutesPerDay');
 
     const plan = await request(app.getHttpServer())
       .get('/api/v1/study-plan')
       .set(auth())
       .expect(200);
+    expect(plan.body).toHaveProperty('minutesPerDay');
+    expect(plan.body.sessions).toHaveLength(1);
     const sessionId = plan.body.sessions[0].id;
 
     const updated = await request(app.getHttpServer())

@@ -263,7 +263,7 @@ export default function Perfil() {
         <label className="block">
           <span className="eyebrow">Minutos de estudo por dia</span>
           <p className="mb-2 text-xs text-muted">
-            Usado para dimensionar seu cronograma.
+            Quanto tempo você pretende estudar por dia.
           </p>
           <input
             type="number"

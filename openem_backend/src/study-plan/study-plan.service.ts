@@ -1,16 +1,13 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { buildStudyPlan, PlanSubject } from '../common/study-plan';
 import { POINTS } from '../common/gamification';
 import {
   GamificationDelta,
   GamificationService,
 } from '../gamification/gamification.service';
-import { PerformanceService } from '../performance/performance.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
@@ -54,70 +51,8 @@ export interface StudySessionResult {
 export class StudyPlanService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly performance: PerformanceService,
     private readonly gamification: GamificationService,
   ) {}
-
-  /**
-   * Matérias em ordem de prioridade: primeiro as dos assuntos mais fracos,
-   * depois todas as demais — assim a semana cobre o currículo inteiro em vez
-   * de repetir as duas primeiras.
-   */
-  private async prioritizedSubjects(userId: string): Promise<PlanSubject[]> {
-    const all = await this.prisma.subject.findMany({
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true },
-    });
-    if (all.length === 0) return [];
-
-    const overview = await this.performance.overview(userId);
-    const weakFirst: PlanSubject[] = [];
-    const seen = new Set<string>();
-    for (const topic of overview.weakestTopics) {
-      const match = all.find((s) => s.name === topic.subjectName);
-      if (match && !seen.has(match.id)) {
-        seen.add(match.id);
-        weakFirst.push(match);
-      }
-    }
-    for (const s of all) {
-      if (!seen.has(s.id)) weakFirst.push(s);
-    }
-    return weakFirst;
-  }
-
-  /** Gera (ou regenera) o cronograma do usuário. É só um ponto de partida. */
-  async generate(userId: string) {
-    const profile = await this.prisma.profile.findUnique({
-      where: { userId },
-      select: { minutesPerDay: true },
-    });
-    const minutesPerDay = profile?.minutesPerDay ?? 60;
-
-    const subjects = await this.prioritizedSubjects(userId);
-    if (subjects.length === 0) {
-      throw new BadRequestException(
-        'Não há matérias disponíveis para montar um cronograma',
-      );
-    }
-
-    const blocks = buildStudyPlan(subjects, minutesPerDay);
-
-    // Um plano ativo por usuário: recria do zero, atomicamente, para que uma
-    // falha não deixe o usuário sem plano e regenerações concorrentes serializem.
-    await this.prisma.$transaction([
-      this.prisma.studyPlan.deleteMany({ where: { userId } }),
-      this.prisma.studyPlan.create({
-        data: {
-          userId,
-          minutesPerDay,
-          sessions: { create: blocks },
-        },
-      }),
-    ]);
-
-    return this.get(userId);
-  }
 
   /** Retorna o cronograma atual com as sessões ordenadas por dia e posição. */
   async get(userId: string) {
@@ -126,15 +61,12 @@ export class StudyPlanService {
       select: PLAN_SELECT,
     });
     if (!plan) {
-      throw new NotFoundException('Nenhum cronograma gerado ainda');
+      throw new NotFoundException('Nenhum cronograma montado ainda');
     }
     return plan;
   }
 
-  /**
-   * Plano do usuário, criado sob demanda: dá para montar o calendário do zero,
-   * sem passar pela geração automática.
-   */
+  /** Plano do usuário, criado sob demanda no primeiro bloco. */
   private async ensurePlan(userId: string) {
     const existing = await this.prisma.studyPlan.findUnique({
       where: { userId },
@@ -258,10 +190,23 @@ export class StudyPlanService {
     return { removed: true };
   }
 
-  /** Esvazia o cronograma, mantendo o plano para edição manual. */
+  /**
+   * Recomeça o cronograma vazio. O plano é recriado, e não só esvaziado, porque
+   * os dias do calendário contam a partir de `createdAt`: a semana nova começa
+   * hoje, e não no dia em que o plano antigo foi criado.
+   */
   async clear(userId: string) {
-    const plan = await this.ensurePlan(userId);
-    await this.prisma.studySession.deleteMany({ where: { planId: plan.id } });
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { minutesPerDay: true },
+    });
+    // Atômico: uma falha não deixa o usuário sem plano.
+    await this.prisma.$transaction([
+      this.prisma.studyPlan.deleteMany({ where: { userId } }),
+      this.prisma.studyPlan.create({
+        data: { userId, minutesPerDay: profile?.minutesPerDay ?? 60 },
+      }),
+    ]);
     return this.get(userId);
   }
 }

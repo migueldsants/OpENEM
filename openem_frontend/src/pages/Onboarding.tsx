@@ -87,8 +87,7 @@ export default function Onboarding() {
           Vamos personalizar seu estudo
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Duas perguntas rápidas para adaptar recomendações e cronograma ao seu
-          contexto.
+          Duas perguntas rápidas para adaptar o estudo ao seu contexto.
         </p>
       </header>
 
