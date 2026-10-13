@@ -71,6 +71,20 @@ export default defineConfig({
             },
           },
           {
+            // Figuras dos textos motivadores de redação (public/redacoes). Ficam
+            // fora do precache (são megabytes): entram no cache quando o aluno
+            // abre o tema, e se renovam se o recorte for refeito.
+            urlPattern: ({ url, request }) =>
+              request.destination === 'image' &&
+              url.pathname.startsWith('/redacoes/'),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'redacoes-figuras',
+              expiration: { maxEntries: 120 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             // Fontes do Google: a folha de estilo muda (novas versões), os
             // arquivos .woff2 não. Sem isto o app offline cai na fonte do
             // sistema e muda de cara.

@@ -1,0 +1,38 @@
+{
+  "2022-ppl": {
+    "alts": { "19": "Cartaz com o retrato desenhado do sociólogo Betinho e os dizeres \"Quem tem fome tem pressa\", com o selo da Ação da Cidadania." }
+  },
+  "2021-ppl": {
+    "semImagens": true,
+    "figuras": [
+      { "p": 20, "box": [317, 491, 506, 625], "alt": "Obra de Banksy: um menino de macacão, ajoelhado, brinca com uma boneca de enfermeira vestida com capa, erguida como uma super-heroína. Em um cesto ao lado ficaram os bonecos do Batman e do Homem-Aranha." }
+    ]
+  },
+  "2020-ppl": {
+    "textos": [
+      { "r": "I", "i": [["pj", 7, 8, 9], ["fonte", 14, 15]] },
+      { "r": "II", "i": [["p", 4], ["fonte", 5]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 19, "box": [30, 468, 540, 664], "alt": "Infográfico \"Crimes de ódio por estado em 2018\": feminicídio foi o único crime registrado em todas as unidades federativas (UFs), enquanto preconceito por origem aparece em apenas dois estados. Cinco mapas do Brasil destacam as UFs que registraram cada tipo de crime de ódio: gênero, em todas; raça, na maioria; orientação sexual, em cerca de metade; religião, em poucas; origem, em duas. Fonte: Mapa do Ódio 2018." }],
+          ["fonte", 11]
+        ]
+      }
+    ]
+  },
+  "2019-ppl": {
+    "textos": [
+      { "r": "I", "i": [["p", 3], ["fonte", 4]] },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", 5, 6],
+          ["p", 7, 8],
+          ["img", { "p": 20, "box": [258, 334, 540, 628], "alt": "Infográfico. Como as crianças se comportam na internet: 82% navegam pelo celular diariamente; 47% disseram ter visto imagens e vídeos com conteúdo sexual em redes sociais nos últimos 12 meses; 9% receberam pedidos de foto de partes íntimas ou conversas de conteúdo sexual pela internet. Como as crianças se comportam nas redes sociais: 43% das crianças entre 9 e 10 anos têm perfil em alguma rede social; 68% das crianças entre 11 e 12 anos têm perfil em alguma rede social; 52% informaram que seus perfis são públicos; 30% informaram o telefone; 46% informaram a escola onde estudam; 17% informaram o endereço; 32% mentem a idade no Facebook*; 13% adicionam desconhecidos nas redes sociais; 13% encontraram-se com alguém que conheceram na internet; 29% tiveram contato pela internet com desconhecidos. * O Facebook permite a inscrição apenas para maiores de 13 anos." }],
+          ["fonte", 24]
+        ]
+      }
+    ]
+  }
+}

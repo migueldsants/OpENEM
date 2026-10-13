@@ -1,0 +1,52 @@
+{
+  "2006-regular": {
+    "tema": "O poder de transformação da leitura",
+    "propostaBlocos": [12, 13, "14:0-2"],
+    "textos": [
+      { "r": "I", "i": [["cap", "U", 2, 3], ["fonte", 4, 5]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [65, 233, 210, 335], "alt": "Fotografia de mãos folheando um livro antigo." }],
+          ["fonte", "18:0"],
+          ["cap", "M", 6],
+          ["fonte", 7, "8:0"]
+        ]
+      },
+      { "r": "III", "i": [["cap", "E", "8:2-4", 9, 10], ["fonte", "11:0"]] }
+    ]
+  },
+  "2005-regular": {
+    "tema": "O trabalho infantil na realidade brasileira",
+    "propostaBlocos": ["12:2", "13:0", "13:2-4"],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [159, 95, 445, 311], "alt": "Mapa \"Trabalho infantil no Brasil: onde estão as crianças trabalhadoras\". Há 5,438 milhões de crianças e adolescentes entre 5 e 17 anos que trabalham no país. Norte: 5,25% (285 mil). Nordeste: 42,2% (2,296 milhões). Centro-Oeste: 7,02% (382 mil). Sudeste: 27,82% (1,513 milhão). Sul: 17,25% (938 mil). Fonte: IBGE." }],
+          ["fonte", "4:1"]
+        ]
+      },
+      { "r": "II", "i": [["pj", 5], ["fonte", 6, 7]] },
+      { "r": "III", "i": [["pj", "8:0-14"], ["fonte", "8:16", 9]] },
+      { "r": "IV", "i": [["pj", "10:1-3"], ["fonte", 11, "12:0"]] }
+    ]
+  },
+  "2004-regular": {
+    "tema": "Como garantir a liberdade de informação e evitar abusos nos meios de comunicação?",
+    "propostaBlocos": ["15:1", "16:1", "17:1-3"],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [157, 128, 438, 213], "alt": "Charge de Caco Galhardo: uma família amontoada no sofá olha para a televisão, desenhada como uma lata de lixo tombada que despeja sujeira na sala." }],
+          ["fonte", "4:1"]
+        ]
+      },
+      { "r": "II", "i": [["pj", "5:1-6"], ["fonte", 6, "7:0"]] },
+      { "r": "III", "i": [["pj", "7:2-5"], ["fonte", 8, "9:0"]] },
+      { "r": "IV", "i": [["pj", "9:2-3"], ["pj", 10], ["fonte", 11, "12:0"]] },
+      { "r": "V", "i": [["pj", "12:2"], ["pj", "12:4", "13:0"], ["pj", "13:1", "14:0"]] }
+    ]
+  }
+}

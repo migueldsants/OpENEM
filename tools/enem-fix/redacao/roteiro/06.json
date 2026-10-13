@@ -1,0 +1,56 @@
+{
+  "2012-regular": {
+    "tema": "O movimento imigratório para o Brasil no século XXI",
+    "textos": [
+      { "r": "I", "i": [["p", 3, 4], ["fonte", 5]] },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", 6],
+          ["img", { "p": 2, "box": [40, 243, 228, 492], "alt": "Mapa \"Novo lar: rota de migração dos haitianos para o Brasil\". A rota sai de Porto Príncipe, no Haiti, passa pelo Panamá, por Quito, no Equador, e por Lima, no Peru, e entra no Brasil por Brasileia (AC), seguindo até Porto Velho (RO). De Porto Velho, os haitianos seguem para São Paulo, Minas Gerais e Paraná. Fonte: Ministério da Justiça." }],
+          ["fonte", 8],
+          ["p", 9, 10, 11, 12],
+          ["fonte", 13]
+        ]
+      },
+      { "r": "III", "i": [["titulo", 14], ["p", 15, 16], ["fonte", 17]] }
+    ]
+  },
+  "2011-regular": {
+    "tema": "Viver em rede no século XXI: os limites entre o público e o privado",
+    "textos": [
+      { "r": "I", "i": [["titulo", 6], ["p", 7], ["fonte", 8]] },
+      { "r": "II", "i": [["titulo", 9], ["p", 10, 11], ["fonte", 12]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [78, 445, 503, 580], "alt": "Tirinha \"Quadrinhos dos anos 10\", em três quadros. No primeiro, um homem olha para uma câmera de vigilância e diz: \"Malditas câmeras, somos monitorados o tempo todo!\". No segundo, um homem fala para a câmera: \"Se você está me ouvindo, saiba que podemos lutar contra a Sociedade do Controle juntos!\". No terceiro, um guarda observa a cena por um monitor." }],
+          ["fonte", 14]
+        ]
+      }
+    ]
+  },
+  "2010-regular": {
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["titulo", "4:0"],
+          ["p", "4:1", 5, 6],
+          ["img", { "p": 2, "box": [422, 168, 567, 377], "alt": "Fotografia em preto e branco de um homem visto de costas, com a camisa rasgada." }],
+          ["fonte", 7]
+        ]
+      },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", "8:0"],
+          ["pj", "8:1-2"],
+          ["p", 9],
+          ["img", { "p": 2, "box": [160, 524, 432, 672], "alt": "Ilustração com a fórmula \"T = (ma + Qv + I) × g\" cercada por balões que explicam cada termo: \"O seu trabalho em 2020\", \"Busca de qualidade de vida\", \"Inovação\", \"Preocupação com o meio ambiente\" e \"Globalização\"." }],
+          ["fonte", 10]
+        ]
+      }
+    ]
+  }
+}

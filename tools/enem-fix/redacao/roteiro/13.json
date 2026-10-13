@@ -1,0 +1,18 @@
+{
+  "2020-digital": {
+    "textos": [
+      { "r": "I", "i": [["p", 3, 4], ["fonte", 5, 6, 7]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 53, "box": [98, 54, 292, 726], "alt": "Dois infográficos. Produto Interno Bruto (PIB), participação das grandes regiões no PIB (%), em 2002 e em 2011: Norte, 4,7 e 5,4 (variação de 14,89%); Nordeste, 13 e 13,4 (3,08%); Sudeste, 56,7 e 55,4 (-2,29%); Sul, 16,9 e 16,2 (-4,14%); Centro-Oeste, 8,8 e 9,6 (9,09%). Índice de Desenvolvimento Humano (IDH): três mapas do Brasil, de 1991, 2000 e 2010, em faixas que vão de 0,000-0,499 a 0,800-1, mostram o índice subindo em todo o país; valores de 2000 e de 2010: Nordeste, 0,55 e 0,68 (variação de 23,97%); Norte, 0,55 e 0,70 (25,82%); Centro-Oeste, 0,62 e 0,74 (20,56%); Sul, 0,64 e 0,74 (16,75%); Sudeste, 0,63 e 0,73 (16,43%). Fonte: IBGE, Fundação João Pinheiro e Pnud. Disponível em: www.hojeemdia.com.br. Acesso em: 1 ago. 2020 (adaptado)." }]
+        ]
+      },
+      { "r": "III", "i": [["pj", 15], ["pj", 16], ["pj", 17], ["fonte", 18, 19]] },
+      { "r": "IV", "i": [["pj", 21], ["pj", 22], ["fonte", 10, 11]] }
+    ]
+  },
+  "2010-regular": { "tema": "O trabalho na construção da dignidade humana" },
+  "2021-regular": { "aplicacaoRotulo": "Aplicação regular (impressa e digital)" },
+  "2022-regular": { "aplicacaoRotulo": "Aplicação regular (impressa e digital)" }
+}

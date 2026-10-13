@@ -533,6 +533,142 @@ function FilterDrawer({
   );
 }
 
+/**
+ * Lista das questões do recorte, para ir direto a qualquer uma sem precisar
+ * responder as anteriores. Mostra o que já foi carregado e busca mais sob
+ * demanda — o banco tem milhares de questões.
+ */
+function QuestionList({
+  open,
+  items,
+  total,
+  currentIdx,
+  answers,
+  canLoadMore,
+  loading,
+  onPick,
+  onLoadMore,
+  onClose,
+}: {
+  open: boolean;
+  items: Question[];
+  total: number;
+  currentIdx: number;
+  answers: Record<string, AnswerState>;
+  canLoadMore: boolean;
+  loading: boolean;
+  onPick: (index: number) => void;
+  onLoadMore: () => void;
+  onClose: () => void;
+}) {
+  const painelRef = useRef<HTMLElement>(null);
+  useDialog(painelRef, onClose, open);
+  if (!open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-40">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+        onClick={onClose}
+        aria-hidden
+      />
+      <aside
+        ref={painelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Lista de questões"
+        className="absolute inset-y-0 right-0 flex w-[92%] max-w-md flex-col bg-surface shadow-xl outline-none animate-rise"
+      >
+        <header className="flex items-center justify-between border-b border-line px-5 py-4">
+          <div>
+            <h2 className="font-display text-lg font-bold">Questões</h2>
+            <p className="text-xs text-muted">
+              {items.length} de {total.toLocaleString('pt-BR')} carregadas
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fechar lista"
+            className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            <IconX width={18} height={18} />
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-3 py-3">
+          <ol className="space-y-1">
+            {items.map((q, i) => {
+              const result = answers[q.id]?.result;
+              const atual = i === currentIdx;
+              const area = areaKey(areaSourceName(q));
+              return (
+                <li key={q.id}>
+                  <button
+                    onClick={() => onPick(i)}
+                    aria-current={atual ? 'true' : undefined}
+                    className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                      atual
+                        ? 'border-brand bg-brand/8'
+                        : 'border-transparent hover:bg-surface-2'
+                    }`}
+                  >
+                    <span className="mt-0.5 w-7 shrink-0 text-right font-display text-sm font-bold tabular-nums text-muted">
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-x-2 text-xs">
+                        <span className={`font-semibold ${AREA_TEXT[area]}`}>
+                          {subjectLabel(q)}
+                        </span>
+                        {codeLabel(q) && (
+                          <span className="font-mono text-muted">
+                            {codeLabel(q)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-0.5 line-clamp-2 text-sm text-muted">
+                        {q.statement}
+                      </span>
+                    </span>
+                    {result && (
+                      <span
+                        aria-label={result.isCorrect ? 'Acertou' : 'Errou'}
+                        className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg ${
+                          result.isCorrect
+                            ? 'bg-success/15 text-success'
+                            : 'bg-danger/12 text-danger'
+                        }`}
+                      >
+                        {result.isCorrect ? (
+                          <IconCheck width={14} height={14} />
+                        ) : (
+                          <IconX width={14} height={14} />
+                        )}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+
+          {canLoadMore && (
+            <button
+              onClick={onLoadMore}
+              disabled={loading}
+              className="btn btn-ghost mt-3 w-full"
+            >
+              {loading ? 'Carregando…' : 'Carregar mais questões'}
+            </button>
+          )}
+        </div>
+      </aside>
+    </div>,
+    document.body,
+  );
+}
+
 export default function Questoes() {
   const { refresh } = useGamification();
   const { me } = useAuth();
@@ -555,6 +691,7 @@ export default function Questoes() {
   }));
   const { areaId, subjectId, topicId, examSlug, onlyFavorites } = filtros;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
 
   // Busca por código: o campo atualiza na hora, a busca espera o aluno parar
   // de digitar para não disparar uma requisição por tecla.
@@ -917,13 +1054,30 @@ export default function Questoes() {
               <IconChevronLeft width={20} height={20} />
             </button>
 
-            <div className="min-w-0 flex-1 text-center">
-              <p className="font-display text-sm font-bold tabular-nums">
+            {/* O contador abre a lista: dá para ir a qualquer questão. */}
+            <button
+              onClick={() => setListOpen(true)}
+              aria-label={`Questão ${idx + 1} de ${total || items.length}. Ver lista de questões`}
+              className="min-w-0 flex-1 rounded-xl px-2 py-0.5 text-center transition-colors hover:bg-surface-2"
+            >
+              <span className="block font-display text-sm font-bold tabular-nums">
                 {idx + 1}
                 <span className="text-muted"> / {total || items.length}</span>
-              </p>
-              <p className="text-xs text-muted">{answeredCount} respondidas</p>
-            </div>
+              </span>
+              <span className="block text-xs text-muted">
+                {answeredCount} respondidas · ver lista
+              </span>
+            </button>
+
+            {/* Avançar não exige responder: o aluno pode pular a questão. */}
+            <button
+              onClick={goNext}
+              disabled={!canNext || loading}
+              aria-label="Próxima questão"
+              className="grid size-10 shrink-0 place-items-center rounded-xl border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-40"
+            >
+              <IconChevronRight width={20} height={20} />
+            </button>
 
             {/* Um botão só, que muda de papel: trocar o elemento derrubaria o
                 foco de quem responde pelo teclado. */}
@@ -944,6 +1098,22 @@ export default function Questoes() {
           </div>
         </div>
       )}
+
+      <QuestionList
+        open={listOpen}
+        items={items}
+        total={total || items.length}
+        currentIdx={idx}
+        answers={answers}
+        canLoadMore={!onlyFavorites && page < pages}
+        loading={loading}
+        onPick={(i) => {
+          setIdx(i);
+          setListOpen(false);
+        }}
+        onLoadMore={() => void fetchPage(page + 1, false)}
+        onClose={() => setListOpen(false)}
+      />
 
       <FilterDrawer
         open={drawerOpen}

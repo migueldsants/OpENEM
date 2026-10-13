@@ -1,0 +1,45 @@
+{
+  "2021-digital": { "pular": true },
+  "2022-digital": { "pular": true },
+  "2020-digital": {
+    "textos": [
+      { "r": "I", "i": [["p", 3, 4], ["fonte", 5, 6, 7]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 53, "box": [98, 54, 292, 726], "alt": "Dois infográficos. Produto Interno Bruto (PIB), participação das grandes regiões no PIB (%), em 2002 e em 2011: Norte, 4,7 e 5,4 (variação de 14,89%); Nordeste, 13 e 13,4 (3,08%); Sudeste, 56,7 e 55,4 (-2,29%); Sul, 16,9 e 16,2 (-4,14%); Centro-Oeste, 8,8 e 9,6 (9,09%). Índice de Desenvolvimento Humano (IDH): três mapas do Brasil, de 1991, 2000 e 2010, em faixas que vão de 0,000-0,499 a 0,800-1, mostram o índice subindo em todo o país; valores de 2000 e de 2010: Nordeste, 0,55 e 0,68 (variação de 23,97%); Norte, 0,55 e 0,70 (25,82%); Centro-Oeste, 0,62 e 0,74 (20,56%); Sul, 0,64 e 0,74 (16,75%); Sudeste, 0,63 e 0,73 (16,43%). Fonte: IBGE, Fundação João Pinheiro e Pnud. Disponível em: www.hojeemdia.com.br. Acesso em: 1 ago. 2020 (adaptado)." }]
+        ]
+      },
+      { "r": "III", "i": [["p", 15, 16, 17], ["fonte", 18, 19]] },
+      { "r": "IV", "i": [["p", 21, 22], ["fonte", 10, 11]] }
+    ]
+  },
+  "2019-regular": {
+    "textos": [
+      { "r": "I", "i": [["p", "2:2-8"], ["fonte", 3, "4:0"]] },
+      { "r": "II", "i": [["p", "4:2-4"], ["fonte", 5]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 20, "box": [30, 391, 230, 641], "alt": "Infográfico \"Da telona para as telinhas\": cresce o percentual de brasileiros que frequentam salas de cinema e o interesse por filmes tem destaque no consumo de TV. Nos últimos cinco anos, a penetração do cinema cresceu 43% entre os brasileiros. 88% dos telespectadores assistem a filmes na TV, regularmente; 17% da população frequenta o cinema, no total (assistiu nos últimos 30 dias); 19% dos telespectadores de filmes na TV vão ao cinema; 95% dos que foram ao cinema assistem a filmes na TV." }],
+          ["fonte", 8, 9]
+        ]
+      },
+      { "r": "IV", "i": [["p", 11], ["fonte", 12, 13]] }
+    ]
+  },
+  "2018-regular": {
+    "textos": [
+      { "r": "I", "i": [["p", "2:2-11"], ["fonte", "3:0"]] },
+      { "r": "II", "i": [["p", "3:2-13"], ["fonte", 4, "5:0"]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 19, "box": [262, 357, 548, 522], "alt": "Infográfico. Utilização da internet: 64,7% das pessoas de 10 anos ou mais de idade utilizaram a internet, sendo 63,8% dos homens e 65,5% das mulheres. Cerca de 85% dos jovens de 18 a 24 anos de idade e 25% das pessoas de 60 anos ou mais de idade utilizaram a internet. Finalidade do acesso à internet (%): enviar ou receber mensagens de texto, voz ou imagens por aplicativos diferentes de e-mail, 94,2; assistir a vídeos, inclusive programas, séries e filmes, 76,4; conversar por chamada de voz ou vídeo, 73,3; enviar ou receber e-mails (correio eletrônico), 69,3." }],
+          ["fonte", 24]
+        ]
+      },
+      { "r": "IV", "i": [["p", 6], ["fonte", 7]] }
+    ]
+  }
+}

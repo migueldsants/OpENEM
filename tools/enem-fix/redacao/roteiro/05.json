@@ -1,0 +1,52 @@
+{
+  "2014-regular": {
+    "textos": [
+      { "r": "I", "i": [["p", 5, 6, 7], ["fonte", "8:0"]] },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", 10],
+          ["img", { "p": 2, "box": [75, 330, 499, 537], "alt": "Mapa-múndi com a regra de publicidade infantil de cada lugar, indicada por ícones. Lugares assinalados: Québec (Canadá), Estados Unidos, Reino Unido, Irlanda, França, Itália, Noruega, Suécia, Dinamarca, Bélgica, Coreia do Sul, Austrália, Chile e Brasil. Legenda dos ícones. Autorregulamentação: não há leis nacionais, o setor cria normas e faz acordos com o governo. Alerta: mensagens recomendam consumo moderado e alimentação saudável. Proibição parcial: comerciais são proibidos em certos horários ou para determinadas faixas etárias. Personagens: famosos e personagens de desenhos não podem aparecer em anúncios de alimentos infantis. Proibido: não é permitido nenhum tipo de publicidade para crianças. O Brasil aparece com o ícone de autorregulamentação." }],
+          ["fonte", 20, "30:0"]
+        ]
+      },
+      { "r": "III", "i": [["p", 31], ["fonte", 32, 33]] }
+    ]
+  },
+  "2013-regular": {
+    "textos": [
+      { "r": "I", "i": [["titulo", 5], ["p", 6, 7], ["fonte", 8]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [36, 287, 296, 443], "alt": "Cartaz com um copo de cerveja em primeiro plano e, ao fundo, um carro batido, com o texto: \"Não deixe a bebida mudar o seu destino. Dirigir alcoolizado é crime e pode dar cadeia. Emergência: 191. Polícia Rodoviária Federal, Ministério da Justiça.\"" }],
+          ["fonte", 10]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [338, 260, 514, 440], "alt": "Quadro \"Lei Seca em números\". Atendimento hospitalar: -13% (fonte: Secretaria Municipal de Saúde, RJ). Aprovaram o uso dos bafômetros: 97% (fonte: IBPS). Vítimas de acidente no Grande Rio: -27% (fonte: ISP-RJ). Média nacional de redução de vítimas fatais: -6,2% (fonte: DataSUS)." }],
+          ["fonte", 27]
+        ]
+      },
+      { "r": "IV", "i": [["titulo", 28], ["p", 29], ["fonte", 30]] }
+    ]
+  },
+  "2012-regular": {
+    "textos": [
+      { "r": "I", "i": [["p", 3, 4], ["fonte", 5]] },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", 6],
+          ["img", { "p": 2, "box": [40, 243, 228, 492], "alt": "Mapa \"Novo lar: rota de migração dos haitianos para o Brasil\". A rota sai de Porto Príncipe, no Haiti, passa pelo Panamá, por Quito, no Equador, e por Lima, no Peru, e entra no Brasil por Brasileia (AC), seguindo até Porto Velho (RO). De Porto Velho, os haitianos seguem para São Paulo, Minas Gerais e Paraná. Fonte: Ministério da Justiça." }],
+          ["fonte", 8],
+          ["p", 9, 10, 11, 12],
+          ["fonte", 13]
+        ]
+      },
+      { "r": "III", "i": [["titulo", 14], ["p", 15, 16], ["fonte", 17]] }
+    ]
+  }
+}
