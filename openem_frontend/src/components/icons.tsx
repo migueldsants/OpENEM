@@ -48,6 +48,7 @@ import {
   MagicWand,
   Hand,
   Heart,
+  Hourglass,
   Highlighter,
   House,
   Image as ImageIcon,
@@ -140,6 +141,8 @@ export const IconSun = shim(Sun, 'bold');
 export const IconMoon = shim(Moon, 'fill');
 export const IconClock = shim(Clock, 'regular');
 export const IconTimer = shim(Timer, 'duotone');
+// Timers da tela de cronômetros.
+export const IconHourglass = shim(Hourglass, 'duotone');
 export const IconChat = shim(ChatsCircle, 'duotone');
 export const IconTarget = shim(Target, 'duotone');
 // Aba "Painel": métricas de estudo que antes ocupavam a Home.

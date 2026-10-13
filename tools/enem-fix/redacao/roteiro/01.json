@@ -1,0 +1,180 @@
+{
+  "2025-regular": {
+    "tipos": {
+      "18": "titulo"
+    },
+    "alts": {
+      "10": "Dois pictogramas lado a lado. O antigo mostra uma pessoa curvada, apoiada em uma bengala. O novo mostra uma pessoa ereta ao lado da inscrição \"60+\".",
+      "19": "Gráfico de rosca sobre idosos de 65 a 74 anos: 34% contribuem para os gastos, mas não são os mantenedores principais; 38% são a principal renda, mas contam com outras rendas; 28% sustentam a casa sozinhos."
+    }
+  },
+  "2024-regular": {
+    "semTitulo": [
+      "I"
+    ],
+    "versos": [
+      "V"
+    ],
+    "tipos": {
+      "24": "p",
+      "25": "p"
+    },
+    "alts": {
+      "8": "Ilustração de um livro aberto. Na página esquerda, uma figura humana negra puxa um fardo preso por cordas. Na página direita, sob o título \"Capítulo oito\", lê-se: \"Quando não souberes para onde ir, olha para trás e saiba pelo menos de onde vens. Provérbio africano\".",
+      "23": "Fotografia de estudantes de uniforme, vistos de costas, observando um grafite com o rosto de Zumbi dos Palmares pintado em um muro."
+    }
+  },
+  "2023-regular": {
+    "figuras": [
+      {
+        "entre": [
+          14,
+          17
+        ],
+        "dy0": -40,
+        "alt": "Tabela. Brasil, 2019. Horas semanais por sexo: homens, 11,0; mulheres, 21,4."
+      },
+      {
+        "entre": [
+          24,
+          41
+        ],
+        "alt": "Capa da revista Pesquisa Fapesp, de janeiro de 2021, com a manchete \"Desafios do cuidado\" e o texto: \"Aumenta o número de pessoas que demandam serviços de assistência, obrigando os países a repensar seus sistemas de atenção; no Brasil, protagonismo continua familiar\". A ilustração mostra, de costas, uma mulher de mãos dadas com uma criança e com uma idosa de bengala."
+      }
+    ]
+  },
+  "2022-regular": {
+    "figuras": [
+      {
+        "entre": [
+          7,
+          46
+        ],
+        "alt": "Infográfico com os estados de maior concentração de famílias de cada povo tradicional. Indígena: AM 43.264, MS 21.507, RR 15.316. Pescador: PA 40.123, MA 33.085, BA 30.920. Quilombola: BA 43.009, MA 39.316, PA 15.282. Povos de terreiro: BA 1.883, PI 856, CE 603. Cigano: BA 1.538, GO 643, MG 556. Ribeirinho: PA 50.314, AM 16.507, BA 9.670. Extrativista: PA 11.826, AM 9.772, MA 7.190. Fonte: Ministério Público Federal. Infográfico elaborado em 25/10/2019."
+      }
+    ]
+  },
+  "2021-regular": {
+    "figuras": [
+      {
+        "entre": [
+          9,
+          10
+        ],
+        "alt": "Mapa da invisibilidade no Brasil, com a estimativa do número de pessoas sem registro de nascimento por região: Norte, 320 mil; Nordeste, 828 mil; Centro-Oeste, 243 mil; Sudeste, 1,15 milhão; Sul, 399 mil."
+      },
+      {
+        "p": 21,
+        "box": [
+          288,
+          344,
+          538,
+          566
+        ],
+        "alt": "Cartaz com um rosto parcialmente coberto por uma impressão digital e o texto: \"Onde existem pessoas, nós enxergamos cidadãos. Defensoras e defensores públicos pelo direito à documentação pessoal.\""
+      }
+    ]
+  },
+  "2020-regular": {
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          [
+            "p",
+            1
+          ],
+          [
+            "fonte",
+            2
+          ]
+        ]
+      },
+      {
+        "r": "II",
+        "i": [
+          [
+            "p",
+            3,
+            4
+          ],
+          [
+            "fonte",
+            5
+          ]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          [
+            "img",
+            {
+              "p": 19,
+              "box": [
+                356,
+                360,
+                538,
+                645
+              ],
+              "alt": "Infográfico \"Socorro, Brasil!\": saiba mais sobre o problema de saúde que afeta mais de 1 em cada 20 pessoas, mas que continuamos ignorando. 322 milhões de pessoas vivem com depressão em todo o mundo. Mais de 11,5 milhões de brasileiros têm depressão. O Brasil é o país mais depressivo da América Latina. Hoje, a depressão é a doença mais incapacitante do mundo e a 2ª causa de afastamento de trabalho no mundo. 1 trilhão de dólares é o valor da perda econômica mundial gerada pelas consequências dos transtornos mentais. O número de mulheres afetadas pela depressão é 30% mais elevado que o dos homens. Todos os dados foram divulgados pela Organização Mundial da Saúde (OMS) em fevereiro de 2017. Se você precisa de ajuda, ligue para o Centro de Valorização da Vida (CVV): 188."
+            }
+          ],
+          [
+            "fonte",
+            80,
+            81
+          ]
+        ]
+      }
+    ]
+  },
+  "2025-ppl": {
+    "versos": [
+      "III"
+    ],
+    "alts": {
+      "10": "Gráfico de barras, em milhão de pessoas: 2016, 2,112; 2017, 1,945; 2018, 1,905; 2019, 1,758; 2020 e 2021, sem dados (o IBGE interrompeu a coleta dessas estatísticas devido à pandemia); 2022, 1,881; 2023, 1,607. Gênero, dados de 2023: meninos, 63,8%; meninas, 36,2%.",
+      "18": "Ilustração de uma criança carregando na cabeça uma bacia cheia de pedras. A sombra dela, projetada na parede, é a de uma criança jogando bola.",
+      "21": "Diagrama em ciclo: pobreza leva a trabalho infantil, que leva a evasão escolar ou baixo aproveitamento escolar, que leva a insuficiência ou falta de qualificação profissional, que leva a acesso a trabalhos precarizados ou mal remunerados, que leva de volta à pobreza."
+    }
+  },
+  "2025-belem": {
+    "versos": [
+      "VII"
+    ],
+    "figuras": [
+      {
+        "entre": [
+          7,
+          14
+        ],
+        "alt": "Tabela. Posição na ocupação e categoria de emprego: empregados com carteira, 9 957 762; empregados sem carteira, 4 172 688; empregador, 1 084 216; conta própria, 6 862 914; familiar auxiliar, 1 388 285; autoconsumo, 5 036 399. Níveis de instrução: até o Fundamental completo, 12 206 313; Médio, 11 512 822; Superior, 4 783 129. Gênero: masculino, 17 698 076; feminino, 10 804 188."
+      }
+    ],
+    "alts": {
+      "22": "Fotografia de trabalhadores rurais capinando uma plantação com enxadas, com o texto: \"A força que movimenta a enxada é a mesma que impulsiona o País. 25 de maio, Dia do Trabalhador Rural\".",
+      "29": "Fotografia em preto e branco de um trabalhador rural, de chapéu, cortando cana com um facão."
+    }
+  },
+  "2024-ppl": {
+    "alts": {
+      "20": "Fotografia de um muro grafitado: uma figura humana vermelha, com uma coroa de folhas, e uma mulher de longos cabelos azuis estendem as mãos uma para a outra, entre símbolos do feminino.",
+      "29": "Cartaz com os dizeres \"Semana de Arte Moderna da Periferia\" sobre o desenho de uma árvore e a inscrição \"Antropofagia periférica, S. Paulo 2007\"."
+    }
+  },
+  "2023-ppl": {
+    "alts": {
+      "8": "Fotografia de uma pessoa deitada no chão, coberta por um cobertor, embaixo de um banco de praça com divisórias de metal."
+    },
+    "figuras": [
+      {
+        "entre": [
+          19,
+          41
+        ],
+        "alt": "Gráfico de linha com os números estimados ao longo dos últimos dez anos: 2012, 90 480; 2013, 96 246; 2014, 106 650; 2015, 123 104; 2016, 138 785; 2017, 160 614; 2018, 184 749; 2019, 204 660; 2020, 214 451; 2021, 232 147; 2022, 281 472. Fonte: Instituto de Pesquisa Econômica Aplicada (Ipea)."
+      }
+    ]
+  }
+}

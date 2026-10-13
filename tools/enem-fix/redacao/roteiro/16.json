@@ -1,0 +1,60 @@
+{
+  "2015-ppl": {
+    "propostaBlocos": [
+      3
+    ]
+  },
+  "2013-regular": {
+    "propostaBlocos": [
+      4
+    ]
+  },
+  "2013-ppl": {
+    "propostaBlocos": [
+      5
+    ]
+  },
+  "2012-regular": {
+    "propostaBlocos": [
+      2
+    ]
+  },
+  "2012-ppl": {
+    "propostaBlocos": [
+      2
+    ]
+  },
+  "2011-regular": {
+    "propostaBlocos": [
+      5
+    ],
+    "maiusculas": [
+      "viver em rede no século XXI: os limites entre o público e o privado"
+    ]
+  },
+  "2011-ppl": {
+    "propostaBlocos": [
+      5
+    ]
+  },
+  "2010-regular": {
+    "propostaBlocos": [
+      3
+    ]
+  },
+  "2010-ppl": {
+    "propostaBlocos": [
+      3
+    ]
+  },
+  "2008-regular": {
+    "tema": "",
+    "temaEditorial": false,
+    "semTema": true
+  },
+  "2015-regular": {
+    "maiusculas": [
+      "O impacto em números"
+    ]
+  }
+}

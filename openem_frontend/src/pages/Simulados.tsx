@@ -20,6 +20,7 @@ import {
 } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { SimuladoBuilder } from '../components/SimuladoBuilder';
+import { QuadroProvaCard } from '../components/QuadroProva';
 import {
   SimuladoPdfModal,
   type PdfTarget,
@@ -474,6 +475,12 @@ function TemplateList({
           </ul>
         </section>
       )}
+
+      {/* Para quem imprime o caderno e faz a prova no papel. */}
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Prova no papel</h2>
+        <QuadroProvaCard />
+      </section>
 
       {loading ? (
         <div className="space-y-3" aria-busy>

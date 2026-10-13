@@ -1,0 +1,51 @@
+{
+  "2003-regular": {
+    "tema": "A violência na sociedade brasileira: como mudar as regras desse jogo?",
+    "propostaBlocos": ["9:1-2"],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [127, 156, 468, 348], "alt": "Quadro \"Números do pânico\". Gastos com segurança no Brasil quase dobraram em cinco anos, em R$ bilhões: 54 em 1997 e 102 em 2002. Os R$ 102 bilhões que o Brasil gasta por ano em segurança equivalem a: 56 vezes o que o governo pretende gastar no Fome Zero; 5 vezes o orçamento do Ministério da Educação; 46 vezes o que os brasileiros gastam com livros; 4 vezes o que se gasta com planos de saúde; igual ao patrimônio líquido de todos os bancos do país." }],
+          ["fonte", "4:1"]
+        ]
+      },
+      { "r": "II", "i": [["pj", "4:5-11"], ["fonte", 5]] },
+      { "r": "III", "i": [["p", 6, 7], ["fonte", 8]] }
+    ]
+  },
+  "2002-regular": {
+    "tema": "O direito de votar: como fazer dessa conquista um meio para promover as transformações sociais de que o Brasil necessita?",
+    "propostaBlocos": [17, 18],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [57, 85, 324, 325], "alt": "Fotografia em preto e branco de uma multidão que lota uma praça entre prédios, com faixas estendidas." }],
+          ["pj", "4:1"]
+        ]
+      },
+      { "r": "II", "i": [["pj", 5], ["fonte", 6]] },
+      { "r": "III", "i": [["p", 7, 8], ["fonte", 9]] },
+      { "r": "IV", "i": [["p", 10, 11], ["fonte", 12, "13:0"]] },
+      { "r": "V", "i": [["p", 14, 15], ["fonte", "16:0"]] }
+    ]
+  },
+  "2001-regular": {
+    "tema": "Desenvolvimento e preservação ambiental: como conciliar os interesses em conflito?",
+    "propostaBlocos": [2552, "2553:0-3"],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [60, 84, 326, 342], "alt": "História em quadrinhos de Caulos, em seis quadros, que parodia a \"Canção do exílio\". Um pássaro recita: \"Gonçalves Dias: nosso céu tem mais estrelas...\", \"nossas várzeas têm mais flores...\", \"...nossa vida mais amores\", \"Minha terra tem palmeiras onde canta o sabiá\". Nos dois últimos quadros, diz \"O sabiá sou eu...\" e, diante do toco de uma árvore cortada, \"Essa era a palmeira\"." }],
+          ["fonte", "2538:2"]
+        ]
+      },
+      { "r": "II", "i": [["pj", 2555], ["fonte", 2556, 2557]] },
+      { "r": "III", "i": [["p", 2539, 2540, "2541:0"], ["fonte", "2542:0"]] },
+      { "r": "IV", "i": [["p", "2543:1-4", 2544], ["pj", "2545:1-5"], ["fonte", "2546:1", 2547]] },
+      { "r": "V", "i": [["pj", "2548:3-4"], ["pj", "2549:1-3"], ["fonte", "2550:1", 2551]] }
+    ]
+  }
+}

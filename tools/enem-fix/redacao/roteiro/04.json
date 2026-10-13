@@ -1,0 +1,68 @@
+{
+  "2017-regular": {
+    "textos": [
+      { "r": "I", "i": [["titulo", "4:0-1"], ["p", "4:2-5", 5, 6, 7], ["fonte", "8:0"]] },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", 9],
+          ["img", { "p": 19, "box": [60, 394, 270, 537], "alt": "Gráfico de linhas com o total de matrículas, em milhar, de 2011 a 2016. Classes comuns (alunos incluídos): pouco acima de 25 em 2011, cerca de 27 em 2012 e queda gradual até pouco mais de 20 em 2016. Classes especiais/escolas exclusivas: pouco abaixo de 10 em 2011, caindo ano a ano até cerca de 5 em 2016." }],
+          ["fonte", 21]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 19, "box": [293, 402, 539, 521], "alt": "Cartaz com parte do rosto de um homem de óculos e o texto: \"Sou surdo e pós-graduado em marketing. E na sua empresa, tem espaço para mim? Trabalho não tolera preconceito. Valorize as diferenças.\"" }],
+          ["fonte", 23]
+        ]
+      },
+      { "r": "IV", "i": [["p", 25, 26], ["fonte", 27]] }
+    ]
+  },
+  "2016-regular": {
+    "textos": [
+      { "r": "I", "i": [["p", 6], ["fonte", "7:0"]] },
+      { "r": "II", "i": [["p", 8], ["fonte", "9:0"]] },
+      { "r": "III", "i": [["titulo", 10], ["p", 11, 12], ["fonte", "13:0"]] },
+      {
+        "r": "IV",
+        "i": [
+          ["titulo", "14:0"],
+          ["p", "14:1"],
+          ["img", { "p": 2, "box": [108, 493, 520, 664], "alt": "Infográfico. Número de denúncias por religião (2011 a 2014*): afro-brasileira, 75; evangélica, 58; espírita, 27; católica, 22; ateus, 8; judaica, 6; islâmica, 5; outras, 15. 1 denúncia a cada 3 dias. 213 denúncias com religião não informada. 20% dos episódios relatados em 2013 envolveram violência física. 12% dos episódios relatados até jul. 2014 envolveram violência física. *Até jul. 2014." }],
+          ["fonte", "15:0", "15:1", 42]
+        ]
+      }
+    ]
+  },
+  "2015-regular": {
+    "textos": [
+      { "r": "I", "i": [["p", 6], ["fonte", "7:0"]] },
+      {
+        "r": "II",
+        "i": [
+          ["titulo", 8],
+          ["img", { "p": 2, "box": [56, 238, 346, 354], "alt": "Gráfico de barras com o tipo de violência relatada: violência física, 51,68%; violência psicológica, 31,81%; violência moral, 9,68%; violência sexual, 2,86%; violência patrimonial, 1,94%; cárcere privado, 1,76%; tráfico de pessoas, 0,26%." }],
+          ["fonte", 18, 19]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [398, 224, 515, 357], "alt": "Cartaz com a palavra \"Feminicídio\", a marca de uma mão espalmada com um alvo desenhado na palma e a palavra \"Basta\"." }],
+          ["fonte", "22:1", 23]
+        ]
+      },
+      {
+        "r": "IV",
+        "i": [
+          ["titulo", "25:0"],
+          ["pj", "25:1", 26],
+          ["img", { "p": 2, "box": [34, 433, 548, 619], "alt": "Infográfico. 332.216 processos que envolvem a Lei Maria da Penha chegaram, entre setembro de 2006 e março de 2011, aos 52 juizados e varas especializados em Violência Doméstica e Familiar contra a Mulher existentes no País. O que resultou em: 33,4% de processos julgados; 9.715 prisões em flagrante; 1.577 prisões preventivas decretadas. 58 mulheres e 2.777 homens enquadrados na Lei Maria da Penha estavam presos no País em dezembro de 2010. Ceará, Rio de Janeiro e Rio Grande do Sul não constam desse levantamento feito pelo Departamento Penitenciário Nacional. 237 mil relatos de violência foram feitos ao Ligue 180, serviço telefônico da Secretaria de Políticas para as Mulheres. Sete de cada dez vítimas que telefonaram para o Ligue 180 afirmaram ter sido agredidas pelos companheiros." }],
+          ["fonte", 27, 41]
+        ]
+      }
+    ]
+  }
+}

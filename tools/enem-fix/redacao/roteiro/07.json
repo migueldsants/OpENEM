@@ -1,0 +1,63 @@
+{
+  "2009-regular": {
+    "tema": "O indivíduo frente à ética nacional",
+    "proposta": "Com base na leitura dos textos motivadores seguintes e nos conhecimentos construídos ao longo de sua formação, redija texto dissertativo-argumentativo em norma culta escrita da língua portuguesa sobre o tema O indivíduo frente à ética nacional, apresentando proposta de ação social, que respeite os direitos humanos. Selecione, organize e relacione coerentemente argumentos e fatos para defesa de seu ponto de vista.",
+    "transcrito": true,
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [120, 140, 436, 346], "alt": "Charge de Millôr Fernandes: uma figura humana minúscula, sozinha no meio de uma paisagem de rabiscos, e a frase \"Só lidar com gente honesta, meu Deus, que solidão!\"." }],
+          ["lit", "fonte", "Millôr Fernandes. Disponível em http://www2.uol.com.br/millor. Acesso em: 14 jul. 2009."]
+        ]
+      },
+      {
+        "r": "II",
+        "i": [
+          ["lit", "p", "Andamos demais acomodados, todo mundo reclamando em voz baixa como se fosse errado indignar-se."],
+          ["lit", "p", "Sem ufanismo, porque dele estou cansada, sem dizer que este é um país rico, de gente boa e cordata, com natureza (a que sobrou) belíssima e generosa, sem fantasiar nem botar óculos cor-de-rosa, que o momento não permite, eu me pergunto o que anda acontecendo com a gente."],
+          ["lit", "p", "Tenho medo disso que nos tornamos ou em que estamos nos transformando, achando bonita a ignorância eloquente, engraçado o cinismo bem-vestido, interessante o banditismo arrojado, normal o abismo em cuja beira nos equilibramos — não malabaristas, mas palhaços."],
+          ["lit", "fonte", "LUFT, L. Ponto de vista. Veja. Ed. 1988, 27 dez. 2006 (adaptado)."]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          ["lit", "titulo", "Qual é o efeito em nós do \"eles são todos corruptos\"?"],
+          ["lit", "p", "As denúncias que assolam nosso cotidiano podem dar lugar a uma vontade de transformar o mundo só se nossa indignação não afetar o mundo inteiro. \"Eles são TODOS corruptos\" é um pensamento que serve apenas para \"confirmar\" a \"integridade\" de quem se indigna."],
+          ["lit", "p", "O lugar-comum sobre a corrupção generalizada não é uma armadilha para os corruptos: eles continuam iguais e livres, enquanto, fechados em casa, festejamos nossa esplendorosa retidão."],
+          ["lit", "p", "O dito lugar-comum é uma armadilha que amarra e imobiliza os mesmos que denunciam a imperfeição do mundo inteiro."],
+          ["lit", "fonte", "CALLIGARIS, C. A armadilha da corrupção. Disponível em: http://www1.folha.uol.com.br (adaptado)."]
+        ]
+      }
+    ]
+  },
+  "2008-regular": {
+    "tema": "Como preservar a floresta amazônica",
+    "temaEditorial": true,
+    "propostaBlocos": [6, 7, 8, 9, 10, 11],
+    "transcrito": true,
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [68, 102, 524, 276], "alt": "Ilustração do ciclo da chuva na Amazônia: a umidade vem do oceano, cai como chuva sobre a floresta, volta para a atmosfera e segue em nuvens para o oeste, até a Cordilheira dos Andes." }],
+          ["lit", "p", "Pode parecer que os isótopos de oxigênio e a luta dos seringueiros no Acre tenham pouco em comum. No entanto, ambos estão relacionados ao futuro da Amazônia e a parte significativa da agroindústria e da geração de energia elétrica no Brasil."],
+          ["lit", "p", "À época em que Chico Mendes lutava para assegurar o futuro dos seringueiros e da floresta, um dos mais respeitados cientistas brasileiros, Eneas Salati, analisava proporções de isótopos de oxigênio na precipitação pluviométrica amazônica do Atlântico ao Peru. Sua conclusão foi irrefutável: a Amazônia produz a parte maior de sua própria chuva; implicação óbvia desse fenômeno: o excesso de desmatamento pode degradar o ciclo hidrológico."],
+          ["lit", "p", "Hoje, imagens obtidas por sensoriamento remoto mostram que o ciclo hidrológico não apenas é essencial para a manutenção da grande floresta, mas também garante parcela significativa da chuva que cai ao sul da Amazônia, em Mato Grosso, São Paulo e até mesmo ao norte da Argentina. Quando a umidade do ciclo, que se desloca em direção ocidental, atinge o paredão dos Andes, parte dela é desviada para o sul. Boa parte da cana-de-açúcar, da soja, de outras safras agroindustriais dessas regiões e parte significativa da geração de energia hidrelétrica dependem da máquina de chuva da Amazônia."],
+          ["lit", "fonte", "T. Lovejoy e G. Rodrigues. A máquina de chuva da Amazônia. Folha de S.Paulo, 25/7/2007 (com adaptações)."]
+        ]
+      }
+    ]
+  },
+  "2007-regular": {
+    "tema": "O desafio de se conviver com a diferença",
+    "propostaBlocos": [8, 9, 10],
+    "textos": [
+      { "r": "I", "i": [["img", { "p": 2, "box": [41, 26, 550, 150], "alt": "Faixa de fotografias com rostos de pessoas de diferentes idades, etnias e culturas, sob o título \"Proposta de redação\"." }]] },
+      { "r": "II", "i": [["titulo", "1:0"], ["p", "1:1"], ["verso", 2]] },
+      { "r": "III", "i": [["titulo", 3], ["p", 4], ["verso", 5]] },
+      { "r": "IV", "i": [["p", 6], ["fonte", 7]] }
+    ]
+  }
+}

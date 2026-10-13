@@ -13,6 +13,7 @@ import {
   IconChart,
   IconClipboard,
   IconHome,
+  IconHourglass,
   IconLogout,
   IconMore,
   IconToolbox,
@@ -24,11 +25,13 @@ import {
   IconTrophy,
   IconUser,
   IconPalette,
+  IconPen,
 } from './components/icons';
 import { AchievementToastHost } from './components/AchievementToast';
 import { MoreSheet, porSecao, type NavItem } from './components/MoreSheet';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PomodoroFloating } from './components/PomodoroFloating';
+import { TimerAlarme } from './components/TimerAlarme';
 import RouteTransition from './components/RouteTransition';
 import ThemeToggle from './components/ThemeToggle';
 import { useGamification } from './gamification';
@@ -51,6 +54,8 @@ import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import Perfil from './pages/Perfil';
 import Pomodoro from './pages/Pomodoro';
+import Redacoes from './pages/Redacoes';
+import Cronometros from './pages/Cronometros';
 import PerfilPublico from './pages/PerfilPublico';
 import Progresso from './pages/Progresso';
 import Questoes from './pages/Questoes';
@@ -73,12 +78,14 @@ const NAV: NavItem[] = [
   { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary', section: 'Estudar' },
   { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary', section: 'Estudar' },
   { to: '/revisao', label: 'Revisão', Icon: IconRepeat, mobile: 'primary', section: 'Estudar' },
+  { to: '/redacoes', label: 'Redações', Icon: IconPen, mobile: 'more', section: 'Estudar' },
   { to: '/flashcards', label: 'Flashcards', Icon: IconBook, mobile: 'more', section: 'Estudar' },
   { to: '/ferramentas', label: 'Ferramentas', Icon: IconToolbox, mobile: 'more', section: 'Estudar' },
   { to: '/favoritos', label: 'Favoritos', Icon: IconStar, mobile: 'more', section: 'Estudar' },
 
   { to: '/cronograma', label: 'Cronograma', Icon: IconCalendar, mobile: 'more', section: 'Planejar' },
   { to: '/pomodoro', label: 'Pomodoro', Icon: IconClock, mobile: 'more', section: 'Planejar' },
+  { to: '/cronometros', label: 'Cronômetros', Icon: IconHourglass, mobile: 'more', section: 'Planejar' },
   { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more', section: 'Planejar' },
   { to: '/videos', label: 'Vídeos', Icon: IconPlay, mobile: 'more', section: 'Planejar' },
   { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more', section: 'Planejar' },
@@ -323,7 +330,9 @@ export default function App() {
       <Route path="/conquistas" element={<Conquistas />} />
       <Route path="/cronograma" element={<Cronograma />} />
       <Route path="/pomodoro" element={<Pomodoro />} />
+      <Route path="/cronometros" element={<Cronometros />} />
       <Route path="/ferramentas" element={<Ferramentas />} />
+      <Route path="/redacoes" element={<Redacoes />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/temas" element={<Temas />} />
@@ -382,6 +391,7 @@ export default function App() {
             <RouteTransition>{content}</RouteTransition>
           </div>
           <PomodoroFloating />
+          <TimerAlarme />
           <AchievementToastHost />
         </div>
       </PomodoroProvider>
@@ -484,6 +494,8 @@ export default function App() {
 
       {/* Pop-up do cronômetro — segue o usuário por todas as telas. */}
       <PomodoroFloating />
+      {/* Aviso de fim dos timers de /cronometros, em qualquer tela. */}
+      <TimerAlarme />
       {/* Conquistas desbloqueadas: acima de tudo, fora da tela que as disparou. */}
       <AchievementToastHost />
     </div>

@@ -1,0 +1,105 @@
+{
+  "2000-regular": {
+    "tema": "Direitos da criança e do adolescente: como enfrentar esse desafio nacional?",
+    "propostaBlocos": [1161, 1162, 1163, 1164, 1165, 1166],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [26, 166, 294, 416], "alt": "Charge de Angeli: crianças e adultos em situação de rua, sentados e deitados na calçada, diante de vitrines enfeitadas para o Dia das Mães. Um menino comenta, descrente, que depois do Papai Noel e do coelhinho da Páscoa ainda vão dizer que mãe existe." }],
+          ["fonte", "1157:0"]
+        ]
+      },
+      { "r": "II", "i": [["pj", "1149:2", 1150, 1151, 1152, 1153, 1154, 1155], ["fonte", 1156]] },
+      { "r": "III", "i": [["pj", "1157:5-8"], ["pj", "1157:10-12"], ["fonte", 1158]] },
+      { "r": "IV", "i": [["pj", "1159:1-7"], ["fonte", "1160:0"]] }
+    ]
+  },
+  "1999-regular": {
+    "tema": "Cidadania e participação social",
+    "propostaBlocos": [1157, 1158],
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 1, "box": [72, 104, 518, 488], "alt": "História em quadrinhos de Henfil, em cinco quadros. Um personagem diz à ave pousada no alto de um cacto que existe algo que torna inviável o sonho dela de voar: ela seria de uma geração que já nasceu sem asas. A ave então abre duas asas enormes, que ocupam o quadro inteiro, e no fim comenta que a juventude guarda segredos." }],
+          ["fonte", 1148]
+        ]
+      },
+      { "r": "II", "i": [["p", 1149, 1150], ["fonte", 1151]] },
+      { "r": "III", "i": [["pj", 1152], ["pj", 1153], ["pj", 1154, "1155:0"], ["pj", "1155:1-3"], ["fonte", 1156]] }
+    ]
+  },
+  "1998-regular": {
+    "tema": "Viver e aprender",
+    "propostaBlocos": [8, 9],
+    "textos": [{ "r": "I", "i": [["img", { "p": 1, "box": [163, 82, 397, 340], "alt": "Reprodução do Texto I do ENEM 1998, com trecho da canção 'O Que É O Que É', de Luiz Gonzaga Jr. (Gonzaguinha). O caderno exibe o trecho: '(...) Viver / e não ter a vergonha de ser feliz / Cantar e cantar e cantar / a beleza de ser um eterno aprendiz / Eu sei / que a vida devia ser bem melhor / e será / Mas isso não impede que eu repita / É bonita, é bonita e é bonita / (...)' seguido da autoria Luiz Gonzaga Jr. (Gonzaguinha). O texto original está em fonte com mapeamento ilegível no PDF; esta imagem é o render fiel do caderno." }]] }]
+  },
+  "2009-regular": {
+    "transcrito": false,
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [120, 140, 436, 346], "alt": "Charge de Millôr Fernandes: uma figura humana minúscula, sozinha no meio de uma paisagem de rabiscos, lamenta a solidão de só lidar com gente honesta." }],
+          ["lit", "fonte", "Millôr Fernandes. Disponível em http://www2.uol.com.br/millor. Acesso em: 14 jul. 2009."]
+        ]
+      },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [24, 386, 556, 477], "alt": "Trecho de coluna de Lya Luft sobre a acomodação diante do que acontece no país. No caderno original este texto é uma imagem, sem texto selecionável." }],
+          ["lit", "fonte", "LUFT, L. Ponto de vista. Veja. Ed. 1988, 27 dez. 2006 (adaptado)."]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [24, 498, 556, 614], "alt": "Trecho de artigo de Contardo Calligaris, com o título \"Qual é o efeito em nós do 'eles são todos corruptos'?\", sobre o lugar-comum da corrupção generalizada. No caderno original este texto é uma imagem, sem texto selecionável." }],
+          ["lit", "fonte", "CALLIGARIS, C. A armadilha da corrupção. Disponível em: http://www1.folha.uol.com.br (adaptado)."]
+        ]
+      }
+    ]
+  },
+  "2008-regular": {
+    "transcrito": false,
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [68, 102, 524, 276], "alt": "Ilustração do ciclo da chuva na Amazônia: a umidade vem do oceano, cai como chuva sobre a floresta, volta para a atmosfera e segue em nuvens para o oeste, até a Cordilheira dos Andes." }],
+          ["img", { "p": 2, "box": [68, 278, 524, 472], "alt": "Trecho de artigo sobre a \"máquina de chuva da Amazônia\": a floresta produz a maior parte da própria chuva e garante parte da chuva de outras regiões do país. No caderno original este texto é uma imagem, sem texto selecionável." }],
+          ["lit", "fonte", "T. Lovejoy e G. Rodrigues. A máquina de chuva da Amazônia. Folha de S.Paulo, 25/7/2007 (com adaptações)."]
+        ]
+      }
+    ]
+  },
+  "2011-regular": {
+    "textos": [
+      { "r": "I", "i": [["titulo", 6], ["p", 7], ["fonte", 8]] },
+      { "r": "II", "i": [["titulo", 9], ["p", 10, 11], ["fonte", 12]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [78, 445, 503, 580], "alt": "Tirinha de André Dahmer em três quadros. Um homem reclama, diante de uma câmera de vigilância, de ser monitorado o tempo todo. Em seguida fala para a câmera, propondo a quem o escuta lutar junto contra a sociedade do controle. No último quadro, um guarda acompanha a cena por um monitor." }],
+          ["fonte", 14]
+        ]
+      }
+    ]
+  },
+  "2001-regular": {
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [60, 84, 326, 342], "alt": "História em quadrinhos de Caulos, em seis quadros. Um pássaro recita versos que exaltam o céu, as várzeas, a vida e as palmeiras de sua terra. Nos dois últimos quadros, ele se apresenta como o sabiá e, diante do toco de uma árvore cortada, diz que aquela era a palmeira." }],
+          ["fonte", "2538:2"]
+        ]
+      },
+      { "r": "II", "i": [["pj", 2555], ["fonte", 2556, 2557]] },
+      { "r": "III", "i": [["p", 2539, 2540, "2541:0"], ["fonte", "2542:0"]] },
+      { "r": "IV", "i": [["p", "2543:1-4", 2544], ["pj", "2545:1-5"], ["fonte", "2546:1", 2547]] },
+      { "r": "V", "i": [["pj", "2548:3-4"], ["pj", "2549:1-3"], ["fonte", "2550:1", 2551]] }
+    ]
+  }
+}

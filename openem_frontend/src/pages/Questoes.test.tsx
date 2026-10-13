@@ -222,3 +222,97 @@ describe('Questões — responder pelo teclado e leitor de tela', () => {
     expect(screen.getByText('(resposta correta)')).toBeInTheDocument();
   });
 });
+
+describe('Questões — navegar e escolher sem responder', () => {
+  const questao = (n: number) => ({
+    ...QUESTAO,
+    id: `q${n}`,
+    code: `ENEM-2023-${String(n).padStart(3, '0')}`,
+    statement: `Enunciado ${n}.`,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(api.subjects).mockResolvedValue(SUBJECTS as never);
+    vi.mocked(api.favorites).mockResolvedValue([]);
+    vi.mocked(api.questionNotes).mockResolvedValue([]);
+    vi.mocked(api.exams).mockResolvedValue([]);
+    vi.mocked(api.questionFacets).mockResolvedValue({
+      total: 4,
+      areas: [],
+      topics: [],
+      exams: [],
+    });
+    // Duas páginas de duas questões.
+    vi.mocked(api.questions).mockImplementation((async (p: {
+      page?: number;
+    }) => ({
+      items: p.page === 2 ? [questao(3), questao(4)] : [questao(1), questao(2)],
+      meta: { total: 4, page: p.page ?? 1, limit: 2, pages: 2 },
+    })) as never);
+    vi.mocked(api.answer).mockResolvedValue({
+      isCorrect: true,
+      correctAlternativeId: 'a1',
+      explanation: null,
+    } as never);
+  });
+
+  it('avança e volta sem responder, buscando a página seguinte', async () => {
+    renderPage();
+    await screen.findByText('Enunciado 1.');
+    const proxima = screen.getByRole('button', { name: 'Próxima questão' });
+    expect(proxima).toBeEnabled();
+
+    fireEvent.click(proxima);
+    expect(await screen.findByText('Enunciado 2.')).toBeInTheDocument();
+    fireEvent.click(proxima);
+    expect(await screen.findByText('Enunciado 3.')).toBeInTheDocument();
+    expect(ultimaBusca().page).toBe(2);
+    expect(api.answer).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Questão anterior' }));
+    expect(screen.getByText('Enunciado 2.')).toBeInTheDocument();
+  });
+
+  it('trava o avanço na última questão', async () => {
+    renderPage();
+    await screen.findByText('Enunciado 1.');
+    const proxima = screen.getByRole('button', { name: 'Próxima questão' });
+    fireEvent.click(proxima);
+    await screen.findByText('Enunciado 2.');
+    fireEvent.click(proxima);
+    await screen.findByText('Enunciado 3.');
+    fireEvent.click(proxima);
+    await screen.findByText('Enunciado 4.');
+    expect(proxima).toBeDisabled();
+  });
+
+  it('a lista leva direto à questão escolhida e mostra o que foi respondido', async () => {
+    renderPage();
+    await screen.findByText('Enunciado 1.');
+    fireEvent.click(screen.getByRole('button', { name: /um/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Responder' }));
+    await screen.findByRole('button', { name: /^Próxima$/ });
+
+    fireEvent.click(screen.getByRole('button', { name: /Ver lista de questões/ }));
+    const lista = within(
+      screen.getByRole('dialog', { name: 'Lista de questões' }),
+    );
+    expect(lista.getByText('2 de 4 carregadas')).toBeInTheDocument();
+    expect(lista.getByLabelText('Acertou')).toBeInTheDocument();
+    expect(
+      lista.getByRole('button', { name: /Enunciado 1\./ }),
+    ).toHaveAttribute('aria-current', 'true');
+
+    fireEvent.click(
+      lista.getByRole('button', { name: 'Carregar mais questões' }),
+    );
+    fireEvent.click(await lista.findByRole('button', { name: /Enunciado 4\./ }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Enunciado 4.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Questão 4 de 4/ }),
+    ).toBeInTheDocument();
+  });
+});

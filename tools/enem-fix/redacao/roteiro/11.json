@@ -1,0 +1,68 @@
+{
+  "2010-ppl": {
+    "tema": "Ajuda humanitária",
+    "textos": [
+      { "r": "I", "i": [["titulo", 4], ["pj", 5], ["p", 6, 7], ["fonte", 8]] },
+      { "r": "II", "i": [["pj", 9], ["titulo", 10], ["pj", 11], ["p", 12, 13], ["fonte", 14]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [344, 323, 554, 622], "alt": "Cartaz de campanha: \"O Rio precisa da sua ajuda! Faça aqui a sua doação para as vítimas das chuvas no Rio de Janeiro. Produtos de primeira necessidade: limpeza e higiene pessoal, leite em pó, alimentos infantis, fraldas descartáveis (geriátricas e infantis)\"." }],
+          ["fonte", 16]
+        ]
+      }
+    ]
+  },
+  "2011-ppl": {
+    "tema": "Cultura e mudança social",
+    "textos": [
+      { "r": "I", "i": [["p", 6, 7], ["fonte", 8]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [104, 319, 277, 495], "alt": "Fotografia em preto e branco de Betinho, de óculos, falando ao microfone. A frase ao lado da foto traz a assinatura dele." }],
+          ["pj", 10, 11],
+          ["fonte", 13]
+        ]
+      },
+      { "r": "III", "i": [["titulo", 14], ["p", 15, 16], ["fonte", 17]] }
+    ]
+  },
+  "2012-ppl": {
+    "tema": "O grupo fortalece o indivíduo?",
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["titulo", 3],
+          ["p", 4],
+          ["img", { "p": 2, "box": [156, 236, 424, 389], "alt": "Fotografia em preto e branco de bancários sentados na calçada, diante de uma agência, sob uma faixa com os dizeres \"Estamos em greve\"." }],
+          ["fonte", 6]
+        ]
+      },
+      { "r": "II", "i": [["titulo", 7], ["p", 8, 9], ["fonte", 10]] },
+      { "r": "III", "i": [["titulo", 11], ["p", 12, 13], ["fonte", 14]] }
+    ]
+  },
+  "2013-ppl": {
+    "tema": "Cooperativismo como alternativa social",
+    "textos": [
+      { "r": "I", "i": [["titulo", 6], ["p", 7, 8], ["fonte", 9]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [110, 318, 470, 350], "alt": "Faixa com a frase \"As cooperativas ajudam a construir um mundo melhor\", sobre uma linha puxada em conjunto por pequenas figuras humanas." }],
+          ["fonte", 11]
+        ]
+      },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 2, "box": [66, 378, 184, 504], "alt": "Logotipo: um boneco deposita algo em um cesto com os dizeres \"Doe seu lixo\"." }],
+          ["fonte", 13, 14]
+        ]
+      },
+      { "r": "IV", "i": [["pj", 15], ["pj", 16], ["fonte", 17]] }
+    ]
+  }
+}

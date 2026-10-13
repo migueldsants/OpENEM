@@ -1,0 +1,123 @@
+{
+  "2014-ppl": {
+    "tema": "O que o fenômeno social dos “rolezinhos” representa?",
+    "textos": [
+      { "r": "I", "i": [["pj", 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], ["fonte", 16, 17]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [334, 182, 563, 411], "alt": "Charge de Duke: na entrada de um shopping, um segurança barra dois jovens e avisa que, pelo novo procedimento para evitar o \"rolezinho\", eles precisam mostrar a carteira de identidade e o extrato bancário." }],
+          ["fonte", 20, 21]
+        ]
+      },
+      { "r": "III", "i": [["p", 23, 24], ["fonte", 25]] }
+    ]
+  },
+  "2014-terceira": {
+    "tema": "Alternativas para a escassez de água no Brasil",
+    "corrigir": { "17:3": "conseguir sobreviver a este momento difícil”." },
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["img", { "p": 2, "box": [41, 178, 290, 332], "alt": "Charge com o título \"Fugindo da seca\": um retirante, com a trouxa pendurada em um pau, caminha por uma paisagem seca e dá as costas para uma placa que aponta o caminho de São Paulo." }],
+          ["fonte", "11:0"]
+        ]
+      },
+      { "r": "II", "i": [["titulo", 8], ["p", 9, 10], ["fonte", "11:1"]] },
+      { "r": "III", "i": [["titulo", 13, 14], ["p", 15, 16, 17], ["fonte", 18]] },
+      {
+        "r": "IV",
+        "i": [
+          ["img", { "p": 2, "box": [324, 374, 551, 612], "alt": "Infográfico \"Lá e cá\": a população de cidades atingidas por falta de água em SP e em MG é maior que a situada no semiárido brasileiro. Semiárido brasileiro: composto por territórios de 8 estados; 11,5% do território brasileiro está na área; 1.135 municípios; 22,6 milhões de pessoas. Em SP e em MG, 24 milhões de pessoas, aproximadamente, vivem em cidades onde falta água. Sudeste: uma das maiores crises da história praticamente secou represas importantes da região que vai da Grande SP até o Triângulo Mineiro. O mapa lista ainda cidades do sul de MG com falta de água." }],
+          ["fonte", "20:0"]
+        ]
+      }
+    ]
+  },
+  "2015-ppl": {
+    "tema": "O histórico desafio de se valorizar o professor",
+    "textos": [
+      { "r": "I", "i": [["pj", 5], ["fonte", 6]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 2, "box": [378, 176, 512, 339], "alt": "Cartaz com um homem de terno que segura um livro aberto como se fizesse um truque, e os dizeres: \"Em Educação não tem mágica, tem trabalho de Professor\"." }],
+          ["fonte", 9]
+        ]
+      },
+      { "r": "III", "i": [["pj", "11:0-7"], ["fonte", "11:8"]] },
+      {
+        "r": "IV",
+        "i": [
+          ["img", { "p": 2, "box": [147, 483, 479, 651], "alt": "Cartaz com quatro professores sorridentes, um com um violão e outra com um pincel, e os dizeres: \"Feliz dia das(os) professoras(es). #Sou professora e muito+. #Sou professor e muito+. Uma homenagem aos mestres que sempre vão além\"." }],
+          ["fonte", "14:0"]
+        ]
+      }
+    ]
+  },
+  "2016-segunda": {
+    "textos": [
+      { "r": "I", "i": [["p", 7], ["fonte", 8]] },
+      { "r": "II", "i": [["titulo", 10], ["pj", 11], ["p", 12], ["fonte", "13:0"]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 18, "box": [68, 440, 276, 643], "alt": "Cartaz do Senado Federal: \"Racismo ou injúria racial? Racismo é a conduta discriminatória dirigida a determinados grupos. Injúria racial é ofender a honra de alguém com a utilização de elementos referentes à raça, cor, etnia, religião ou origem.\" Abaixo, duas mãos de cores diferentes se estendem uma para a outra." }],
+          ["fonte", "15:1"]
+        ]
+      },
+      { "r": "IV", "i": [["titulo", 17], ["p", 18, 19, 20, 21], ["fonte", 22]] }
+    ]
+  },
+  "2016-ppl": {
+    "textos": [
+      { "r": "I", "i": [["p", 14], ["fonte", 15]] },
+      { "r": "II", "i": [["p", 17], ["fonte", 18]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 18, "box": [60, 456, 310, 614], "alt": "Infográfico \"O caminho do desperdício no Brasil\": 10% de todo o desperdício ocorre ainda na colheita; 50% ocorre no manuseio e transporte; 30% ocorre nas centrais de abastecimento (Ceasas); 10% são diluídos entre supermercados e consumidores." }],
+          ["fonte", 33]
+        ]
+      },
+      { "r": "IV", "i": [["pj", 35], ["fonte", 36]] }
+    ]
+  },
+  "2017-ppl": {
+    "textos": [
+      { "r": "I", "i": [["p", 5], ["fonte", 6, 7]] },
+      {
+        "r": "II",
+        "i": [
+          ["img", { "p": 19, "box": [84, 382, 247, 617], "alt": "Ilustração de Carol Rossetti: uma mulher alta e um homem mais baixo se abraçam, sorrindo. O texto conta que Nayana já ouviu que um casal fica feio quando a mulher é mais alta que o homem, e que ela e Beto, felizes, não entendem como alguém pode ver feiura no amor." }],
+          ["fonte", 10]
+        ]
+      },
+      { "r": "III", "i": [["pj", 12], ["fonte", 13, 14]] }
+    ]
+  },
+  "2018-ppl": {
+    "textos": [
+      {
+        "r": "I",
+        "i": [
+          ["titulo", "5:0"],
+          ["pj", "5:1"],
+          ["img", { "p": 19, "box": [60, 276, 310, 447], "alt": "Gráfico de linhas, em milhões de pessoas, de 2012 a 2017. Ocupados com carteira de trabalho: em torno de 35 no período, terminando em 33,3. Conta própria (autônomos e informais): sobe de cerca de 20 para 23,2. Ocupados sem carteira de trabalho: em torno de 11, terminando em 11,1. Desocupados: sobe de cerca de 7 para 12,3." }],
+          ["fonte", 22, 23]
+        ]
+      },
+      { "r": "II", "i": [["titulo", "29:0-1"], ["pj", "29:2-12"], ["fonte", 30]] },
+      {
+        "r": "III",
+        "i": [
+          ["img", { "p": 19, "box": [377, 253, 504, 349], "alt": "Fotografia de mulheres e crianças indígenas em uma área de mata, com cestos." }],
+          ["pj", 26],
+          ["fonte", 27]
+        ]
+      },
+      { "r": "IV", "i": [["pj", 32], ["pj", 33], ["fonte", 34, 35]] }
+    ]
+  }
+}
