@@ -98,7 +98,7 @@ export default function Login() {
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
             Simulados fiéis ao ENEM, as questões oficiais das provas e um
-            cronograma que prioriza onde você mais erra. Gratuito, de verdade.
+            cronograma que você monta do seu jeito. Gratuito, de verdade.
           </p>
 
           <div className="mt-8 card card-raised inline-flex flex-col gap-3 p-4">

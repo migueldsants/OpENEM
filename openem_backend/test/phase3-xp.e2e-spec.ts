@@ -112,8 +112,9 @@ describe('Fase 3 â€” XP em todas as aÃ§Ãµes (issue #17, e2e)', () => {
 
   it('marcar uma sessÃ£o do cronograma como concluÃ­da concede XP', async () => {
     await request(app.getHttpServer())
-      .post('/api/v1/study-plan/generate')
+      .post('/api/v1/study-plan/sessions')
       .set(auth())
+      .send({ label: 'Matemática', dayIndex: 0 })
       .expect(201);
     const plan = await request(app.getHttpServer())
       .get('/api/v1/study-plan')

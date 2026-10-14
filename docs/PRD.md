@@ -150,7 +150,7 @@ Baseado no ranking de funcionalidades (insights §5): itens com >60% de demanda.
 
 ### Fase 2 — Pós-MVP
 
-- **Cronograma automático** adaptado ao tempo disponível (47% de demanda).
+- **Cronograma automático** adaptado ao tempo disponível (47% de demanda). *Retirado: hoje o aluno monta a semana bloco a bloco.*
 - **Modo sem distrações** (38%).
 - **Salvar questões favoritas** (20%).
 - **TRI** no cálculo de nota dos simulados (diferencial para veteranos).
@@ -298,7 +298,7 @@ Detalhados nas Fases 2–3. User stories-chave (resumo):
 | FR-007 | Dashboard de desempenho por área/assunto e temporal | Must | 1 |
 | FR-008 | Revisão inteligente (repetição espaçada) | Must | 1 |
 | FR-009 | Documentação OpenAPI/Swagger de todos os endpoints | Must | 1 |
-| FR-010 | Cronograma automático adaptado ao tempo | Should | 2 |
+| FR-010 | Cronograma automático adaptado ao tempo (retirado; o cronograma é montado pelo aluno) | Should | 2 |
 | FR-011 | Cálculo de nota por TRI | Should | 2 |
 | FR-012 | Correção de redação por competência | Should | 2 |
 | FR-013 | Favoritar questões / modo sem distrações | Could | 2 |
@@ -604,9 +604,10 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 | Método | Rota | Descrição | Auth |
 |---|---|---|---|
 | POST/GET/DELETE | `/api/v1/favorites` (`/:questionId` no DELETE) | Salva/lista/remove questões favoritas | JWT |
-| POST | `/api/v1/study-plan/generate` | Gera o cronograma a partir do desempenho e do tempo disponível | JWT |
 | GET | `/api/v1/study-plan` | Cronograma atual (sessões por dia) | JWT |
-| PATCH | `/api/v1/study-plan/sessions/:id` | Marca uma sessão como concluída | JWT |
+| POST | `/api/v1/study-plan/sessions` | Adiciona um bloco livre em um dia | JWT |
+| PATCH/DELETE | `/api/v1/study-plan/sessions/:id` | Edita (nome, duração, dia, conclusão) ou remove um bloco | JWT |
+| DELETE | `/api/v1/study-plan` | Recomeça o cronograma vazio, com a semana a partir de hoje | JWT |
 | GET | `/api/v1/essays/prompts` · `/prompts/:id` | Temas de redação | JWT |
 | POST/GET | `/api/v1/essays/submissions` (`/:id` no detalhe) | Envia/lista/detalha redações | JWT |
 | POST | `/api/v1/essays/submissions/:id/evaluation` | Corrige por competência (rubrica, 5×0–200) | JWT |
@@ -762,7 +763,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 |---|---|---|
 | **0 — Fundação** | Prisma+SQLite integrado, módulo Auth, Docker Compose, pipeline CI/CD, scaffold do frontend | ✅ Implementada |
 | **1 — MVP (backend)** | Banco de questões (busca/filtro), respostas, simulados (iniciar/finalizar/corrigir), desempenho por área/assunto, revisão inteligente (SM-2) | ✅ Implementada (API + UI) |
-| **2 — Pós-MVP** | Cronograma automático, TRI, correção de redação (rubrica), favoritos, modo sem distrações | ✅ Implementada (API + UI) |
+| **2 — Pós-MVP** | Cronograma (montado pelo aluno; a geração automática foi retirada), TRI, correção de redação (rubrica), favoritos, modo sem distrações | ✅ Implementada (API + UI) |
 | **3 — Avançado** | Recomendação por erro, gamificação, comunidade, IA de redação (multi-provedor), onboarding | ✅ Implementada (API + UI) · Apps nativos fora de cogitação por enquanto |
 
 **Marcos-chave:**

@@ -7,7 +7,6 @@ import {
   type StudySession,
   type Subject,
 } from '../api';
-import { useAuth } from '../auth';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { PageHeader } from '../components/PageHeader';
 import { Skeleton } from '../components/Skeleton';
@@ -24,11 +23,6 @@ import { dayIndexOf, startOfDay } from '../lib/plan';
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
 
-/** Faixa aceita pelo backend (UpdateProfileDto: Min(5) / Max(1440)). */
-const MIN_MINUTES = 5;
-const MAX_MINUTES = 1440;
-/** Atalhos de tempo diário — o campo numérico continua livre. */
-const MINUTE_PRESETS = [30, 60, 90, 120] as const;
 /** Durações oferecidas ao editar um bloco. */
 const BLOCK_PRESETS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -288,15 +282,9 @@ function DayCell({
 }
 
 export default function Cronograma() {
-  const { me, refreshMe } = useAuth();
   const { refresh } = useGamification();
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  // String para permitir o campo vazio enquanto o usuário digita — com Number()
-  // direto, apagar o campo virava 0 e o ajuste era descartado em silêncio.
-  const [minutes, setMinutes] = useState(
-    String(me?.profile?.minutesPerDay ?? 60),
-  );
   const [loading, setLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   // A primeira carga ainda não voltou: sem isto o "Monte sua semana" piscava
@@ -304,7 +292,7 @@ export default function Cronograma() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [award, setAward] = useState<GamificationDelta | null>(null);
-  const [confirming, setConfirming] = useState<'regen' | 'clear' | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -341,16 +329,6 @@ export default function Cronograma() {
       .catch(() => setSubjects([]));
   }, []);
 
-  useEffect(() => {
-    if (me?.profile?.minutesPerDay) setMinutes(String(me.profile.minutesPerDay));
-  }, [me?.profile?.minutesPerDay]);
-
-  const minutesValue = Number(minutes);
-  const minutesValid =
-    Number.isInteger(minutesValue) &&
-    minutesValue >= MIN_MINUTES &&
-    minutesValue <= MAX_MINUTES;
-
   /** Aplica uma mudança já refletida na tela, revertendo se a API falhar. */
   const optimistic = useCallback(
     async (next: StudySession[], action: () => Promise<unknown>) => {
@@ -370,35 +348,12 @@ export default function Cronograma() {
     [plan, load],
   );
 
-  async function generate() {
-    if (!minutesValid) {
-      setError(
-        `Informe um número inteiro de minutos entre ${MIN_MINUTES} e ${MAX_MINUTES}.`,
-      );
-      return;
-    }
-    setConfirming(null);
-    setLoading(true);
-    setError(null);
-    try {
-      if (minutesValue !== me?.profile?.minutesPerDay) {
-        await api.updateProfile({ minutesPerDay: minutesValue });
-        await refreshMe();
-      }
-      setPlan(await api.generateStudyPlan());
-      setLoadFailed(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível gerar.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function clearAll() {
-    setConfirming(null);
+    setConfirming(false);
     setLoading(true);
     try {
       setPlan(await api.clearStudyPlan());
+      setLoadFailed(false);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível limpar.');
@@ -497,102 +452,32 @@ export default function Cronograma() {
       <PageHeader
         eyebrow="Plano de estudos"
         title="Cronograma"
-        subtitle="Clique em qualquer bloco para renomear, ou em “adicionar” para escrever o que quiser: matéria do ENEM, idioma, aula do cursinho."
-      >
-
-        <div className="card card-raised p-4">
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-            <div>
-              <span className="eyebrow" id="minutes-label">
-                Tempo por dia
-              </span>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <input
-                  type="number"
-                  min={MIN_MINUTES}
-                  max={MAX_MINUTES}
-                  step={1}
-                  value={minutes}
-                  onChange={(e) => setMinutes(e.target.value)}
-                  aria-labelledby="minutes-label"
-                  aria-invalid={!minutesValid}
-                  aria-describedby={minutesValid ? undefined : 'minutes-hint'}
-                  className="input w-20 text-center font-data tabular-nums"
-                />
-                <span className="text-sm text-muted">min</span>
-                <div
-                  className="seg ml-1"
-                  role="group"
-                  aria-label="Tempo sugerido"
-                >
-                  {MINUTE_PRESETS.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      data-active={minutesValue === m}
-                      aria-pressed={minutesValue === m}
-                      onClick={() => setMinutes(String(m))}
-                      className="font-data"
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="ml-auto flex flex-wrap items-center gap-2">
+        subtitle="Monte a semana do seu jeito: use “adicionar” para escrever o que quiser (matéria do ENEM, idioma, aula do cursinho) e clique em um bloco para renomear."
+        actions={
+          total > 0 && (
+            <>
               {confirming && (
                 <button
-                  onClick={() => setConfirming(null)}
+                  onClick={() => setConfirming(false)}
                   className="btn btn-ghost"
                 >
                   Cancelar
                 </button>
               )}
-              {total > 0 && confirming !== 'regen' && (
-                <button
-                  onClick={() =>
-                    confirming === 'clear'
-                      ? void clearAll()
-                      : setConfirming('clear')
-                  }
-                  disabled={loading}
-                  className={`btn btn-ghost ${confirming === 'clear' ? 'text-danger' : ''}`}
-                >
-                  {confirming === 'clear' ? 'Confirmar: apagar tudo' : 'Limpar'}
-                </button>
-              )}
-              {confirming !== 'clear' && (
-                <button
-                  // Gerar substitui o plano inteiro no backend, então um plano
-                  // existente exige confirmação em dois passos.
-                  onClick={() =>
-                    total > 0 && confirming !== 'regen'
-                      ? setConfirming('regen')
-                      : void generate()
-                  }
-                  disabled={loading || !minutesValid}
-                  className={`btn ${confirming === 'regen' ? 'btn-ghost text-danger' : 'btn-primary'}`}
-                >
-                  {loading
-                    ? 'Montando…'
-                    : confirming === 'regen'
-                      ? 'Confirmar: substituir a semana'
-                      : total > 0
-                        ? 'Gerar semana'
-                        : 'Gerar cronograma'}
-                </button>
-              )}
-            </div>
-          </div>
-          {!minutesValid && (
-            <p id="minutes-hint" className="mt-2 text-xs text-danger">
-              Entre {MIN_MINUTES} e {MAX_MINUTES} minutos.
-            </p>
-          )}
-        </div>
-      </PageHeader>
+              <button
+                // Limpar apaga a semana inteira: confirmação em dois passos.
+                onClick={() =>
+                  confirming ? void clearAll() : setConfirming(true)
+                }
+                disabled={loading}
+                className={`btn btn-ghost ${confirming ? 'text-danger' : ''}`}
+              >
+                {confirming ? 'Confirmar: apagar tudo' : 'Limpar'}
+              </button>
+            </>
+          )
+        }
+      />
 
       <ErrorBanner
         message={error}
@@ -612,16 +497,16 @@ export default function Cronograma() {
               Este cronograma já terminou
             </p>
             <p className="mt-0.5 text-xs text-muted">
-              Ele começou em {fmtDay(new Date(plan.createdAt))}. Gere uma nova
-              semana para continuar.
+              Ele começou em {fmtDay(new Date(plan.createdAt))}. Comece uma
+              semana nova, vazia, a partir de hoje.
             </p>
           </div>
           <button
-            onClick={() => void generate()}
-            disabled={loading || !minutesValid}
+            onClick={() => void clearAll()}
+            disabled={loading}
             className="btn btn-primary shrink-0"
           >
-            Gerar nova
+            Começar nova semana
           </button>
         </div>
       )}
@@ -699,23 +584,16 @@ export default function Cronograma() {
               Monte sua semana
             </p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted text-pretty">
-              Gere uma semana equilibrada entre as matérias do ENEM, ou comece
-              do zero e escreva os blocos você mesmo.
+              Escreva os blocos de cada dia: matéria do ENEM, idioma, aula do
+              cursinho. O primeiro já vem como exemplo, e você renomeia.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <button
-                onClick={() => void generate()}
-                disabled={loading || !minutesValid}
+                onClick={() => void addBlock(0, 'Matemática')}
                 className="btn btn-primary"
               >
-                Gerar cronograma
-              </button>
-              <button
-                onClick={() => void addBlock(0, 'Matemática')}
-                className="btn btn-ghost"
-              >
                 <IconPlus width={14} height={14} />
-                Começar do zero
+                Começar a semana
               </button>
             </div>
           </section>
@@ -742,8 +620,7 @@ export default function Cronograma() {
 
       {plan !== null && total === 0 && (
         <p className="text-center text-sm text-muted">
-          Calendário vazio. Use “adicionar” em qualquer dia, ou gere uma semana
-          automaticamente.
+          Calendário vazio. Use “adicionar” em qualquer dia.
         </p>
       )}
     </div>
