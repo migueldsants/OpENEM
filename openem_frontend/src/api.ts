@@ -324,14 +324,21 @@ export interface ForumPost {
   likes: number;
   liked: boolean;
 }
-export interface ForumThread {
+/** Uma página de respostas, em ordem de criação. */
+export interface ForumPostPage {
+  posts: ForumPost[];
+  /** Cursor da próxima página; `null` quando esta é a última. */
+  nextCursor: string | null;
+}
+/** Tópico com a primeira página de respostas; `replies` é o total. */
+export interface ForumThread extends ForumPostPage {
   id: string;
   title: string;
   body: string;
   createdAt: string;
   questionId: string | null;
   author: ThreadAuthor;
-  posts: ForumPost[];
+  replies: number;
 }
 export interface ToggleLikeResult {
   liked: boolean;
@@ -1212,13 +1219,18 @@ export const api = {
 
   forumThreads: () => request<ForumThreadSummary[]>('/community/threads'),
   forumThread: (id: string) => request<ForumThread>(`/community/threads/${id}`),
+  forumPosts: (id: string, cursor: string) =>
+    request<ForumPostPage>(
+      `/community/threads/${id}/posts?cursor=${encodeURIComponent(cursor)}`,
+    ),
   createThread: (title: string, body: string, questionId?: string) =>
     request<ForumThread>('/community/threads', {
       method: 'POST',
       body: { title, body, questionId },
     }),
+  /** Devolve só a resposta criada. */
   replyThread: (id: string, body: string) =>
-    request<ForumThread>(`/community/threads/${id}/posts`, {
+    request<ForumPost>(`/community/threads/${id}/posts`, {
       method: 'POST',
       body: { body },
     }),

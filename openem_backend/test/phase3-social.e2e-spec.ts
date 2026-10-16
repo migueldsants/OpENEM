@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
 
 // Issue #19 (social): likes em posts do fórum, perfil público (sem PII) e
 // ranking de XP (global e por liga). Cobre os 3 endpoints novos + toggle.
@@ -90,9 +91,12 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
       .set(otherAuth())
       .send({ body: 'resposta para curtir' })
       .expect(201);
-    postId = reply.body.posts[0].id;
-    expect(reply.body.posts[0].likes).toBe(0);
-    expect(reply.body.posts[0].liked).toBe(false);
+    // Responder devolve só a resposta criada, não o tópico.
+    postId = reply.body.id;
+    expect(reply.body.body).toBe('resposta para curtir');
+    expect(reply.body.likes).toBe(0);
+    expect(reply.body.liked).toBe(false);
+    expect(reply.body).not.toHaveProperty('posts');
   });
 
   it('POST .../like curte a resposta (toggle on)', async () => {
@@ -124,6 +128,70 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
   it('POST .../like 404 para post inexistente', async () => {
     await request(app.getHttpServer())
       .post(`/api/v1/community/threads/${threadId}/posts/inexistente/like`)
+      .set(auth())
+      .expect(404);
+  });
+
+  it('tópico com 500 respostas: o detalhe traz uma página e o resto vem por cursor', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/v1/community/threads')
+      .set(auth())
+      .send({ title: 'Tópico com muitas respostas', body: 'corpo' })
+      .expect(201);
+    const id = created.body.id;
+    // Direto no banco: pela API, a escrita no fórum tem limite por minuto.
+    // Dez respostas por instante, para o desempate pelo id entrar em jogo.
+    const base = Date.now() - 60_000;
+    await app.get(PrismaService).forumPost.createMany({
+      data: Array.from({ length: 500 }, (_, i) => ({
+        threadId: id,
+        userId,
+        body: `resposta ${i}`,
+        createdAt: new Date(base + Math.floor(i / 10)),
+      })),
+    });
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/v1/community/threads/${id}`)
+      .set(auth())
+      .expect(200);
+    expect(detail.body.replies).toBe(500);
+    expect(detail.body.posts).toHaveLength(20);
+    expect(typeof detail.body.nextCursor).toBe('string');
+
+    type Post = { id: string; body: string };
+    const seen: Post[] = [...detail.body.posts];
+    let cursor: string | null = detail.body.nextCursor;
+    while (cursor) {
+      const page = await request(app.getHttpServer())
+        .get(`/api/v1/community/threads/${id}/posts`)
+        .query({ cursor, limit: 50 })
+        .set(auth())
+        .expect(200);
+      expect(page.body.posts.length).toBeLessThanOrEqual(50);
+      seen.push(...(page.body.posts as Post[]));
+      cursor = page.body.nextCursor;
+    }
+    // Todas, uma vez cada, e em ordem de criação (o instante nunca volta).
+    expect(new Set(seen.map((p) => p.id)).size).toBe(500);
+    const instants = seen.map((p) =>
+      Math.floor(Number(p.body.split(' ')[1]) / 10),
+    );
+    expect(instants).toEqual([...instants].sort((a, b) => a - b));
+  });
+
+  it('GET .../posts valida limite, cursor e tópico', async () => {
+    const server = app.getHttpServer();
+    await request(server)
+      .get(`/api/v1/community/threads/${threadId}/posts?limit=51`)
+      .set(auth())
+      .expect(400);
+    await request(server)
+      .get(`/api/v1/community/threads/${threadId}/posts?cursor=lixo`)
+      .set(auth())
+      .expect(400);
+    await request(server)
+      .get('/api/v1/community/threads/inexistente/posts')
       .set(auth())
       .expect(404);
   });
