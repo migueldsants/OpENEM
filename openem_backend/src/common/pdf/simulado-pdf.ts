@@ -5,8 +5,8 @@
  * fluxo de verdade (um enunciado longo continua na coluna seguinte, como na
  * prova oficial), numeração "página X de Y" e imagens do disco. Fazer isso com
  * HTML exigiria um navegador headless — 300 MB de Chromium no container de uma
- * API que roda em SQLite. Aqui o custo é uma dependência pequena e o controle é
- * total.
+ * API enxuta, que divide um VPS pequeno com o banco. Aqui o custo é uma
+ * dependência pequena e o controle é total.
  *
  * O que o PDF tem, na ordem:
  *   1. Capa: logo, nome do simulado, o que é o OpENEM, instruções e campo de nome.

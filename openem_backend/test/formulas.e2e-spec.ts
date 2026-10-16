@@ -77,6 +77,20 @@ describe('Fórmulas / cheat sheet (issue #38, e2e)', () => {
     expect(res.body[0].title).toContain('2º grau');
   });
 
+  it('GET /formulas?q= não diferencia maiúscula de minúscula', async () => {
+    const ids = async (q: string) => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/formulas?q=${q}`)
+        .set(auth())
+        .expect(200);
+      return (res.body as { id: string }[]).map((f) => f.id).sort();
+    };
+    const minuscula = await ids('bhaskara');
+    expect(minuscula.length).toBeGreaterThanOrEqual(1);
+    expect(await ids('BHASKARA')).toEqual(minuscula);
+    expect(await ids('BhAsKaRa')).toEqual(minuscula);
+  });
+
   it('POST /formulas/:id/favorite alterna o estado de favorito', async () => {
     const fav = await request(app.getHttpServer())
       .post(`/api/v1/formulas/${bhaskaraId}/favorite`)

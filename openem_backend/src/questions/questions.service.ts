@@ -46,7 +46,10 @@ export class QuestionsService {
         skip: (page - 1) * limit,
         take: limit,
         // Prova mais recente primeiro; dentro dela, a ordem do caderno. O `id`
-        // desempata as questões autorais, que não têm código.
+        // desempata as questões autorais, que não têm código. Questão sem prova
+        // vem antes de todas: o Postgres ordena NULL primeiro no `desc` (o
+        // SQLite punha por último) e o Prisma não aceita `nulls` em campo de
+        // relação. Hoje toda questão do banco real tem prova.
         orderBy: [
           { examYear: { year: 'desc' } },
           { code: 'asc' },

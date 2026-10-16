@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 describe('Fase 2 â€” pÃ³s-MVP (e2e)', () => {
   let app: INestApplication<App>;
@@ -64,7 +65,7 @@ describe('Fase 2 â€” pÃ³s-MVP (e2e)', () => {
 
   it('favorita, lista e remove uma questÃ£o', async () => {
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=1')
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
       .set(auth())
       .expect(200);
     const questionId = list.body.items[0].id;

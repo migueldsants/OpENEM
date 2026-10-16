@@ -21,6 +21,24 @@ jobs:
     defaults:
       run:
         working-directory: openem_backend
+    # Postgres só para a suíte e2e (que cria o próprio schema `test_e2e`); os
+    # testes de unidade são puros e não abrem conexão.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: openem
+          POSTGRES_PASSWORD: openem
+          POSTGRES_DB: openem
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openem -d openem"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://openem:openem@localhost:5432/openem?schema=public
     steps:
       - uses: actions/checkout@v4
 

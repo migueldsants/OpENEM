@@ -118,11 +118,12 @@ export class FormulasService {
     if (query.topicId) where.topicId = query.topicId;
     if (query.onlyFavorites) where.id = { in: [...favoritedIds] };
     if (query.q) {
-      // SQLite LIKE é case-insensitive para ASCII; cobre título/descrição/latex.
+      // No Postgres `contains` diferencia maiúscula: `insensitive` vira ILIKE.
+      // Cobre título/descrição/latex.
       where.OR = [
-        { title: { contains: query.q } },
-        { description: { contains: query.q } },
-        { latex: { contains: query.q } },
+        { title: { contains: query.q, mode: 'insensitive' } },
+        { description: { contains: query.q, mode: 'insensitive' } },
+        { latex: { contains: query.q, mode: 'insensitive' } },
       ];
     }
 

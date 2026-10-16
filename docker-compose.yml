@@ -1,15 +1,41 @@
-# OpENEM — orquestração local (Fase 0).
-# Banco SQLite em volume nomeado; produção -> PostgreSQL (ver docs/PRD.md §12).
-# Sem deploy remoto por enquanto: rode `docker compose up --build` na sua máquina.
+# OpENEM — orquestração (dev local e VPS).
+# PostgreSQL no mesmo compose, com volume nomeado (ver docs/PRD.md §12).
+# Rode `docker compose up --build` com POSTGRES_PASSWORD e JWT_SECRET no .env
+# da raiz. Para desenvolver só o backend: `docker compose up -d db` (ver README).
 
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-openem}
+      - POSTGRES_DB=${POSTGRES_DB:-openem}
+      # Obrigatório: sem senha o compose nem sobe. Gere uma forte
+      # (ex.: `openssl rand -hex 24`); só letras e números, porque ela entra
+      # crua na DATABASE_URL do backend.
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (openssl rand -hex 24)}
+    ports:
+      # Só na máquina local (127.0.0.1), nunca na rede: serve ao backend rodando
+      # fora do Docker em dev (`npm run start:dev`) e a um psql/pg_dump no
+      # próprio servidor. O backend do compose usa a rede interna (host `db`).
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: ./openem_backend
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - DATABASE_URL=file:/data/prod.db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-openem}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-openem}?schema=public
       # Imagens das questões oficiais do ENEM, gravadas por `db:import:enem`.
-      # Ficam no MESMO volume do banco: ambas são saída do import e precisam
-      # sobreviver ao rebuild da imagem (que não as contém, ver .dockerignore).
+      # Ficam num volume próprio: são saída do import e precisam sobreviver ao
+      # rebuild da imagem (que não as contém, ver .dockerignore).
       - ENEM_MEDIA_DIR=/data/enem-media
       - PORT=3000
       - NODE_ENV=production
@@ -38,7 +64,7 @@ services:
       # limiting. De fora, o acesso é pelo nginx (porta 8080).
       - '127.0.0.1:3000:3000'
     volumes:
-      - sqlite-data:/data
+      - enem-media:/data
     healthcheck:
       test:
         - CMD
@@ -58,4 +84,5 @@ services:
         condition: service_healthy
 
 volumes:
-  sqlite-data:
+  pg-data:
+  enem-media:

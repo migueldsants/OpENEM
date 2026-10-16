@@ -12,6 +12,7 @@ import { parseArgs } from 'node:util';
 import { PrismaClient } from '@prisma/client';
 import { activeAiProvider } from '../src/common/ai';
 import { classifyQuestions } from './classify-questions-lib';
+import { isTestDatabaseUrl } from '../src/common/test-database';
 
 const prisma = new PrismaClient();
 
@@ -38,7 +39,7 @@ function numero(nome: string, valor: string | undefined): number | undefined {
 
 async function main() {
   const url = process.env.DATABASE_URL ?? '';
-  if (process.env.NODE_ENV === 'test' || url.includes('test-e2e')) {
+  if (process.env.NODE_ENV === 'test' || isTestDatabaseUrl(url)) {
     throw new Error('recusando classificar o banco de teste');
   }
   const provedor = activeAiProvider();

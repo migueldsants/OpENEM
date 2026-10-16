@@ -74,16 +74,16 @@ describe('FormulasService (issue #38)', () => {
     );
   });
 
-  it('busca por texto cobre título, descrição e LaTeX', async () => {
+  it('busca por texto cobre título, descrição e LaTeX, sem diferenciar maiúscula', async () => {
     const { service, prisma } = makeService();
     prisma.formula.findMany.mockResolvedValue([]);
 
     await service.list('u1', { q: 'bhaskara' });
     const where = prisma.formula.findMany.mock.calls[0][0].where;
     expect(where.OR).toEqual([
-      { title: { contains: 'bhaskara' } },
-      { description: { contains: 'bhaskara' } },
-      { latex: { contains: 'bhaskara' } },
+      { title: { contains: 'bhaskara', mode: 'insensitive' } },
+      { description: { contains: 'bhaskara', mode: 'insensitive' } },
+      { latex: { contains: 'bhaskara', mode: 'insensitive' } },
     ]);
   });
 

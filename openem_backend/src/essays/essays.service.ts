@@ -68,7 +68,8 @@ export class EssaysService {
   listPrompts() {
     return this.prisma.essayPrompt.findMany({
       // Mais recentes primeiro; dentro do mesmo ano, ENEM regular antes do PPL.
-      orderBy: [{ year: 'desc' }, { title: 'asc' }],
+      // Tema sem ano por último: o Postgres poria NULL primeiro no `desc`.
+      orderBy: [{ year: { sort: 'desc', nulls: 'last' } }, { title: 'asc' }],
       select: {
         id: true,
         title: true,
