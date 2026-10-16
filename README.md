@@ -44,9 +44,13 @@ docker compose up --build
 *   Frontend: <http://localhost:8080>
 
 O compose sobe um **PostgreSQL 17** (serviço `db`, volume nomeado `pg-data`),
-espera o banco ficar pronto e aplica as migrations no start do backend. O banco
-nasce vazio: popule com o seed e o import (ver abaixo), rodando os comandos
-dentro do container do backend.
+espera o banco ficar pronto e aplica as migrations no start do backend. Na
+primeira subida, com o banco ainda sem questões, o backend o popula sozinho:
+seed, import das provas oficiais (baixa o dataset, precisa de internet),
+classificação por palavra-chave e flashcards (`prisma/bootstrap.ts`, alguns
+minutos). Nas subidas seguintes isso não roda de novo; para atualizar depois,
+rode os comandos abaixo dentro do container. `AUTO_IMPORT=0` no `.env`
+desliga o import automático.
 
 ### Opção B — Desenvolvimento local
 

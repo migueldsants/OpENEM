@@ -41,6 +41,12 @@ services:
       # Ficam num volume próprio: são saída do import e precisam sobreviver ao
       # rebuild da imagem (que não as contém, ver .dockerignore).
       - ENEM_MEDIA_DIR=/data/enem-media
+      # Na primeira subida, com o banco sem questões oficiais, o container roda
+      # sozinho seed, import das provas, classificação por palavra-chave e
+      # flashcards (prisma/bootstrap.ts). Precisa de internet para baixar o
+      # dataset, que fica no volume. AUTO_IMPORT=0 desliga.
+      - AUTO_IMPORT=${AUTO_IMPORT:-1}
+      - ENEM_DATASET_DIR=/data/enem-dataset
       - PORT=3000
       - NODE_ENV=production
       # Obrigatório: sem JWT_SECRET a API falha a inicialização em produção.
@@ -84,6 +90,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      # A primeira subida popula o banco antes de a API responder.
+      start_period: 15m
 
   frontend:
     build: ./openem_frontend

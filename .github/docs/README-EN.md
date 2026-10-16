@@ -45,8 +45,12 @@ docker compose up --build
 
 Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`),
 waits for it to be ready and applies the migrations when the backend starts.
-The database starts empty: populate it with the seed and the import (see
-below), running the commands inside the backend container.
+On the first start, while the database has no questions yet, the backend
+populates it by itself: seed, import of the official exams (downloads the
+dataset, needs internet), keyword classification and flashcards
+(`prisma/bootstrap.ts`, a few minutes). Later starts skip this; to update
+afterwards, run the commands below inside the container. `AUTO_IMPORT=0` in
+`.env` turns the automatic import off.
 
 ### Option B — Local development
 
