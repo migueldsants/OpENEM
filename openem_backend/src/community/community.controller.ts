@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -7,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
+import { ListPostsDto } from './dto/list-posts.dto';
 
 @ApiTags('community')
 @ApiBearerAuth()
@@ -33,7 +42,9 @@ export class CommunityController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Detalha um tópico com suas respostas' })
+  @ApiOperation({
+    summary: 'Detalha um tópico com a primeira página de respostas',
+  })
   get(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.community.getThread(id, user.userId);
   }
@@ -47,6 +58,18 @@ export class CommunityController {
     @Body() dto: CreatePostDto,
   ) {
     return this.community.addPost(user.userId, id, dto);
+  }
+
+  @Get(':id/posts')
+  @ApiOperation({
+    summary: 'Próxima página de respostas de um tópico (cursor)',
+  })
+  listPosts(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: ListPostsDto,
+  ) {
+    return this.community.listPosts(id, user.userId, query);
   }
 
   @Post(':id/posts/:postId/like')
