@@ -1,4 +1,4 @@
-﻿import {
+import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -9,7 +9,7 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { SEED_QUESTIONS_URL } from './seed-questions';
 
-describe('Review â€” prÃ³xima revisÃ£o agendada (issue #20, e2e)', () => {
+describe('Review — próxima revisão agendada (issue #20, e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -67,7 +67,7 @@ describe('Review â€” prÃ³xima revisÃ£o agendada (issue #20, e2e)', () =
     await request(app.getHttpServer()).get('/api/v1/review/next').expect(401);
   });
 
-  it('retorna null quando nÃ£o hÃ¡ revisÃ£o agendada', async () => {
+  it('retorna null quando não há revisão agendada', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/review/next')
       .set(auth())
@@ -76,8 +76,8 @@ describe('Review â€” prÃ³xima revisÃ£o agendada (issue #20, e2e)', () =
     expect([null, 'null', '']).toContain(res.text);
   });
 
-  it('apÃ³s responder uma questÃ£o correta, retorna a prÃ³xima revisÃ£o agendada', async () => {
-    // UsuÃ¡rio novo ainda nÃ£o tem revisÃ£o â€” confirma null antes de responder.
+  it('após responder uma questão correta, retorna a próxima revisão agendada', async () => {
+    // Usuário novo ainda não tem revisão — confirma null antes de responder.
     const before = await request(app.getHttpServer())
       .get('/api/v1/review/next')
       .set(auth())
@@ -105,7 +105,7 @@ describe('Review â€” prÃ³xima revisÃ£o agendada (issue #20, e2e)', () =
     expect(res.body.id).toBeDefined();
     expect(res.body.topic).toBeDefined();
     expect(res.body.topic.subject).toBeDefined();
-    // dueAt no futuro (a revisÃ£o foi recÃ©m-agendada).
+    // dueAt no futuro (a revisão foi recém-agendada).
     expect(new Date(res.body.dueAt).getTime()).toBeGreaterThan(
       Date.now() - 1000,
     );

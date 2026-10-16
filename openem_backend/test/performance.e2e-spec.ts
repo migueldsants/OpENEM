@@ -1,4 +1,4 @@
-﻿import {
+import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Performance â€” filtro de perÃ­odo (issue #20, e2e)', () => {
+describe('Performance — filtro de período (issue #20, e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -80,7 +80,7 @@ describe('Performance â€” filtro de perÃ­odo (issue #20, e2e)', () => {
       .expect(400);
   });
 
-  it('GET /performance sem period usa 30d como padrÃ£o', async () => {
+  it('GET /performance sem period usa 30d como padrão', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/performance')
       .set(auth())

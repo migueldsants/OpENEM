@@ -1,4 +1,4 @@
-﻿import {
+import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -42,13 +42,13 @@ describe('Auth & Health (e2e)', () => {
     await app.close();
   });
 
-  it('GET /health â†’ ok', async () => {
+  it('GET /health → ok', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.database).toBe('up');
   });
 
-  it('POST /api/v1/auth/register â†’ cria conta e retorna token', async () => {
+  it('POST /api/v1/auth/register → cria conta e retorna token', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({ email, password, displayName: 'E2E' })
@@ -57,21 +57,21 @@ describe('Auth & Health (e2e)', () => {
     expect(res.body.user.email).toBe(email);
   });
 
-  it('POST /api/v1/auth/register duplicado â†’ 409', async () => {
+  it('POST /api/v1/auth/register duplicado → 409', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({ email, password })
       .expect(409);
   });
 
-  it('POST /api/v1/auth/register invÃ¡lido â†’ 400', async () => {
+  it('POST /api/v1/auth/register inválido → 400', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({ email: 'nao-eh-email', password: '123' })
       .expect(400);
   });
 
-  it('POST /api/v1/auth/login â†’ retorna token', async () => {
+  it('POST /api/v1/auth/login → retorna token', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email, password })
@@ -80,18 +80,18 @@ describe('Auth & Health (e2e)', () => {
     token = res.body.accessToken;
   });
 
-  it('POST /api/v1/auth/login senha errada â†’ 401', async () => {
+  it('POST /api/v1/auth/login senha errada → 401', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email, password: 'senha-errada' })
       .expect(401);
   });
 
-  it('GET /api/v1/users/me sem token â†’ 401', async () => {
+  it('GET /api/v1/users/me sem token → 401', async () => {
     await request(app.getHttpServer()).get('/api/v1/users/me').expect(401);
   });
 
-  it('GET /api/v1/users/me com token â†’ perfil', async () => {
+  it('GET /api/v1/users/me com token → perfil', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/users/me')
       .set('Authorization', `Bearer ${token}`)
@@ -100,7 +100,7 @@ describe('Auth & Health (e2e)', () => {
     expect(res.body.profile).toBeDefined();
   });
 
-  it('PUT /api/v1/users/me/profile â†’ atualiza perfil', async () => {
+  it('PUT /api/v1/users/me/profile → atualiza perfil', async () => {
     const res = await request(app.getHttpServer())
       .put('/api/v1/users/me/profile')
       .set('Authorization', `Bearer ${token}`)
