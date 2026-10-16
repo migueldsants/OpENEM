@@ -7,6 +7,7 @@ import { AnswersModule } from './answers/answers.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { throttleConfigFromEnv } from './common/throttle-config';
 import { CommunityModule } from './community/community.module';
 import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
@@ -33,16 +34,18 @@ import { ToolsModule } from './tools/tools.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Rate limiting global (issue #49): 100 req/min por IP por padrão.
-    // Endpoints sensíveis (auth) têm limites próprios via @Throttle.
+    // Rate limiting (issue #49): 100 req/min por IP por padrão, contados em
+    // cada rota separadamente (a chave do throttler é rota + IP), e guardados
+    // na memória do processo. Rotas caras (auth, PDF, IA) têm limites
+    // próprios via @Throttle.
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         throttlers: [
-          {
-            ttl: config.get('THROTTLE_TTL_MS', 60_000),
-            limit: config.get('THROTTLE_LIMIT', 100),
-          },
+          throttleConfigFromEnv({
+            THROTTLE_TTL_MS: config.get<string>('THROTTLE_TTL_MS'),
+            THROTTLE_LIMIT: config.get<string>('THROTTLE_LIMIT'),
+          }),
         ],
       }),
     }),

@@ -10,10 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PDF_THROTTLE } from '../common/pdf/pdf-render.service';
 import { PDF_THEMES } from '../common/pdf/themes';
 import { FinishSimulationDto } from './dto/finish-simulation.dto';
 import { SimulationPdfDto } from './dto/simulation-pdf.dto';
@@ -95,6 +97,7 @@ export class SimulationsController {
   }
 
   @Post('pdf')
+  @Throttle(PDF_THROTTLE)
   @ApiOperation({
     summary:
       'Gera o caderno de prova em PDF no padrão ENEM, com a capa do OpENEM',
@@ -121,6 +124,7 @@ export class SimulationsController {
   }
 
   @Post(':id/pdf')
+  @Throttle(PDF_THROTTLE)
   @ApiOperation({ summary: 'Gera o PDF de um simulado que o aluno já fez' })
   @Header('Content-Type', 'application/pdf')
   async simulationPdf(

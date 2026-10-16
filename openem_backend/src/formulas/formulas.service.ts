@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { formulasPdfBuffer } from '../common/pdf/formulas-pdf';
+import { PdfRenderService } from '../common/pdf/pdf-render.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFormulaDto } from './dto/create-formula.dto';
 import { FormulasPdfDto } from './dto/formulas-pdf.dto';
@@ -32,6 +32,11 @@ export interface FormulaView {
   /** Legenda dos símbolos, na ordem em que aparecem na expressão. */
   symbols: FormulaSymbolView[];
 }
+
+/** Fórmulas personalizadas por aluno. */
+export const MAX_CUSTOM_FORMULAS = 200;
+/** Fórmulas num caderno em PDF (o catálogo inteiro mais todas as do aluno cabem). */
+export const MAX_FORMULAS_PER_PDF = 300;
 
 const FORMULA_SELECT = {
   id: true,
@@ -84,7 +89,10 @@ function canSee(
 
 @Injectable()
 export class FormulasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfRender: PdfRenderService,
+  ) {}
 
   private toView(row: FormulaRow, favoritedIds: Set<string>): FormulaView {
     return {
@@ -174,6 +182,16 @@ export class FormulasService {
       });
       if (!topic) throw new NotFoundException('Assunto não encontrado');
     }
+    // Cada fórmula personalizada entra no caderno em PDF do dono; sem teto, o
+    // caderno crescia sem limite.
+    const jaTem = await this.prisma.formula.count({
+      where: { ownerId: userId, isBuiltIn: false },
+    });
+    if (jaTem >= MAX_CUSTOM_FORMULAS) {
+      throw new BadRequestException(
+        `Você chegou ao limite de ${MAX_CUSTOM_FORMULAS} fórmulas personalizadas.`,
+      );
+    }
     let formula: FormulaRow;
     try {
       formula = await this.prisma.formula.create({
@@ -257,16 +275,24 @@ export class FormulasService {
         { title: 'asc' },
       ],
       select: FORMULA_SELECT,
+      // Um a mais que o teto, só para saber que passou dele.
+      take: MAX_FORMULAS_PER_PDF + 1,
     });
     if (rows.length === 0) {
       throw new BadRequestException(
         'Nenhuma fórmula nesse recorte. Escolha pelo menos uma.',
       );
     }
+    if (rows.length > MAX_FORMULAS_PER_PDF) {
+      throw new BadRequestException(
+        `Escolha no máximo ${MAX_FORMULAS_PER_PDF} fórmulas por caderno.`,
+      );
+    }
 
     const title = dto.title?.trim() || 'Fórmulas do ENEM';
-    const buffer = await formulasPdfBuffer(
-      rows.map((r) => ({
+    const buffer = await this.pdfRender.render({
+      kind: 'formulas',
+      items: rows.map((r) => ({
         title: r.title,
         latex: r.latex,
         description: r.description,
@@ -274,7 +300,7 @@ export class FormulasService {
         topicName: r.topic?.name ?? null,
         symbols: r.symbols,
       })),
-      {
+      options: {
         title,
         theme: dto.theme,
         brandColor: dto.brandColor,
@@ -285,7 +311,7 @@ export class FormulasService {
         twoColumns: dto.twoColumns,
         studentName: dto.studentName,
       },
-    );
+    });
     return { buffer, filename: `${slug(title) || 'formulas'}.pdf` };
   }
 }

@@ -1,3 +1,5 @@
+import { PdfRenderService } from '../common/pdf/pdf-render.service';
+import { PDF_RUNNER_DEFAULTS, PdfRunner } from '../common/pdf/pdf-runner';
 import { pdfFilename, SimulationPdfService } from './simulation-pdf.service';
 
 describe('pdfFilename', () => {
@@ -22,7 +24,11 @@ describe('SimulationPdfService', () => {
     const simulations = { pdfData: jest.fn().mockResolvedValue(pdfData) };
     const config = { get: jest.fn((k: string) => env[k]) };
     return {
-      service: new SimulationPdfService(simulations as never, config as never),
+      service: new SimulationPdfService(
+        simulations as never,
+        config as never,
+        new PdfRenderService(new PdfRunner(PDF_RUNNER_DEFAULTS)),
+      ),
       simulations,
       config,
     };

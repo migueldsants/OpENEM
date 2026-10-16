@@ -4,7 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { FormulasService } from './formulas.service';
+import { PdfRenderService } from '../common/pdf/pdf-render.service';
+import { PDF_RUNNER_DEFAULTS, PdfRunner } from '../common/pdf/pdf-runner';
+import {
+  FormulasService,
+  MAX_CUSTOM_FORMULAS,
+  MAX_FORMULAS_PER_PDF,
+} from './formulas.service';
 
 const FORMULA = {
   id: 'f1',
@@ -39,11 +45,15 @@ function makeService() {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
     },
     subject: { findUnique: jest.fn().mockResolvedValue({ id: 'subj-mat' }) },
     topic: { findUnique: jest.fn().mockResolvedValue({ id: 'topic-x' }) },
   } as any;
-  const service = new FormulasService(prisma);
+  const service = new FormulasService(
+    prisma,
+    new PdfRenderService(new PdfRunner(PDF_RUNNER_DEFAULTS)),
+  );
   return { service, prisma };
 }
 
@@ -203,6 +213,43 @@ describe('FormulasService (issue #38)', () => {
     const where = prisma.formula.findMany.mock.calls[0][0].where;
     expect(where.AND).toEqual([VISIVEL_PARA_U1]);
     expect(where.id).toEqual({ in: ['f-pessoal'] });
+  });
+
+  it('create() recusa a fórmula além do teto por aluno', async () => {
+    const { service, prisma } = makeService();
+    prisma.formula.count.mockResolvedValue(MAX_CUSTOM_FORMULAS);
+    await expect(
+      service.create('u1', { title: 'X', latex: 'a', subjectId: 's' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.formula.count).toHaveBeenCalledWith({
+      where: { ownerId: 'u1', isBuiltIn: false },
+    });
+    expect(prisma.formula.create).not.toHaveBeenCalled();
+  });
+
+  it('pdf() recusa caderno acima do teto de fórmulas', async () => {
+    const { service, prisma } = makeService();
+    prisma.formula.findMany.mockResolvedValue(
+      Array.from({ length: MAX_FORMULAS_PER_PDF + 1 }, (_, i) => ({
+        ...FORMULA,
+        id: `f${i}`,
+        symbols: [],
+      })),
+    );
+    await expect(service.pdf('u1', {})).rejects.toThrow(
+      String(MAX_FORMULAS_PER_PDF),
+    );
+    expect(prisma.formula.findMany.mock.calls[0][0].take).toBe(
+      MAX_FORMULAS_PER_PDF + 1,
+    );
+  });
+
+  it('pdf() desenha o caderno pela fila de PDFs', async () => {
+    const { service, prisma } = makeService();
+    prisma.formula.findMany.mockResolvedValue([{ ...FORMULA, symbols: [] }]);
+    const res = await service.pdf('u1', { title: 'Minha cola', cover: false });
+    expect(res.buffer.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(res.filename).toBe('minha-cola.pdf');
   });
 
   it('create() valida matéria e assunto inexistente (404)', async () => {

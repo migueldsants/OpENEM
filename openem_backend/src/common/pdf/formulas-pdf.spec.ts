@@ -3,7 +3,19 @@ import {
   formulasPdfBuffer,
   groupFormulas,
   rows,
+  SVG_TO_PDF_OPTIONS,
 } from './formulas-pdf';
+
+describe('SVG_TO_PDF_OPTIONS', () => {
+  it('toda imagem do SVG vira um pixel embutido, nunca um caminho', () => {
+    for (const link of ['figura.png', '/qualquer/lugar.jpg', 'https://x/y']) {
+      expect(SVG_TO_PDF_OPTIONS.imageCallback()).toMatch(
+        /^data:image\/png;base64,/,
+      );
+      expect(SVG_TO_PDF_OPTIONS.imageCallback()).not.toContain(link);
+    }
+  });
+});
 
 const item = (over: Partial<FormulaPdfItem> = {}): FormulaPdfItem => ({
   title: 'Bhaskara',

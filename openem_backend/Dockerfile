@@ -14,6 +14,11 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
+# Remove as dependências de desenvolvimento (jest, stryker, ts-node, eslint…):
+# a imagem final não as precisa e cada pacote a mais é superfície a mais. O
+# CLI do Prisma fica, porque o `migrate deploy` do CMD roda a partir dele.
+RUN npm prune --omit=dev
+
 # ---- Runner ----
 FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production

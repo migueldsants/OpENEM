@@ -454,4 +454,77 @@ describe('Hardening (e2e)', () => {
       .send({ promptId: prompts.body[0].id, content: 'a'.repeat(8001) })
       .expect(400);
   });
+
+  it('senha de login acima do teto do cadastro é recusada (400)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: emailA, password: 'a'.repeat(73) })
+      .expect(400);
+  });
+
+  it('fórmula com caractere de controle no LaTeX é recusada (400)', async () => {
+    const subjects = await request(app.getHttpServer())
+      .get('/api/v1/subjects')
+      .set(auth(tokenA))
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/api/v1/formulas')
+      .set(auth(tokenA))
+      .send({
+        title: 'Controle',
+        latex: 'a+\u000cb',
+        subjectId: subjects.body[0].id,
+      })
+      .expect(400);
+  });
+
+  describe('rotas de PDF', () => {
+    // Instância dedicada: o contador do throttler é por app, e os outros
+    // testes deste arquivo não podem gastar nem herdar o limite.
+    let dedicada: INestApplication<App>;
+    beforeAll(async () => {
+      const moduleFixture = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+      dedicada = moduleFixture.createNestApplication();
+      dedicada.enableShutdownHooks();
+      dedicada.useGlobalPipes(
+        new ValidationPipe({
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          transform: true,
+        }),
+      );
+      dedicada.setGlobalPrefix('api/v1', {
+        exclude: [
+          { path: '', method: RequestMethod.GET },
+          { path: 'health', method: RequestMethod.GET },
+        ],
+      });
+      await dedicada.init();
+    });
+    afterAll(async () => {
+      await dedicada.close();
+    });
+
+    it.each(['/api/v1/formulas/pdf', '/api/v1/simulations/pdf'])(
+      '%s aceita 10 pedidos por minuto e recusa o 11º (429)',
+      async (rota) => {
+        // Pedido inválido (tema longo demais) não desenha nada, mas o
+        // throttler conta antes da validação: o teste fica rápido.
+        for (let i = 0; i < 10; i++) {
+          await request(dedicada.getHttpServer())
+            .post(rota)
+            .set(auth(tokenA))
+            .send({ theme: 'x'.repeat(21) })
+            .expect(400);
+        }
+        await request(dedicada.getHttpServer())
+          .post(rota)
+          .set(auth(tokenA))
+          .send({ theme: 'x'.repeat(21) })
+          .expect(429);
+      },
+    );
+  });
 });

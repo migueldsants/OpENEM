@@ -6,6 +6,7 @@
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-openem}
       - POSTGRES_DB=${POSTGRES_DB:-openem}
@@ -28,6 +29,9 @@ services:
 
   backend:
     build: ./openem_backend
+    # Volta sozinho se o processo cair (sem isso, uma queda deixava a API fora
+    # do ar até alguém subir de novo).
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -58,6 +62,12 @@ services:
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-}
+      # Cota das chamadas pagas à IA (24 h). Vazio usa o padrão do backend:
+      # 5 correções e 30 comentários por aluno, sem teto global. Em produção,
+      # defina AI_DAILY_LIMIT (soma de todos os alunos) para limitar o custo.
+      - AI_ESSAY_DAILY_LIMIT=${AI_ESSAY_DAILY_LIMIT:-}
+      - AI_EXPLANATION_DAILY_LIMIT=${AI_EXPLANATION_DAILY_LIMIT:-}
+      - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-}
     ports:
       # Só na máquina local: com TRUST_PROXY ligado, quem chegasse direto na
       # porta 3000 pela rede poderia forjar o X-Forwarded-For e escapar do rate
@@ -77,6 +87,7 @@ services:
 
   frontend:
     build: ./openem_frontend
+    restart: unless-stopped
     ports:
       - '8080:80'
     depends_on:
