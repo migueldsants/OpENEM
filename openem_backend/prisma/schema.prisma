@@ -1,9 +1,10 @@
 // OpENEM — esquema Prisma (Fase 0 / MVP)
-// Datasource SQLite na fase atual; produção -> PostgreSQL (ver docs/PRD.md §9).
-// SQLite não tem enum nativo no Prisma: usamos String com valores controlados na aplicação.
+// Datasource PostgreSQL em dev, testes e produção (ver docs/PRD.md §9 e §12).
+// Os "enums" são String com valores controlados na aplicação, herança da fase
+// SQLite; trocar por enum nativo do Postgres fica para depois.
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -118,7 +119,7 @@ model ExamYear {
 model Question {
   id                String               @id @default(cuid())
   /// Chave estável da origem externa: "enem:<slug-da-prova>:<pasta-da-questão>".
-  /// Nula em questões autorais/seed — em SQLite o índice único aceita vários NULLs.
+  /// Nula em questões autorais/seed — o índice único aceita vários NULLs.
   externalId        String?              @unique
   /// Código legível da questão oficial: "ENEM-2023-136", "ENEM-2023R-136",
   /// "ENEM-2023-001-ING". Buscável pelo aluno.
@@ -223,7 +224,7 @@ model SimulationTemplate {
   ownerId       String?
   owner         User?        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   /// Filtros do simulado personalizado, em JSON (ver common/simulation-filters).
-  /// Guardados como texto porque o SQLite não tem tipo Json no Prisma.
+  /// Guardados como texto, herança da fase SQLite (sem tipo Json no Prisma).
   filters       String?
   createdAt     DateTime     @default(now())
   /// Prova oficial (scope EXAM): a aplicação e o dia do ENEM que o simulado

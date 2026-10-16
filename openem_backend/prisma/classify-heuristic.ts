@@ -21,6 +21,7 @@ import {
   classifyByKeywords,
   HeuristicDecision,
 } from '../src/common/classification/heuristic';
+import { isTestDatabaseUrl } from '../src/common/test-database';
 
 const prisma = new PrismaClient();
 
@@ -49,7 +50,7 @@ function numero(nome: string, valor: string | undefined): number | undefined {
 
 async function main() {
   const url = process.env.DATABASE_URL ?? '';
-  if (process.env.NODE_ENV === 'test' || url.includes('test-e2e')) {
+  if (process.env.NODE_ENV === 'test' || isTestDatabaseUrl(url)) {
     throw new Error('recusando classificar o banco de teste');
   }
 
@@ -87,8 +88,9 @@ async function main() {
   let cursor: string | undefined;
   let pendentes: { id: string; topicId: string; confidence: number }[] = [];
 
-  /** Grava o lote numa transação só — uma escrita por questão no SQLite
-   * custa um fsync cada e deixava o job em ~30 questões por minuto. */
+  /** Grava o lote numa transação só — uma escrita por questão, cada uma no
+   * seu commit, custa uma ida ao banco e um fsync por questão e deixava o job
+   * em ~30 questões por minuto. */
   async function flush() {
     if (!pendentes.length || values['dry-run']) {
       pendentes = [];

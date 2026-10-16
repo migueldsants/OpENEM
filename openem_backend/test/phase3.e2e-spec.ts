@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 describe('Fase 3 â€” gamificaÃ§Ã£o (e2e)', () => {
   let app: INestApplication<App>;
@@ -64,7 +65,7 @@ describe('Fase 3 â€” gamificaÃ§Ã£o (e2e)', () => {
 
   it('responder uma questÃ£o dÃ¡ XP (com bÃ´nus diÃ¡rio), nÃ­vel e a conquista inicial', async () => {
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=1')
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
       .set(auth())
       .expect(200);
     const questionId = list.body.items[0].id;
@@ -129,7 +130,7 @@ describe('Fase 3 â€” gamificaÃ§Ã£o (e2e)', () => {
       .expect(200);
 
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=1')
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
       .set(auth())
       .expect(200);
     const questionId = list.body.items[0].id;

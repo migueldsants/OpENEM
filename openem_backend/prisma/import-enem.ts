@@ -13,6 +13,7 @@ import { parseArgs } from 'node:util';
 import { join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { ensureDataset, importEnem, printReport } from './import-enem-lib';
+import { isTestDatabaseUrl } from '../src/common/test-database';
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,7 @@ const { values } = parseArgs({
 
 function guardaBancoDeTeste(): void {
   const url = process.env.DATABASE_URL ?? '';
-  if (process.env.NODE_ENV === 'test' || url.includes('test-e2e')) {
+  if (process.env.NODE_ENV === 'test' || isTestDatabaseUrl(url)) {
     throw new Error(
       'recusando importar contra o banco de teste — a suíte e2e ficaria lenta e instável',
     );

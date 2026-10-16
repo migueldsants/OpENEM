@@ -75,7 +75,7 @@ run.ps1
 docker-data/
 docker-compose.override.yml
 
-# Prisma / SQLite (bancos locais; migrations SÃO versionadas)
+# Prisma — bancos SQLite antigos (dev.db da fase SQLite); migrations SÃO versionadas
 *.db
 *.db-journal
 prisma/*.db

@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 describe('Review â€” prÃ³xima revisÃ£o agendada (issue #20, e2e)', () => {
   let app: INestApplication<App>;
@@ -84,7 +85,7 @@ describe('Review â€” prÃ³xima revisÃ£o agendada (issue #20, e2e)', () =
     expect([null, 'null', '']).toContain(before.text);
 
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=1')
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
       .set(auth())
       .expect(200);
     const question = list.body.items[0];

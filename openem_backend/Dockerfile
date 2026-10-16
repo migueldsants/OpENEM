@@ -19,7 +19,8 @@ FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Diretório do banco SQLite (volume), com posse do usuário não-root `node`.
+# Diretório do volume das imagens do ENEM (/data/enem-media), com posse do
+# usuário não-root `node`. O banco é o serviço `db` (PostgreSQL) do compose.
 RUN mkdir -p /data && chown -R node:node /data
 
 COPY --from=builder /app/node_modules ./node_modules

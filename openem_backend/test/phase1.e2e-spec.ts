@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 describe('Fase 1 â€” fluxo MVP (e2e)', () => {
   let app: INestApplication<App>;
@@ -93,7 +94,7 @@ describe('Fase 1 â€” fluxo MVP (e2e)', () => {
 
   it('registra uma tentativa correta e uma incorreta', async () => {
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=1')
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
       .set(auth())
       .expect(200);
     const question = list.body.items[0];

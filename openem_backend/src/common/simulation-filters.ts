@@ -215,7 +215,7 @@ export function buildQuestionWhere(
   return { AND: and };
 }
 
-/** Serializa para a coluna `SimulationTemplate.filters` (texto, SQLite). */
+/** Serializa para a coluna `SimulationTemplate.filters` (texto com JSON). */
 export function serializeFilters(f: SimulationFilters): string {
   return JSON.stringify(normalizeFilters(f));
 }

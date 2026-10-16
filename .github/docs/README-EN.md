@@ -33,7 +33,8 @@ The full application plan — frontend, backend, data model, Dockerized CI/CD in
 
 ### Option A — Docker Compose (everything at once)
 
-Requires Docker. From the repository root:
+Requires Docker. From the repository root, copy `.env.example` to `.env` and
+fill in `POSTGRES_PASSWORD` and `JWT_SECRET` (both are required). Then:
 
 ```bash
 docker compose up --build
@@ -42,19 +43,34 @@ docker compose up --build
 *   API: <http://localhost:3000> · Swagger: <http://localhost:3000/api> · Healthcheck: <http://localhost:3000/health>
 *   Frontend: <http://localhost:8080>
 
-Database migrations are applied automatically when the backend starts; SQLite is persisted in a named volume.
+Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`),
+waits for it to be ready and applies the migrations when the backend starts.
+The database starts empty: populate it with the seed and the import (see
+below), running the commands inside the backend container.
 
 ### Option B — Local development
+
+The database is always PostgreSQL. The simplest way is to start only the
+compose `db` service (with the root `.env` filled in, as in option A); it is
+published on `127.0.0.1:5432` only.
+
+```bash
+docker compose up -d db
+```
 
 **Backend** (in `openem_backend/`):
 
 ```bash
-cp .env.example .env        # adjust JWT_SECRET, etc.
+cp .env.example .env        # DATABASE_URL with the POSTGRES_PASSWORD password; adjust JWT_SECRET
 npm install
-npx prisma migrate dev      # creates the SQLite database and applies migrations
+npx prisma migrate dev      # applies the migrations to Postgres
 npm run db:seed             # (optional) demo data
 npm run start:dev           # API at http://localhost:3000
 ```
+
+The e2e suite (`npm run test:e2e`) uses the same Postgres as `DATABASE_URL`, in
+its own schema (`test_e2e`) that it drops and recreates on every run; dev data
+in the `public` schema is left untouched. Unit tests do not use a database.
 
 **Frontend** (in `openem_frontend/`):
 
@@ -85,8 +101,8 @@ ships incomplete (no alternatives, inconsistent answer key) are rejected and
 listed in the final report. Images go to `ENEM_MEDIA_DIR` and are served by the
 backend itself at `/media/enem/`.
 
-With Docker, run the import inside the container — database and images live in
-the volume:
+With Docker, run the import inside the container — questions go to Postgres and
+images to the `enem-media` volume:
 
 ```bash
 docker compose exec backend npx ts-node prisma/import-enem.ts

@@ -9,6 +9,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { parseTrustProxy } from './../src/common/trust-proxy';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 // Hardening (issue #49): validação de posse do simulationId, rate limiting
 // do auth e transação/idempotência do finish(). Os limites de throttle são
@@ -75,7 +76,7 @@ describe('Hardening (e2e)', () => {
     alternatives: { id: string }[];
   }> {
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=1')
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
       .set(auth(tokenA))
       .expect(200);
     return list.body.items[0];
@@ -144,7 +145,7 @@ describe('Hardening (e2e)', () => {
     );
 
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=50')
+      .get(`${SEED_QUESTIONS_URL}&limit=50`)
       .set(auth(tokenA))
       .expect(200);
     const intrusa = list.body.items.find(
@@ -172,7 +173,7 @@ describe('Hardening (e2e)', () => {
 
     // Gabarito de questões de fora do simulado (ele é público pela API).
     const list = await request(app.getHttpServer())
-      .get('/api/v1/questions?limit=50')
+      .get(`${SEED_QUESTIONS_URL}&limit=50`)
       .set(auth(tokenA))
       .expect(200);
     const intrusas = list.body.items

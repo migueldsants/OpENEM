@@ -8,10 +8,10 @@
 | **Stakeholders** | Product/Eng/Design (placeholder), Comunidade de contribuidores |
 | **Data de criação** | 2026-06-16 |
 | **Última atualização** | 2026-06-16 |
-| **Versão** | 1.1 |
+| **Versão** | 1.2 |
 | **Licença** | AGPL-3.0 |
 
-> **Sobre este documento.** Este PRD planeja a aplicação **completa** — frontend, backend, banco de dados, infraestrutura de CI/CD em Docker e estratégia de testes automatizados — respeitando as escolhas tecnológicas já estabelecidas no repositório (NestJS, TypeScript, Tailwind, Swagger) e as decisões solicitadas (Prisma + SQLite nas migrations por enquanto, Docker Compose, testes integrados ao CI/CD). Itens que ainda não podem ser definidos aparecem marcados como **`[PLACEHOLDER]`**. As decisões de produto derivam de uma pesquisa primária com o público-alvo (34 respondentes válidos, nov–dez/2025); as respostas não são versionadas, para preservar a privacidade dos participantes.
+> **Sobre este documento.** Este PRD planeja a aplicação **completa** — frontend, backend, banco de dados, infraestrutura de CI/CD em Docker e estratégia de testes automatizados — respeitando as escolhas tecnológicas já estabelecidas no repositório (NestJS, TypeScript, Tailwind, Swagger) e as decisões solicitadas (Prisma — começou com SQLite e hoje usa PostgreSQL —, Docker Compose, testes integrados ao CI/CD). Itens que ainda não podem ser definidos aparecem marcados como **`[PLACEHOLDER]`**. As decisões de produto derivam de uma pesquisa primária com o público-alvo (34 respondentes válidos, nov–dez/2025); as respostas não são versionadas, para preservar a privacidade dos participantes.
 
 ---
 
@@ -25,7 +25,7 @@
 6. [Requisitos Funcionais e User Stories](#6-requisitos-funcionais-e-user-stories)
 7. [Requisitos Não-Funcionais](#7-requisitos-não-funcionais)
 8. [Arquitetura Técnica](#8-arquitetura-técnica)
-9. [Modelo de Dados (Prisma + SQLite)](#9-modelo-de-dados-prisma--sqlite)
+9. [Modelo de Dados (Prisma + PostgreSQL)](#9-modelo-de-dados-prisma--postgresql)
 10. [API](#10-api)
 11. [Frontend](#11-frontend)
 12. [Infraestrutura, Docker e CI/CD](#12-infraestrutura-docker-e-cicd)
@@ -45,7 +45,7 @@
 
 **Visão geral.** A pesquisa com o público-alvo revela um mercado mal atendido: estudantes majoritariamente de escola pública (82%), jovens (90% entre 15–24 anos), com **pouco tempo de estudo** (50% estudam 1–2h/dia) e que usam intensamente o **celular Android** (65%). Eles querem menos videoaula que "enrola" e mais **feedback real sobre o que fazer a seguir**. As quatro funcionalidades mais desejadas — simulados no padrão ENEM, estatísticas de desempenho, revisão inteligente e questões por nível — formam o coração do MVP.
 
-O produto será construído como um **monorepo** com backend em **NestJS/TypeScript** (API REST documentada via Swagger), persistência via **Prisma ORM** com **SQLite** na fase atual (migração planejada para PostgreSQL na produção), e um **frontend web responsivo (PWA) em React + Vite + Tailwind CSS** projetado *mobile-first*. Toda a stack é orquestrada com **Docker Compose** e validada por um pipeline de **CI/CD no GitHub Actions** que roda lint, testes automatizados (unitários, integração e e2e), build e publicação de imagens Docker.
+O produto será construído como um **monorepo** com backend em **NestJS/TypeScript** (API REST documentada via Swagger), persistência via **Prisma ORM** com **PostgreSQL** (SQLite até out/2026), e um **frontend web responsivo (PWA) em React + Vite + Tailwind CSS** projetado *mobile-first*. Toda a stack é orquestrada com **Docker Compose** e validada por um pipeline de **CI/CD no GitHub Actions** que roda lint, testes automatizados (unitários, integração e e2e), build e publicação de imagens Docker.
 
 **Impacto esperado.** Reduzir a fricção de preparação para o público de baixa renda, oferecendo gratuitamente recursos que hoje são pagos (TRI, correção de redação detalhada, recomendação personalizada), e crescer via boca a boca / WhatsApp — o canal de descoberta dominante (65%).
 
@@ -349,8 +349,8 @@ Monorepo com dois aplicativos (backend e web) e infraestrutura compartilhada, or
                             ▼
 ┌───────────────────────────────────────────────────────────────┐
 │        Persistência — Prisma ORM                                │
-│        Fase atual: SQLite (arquivo em volume)                   │
-│        Produção (planejado): PostgreSQL  [PLACEHOLDER migração] │
+│        PostgreSQL 17 (serviço `db` no mesmo Docker Compose)     │
+│        (SQLite até out/2026 — ver §18)                          │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -359,7 +359,7 @@ Monorepo com dois aplicativos (backend e web) e infraestrutura compartilhada, or
 **Backend** (já estabelecido):
 - **NestJS 11 + TypeScript** — módulos de domínio adicionados ao `AppModule`.
 - **Swagger/OpenAPI** (`@nestjs/swagger`) servido em `/api`.
-- **Prisma ORM** — *a adicionar* (`@prisma/client`, `prisma` dev). Datasource **SQLite** na fase atual; provider trocável para PostgreSQL via env.
+- **Prisma ORM** (v6, fixado) — datasource **PostgreSQL**; sem SQL cru além do `SELECT 1` do healthcheck.
 - **Auth**: `@nestjs/jwt` + Passport; hashing com `argon2` (ou `bcrypt`).
 - **Validação**: `class-validator` + `ValidationPipe` global; DTOs tipados.
 - **Config**: `@nestjs/config` lendo `.env` (já ignorado no git; manter `.env.example`).
@@ -370,8 +370,9 @@ Monorepo com dois aplicativos (backend e web) e infraestrutura compartilhada, or
 - Trilha futura **React Native/Expo** para apps nativos (entradas já presentes no `.gitignore`).
 
 **Banco de dados:**
-- **SQLite** (arquivo `openem_backend/prisma/dev.db`, persistido em volume Docker) — simples, sem serviço externo, ideal para a fase atual e para CI.
-- Migrations versionadas via **Prisma Migrate**. Caminho de produção → **PostgreSQL** documentado como `[PLACEHOLDER]`.
+- **PostgreSQL 17** — serviço `db` do mesmo `docker-compose.yml` (volume nomeado `pg-data`), não um banco gerenciado: o VPS de preço fixo roda banco e API juntos. Em dev, `docker compose up -d db`; no CI, um *service container*.
+- Migrations versionadas via **Prisma Migrate**, a partir de uma migração base única para Postgres (`init_postgres`). As 31 migrações da fase SQLite foram apagadas na troca (continuam no histórico do git): eram SQL de SQLite e não aplicam no Postgres, e a produção começou vazia.
+- A busca por texto usa `mode: 'insensitive'` (ILIKE): no Postgres o `contains` diferencia maiúscula, ao contrário do LIKE do SQLite.
 
 **Infra:** Docker + **Docker Compose**; **GitHub Actions** para CI/CD.
 
@@ -379,15 +380,15 @@ Monorepo com dois aplicativos (backend e web) e infraestrutura compartilhada, or
 
 ---
 
-## 9. Modelo de Dados (Prisma + SQLite)
+## 9. Modelo de Dados (Prisma + PostgreSQL)
 
-Esquema de alto nível (campos resumidos; `[PLACEHOLDER]` onde detalhes dependem de modelagem fina). Datasource SQLite na fase atual:
+Esquema de alto nível (campos resumidos; `[PLACEHOLDER]` onde detalhes dependem de modelagem fina). Datasource PostgreSQL:
 
 ```prisma
 // openem_backend/prisma/schema.prisma  (rascunho)
 datasource db {
-  provider = "sqlite"          // fase atual; produção -> "postgresql" [PLACEHOLDER]
-  url      = env("DATABASE_URL") // ex.: "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // ex.: "postgresql://openem:senha@localhost:5432/openem?schema=public"
 }
 
 generator client {
@@ -409,7 +410,7 @@ model Profile {
   id            String  @id @default(cuid())
   userId        String  @unique
   user          User    @relation(fields: [userId], references: [id])
-  goal          String  // SISU | PROUNI | TREINEIRO  (enum via string no SQLite)
+  goal          String  // SISU | PROUNI | TREINEIRO  (enum via string)
   minutesPerDay Int     // tempo disponível para cronograma/recomendação
   displayName   String?
 }
@@ -567,7 +568,7 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 // Profile ganhou gamificationEnabled (toggle) e onboarded (Fase 3).
 ```
 
-> SQLite não tem `enum` nativo no Prisma; usamos `String` com valores controlados na aplicação. Ao migrar para PostgreSQL, converter para `enum` reais.
+> Os "enums" são `String` com valores controlados na aplicação, herança da fase SQLite (que não tinha `enum` nativo no Prisma). Com o PostgreSQL dá para convertê-los em `enum` reais — fica para depois, numa migração própria. O mesmo vale para as colunas JSON guardadas como texto (ex.: `SimulationTemplate.filters`).
 
 ---
 
@@ -665,27 +666,34 @@ Cada app tem seu **Dockerfile multi-stage** (build → runtime enxuto).
 
 ### Docker Compose
 
-`docker-compose.yml` na raiz orquestra os serviços. SQLite é arquivo em **volume nomeado** (sem serviço de banco separado na fase atual):
+`docker-compose.yml` na raiz orquestra os serviços, com o **PostgreSQL no mesmo compose** (serviço `db`, volume nomeado). As variáveis vêm do `.env` da raiz (modelo em `.env.example`): `POSTGRES_PASSWORD` e `JWT_SECRET` são obrigatórias.
 
 ```yaml
-# docker-compose.yml (rascunho)
+# docker-compose.yml (resumo)
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?...}   # obrigatória
+    ports: ["127.0.0.1:5432:5432"]   # só local: dev fora do Docker e pg_dump
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+
   backend:
     build: ./openem_backend
-    ports: ["3000:3000"]
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - DATABASE_URL=file:/data/dev.db
-      - PORT=3000
+      - DATABASE_URL=postgresql://openem:${POSTGRES_PASSWORD}@db:5432/openem?schema=public
+      - ENEM_MEDIA_DIR=/data/enem-media
     volumes:
-      - sqlite-data:/data
-    command: sh -c "npx prisma migrate deploy && node dist/main"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      - enem-media:/data            # imagens das questões oficiais
+    # CMD da imagem: npx prisma migrate deploy && node dist/main
 
-  frontend:                       # PWA React+Vite servido via Nginx
+  frontend:                         # PWA React+Vite servido via Nginx
     build: ./openem_frontend
     ports: ["8080:80"]
     depends_on:
@@ -693,12 +701,13 @@ services:
         condition: service_healthy
 
 volumes:
-  sqlite-data:
+  pg-data:
+  enem-media:
 ```
 
 `docker-compose.override.yml` (já ignorado no git) para ajustes locais de desenvolvimento (hot-reload, bind mounts).
 
-> Caminho de produção: trocar `backend` para usar **PostgreSQL** e adicionar serviço `db` (Postgres) — `[PLACEHOLDER]` quando a migração ocorrer.
+> O banco **não** é publicado na rede: a porta 5432 fica só em `127.0.0.1`, e o backend do compose usa a rede interna (host `db`). Como a senha entra crua na `DATABASE_URL`, use só letras e números (ex.: `openssl rand -hex 24`).
 
 ### CI/CD — GitHub Actions
 
@@ -706,7 +715,7 @@ Pipeline em `.github/workflows/ci.yml`, disparado em **push** e **pull_request**
 
 **Jobs:**
 1. **lint** — `npm ci` + `npm run lint` (backend; e frontend quando existir).
-2. **test** — `prisma generate` + `prisma migrate deploy` (SQLite efêmero) + `npm test` (unit) + `npm run test:e2e`; sobe **cobertura** como artefato.
+2. **test** — `prisma generate` + `npm test` (unit, sem banco) + `npm run test:cov` + `npm run test:e2e` contra um *service container* `postgres:17-alpine` (a suíte recria o schema `test_e2e`, aplica as migrations e roda o seed).
 3. **build** — `npm run build` (backend) e build do frontend; falha o pipeline se não compilar.
 4. **docker** — `docker build` das imagens (valida os Dockerfiles em todo PR). Push para registry fica desativado por enquanto — `[PLACEHOLDER — registry/credenciais via secrets quando houver hospedagem]`.
 5. **deploy** — **Decisão atual:** sem deploy automático em servidor remoto. Enquanto não houver VPS, a aplicação roda via **`docker compose up` na máquina do mantenedor**; o CI apenas garante que as imagens **constroem e passam nos testes**. Quando uma VPS for provisionada, adicionar job de deploy (acionado só na `main`).
@@ -725,7 +734,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 | Camada | Ferramenta | Escopo | Onde |
 |---|---|---|---|
 | **Unitários** | Jest (`*.spec.ts`) | Services, regras (correção, TRI, repetição espaçada) com mocks de Prisma | `openem_backend/src` |
-| **Integração** | Jest + Prisma em **SQLite efêmero** | Repositórios/serviços contra banco real de teste | backend |
+| **Integração** | Jest + Prisma num **schema Postgres de teste** (`test_e2e`, recriado a cada execução) | Repositórios/serviços contra banco real de teste | backend |
 | **E2E (API)** | Jest + Supertest (`*.e2e-spec.ts`) | Fluxos HTTP (auth, questões, simulado→correção) | `openem_backend/test` |
 | **Frontend (unit/componentes)** | Vitest + Testing Library | Componentes e hooks | `openem_frontend` |
 | **E2E (UI)** | Playwright `[PLACEHOLDER]` | Fluxos críticos no navegador | frontend |
@@ -783,7 +792,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 | Correção de redação superficial | Médio | Média | Não lançar até ter feedback por competência de qualidade (rubrica antes de IA) |
 | Gamificação infantiliza adultos | Médio | Média | Tornar gamificação opcional (toggle) |
 | Custo de IA/TRI vs. produto 100% gratuito | Médio | Alta | Produto sempre grátis; custos cobertos por doações/patrocínio; recursos caros entram por fase conforme financiamento disponível |
-| Migração SQLite→Postgres custosa | Médio | Baixa | Prisma abstrai provider; evitar SQL cru; cobrir com testes de integração; migração planejada só ao validar o MVP |
+| Migração SQLite→Postgres custosa | Médio | Baixa | **Resolvido (out/2026):** sem SQL cru, a troca foi o provider, uma migração base nova e a busca `contains` com `mode: 'insensitive'`; a suíte e2e roda contra Postgres |
 | LGPD com menores de idade | Alto | Média | Minimização de PII desde o início; consentimento claro; formalização jurídica/consentimento parental quando houver tração |
 
 ---
@@ -791,7 +800,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 ## 17. Dependências e Premissas
 
 **Dependências internas:**
-- [x] Adicionar Prisma ao `openem_backend` e definir `schema.prisma` — implementado (SQLite, 7 migrations).
+- [x] Adicionar Prisma ao `openem_backend` e definir `schema.prisma` — implementado (começou em SQLite; PostgreSQL desde out/2026).
 - [x] Criar o app `openem_frontend` (React+Vite+Tailwind PWA) — implementado, cobrindo Fases 1–3.
 - [ ] Conteúdo seed **misto**: provas oficiais do ENEM + questões autorais da comunidade, com **comentários próprios** escritos pela equipe/colaboradores.
 
@@ -814,7 +823,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 
 - [x] **Sustentabilidade/monetização** → **100% gratuito**, sustentado por doações/patrocínio/grants. Sem paywall em nenhuma fase.
 - [x] **Origem do conteúdo** → **misto**: provas oficiais do ENEM (INEP, domínio público) + questões autorais da comunidade, com comentários próprios. Licença das questões autorais compatível com AGPL/CC.
-- [x] **Banco de produção** → manter **SQLite até validar o MVP**; migrar para **PostgreSQL** antes do lançamento público com tração. Prisma abstrai a troca de provider.
+- [x] **Banco de produção** → **PostgreSQL 17 no mesmo Docker Compose do VPS** (serviço `db`, volume nomeado), não um banco gerenciado: o VPS de preço fixo cobre os dois e o custo não cresce com o uso. Dev e CI também usam Postgres, para não haver diferença de comportamento entre os ambientes. *(Até out/2026 era SQLite; a troca apagou as migrações antigas e criou a base `init_postgres`. Os dados do `dev.db` não foram migrados: a produção começa vazia e é populada pelo seed e pelo import.)*
 - [x] **Estratégia mobile** → **PWA responsivo (React+Vite)** no MVP e por enquanto. Apps nativos (React Native/Expo) estavam previstos na Fase 3, mas estão **fora de cogitação no curto prazo** — o PWA atende o público-alvo (mobile-first, Android) com manutenção de uma única base. Reavaliar somente se um requisito nativo (ex.: notificações push, integração com OS) tornar-se crítico.
 - [x] **Provedor de IA** → arquitetura **multi-provedor** (Fase 3): Anthropic Claude, OpenAI, OpenAI-compatível (Ollama/Groq/OpenRouter) e Google Gemini. Seleção por `ESSAY_AI_PROVIDER` ou auto-detecção a partir das chaves configuradas; sem provedor, recai na rubrica manual.
 - [x] **LGPD** → **minimização de PII desde o início** (coletar o mínimo, consentimento claro); formalização jurídica/consentimento parental quando houver tração.
@@ -835,7 +844,7 @@ Toda a pirâmide integrada ao CI (job **test**), respeitando o Jest já configur
 OpENEM/
 ├── openem_backend/              # API NestJS (já existe)
 │   ├── prisma/
-│   │   ├── schema.prisma        # [a criar] datasource sqlite
+│   │   ├── schema.prisma        # datasource postgresql
 │   │   ├── migrations/          # [a criar] Prisma Migrate
 │   │   └── seed.ts              # [a criar] dados iniciais
 │   ├── src/
@@ -872,5 +881,4 @@ OpENEM/
 |---|---|---|---|
 | 1.0 | 2026-06-16 | Equipe OpENEM | Rascunho inicial: planejamento completo (front, back, dados, Docker, CI/CD, testes) |
 | 1.1 | 2026-06-16 | Equipe OpENEM | Decisões resolvidas: 100% gratuito (doações), conteúdo misto, PWA no MVP, SQLite→Postgres pós-MVP, IA adiada p/ Fase 3, minimização de PII, deploy local via Docker Compose até haver VPS |
-</content>
-</invoke>
+| 1.2 | 2026-10-16 | Equipe OpENEM | Banco: SQLite → PostgreSQL 17 no mesmo Docker Compose (dev, CI e VPS); migração base `init_postgres`; e2e num schema de teste |

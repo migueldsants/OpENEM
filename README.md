@@ -33,7 +33,8 @@ O planejamento completo da aplicação — frontend, backend, modelo de dados, i
 
 ### Opção A — Docker Compose (tudo de uma vez)
 
-Requer Docker. Na raiz do repositório:
+Requer Docker. Na raiz do repositório, copie `.env.example` para `.env` e
+preencha `POSTGRES_PASSWORD` e `JWT_SECRET` (as duas são obrigatórias). Depois:
 
 ```bash
 docker compose up --build
@@ -42,19 +43,34 @@ docker compose up --build
 *   API: <http://localhost:3000> · Swagger: <http://localhost:3000/api> · Healthcheck: <http://localhost:3000/health>
 *   Frontend: <http://localhost:8080>
 
-As migrations do banco são aplicadas automaticamente no start do backend; o SQLite é persistido em um volume nomeado.
+O compose sobe um **PostgreSQL 17** (serviço `db`, volume nomeado `pg-data`),
+espera o banco ficar pronto e aplica as migrations no start do backend. O banco
+nasce vazio: popule com o seed e o import (ver abaixo), rodando os comandos
+dentro do container do backend.
 
 ### Opção B — Desenvolvimento local
+
+O banco é sempre PostgreSQL. O jeito mais simples é subir só o serviço `db` do
+compose (com o `.env` da raiz preenchido, como na opção A); ele fica publicado
+apenas em `127.0.0.1:5432`.
+
+```bash
+docker compose up -d db
+```
 
 **Backend** (em `openem_backend/`):
 
 ```bash
-cp .env.example .env        # ajuste JWT_SECRET, etc.
+cp .env.example .env        # DATABASE_URL com a senha do POSTGRES_PASSWORD; ajuste JWT_SECRET
 npm install
-npx prisma migrate dev      # cria o banco SQLite e aplica as migrations
+npx prisma migrate dev      # aplica as migrations no Postgres
 npm run db:seed             # (opcional) dados de demonstração
 npm run start:dev           # API em http://localhost:3000
 ```
+
+A suíte e2e (`npm run test:e2e`) usa o mesmo Postgres do `DATABASE_URL`, num
+schema próprio (`test_e2e`) que ela apaga e recria a cada execução; os dados de
+dev no schema `public` não são tocados. Os testes de unidade não usam banco.
 
 **Frontend** (em `openem_frontend/`):
 
@@ -85,7 +101,8 @@ incompletas (sem alternativas, gabarito inconsistente) são recusadas e
 listadas no relatório final. As imagens vão para `ENEM_MEDIA_DIR` e são
 servidas pelo próprio backend em `/media/enem/`.
 
-No Docker, rode o import dentro do container — banco e imagens ficam no volume:
+No Docker, rode o import dentro do container — as questões vão para o Postgres
+e as imagens para o volume `enem-media`:
 
 ```bash
 docker compose exec backend npx ts-node prisma/import-enem.ts
