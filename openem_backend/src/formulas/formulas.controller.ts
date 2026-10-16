@@ -12,9 +12,11 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PDF_THROTTLE } from '../common/pdf/pdf-render.service';
 import { CreateFormulaDto } from './dto/create-formula.dto';
 import { FormulasPdfDto } from './dto/formulas-pdf.dto';
 import { QueryFormulasDto } from './dto/query-formulas.dto';
@@ -41,6 +43,7 @@ export class FormulasController {
 
   @Post('pdf')
   @HttpCode(200)
+  @Throttle(PDF_THROTTLE)
   @ApiOperation({
     summary:
       'Caderno de fórmulas em PDF: capa, sumário, fórmulas desenhadas do LaTeX e legenda',

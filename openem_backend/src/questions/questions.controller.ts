@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
 import { ExplanationService } from './explanation.service';
@@ -68,7 +70,7 @@ export class QuestionsController {
     summary:
       'Devolve o comentário da questão, gerando-o por IA na primeira vez (se houver provedor)',
   })
-  explain(@Param('id') id: string) {
-    return this.explanationService.explain(id);
+  explain(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.explanationService.explain(user.userId, id);
   }
 }

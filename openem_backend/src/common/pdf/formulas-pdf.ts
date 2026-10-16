@@ -143,8 +143,22 @@ function drawMath(
     .replace(/currentColor/g, color)
     .replace(/ width="[\d.]+ex"/, ` width="${w}"`)
     .replace(/ height="[\d.]+ex"/, ` height="${h}"`);
-  SVGtoPDF(doc, svg, x, y, { assumePt: true });
+  SVGtoPDF(doc, svg, x, y, SVG_TO_PDF_OPTIONS);
 }
+
+/** PNG transparente de 1×1, em data URI. */
+const PNG_VAZIO =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+/**
+ * Opções do `svg-to-pdfkit`. Sem `imageCallback`, ele resolve o endereço de
+ * uma imagem do SVG por conta própria; aqui toda imagem vira um pixel
+ * transparente (o `texToSvg` já tira as imagens; isto é a segunda trava).
+ */
+export const SVG_TO_PDF_OPTIONS = {
+  assumePt: true,
+  imageCallback: (): string => PNG_VAZIO,
+};
 
 /**
  * Onde desenhar o SVG para a linha de base dele cair na linha de base de um

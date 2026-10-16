@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { activeAiProvider, isAiConfigured } from '../common/ai';
 import { generateExplanation } from '../common/ai/explanation';
+import { AiUsageService } from '../ai-usage/ai-usage.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ExplanationResult {
@@ -30,9 +31,15 @@ export class ExplanationService {
    */
   private readonly emAndamento = new Map<string, Promise<ExplanationResult>>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usage: AiUsageService,
+  ) {}
 
-  async explain(questionId: string): Promise<ExplanationResult> {
+  async explain(
+    userId: string,
+    questionId: string,
+  ): Promise<ExplanationResult> {
     const questao = await this.prisma.question.findUnique({
       where: { id: questionId },
       select: {
@@ -67,6 +74,10 @@ export class ExplanationService {
     if (!isAiConfigured()) {
       return { explanation: null, source: null, available: false };
     }
+
+    // Cada aluno que pede gasta a própria cota, mesmo quando junta-se a uma
+    // geração já em andamento: a cota é por pedido, o custo pago é por questão.
+    await this.usage.reserve(userId, 'explanation');
 
     const pendente = this.emAndamento.get(questionId);
     if (pendente) return pendente;

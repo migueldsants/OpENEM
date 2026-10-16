@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,7 +23,10 @@ export class CommunityController {
     return this.community.listThreads();
   }
 
+  // Escrita no fórum cresce o tópico e a leitura dele (ver pendências no PR:
+  // as respostas ainda não são paginadas). Dez por minuto por IP segura o ritmo.
   @Post()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({ summary: 'Cria um tópico no fórum' })
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateThreadDto) {
     return this.community.createThread(user.userId, dto);
@@ -35,6 +39,7 @@ export class CommunityController {
   }
 
   @Post(':id/posts')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({ summary: 'Responde a um tópico' })
   reply(
     @CurrentUser() user: AuthenticatedUser,

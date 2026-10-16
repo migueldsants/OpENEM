@@ -16,6 +16,7 @@ import {
   resolveAnnotations,
 } from '../common/essay-ai/annotations';
 import { totalEssayScore } from '../common/essay-score';
+import { AiUsageService } from '../ai-usage/ai-usage.service';
 import { xpForEssay } from '../common/gamification';
 import {
   GamificationDelta,
@@ -63,6 +64,7 @@ export class EssaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
+    private readonly usage: AiUsageService,
   ) {}
 
   listPrompts() {
@@ -239,6 +241,8 @@ export class EssaysService {
       throw new ConflictException('Esta redação já foi avaliada');
     }
 
+    // Só depois das checagens de dono e de já avaliada: pedido recusado não gasta cota.
+    await this.usage.reserve(userId, 'essay');
     const scores = await gradeEssayWithAi({
       theme: submission.prompt.theme,
       instructions: submission.prompt.instructions,

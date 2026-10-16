@@ -5,9 +5,18 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+
+let dummyHashPromise: Promise<string> | null = null;
+
+/** Hash argon2 de uma senha aleatória, calculado uma vez por processo. */
+function dummyHash(): Promise<string> {
+  dummyHashPromise ??= argon2.hash(randomBytes(16).toString('hex'));
+  return dummyHashPromise;
+}
 
 export interface AuthResult {
   accessToken: string;
@@ -50,6 +59,9 @@ export class AuthService {
     // Mensagem genérica: não revela se o e-mail existe.
     const invalid = new UnauthorizedException('Credenciais inválidas');
     if (!user) {
+      // Sem conta, verifica a senha contra um hash falso: o tempo da resposta
+      // não deixa ver quais e-mails já existem (com argon2, ~5 ms contra ~70 ms).
+      await argon2.verify(await dummyHash(), dto.password);
       throw invalid;
     }
 

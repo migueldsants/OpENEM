@@ -15,6 +15,9 @@ import { generateExplanation } from '../common/ai/explanation';
 const mockIsConfigured = isAiConfigured as jest.Mock;
 const mockGenerate = generateExplanation as jest.Mock;
 
+/** Cota da IA: por padrão deixa passar; o teste de limite troca por uma recusa. */
+const quota = { reserve: jest.fn().mockResolvedValue(undefined) } as any;
+
 function makePrisma() {
   return {
     question: {
@@ -43,14 +46,38 @@ describe('ExplanationService', () => {
   beforeEach(() => {
     mockIsConfigured.mockReset();
     mockGenerate.mockReset();
+    quota.reserve.mockReset().mockResolvedValue(undefined);
   });
 
   it('404 para questão inexistente', async () => {
     const prisma = makePrisma() as any;
     prisma.question.findUnique.mockResolvedValue(null);
     await expect(
-      new ExplanationService(prisma).explain('nao-existe'),
+      new ExplanationService(prisma, quota).explain('u1', 'nao-existe'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('recusa pela cota do aluno antes de chamar a IA', async () => {
+    mockIsConfigured.mockReturnValue(true);
+    const prisma = makePrisma() as any;
+    prisma.question.findUnique.mockResolvedValue(SEM_COMENTARIO);
+    quota.reserve.mockRejectedValueOnce(new Error('cota'));
+    await expect(
+      new ExplanationService(prisma, quota).explain('u1', 'q1'),
+    ).rejects.toThrow('cota');
+    expect(quota.reserve).toHaveBeenCalledWith('u1', 'explanation');
+    expect(mockGenerate).not.toHaveBeenCalled();
+  });
+
+  it('comentário já gravado não consome cota', async () => {
+    const prisma = makePrisma() as any;
+    prisma.question.findUnique.mockResolvedValue({
+      ...SEM_COMENTARIO,
+      explanation: 'Pronto.',
+      explanationSource: 'seed',
+    });
+    await new ExplanationService(prisma, quota).explain('u1', 'q1');
+    expect(quota.reserve).not.toHaveBeenCalled();
   });
 
   it('devolve o comentário existente sem chamar a IA', async () => {
@@ -61,7 +88,7 @@ describe('ExplanationService', () => {
       explanationSource: 'humano',
     });
 
-    const res = await new ExplanationService(prisma).explain('q1');
+    const res = await new ExplanationService(prisma, quota).explain('u1', 'q1');
 
     expect(res).toEqual({
       explanation: 'Já comentada.',
@@ -76,7 +103,7 @@ describe('ExplanationService', () => {
     prisma.question.findUnique.mockResolvedValue(SEM_COMENTARIO);
     mockIsConfigured.mockReturnValue(false);
 
-    const res = await new ExplanationService(prisma).explain('q1');
+    const res = await new ExplanationService(prisma, quota).explain('u1', 'q1');
 
     expect(res).toEqual({ explanation: null, source: null, available: false });
     expect(mockGenerate).not.toHaveBeenCalled();
@@ -88,7 +115,7 @@ describe('ExplanationService', () => {
     mockIsConfigured.mockReturnValue(true);
     mockGenerate.mockResolvedValue('Comentário gerado.');
 
-    const res = await new ExplanationService(prisma).explain('q1');
+    const res = await new ExplanationService(prisma, quota).explain('u1', 'q1');
 
     expect(res).toEqual({
       explanation: 'Comentário gerado.',
@@ -117,10 +144,10 @@ describe('ExplanationService', () => {
         resolver = r;
       }),
     );
-    const service = new ExplanationService(prisma);
+    const service = new ExplanationService(prisma, quota);
 
-    const a = service.explain('q1');
-    const b = service.explain('q1');
+    const a = service.explain('u1', 'q1');
+    const b = service.explain('u1', 'q1');
     // Deixa as duas chegarem ao ponto de geração antes de resolver.
     await new Promise((r) => setImmediate(r));
     resolver('Único.');
@@ -143,7 +170,7 @@ describe('ExplanationService', () => {
     mockIsConfigured.mockReturnValue(true);
     mockGenerate.mockResolvedValue('Descartado.');
 
-    const res = await new ExplanationService(prisma).explain('q1');
+    const res = await new ExplanationService(prisma, quota).explain('u1', 'q1');
 
     expect(res.explanation).toBe('Gravado antes.');
     expect(res.source).toBe('ai:gemini');
@@ -160,7 +187,7 @@ describe('ExplanationService', () => {
     });
     mockIsConfigured.mockReturnValue(true);
 
-    const res = await new ExplanationService(prisma).explain('q1');
+    const res = await new ExplanationService(prisma, quota).explain('u1', 'q1');
 
     expect(res.available).toBe(false);
     expect(mockGenerate).not.toHaveBeenCalled();
@@ -173,10 +200,10 @@ describe('ExplanationService', () => {
     mockGenerate
       .mockRejectedValueOnce(new Error('timeout'))
       .mockResolvedValueOnce('Segunda tentativa.');
-    const service = new ExplanationService(prisma);
+    const service = new ExplanationService(prisma, quota);
 
-    await expect(service.explain('q1')).rejects.toThrow('timeout');
-    const res = await service.explain('q1');
+    await expect(service.explain('u1', 'q1')).rejects.toThrow('timeout');
+    const res = await service.explain('u1', 'q1');
 
     expect(res.explanation).toBe('Segunda tentativa.');
   });

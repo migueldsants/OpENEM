@@ -13,7 +13,34 @@ import { SVG } from 'mathjax-full/js/output/svg.js';
 import { liteAdaptor } from 'mathjax-full/js/adaptors/liteAdaptor.js';
 import type { LiteElement } from 'mathjax-full/js/adaptors/lite/Element.js';
 import { RegisterHTMLHandler } from 'mathjax-full/js/handlers/html.js';
-import { AllPackages } from 'mathjax-full/js/input/tex/AllPackages.js';
+// Só os pacotes do TeX que as fórmulas usam (cada import registra o seu). A
+// fórmula personalizada vem do aluno: pacote a mais é superfície a mais.
+import 'mathjax-full/js/input/tex/base/BaseConfiguration.js';
+import 'mathjax-full/js/input/tex/ams/AmsConfiguration.js';
+import 'mathjax-full/js/input/tex/boldsymbol/BoldsymbolConfiguration.js';
+import 'mathjax-full/js/input/tex/cancel/CancelConfiguration.js';
+import 'mathjax-full/js/input/tex/gensymb/GensymbConfiguration.js';
+import 'mathjax-full/js/input/tex/mhchem/MhchemConfiguration.js';
+import 'mathjax-full/js/input/tex/noundefined/NoUndefinedConfiguration.js';
+import 'mathjax-full/js/input/tex/textmacros/TextMacrosConfiguration.js';
+import 'mathjax-full/js/input/tex/upgreek/UpgreekConfiguration.js';
+
+/**
+ * Pacotes do TeX ligados. `noundefined` pinta comando desconhecido de vermelho
+ * (é assim que `error` detecta), `textmacros` dá os acentos dentro de \text e
+ * `ams` o \underset da cedilha (ver normalizeLatex).
+ */
+export const TEX_PACKAGES = [
+  'base',
+  'ams',
+  'boldsymbol',
+  'cancel',
+  'gensymb',
+  'mhchem',
+  'noundefined',
+  'textmacros',
+  'upgreek',
+];
 
 export interface MathSvg {
   svg: string;
@@ -117,6 +144,17 @@ export function normalizeLatex(latex: string): string {
   return out + foraDoTexto(unicode.slice(last));
 }
 
+/**
+ * Tira do SVG qualquer elemento de imagem: a fórmula é só vetor, e nada além
+ * de caminhos e texto deve chegar ao `svg-to-pdfkit`.
+ */
+export function semImagens(svg: string): string {
+  return svg
+    .replace(/<image\b[^>]*\/>/gi, '')
+    .replace(/<image\b[^>]*>[\s\S]*?<\/image\s*>/gi, '')
+    .replace(/<\/?image\b[^>]*>/gi, '');
+}
+
 type Converter = (latex: string, display: boolean) => MathSvg;
 
 let converter: Converter | null = null;
@@ -127,7 +165,7 @@ function getConverter(): Converter {
   const adaptor = liteAdaptor();
   RegisterHTMLHandler(adaptor);
   const doc = mathjax.document('', {
-    InputJax: new TeX({ packages: AllPackages }),
+    InputJax: new TeX({ packages: TEX_PACKAGES }),
     // Sem cache de glifos: cada SVG precisa ser autossuficiente, porque é
     // pintado sozinho no PDF (o cache usa <use> apontando para outro SVG).
     OutputJax: new SVG({ fontCache: 'none' }),
@@ -136,7 +174,7 @@ function getConverter(): Converter {
   converter = (latex, display) => {
     // `convert` é tipado como `any` no MathJax; no adaptador lite é um nó lite.
     const node = doc.convert(latex, { display }) as LiteElement;
-    const svg = adaptor.innerHTML(node);
+    const svg = semImagens(adaptor.innerHTML(node));
     const num = (re: RegExp) => Number(re.exec(svg)?.[1] ?? 0);
     const widthEx = num(/width="([\d.]+)ex"/);
     const heightEx = num(/height="([\d.]+)ex"/);
@@ -150,7 +188,20 @@ function getConverter(): Converter {
   return converter;
 }
 
-/** Converte uma expressão. `display` = fórmula em destaque (frações maiores). */
+/** Desenhado no lugar de uma expressão que derruba o MathJax. */
+const FORMULA_QUEBRADA = '\\text{?}';
+
+/**
+ * Converte uma expressão. `display` = fórmula em destaque (frações maiores).
+ * Algumas entradas (caractere de controle, por exemplo) fazem o MathJax lançar
+ * exceção em vez de marcar erro; aí sai um "?" marcado como erro, e o resto do
+ * caderno continua.
+ */
 export function texToSvg(latex: string, display = true): MathSvg {
-  return getConverter()(normalizeLatex(latex), display);
+  const converter = getConverter();
+  try {
+    return converter(normalizeLatex(latex), display);
+  } catch {
+    return { ...converter(FORMULA_QUEBRADA, display), error: true };
+  }
 }

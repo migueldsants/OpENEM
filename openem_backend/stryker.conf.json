@@ -12,6 +12,7 @@
     "!src/**/*.module.ts",
     "!src/**/dto/**",
     "!src/main.ts",
+    "!src/**/*.worker.ts",
     "!src/prisma/**",
     "!src/health/**",
     "!src/**/*.controller.ts",

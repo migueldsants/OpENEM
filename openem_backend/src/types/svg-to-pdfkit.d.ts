@@ -6,6 +6,8 @@ declare module 'svg-to-pdfkit' {
     preserveAspectRatio?: string;
     /** Trata unidades sem sufixo como pontos (e não pixels). */
     assumePt?: boolean;
+    /** Recebe o endereço de cada imagem do SVG e devolve o que abrir no lugar. */
+    imageCallback?: (link: string) => string;
   }
   function SVGtoPDF(
     doc: PDFKit.PDFDocument,

@@ -6,12 +6,33 @@ import { paletteFromBrand } from './lib/theme-derive';
 import { customScheme, fromOneSide } from './theme-custom';
 
 /**
- * O script inline do index.html roda antes do React para não piscar o tema
- * errado. Ele não pode importar nada, então repete a lista de famílias e a
- * conta de luminância: estes testes seguram os dois lados juntos.
+ * O script de boot (public/theme-boot.js) roda antes do React para não piscar
+ * o tema errado. Ele não pode importar nada, então repete a lista de famílias e
+ * a conta de luminância: estes testes seguram os dois lados juntos.
  */
 const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
-const script = /<script id="theme-boot">([\s\S]*?)<\/script>/.exec(html)?.[1];
+const script = readFileSync(
+  resolve(__dirname, '../public/theme-boot.js'),
+  'utf8',
+);
+
+describe('carregamento do script de tema', () => {
+  const head = /<head>([\s\S]*?)<\/head>/.exec(html)?.[1] ?? '';
+
+  it('vem do próprio arquivo, síncrono e antes do CSS', () => {
+    const tag = /<script id="theme-boot"[^>]*>/.exec(head)?.[0];
+    expect(tag).toBe('<script id="theme-boot" src="/theme-boot.js">');
+    // Sem async/defer/module: tem de rodar antes da primeira pintura.
+    expect(head.indexOf(tag!)).toBeLessThan(head.indexOf('rel="stylesheet"'));
+  });
+
+  it('o index.html não tem script inline (a CSP do nginx só aceita arquivo)', () => {
+    const inline = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
+      .filter((m) => !/\bsrc=/.test(m[1]))
+      .map((m) => m[2].trim());
+    expect(inline).toEqual([]);
+  });
+});
 
 function boot(saved: Record<string, string>) {
   localStorage.clear();
@@ -20,7 +41,7 @@ function boot(saved: Record<string, string>) {
   root.removeAttribute('data-theme');
   root.removeAttribute('data-fx');
   root.removeAttribute('style');
-  new Function(script!)();
+  new Function(script)();
   return root;
 }
 
@@ -29,13 +50,13 @@ afterEach(() => {
   document.documentElement.removeAttribute('style');
 });
 
-describe('script de tema do index.html', () => {
+describe('script de tema (public/theme-boot.js)', () => {
   it('existe', () => {
     expect(script).toBeTruthy();
   });
 
   it('conhece exatamente as mesmas famílias que FAMILIES', () => {
-    const lista = /var families = \[([\s\S]*?)\];/.exec(script!)?.[1] ?? '';
+    const lista = /var families = \[([\s\S]*?)\];/.exec(script)?.[1] ?? '';
     const chaves = [...lista.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
     expect(chaves.sort()).toEqual(FAMILIES.map((f) => f.key).sort());
   });
