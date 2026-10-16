@@ -106,8 +106,17 @@ describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) 
       .set(auth())
       .send({ body: 'Tente fatorar primeiro.' })
       .expect(201);
-    expect(reply.body.posts.length).toBe(1);
-    expect(reply.body.posts[0].body).toBe('Tente fatorar primeiro.');
+    expect(reply.body.body).toBe('Tente fatorar primeiro.');
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/v1/community/threads/${threadId}`)
+      .set(auth())
+      .expect(200);
+    expect(detail.body.replies).toBe(1);
+    expect(detail.body.posts.map((p: { id: string }) => p.id)).toEqual([
+      reply.body.id,
+    ]);
+    expect(detail.body.nextCursor).toBeNull();
   });
 
   it('indica disponibilidade da correÃ§Ã£o por IA', async () => {

@@ -1,7 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
+import { ListPostsDto } from './dto/list-posts.dto';
+import {
+  afterCursor,
+  clampPageSize,
+  decodePostCursor,
+  type PostCursor,
+  slicePage,
+} from './posts-page';
 
 // Autor exibido publicamente — nome de exibição, sem expor o e-mail.
 const AUTHOR_SELECT = {
@@ -62,31 +74,26 @@ export class CommunityService {
     }));
   }
 
+  /**
+   * Detalha o tópico com a primeira página de respostas. `replies` é o total;
+   * as páginas seguintes vêm de `listPosts` com o `nextCursor`.
+   */
   async getThread(id: string, currentUserId?: string) {
-    const thread = await this.prisma.forumThread.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        title: true,
-        body: true,
-        createdAt: true,
-        questionId: true,
-        user: AUTHOR_SELECT,
-        posts: {
-          orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            body: true,
-            createdAt: true,
-            user: AUTHOR_SELECT,
-            _count: { select: { likes: true } },
-            likes: currentUserId
-              ? { where: { userId: currentUserId }, select: { id: true } }
-              : false,
-          },
+    const [thread, page] = await Promise.all([
+      this.prisma.forumThread.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          createdAt: true,
+          questionId: true,
+          user: AUTHOR_SELECT,
+          _count: { select: { posts: true } },
         },
-      },
-    });
+      }),
+      this.postPage(id, currentUserId, {}),
+    ]);
     if (!thread) {
       throw new NotFoundException('Tópico não encontrado');
     }
@@ -97,7 +104,80 @@ export class CommunityService {
       createdAt: thread.createdAt,
       questionId: thread.questionId,
       author: authorName(thread.user),
-      posts: thread.posts.map((p) => ({
+      replies: thread._count.posts,
+      posts: page.posts,
+      nextCursor: page.nextCursor,
+    };
+  }
+
+  /** Próxima página de respostas de um tópico (ordem de criação). */
+  async listPosts(
+    threadId: string,
+    currentUserId: string,
+    query: ListPostsDto,
+  ) {
+    await this.ensureThread(threadId);
+    return this.postPage(threadId, currentUserId, query);
+  }
+
+  /** Grava a resposta e devolve só ela, no formato das respostas da página. */
+  async addPost(userId: string, threadId: string, dto: CreatePostDto) {
+    await this.ensureThread(threadId);
+    const post = await this.prisma.forumPost.create({
+      data: { threadId, userId, body: dto.body },
+      select: { id: true, body: true, createdAt: true, user: AUTHOR_SELECT },
+    });
+    return {
+      id: post.id,
+      body: post.body,
+      createdAt: post.createdAt,
+      author: authorName(post.user),
+      likes: 0,
+      liked: false,
+    };
+  }
+
+  private async ensureThread(id: string) {
+    const thread = await this.prisma.forumThread.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!thread) {
+      throw new NotFoundException('Tópico não encontrado');
+    }
+  }
+
+  private async postPage(
+    threadId: string,
+    currentUserId: string | undefined,
+    query: ListPostsDto,
+  ) {
+    let after: PostCursor | null = null;
+    if (query.cursor) {
+      after = decodePostCursor(query.cursor);
+      if (!after) {
+        throw new BadRequestException('Cursor inválido');
+      }
+    }
+    const limit = clampPageSize(query.limit);
+    const rows = await this.prisma.forumPost.findMany({
+      where: { threadId, ...(after ? afterCursor(after) : {}) },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: limit + 1,
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        user: AUTHOR_SELECT,
+        _count: { select: { likes: true } },
+        likes: currentUserId
+          ? { where: { userId: currentUserId }, select: { id: true } }
+          : false,
+      },
+    });
+    const { items, nextCursor } = slicePage(rows, limit);
+    return {
+      posts: items.map((p) => ({
         id: p.id,
         body: p.body,
         createdAt: p.createdAt,
@@ -106,21 +186,8 @@ export class CommunityService {
         liked:
           currentUserId && Array.isArray(p.likes) ? p.likes.length > 0 : false,
       })),
+      nextCursor,
     };
-  }
-
-  async addPost(userId: string, threadId: string, dto: CreatePostDto) {
-    const thread = await this.prisma.forumThread.findUnique({
-      where: { id: threadId },
-      select: { id: true },
-    });
-    if (!thread) {
-      throw new NotFoundException('Tópico não encontrado');
-    }
-    await this.prisma.forumPost.create({
-      data: { threadId, userId, body: dto.body },
-    });
-    return this.getThread(threadId, userId);
   }
 
   /**

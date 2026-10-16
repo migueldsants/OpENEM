@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   api,
-  type ForumThread,
+  type ForumPost,
   type ForumThreadSummary,
 } from '../api';
 import { EmptyState } from '../components/EmptyState';
@@ -10,6 +10,13 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { PageHeader } from '../components/PageHeader';
 import { IconChat, IconHeart, IconQuestion } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import {
+  mapPost,
+  openThread,
+  type ThreadState,
+  withPage,
+  withReply,
+} from '../lib/forum-thread';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -50,8 +57,9 @@ function ThreadView({
   id: string;
   onBack: () => void;
 }) {
-  const [thread, setThread] = useState<ForumThread | null>(null);
+  const [thread, setThread] = useState<ThreadState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -60,7 +68,7 @@ function ThreadView({
   useEffect(() => {
     void (async () => {
       try {
-        setThread(await api.forumThread(id));
+        setThread(openThread(await api.forumThread(id)));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar.');
       } finally {
@@ -69,12 +77,28 @@ function ThreadView({
     })();
   }, [id]);
 
+  async function loadMore() {
+    const cursor = thread?.nextCursor;
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const page = await api.forumPosts(id, cursor);
+      setThread((prev) => (prev ? withPage(prev, page) : prev));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   async function send() {
     if (!reply.trim()) return;
     setSending(true);
     setError(null);
     try {
-      setThread(await api.replyThread(id, reply.trim()));
+      const post = await api.replyThread(id, reply.trim());
+      setThread((prev) => (prev ? withReply(prev, post) : prev));
       setReply('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível enviar.');
@@ -89,18 +113,11 @@ function ThreadView({
     // Otimista: atualiza UI imediatamente.
     setThread((prev) =>
       prev
-        ? {
-            ...prev,
-            posts: prev.posts.map((p) =>
-              p.id === postId
-                ? {
-                    ...p,
-                    liked: !liked,
-                    likes: Math.max(0, p.likes + (liked ? -1 : 1)),
-                  }
-                : p,
-            ),
-          }
+        ? mapPost(prev, postId, (p) => ({
+            ...p,
+            liked: !liked,
+            likes: Math.max(0, p.likes + (liked ? -1 : 1)),
+          }))
         : prev,
     );
     try {
@@ -109,24 +126,54 @@ function ThreadView({
       // Reverte em caso de erro.
       setThread((prev) =>
         prev
-          ? {
-              ...prev,
-              posts: prev.posts.map((p) =>
-                p.id === postId
-                  ? {
-                      ...p,
-                      liked,
-                      likes: Math.max(0, p.likes + (liked ? 1 : -1)),
-                    }
-                  : p,
-              ),
-            }
+          ? mapPost(prev, postId, (p) => ({
+              ...p,
+              liked,
+              likes: Math.max(0, p.likes + (liked ? 1 : -1)),
+            }))
           : prev,
       );
       setError(err instanceof Error ? err.message : 'Não foi possível curtir.');
     } finally {
       setToggling(null);
     }
+  }
+
+  function renderPost(p: ForumPost) {
+    return (
+      <li key={p.id} className="card p-4">
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 flex-1 text-xs font-semibold">
+            <Link
+              to={`/usuarios/${p.author.id}`}
+              className="font-medium text-brand hover:underline"
+            >
+              {p.author.name}
+            </Link>{' '}
+            <span className="font-normal text-muted">
+              · {timeAgo(p.createdAt)}
+            </span>
+          </p>
+          <button
+            onClick={() => void toggleLike(p.id, p.liked)}
+            disabled={toggling === p.id}
+            aria-pressed={p.liked}
+            aria-label={p.liked ? 'Descurtir' : 'Curtir'}
+            className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+              p.liked
+                ? 'bg-danger/12 text-danger'
+                : 'bg-surface-2 text-muted hover:text-fg'
+            }`}
+          >
+            <IconHeart width={16} height={16} filled={p.liked} />
+            {p.likes}
+          </button>
+        </div>
+        <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed">
+          {renderBody(p.body)}
+        </p>
+      </li>
+    );
   }
 
   if (loading) {
@@ -174,12 +221,11 @@ function ThreadView({
       </article>
 
       <h2 className="font-display text-sm font-bold text-muted">
-        {thread.posts.length}{' '}
-        {thread.posts.length === 1 ? 'resposta' : 'respostas'}
+        {thread.replies} {thread.replies === 1 ? 'resposta' : 'respostas'}
       </h2>
 
       <ul className="space-y-3">
-        {thread.posts.length === 0 && (
+        {thread.posts.length === 0 && thread.sent.length === 0 && (
           <li>
             <EmptyState
               icon={IconChat}
@@ -189,40 +235,19 @@ function ThreadView({
             />
           </li>
         )}
-        {thread.posts.map((p) => (
-          <li key={p.id} className="card p-4">
-            <div className="flex items-center gap-2">
-              <p className="min-w-0 flex-1 text-xs font-semibold">
-                <Link
-                  to={`/usuarios/${p.author.id}`}
-                  className="font-medium text-brand hover:underline"
-                >
-                  {p.author.name}
-                </Link>{' '}
-                <span className="font-normal text-muted">
-                  · {timeAgo(p.createdAt)}
-                </span>
-              </p>
-              <button
-                onClick={() => void toggleLike(p.id, p.liked)}
-                disabled={toggling === p.id}
-                aria-pressed={p.liked}
-                aria-label={p.liked ? 'Descurtir' : 'Curtir'}
-                className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
-                  p.liked
-                    ? 'bg-danger/12 text-danger'
-                    : 'bg-surface-2 text-muted hover:text-fg'
-                }`}
-              >
-                <IconHeart width={16} height={16} filled={p.liked} />
-                {p.likes}
-              </button>
-            </div>
-            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed">
-              {renderBody(p.body)}
-            </p>
+        {thread.posts.map(renderPost)}
+        {thread.nextCursor && (
+          <li className="flex justify-center">
+            <button
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+              className="btn btn-ghost"
+            >
+              {loadingMore ? 'Carregando…' : 'Carregar mais respostas'}
+            </button>
           </li>
-        ))}
+        )}
+        {thread.sent.map(renderPost)}
       </ul>
 
       <ErrorBanner message={error} />

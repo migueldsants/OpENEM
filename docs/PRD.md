@@ -624,8 +624,9 @@ model EssayEvaluation { // correção por rubrica (5 competências, 0..200 cada)
 | GET | `/api/v1/recommendation/next` | Questões recomendadas a partir dos erros recentes | JWT |
 | GET | `/api/v1/community/threads` | Lista tópicos do fórum (com contagem de respostas) | JWT |
 | POST | `/api/v1/community/threads` | Cria um tópico (vínculo a questão opcional) | JWT |
-| GET | `/api/v1/community/threads/:id` | Detalha tópico com posts | JWT |
-| POST | `/api/v1/community/threads/:id/posts` | Responde a um tópico | JWT |
+| GET | `/api/v1/community/threads/:id` | Detalha tópico com a 1ª página de respostas, o total (`replies`) e o `nextCursor` | JWT |
+| GET | `/api/v1/community/threads/:id/posts` | Próxima página de respostas (`cursor`, `limit` ≤ 50) | JWT |
+| POST | `/api/v1/community/threads/:id/posts` | Responde a um tópico (devolve só a resposta criada) | JWT |
 | GET | `/api/v1/essays/ai-available` | Indica se a IA está configurada + provedor ativo | JWT |
 | POST | `/api/v1/essays/submissions/:id/ai-evaluation` | Corrige redação por IA (multi-provedor) | JWT |
 
