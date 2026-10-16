@@ -1,4 +1,4 @@
-﻿import {
+import {
   INestApplication,
   RequestMethod,
   ValidationPipe,
@@ -8,7 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
-describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) (e2e)', () => {
+describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -51,7 +51,7 @@ describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) 
     await app.close();
   });
 
-  it('expÃµe o desafio diÃ¡rio com meta, progresso e recompensa', async () => {
+  it('expõe o desafio diário com meta, progresso e recompensa', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/gamification/daily-challenge')
       .set(auth())
@@ -63,7 +63,7 @@ describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) 
     expect(res.body.completed).toBe(false);
   });
 
-  it('nÃ£o resgata o desafio diÃ¡rio quando incompleto', async () => {
+  it('não resgata o desafio diário quando incompleto', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/gamification/daily-challenge/claim')
       .set(auth())
@@ -72,7 +72,7 @@ describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) 
     expect(res.body.xpAwarded).toBe(0);
   });
 
-  it('recomenda questÃµes sem revelar o gabarito', async () => {
+  it('recomenda questões sem revelar o gabarito', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/recommendation/next?limit=3')
       .set(auth())
@@ -85,11 +85,11 @@ describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) 
     );
   });
 
-  it('cria um tÃ³pico no fÃ³rum, lista, detalha e responde', async () => {
+  it('cria um tópico no fórum, lista, detalha e responde', async () => {
     const created = await request(app.getHttpServer())
       .post('/api/v1/community/threads')
       .set(auth())
-      .send({ title: 'DÃºvida sobre funÃ§Ãµes', body: 'Como resolver isto?' })
+      .send({ title: 'Dúvida sobre funções', body: 'Como resolver isto?' })
       .expect(201);
     expect(created.body).toHaveProperty('id');
     expect(created.body.author).toHaveProperty('name');
@@ -119,7 +119,7 @@ describe('Fase 3 â€” avanÃ§ado (desafio, recomendaÃ§Ã£o, comunidade) 
     expect(detail.body.nextCursor).toBeNull();
   });
 
-  it('indica disponibilidade da correÃ§Ã£o por IA', async () => {
+  it('indica disponibilidade da correção por IA', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/essays/ai-available')
       .set(auth())
