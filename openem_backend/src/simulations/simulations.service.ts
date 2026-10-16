@@ -5,7 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, SimulationTemplate } from '@prisma/client';
-import { dayAreas, dayRange } from '../common/enem-import/mapping';
+import {
+  dayAreas,
+  dayRange,
+  EXAM_KIND_ORDER,
+  ExamKind,
+} from '../common/enem-import/mapping';
 import { CalibratedItem, triScoreFromItems } from '../common/irt';
 import { allocateByWeight, sampleOffsets } from '../common/sampling';
 import { shuffle } from '../common/shuffle';
@@ -91,6 +96,7 @@ export class SimulationsService {
             year: true,
             label: true,
             isReapplication: true,
+            kind: true,
           },
         },
       },
@@ -126,13 +132,18 @@ export class SimulationsService {
           ? dayAreas(t.examYear.year, t.day)
           : [],
     }));
-    // Provas oficiais: a mais recente primeiro, a regular antes da
-    // reaplicação e o 1º dia antes do 2º.
+    // Provas oficiais: a mais recente primeiro, a regular antes das outras
+    // aplicações (reaplicação, 2ª/3ª aplicação, digital...) e o 1º dia antes
+    // do 2º.
+    const ordemDoTipo = (k: string) => {
+      const i = EXAM_KIND_ORDER.indexOf(k as ExamKind);
+      return i < 0 ? EXAM_KIND_ORDER.length : i;
+    };
     return lista.sort((a, b) => {
       if (!a.exam || !b.exam) return a.exam ? 1 : b.exam ? -1 : 0;
       return (
         b.exam.year - a.exam.year ||
-        Number(a.exam.isReapplication) - Number(b.exam.isReapplication) ||
+        ordemDoTipo(a.exam.kind) - ordemDoTipo(b.exam.kind) ||
         (a.day ?? 0) - (b.day ?? 0)
       );
     });

@@ -43,22 +43,49 @@ function boxOf(m, x0, y0, x1, y1) {
 async function graficos(page, w, h) {
   const ol = await page.getOperatorList();
   let ctm = [1, 0, 0, 1, 0, 0];
+  // Cor de preenchimento e de traço: desenho branco não aparece na página.
+  // A prova digital põe cada alternativa num retângulo branco (área de
+  // clique), que sem isso vira "figura" e engole o texto da alternativa.
+  let cor = { fill: null, stroke: null };
   const pilha = [];
   const out = [];
+  const branco = (c) => !!c && c.length > 0 && [...c].every((v) => v >= 250);
+  // Preenchimento quase branco é fundo (o botão cinza-claro de cada
+  // alternativa na prova digital de 2022), não figura. Tabela com borda
+  // continua sendo figura pelas bordas.
+  const fundo = (c) => !!c && c.length > 0 && [...c].every((v) => v >= 235);
+  let caminho = null; // caixa do último constructPath, à espera da pintura
+  const PINTA_FILL = new Set([OPS.fill, OPS.eoFill]);
+  const PINTA_STROKE = new Set([OPS.stroke, OPS.closeStroke]);
+  const PINTA_AMBOS = new Set([OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
   for (let i = 0; i < ol.fnArray.length; i++) {
     const fn = ol.fnArray[i], a = ol.argsArray[i];
-    if (fn === OPS.save) pilha.push(ctm);
-    else if (fn === OPS.restore) ctm = pilha.pop() ?? ctm;
+    if (caminho && fn !== OPS.constructPath) {
+      // Recorte (endPath sem pintar) e desenho todo branco ficam de fora.
+      const visivel = PINTA_FILL.has(fn) ? !fundo(cor.fill) : PINTA_STROKE.has(fn) ? !branco(cor.stroke) : PINTA_AMBOS.has(fn) ? !(fundo(cor.fill) && branco(cor.stroke)) : null;
+      if (visivel !== null || fn === OPS.endPath) {
+        if (visivel) out.push(caminho);
+        caminho = null;
+      }
+    }
+    if (fn === OPS.save) pilha.push([ctm, cor]);
+    else if (fn === OPS.restore) [ctm, cor] = pilha.pop() ?? [ctm, cor];
     else if (fn === OPS.transform) ctm = mult(ctm, a);
-    else if (fn === OPS.paintFormXObjectBegin) { pilha.push(ctm); if (a[0]) ctm = mult(ctm, a[0]); }
-    else if (fn === OPS.paintFormXObjectEnd) ctm = pilha.pop() ?? ctm;
+    else if (fn === OPS.setFillRGBColor) cor = { ...cor, fill: a };
+    else if (fn === OPS.setStrokeRGBColor) cor = { ...cor, stroke: a };
+    else if (fn === OPS.setFillGray) cor = { ...cor, fill: a };
+    else if (fn === OPS.setStrokeGray) cor = { ...cor, stroke: a };
+    else if (fn === OPS.paintFormXObjectBegin) { pilha.push([ctm, cor]); if (a[0]) ctm = mult(ctm, a[0]); }
+    else if (fn === OPS.paintFormXObjectEnd) [ctm, cor] = pilha.pop() ?? [ctm, cor];
     else if (fn === OPS.paintImageXObject || fn === OPS.paintInlineImageXObject || fn === OPS.paintImageMaskXObject || fn === OPS.paintImageXObjectRepeat) {
       out.push({ ...boxOf(ctm, 0, 0, 1, 1), tipo: 'img' });
     } else if (fn === OPS.constructPath) {
+      if (caminho) out.push(caminho); // dois caminhos seguidos: o anterior conta
       const mm = a[2];
-      if (mm && isFinite(mm[0])) out.push({ ...boxOf(ctm, mm[0], mm[1], mm[2], mm[3]), tipo: 'path' });
+      caminho = mm && isFinite(mm[0]) ? { ...boxOf(ctm, mm[0], mm[1], mm[2], mm[3]), tipo: 'path' } : null;
     }
   }
+  if (caminho) out.push(caminho);
   // Traço horizontal curto e fino: barra de fração (ou radical) em fórmula.
   const barras = out.filter((b) => b.y1 - b.y0 < 1.5 && b.x1 - b.x0 >= 4 && b.x1 - b.x0 < 150);
   // Descarta o que é moldura/régua de página: fio longo e fino, fundo da página.
@@ -92,6 +119,15 @@ export function decodificaGid(str, tabela) {
   return [...str].map((ch) => (ch === ' ' ? ' ' : tabela.get(ch.codePointAt(0)) ?? ch)).join('');
 }
 
+/**
+ * Ligadura "fi"/"fl" que o PDF desenha como glifo à parte e o pdfjs devolve
+ * com um espaço depois: "difi cultando", "fl orescer". O par não existe solto
+ * em português, então o espaço some quando a próxima letra é minúscula.
+ */
+export function juntaLigadura(t) {
+  return t.replace(/(^|[\s(«“"'a-zà-ÿ])(fi|fl) (?=[a-zà-ÿ])/g, '$1$2');
+}
+
 export async function parsePdf(file) {
   const doc = await getDocument({ url: file, verbosity: 0, fontExtraProperties: true }).promise;
   const linhas = [];
@@ -115,7 +151,21 @@ export async function parsePdf(file) {
       amostras.set(it.fontName, f);
     }
     paginasTc.set(p, tc);
-    const meio = w / 2;
+    // Página em coluna única (questão com tabela ou figura na largura toda):
+    // nas de duas colunas o vão do meio não tem texto; nessas, as linhas o
+    // atravessam. Com uma coluna só, tudo vai para a coluna 0.
+    const atravessam = tc.items.filter((it) => {
+      if (!it.str.trim()) return false;
+      const x = it.transform[4] - vx0;
+      const yy = it.transform[5] - vy0;
+      return yy > 40 && yy < h - 60 && x < w / 2 - 2 && x + it.width > w / 2 + 2;
+    }).length;
+    // Também é coluna única a página quase sem texto começando na metade
+    // direita (a prova digital: uma questão curta por página).
+    const corpo = tc.items.filter((it) => it.str.trim() && it.transform[5] - vy0 > 40 && it.transform[5] - vy0 < h - 60);
+    const naDireita = corpo.filter((it) => it.transform[4] - vx0 > w / 2 + 5).length;
+    const umaColuna = atravessam >= 6 || (corpo.length >= 8 && naDireita < 3);
+    const meio = umaColuna ? w * 4 : w / 2;
     const g0 = await graficos(page, w, h);
     const desloca = (b) => ({ ...b, x0: b.x0 - vx0, x1: b.x1 - vx0, y0: b.y0 - vy0, y1: b.y1 - vy0 });
     const gr = g0.figs.map(desloca);
@@ -128,7 +178,12 @@ export async function parsePdf(file) {
       if (f.gid === undefined) {
         const tab = gidTable(f.nome) ?? gidTable('ArialMT');
         f.tab = tab;
-        f.gid = nota(decodificaGid(f.txt, tab)) > nota(f.txt) + 0.1;
+        // Fonte só de letras soltas (a das alternativas: "A B C D E") não dá
+        // para julgar — "a" e "e" são palavras e a decodificação venceria.
+        // Basta uma palavra de 3+ letras: fonte codificada pouco usada (um
+        // título, uma alternativa) também precisa ser decodificada.
+        const longas = f.txt.split(/\s+/).filter((w) => w.length >= 3).length;
+        f.gid = longas >= 1 && nota(decodificaGid(f.txt, tab)) > nota(f.txt) + 0.1;
         if (f.gid) fontesGid.add(f.nome);
       }
       return f.gid ? decodificaGid(it.str, f.tab) : it.str;
@@ -137,7 +192,7 @@ export async function parsePdf(file) {
       if (!it.str.trim()) continue;
       const x = it.transform[4] - vx0, y = it.transform[5] - vy0;
       if (y < 12 || y > h - 12) continue;
-      itens.push({ x, y, str: fixSymbol(decod(it)), hgt: it.height || Math.abs(it.transform[3]), w: it.width, c: x < meio - 5 ? 0 : 1 });
+      itens.push({ x, y, str: fixSymbol(decod(it)), hgt: it.height || Math.abs(it.transform[3]), w: it.width, f: it.fontName, c: x < meio - 5 ? 0 : 1 });
     }
     // altura "normal" do corpo de texto nesta página
     const alturas = itens.map((i) => Math.round(i.hgt * 2) / 2).sort((a, b) => a - b);
@@ -159,7 +214,10 @@ export async function parsePdf(file) {
           const d = it.y - l.y;
           if (d > -5 && d < 8 && Math.abs(d) < dist) {
             const xs = l.items.map((i) => i.x);
-            if (it.x >= Math.min(...xs) - 5 && it.x <= Math.max(...l.items.map((i) => i.x + i.w)) + 20) { melhor = l; dist = Math.abs(d); }
+            // Na mesma linha de base, item menor à esquerda (a letra da
+            // alternativa na prova digital) também é da linha.
+            const esquerda = Math.abs(d) <= 1.5 ? 60 : 5;
+            if (it.x >= Math.min(...xs) - esquerda && it.x <= Math.max(...l.items.map((i) => i.x + i.w)) + 20) { melhor = l; dist = Math.abs(d); }
           }
         }
         if (melhor) {
@@ -169,7 +227,8 @@ export async function parsePdf(file) {
           ls.push({ p, c, y: it.y, items: [it], w, h });
         }
       }
-      ls.sort((a, b) => b.y - a.y);
+      // Mesma altura: a da esquerda primeiro (letra antes do texto).
+      ls.sort((a, b) => b.y - a.y || Math.min(...a.items.map((i) => i.x)) - Math.min(...b.items.map((i) => i.x)));
       linhas.push(...ls);
     }
     figurasPag.push(gr.map((g) => ({ ...g, p, c: (g.x0 + g.x1) / 2 < meio ? 0 : 1, w, h })));
@@ -187,19 +246,35 @@ export async function parsePdf(file) {
       else t += (t ? ' ' : '') + i.str;
       fimAnterior = i.x + i.w;
     }
-    l.text = t.replace(/\s+/g, ' ').replace(/ﬁ/g, 'fi').replace(/ﬂ/g, 'fl').trim();
+    l.text = juntaLigadura(t.replace(/\s+/g, ' ').replace(/ﬁ/g, 'fi').replace(/ﬂ/g, 'fl').trim());
   }
 
   // Figuras: agrupa caixas próximas (mesma página/coluna) numa figura só.
   const figuras = [];
   // Linha que é só a letra de uma alternativa (o círculo dela é um desenho).
   const soLetra = (l) => /^[A-E]$/.test(l.items[0].str.trim());
+  // Peça de fundo (antes de agrupar, para não levar junto o que está dentro
+  // dela): o cartão em volta da questão na prova digital de 2020 — imagem de
+  // sombra ou retângulo que contém o cabeçalho, as alternativas ou vários
+  // parágrafos — e a moldura de uma caixa de texto. Rótulo de gráfico ou
+  // mapa é curto; parágrafo ocupa a largura. Na tabela, só a borda externa
+  // sai: as bordas internas continuam agrupando a tabela como figura.
+  const RESIDUO = /[\u0000-\u0008\u000b-\u001f\ue000-\uf8ff¡]|\^\(|_\(/;
+  function fundoDeTexto(b) {
+    if (b.y1 - b.y0 < 40) return false;
+    const dentro = linhas.filter((l) => l.p === b.p && l.y >= b.y0 && l.y <= b.y1 && l.x0 >= b.x0 - 2 && l.x1 <= b.x1 + 2);
+    if (dentro.some((l) => RE_Q.test(l.text))) return true;
+    if (dentro.filter((l) => /^[A-E]$/.test(l.items[0].str.trim()) && l.items.length > 1).length >= 3) return true;
+    // Fórmula com resíduo de fonte dentro: fica figura, senão o texto quebra.
+    if (dentro.some((l) => RESIDUO.test(l.text))) return false;
+    return dentro.filter((l) => l.x1 - l.x0 > 0.6 * (b.x1 - b.x0)).length >= 3;
+  }
   for (const caixas0 of figurasPag) {
     const pag = caixas0[0]?.p;
     const letras = linhas.filter((l) => l.p === pag).flatMap((l) => l.items.filter((i) => /^[A-E]$/.test(i.str.trim())).map((i) => ({ cx: i.x + i.w / 2, cy: i.y + i.hgt / 3 })));
     // Descarta o círculo/quadrado em volta da letra da alternativa.
     const caixas = caixas0.filter((b) => {
-      if (b.tipo === 'img' || b.x1 - b.x0 > 18 || b.y1 - b.y0 > 18) return true;
+      if (b.tipo === 'img' || b.x1 - b.x0 > 18 || b.y1 - b.y0 > 18) return !fundoDeTexto(b);
       return !letras.some((l) => l.cx >= b.x0 - 2 && l.cx <= b.x1 + 2 && l.cy >= b.y0 - 3 && l.cy <= b.y1 + 3);
     });
     const grupos = [];
@@ -265,7 +340,9 @@ export async function parsePdf(file) {
       if (m) {
         q = { number: +m[1], elems: [], page: e.p };
         questoes.push(q);
-        const resto = e.text.slice(m[0].length).trim();
+        // A prova digital põe a área depois do número: "Questão 54 - Ciências
+        // Humanas e suas Tecnologias". Isso é cabeçalho, não enunciado.
+        const resto = e.text.slice(m[0].length).trim().replace(/^[-–]\s*(Ci[êe]ncias|Linguagens|Matem[áa]tica)\b.*Tecnologias$/i, '').trim();
         if (resto) q.elems.push({ ...e, text: resto });
         continue;
       }
@@ -281,10 +358,30 @@ export async function parsePdf(file) {
     margem.get(k).push(l.x0);
   }
   for (const [k, xs] of margem) { xs.sort((a, b) => a - b); margem.set(k, xs[Math.floor(xs.length * 0.05)]); }
+  // Fonte das letras das alternativas: nos cadernos recentes elas são um glifo
+  // quadrado (letra no círculo) numa fonte só delas. Quando ela existe, linha
+  // que começa com o artigo "A" na fonte do texto não é alternativa — o espaço
+  // largo depois do artigo vem da justificação, não da diagramação.
+  // Na prova digital a letra é um caractere comum dentro de um círculo
+  // desenhado, mas também numa fonte só dela. Então a fonte das letras é a
+  // que aparece em letra solta no começo da linha e quase nunca em texto.
+  const contagem = new Map();
+  const emTexto = new Map();
+  for (const l of linhas) {
+    for (const it of l.items) if (it.str.trim().length > 1) emTexto.set(it.f, (emTexto.get(it.f) ?? 0) + 1);
+    const it = l.items[0];
+    if (/^[A-E]$/.test(it.str.trim())) contagem.set(it.f, (contagem.get(it.f) ?? 0) + 1);
+  }
+  // O pdfjs dá nome novo à mesma fonte ao longo do documento (a digital de
+  // 2020 troca na metade), então pode haver mais de uma fonte de letras.
+  const fontesDasLetras = new Set([...contagem].filter(([f, n]) => n >= 5 && (emTexto.get(f) ?? 0) < n / 2).map(([f]) => f));
+  const totalLetras = [...fontesDasLetras].reduce((t, f) => t + contagem.get(f), 0);
+  const fonteDasLetras = totalLetras >= 20 ? fontesDasLetras : null;
   const ehLetra = (e, letra) => {
     if (e.kind !== 'line' || !letra) return false;
     const it = e.items[0];
     const primeiro = it.str.trim();
+    if (fonteDasLetras && primeiro.length === 1 && !fonteDasLetras.has(it.f)) return false;
     // A letra fica na margem da coluna (rótulo de figura não)...
     if (e.x0 > (margem.get(e.p + ':' + e.c) ?? e.x0) + 14) return false;
     if (primeiro === letra) {

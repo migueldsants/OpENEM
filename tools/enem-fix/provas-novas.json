@@ -1,0 +1,126 @@
+{
+  "2016": {
+    "validacao": true,
+    "titulo": "ENEM 2016",
+    "ano": 2016,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2016_PV_impresso_D1_CD1.pdf", "gb": "GAB_ENEM_2016_DIA_1_01_AZUL.pdf" },
+      { "pdf": "2016_PV_impresso_D2_CD7.pdf", "gb": "GAB_ENEM_2016_DIA_2_07_AZUL.pdf" }
+    ]
+  },
+  "2012-reaplicacao": {
+    "titulo": "ENEM 2012 - Reaplicação",
+    "ano": 2012,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2012_PV_reaplicacao_PPL_D1_CD3.pdf", "gb": "p2_dia1_branco_2012.pdf" },
+      { "pdf": "2012_PV_reaplicacao_PPL_D2_CD6.pdf", "gb": "p2_dia2_cinza_2012.pdf" }
+    ]
+  },
+  "2013-reaplicacao": {
+    "titulo": "ENEM 2013 - Reaplicação",
+    "ano": 2013,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2013_PV_reaplicacao_PPL_D1_CD3.pdf", "gb": "gabarito_enem_ppl_2013_dia1_branca.pdf" },
+      { "pdf": "2013_PV_reaplicacao_PPL_D1_CD6.pdf", "gb": "gabarito_enem_ppl_2013_dia2_cinza.pdf" }
+    ]
+  },
+  "2014-reaplicacao": {
+    "titulo": "ENEM 2014 - Reaplicação",
+    "ano": 2014,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2014_PPL_PV_D1_CD3.pdf", "gb": "2014_PPL_GB_D1_CD3.pdf" },
+      { "pdf": "2014_PPL_PV_D2_CD6.pdf", "gb": "2014_PPL_GB_D2_CD6.pdf" }
+    ]
+  },
+  "2014-terceira-aplicacao": {
+    "titulo": "ENEM 2014 - Terceira aplicação",
+    "ano": 2014,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2014_PV_terceira_aplicacao_D1_CD3.pdf", "gb": "2014_GB_terceira_aplicacao_D1_CD3.pdf" },
+      { "pdf": "2014_PV_terceira_aplicacao_D2_CD6.pdf", "gb": "2014_GB_terceira_aplicacao_D2_CD6.pdf" }
+    ]
+  },
+  "2015-reaplicacao": {
+    "titulo": "ENEM 2015 - Reaplicação",
+    "ano": 2015,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2015_PV_reaplicacao_PPL_D1_CD9.pdf", "gb": "GAB_ENEM2015_2aAPLICACAO_DIA1_CADERNO_9.pdf" },
+      { "pdf": "2015_PV_reaplicacao_PPL_D2_CD13.pdf", "gb": "GAB_ENEM2015_2aAPLICACAO_DIA2_CADERNO_13.pdf" }
+    ]
+  },
+  "2016-reaplicacao": {
+    "titulo": "ENEM 2016 - Reaplicação",
+    "ano": 2016,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2016_PV_reaplicacao_PPL_D1_CD9.pdf", "gb": "gabarito_caderno_branco_9_2016.pdf" },
+      { "pdf": "2016_PV_reaplicacao_PPL_D2_CD13.pdf", "gb": "gabarito_caderno_cinza_13_2016.pdf" }
+    ]
+  },
+  "2016-segunda-aplicacao": {
+    "titulo": "ENEM 2016 - Segunda aplicação",
+    "ano": 2016,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "P2_02_AMARELO_CH_CN_2016_REG.pdf", "gb": "GAB_ENEM_2016_DIA_1_02_AMARELO_2.pdf" },
+      { "pdf": "P2_07_AZUL_LC_MT_2016_REG.pdf", "gb": "GAB_ENEM_2016_DIA_2_07_AZUL_2.pdf" }
+    ]
+  },
+  "2020-digital": {
+    "titulo": "ENEM 2020 - Digital",
+    "ano": 2020,
+    "questoes": 180,
+    "lingua": [1, 2, 3, 4, 5],
+    "dias": [
+      { "pdf": "2020_PV_digital_D1_CD1_ingles.pdf", "gb": "2020_GB_digital_D1_CD1_ingles.pdf", "idioma": "ingles" },
+      { "pdf": "2020_PV_digital_D1_CD1_espanhol.pdf", "gb": "2020_GB_digital_D1_CD1_espanhol.pdf", "idioma": "espanhol" },
+      { "pdf": "2020_PV_digital_D2_CD5.pdf", "gb": "2020_GB_digital_D2_CD5.pdf" }
+    ]
+  },
+  "2021-digital": {
+    "titulo": "ENEM 2021 - Digital",
+    "ano": 2021,
+    "questoes": 180,
+    "lingua": [1, 2, 3, 4, 5],
+    "dias": [
+      { "pdf": "2021_PV_digital_D1_CD1_ingles.pdf", "gb": "2021_GB_digital_D1_CD1_ingles.pdf", "idioma": "ingles" },
+      { "pdf": "2021_PV_digital_D1_CD1_espanhol.pdf", "gb": "2021_GB_digital_D1_CD1_espanhol.pdf", "idioma": "espanhol" },
+      { "pdf": "2021_PV_digital_D2_CD5.pdf", "gb": "2021_GB_digital_D2_CD5.pdf" }
+    ]
+  },
+  "2022-digital": {
+    "titulo": "ENEM 2022 - Digital",
+    "ano": 2022,
+    "questoes": 180,
+    "lingua": [1, 2, 3, 4, 5],
+    "dias": [
+      { "pdf": "2022_PV_digital_D1_CD1_ingles.pdf", "gb": "2022_GB_digital_D1_CD1_ingles.pdf", "idioma": "ingles" },
+      { "pdf": "2022_PV_digital_D1_CD1_espanhol.pdf", "gb": "2022_GB_digital_D1_CD1_espanhol.pdf", "idioma": "espanhol" },
+      { "pdf": "2022_PV_digital_D2_CD5.pdf", "gb": "2022_GB_digital_D2_CD5.pdf" }
+    ]
+  },
+  "2025-belem": {
+    "titulo": "ENEM 2025 - Aplicação Belém, Ananindeua e Marituba",
+    "ano": 2025,
+    "questoes": 180,
+    "lingua": [1, 2, 3, 4, 5],
+    "dias": [
+      { "pdf": "2025_PV_impresso_D3_CD1.pdf", "gb": "2025_GB_impresso_D3_CD1.pdf" },
+      { "pdf": "2025_PV_impresso_D4_CD5.pdf", "gb": "2025_GB_impresso_D4_CD5.pdf" }
+    ]
+  }
+}

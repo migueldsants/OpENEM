@@ -10,6 +10,23 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 const LETRA = /^(?:([A-E])|(anulad\w*))$/i;
 
 /**
+ * Número que o PDF quebra em dois itens colados ("12" + "1" = 121, no
+ * gabarito de 2016): sem juntar, a questão some e o "12" vira outra.
+ */
+export function juntaDigitos(itens) {
+  const ord = [...itens].sort((a, b) => b.y - a.y || a.x - b.x);
+  const out = [];
+  for (const it of ord) {
+    const ant = out[out.length - 1];
+    if (ant && /^\d+$/.test(ant.t) && /^\d+$/.test(it.t) && Math.abs(ant.y - it.y) < 1 && it.x - (ant.x + ant.w) < 1.5 && it.x > ant.x) {
+      ant.t += it.t;
+      ant.w = it.x + it.w - ant.x;
+    } else out.push({ ...it });
+  }
+  return out;
+}
+
+/**
  * `caderno` é o número do caderno do PDF da prova. Alguns gabaritos antigos
  * (2009) trazem quatro cadernos lado a lado, e cada um tem a sua ordem de
  * questões: ler a coluna errada devolve o gabarito de outra prova.
@@ -27,6 +44,7 @@ export async function lerGabarito(file, caderno = null) {
       if (!t) continue;
       itens.push({ t, x: it.transform[4], y: it.transform[5], w: it.width });
     }
+    itens = juntaDigitos(itens);
     // Cabeçalhos "Caderno N": recorta a faixa horizontal do caderno pedido.
     const cabecalhos = itens
       .map((i) => ({ i, m: /^Caderno\s*(\d+)$/i.exec(i.t) }))

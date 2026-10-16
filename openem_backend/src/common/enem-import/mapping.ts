@@ -42,7 +42,71 @@ export interface MappedExam {
   slug: string;
   year: number;
   label: string;
+  /** Só a reaplicação/PPL; as outras aplicações extras têm o `kind` próprio. */
   isReapplication: boolean;
+  kind: ExamKind;
+}
+
+/**
+ * Aplicação da prova. O INEP aplica, além da regular, a reaplicação/PPL (todo
+ * ano), uma 2ª ou 3ª aplicação quando algo dá errado (2014, 2016), a versão
+ * digital (2020–2022) e, em 2025, uma aplicação separada em Belém, Ananindeua
+ * e Marituba. Cada uma é uma prova diferente, com questões próprias.
+ */
+export type ExamKind =
+  | 'REGULAR'
+  | 'REAPLICACAO'
+  | 'SEGUNDA_APLICACAO'
+  | 'TERCEIRA_APLICACAO'
+  | 'DIGITAL'
+  | 'REGIONAL';
+
+/**
+ * Sufixo do diretório do dataset → aplicação. `code` é a letra que entra no
+ * ano do código da questão ("ENEM-2014T-136"); a ordem da lista é a ordem em
+ * que as aplicações de um mesmo ano aparecem (`EXAM_KIND_ORDER`).
+ */
+const KINDS: { suffix: string; kind: ExamKind; label: string; code: string }[] =
+  [
+    {
+      suffix: '-reaplicacao',
+      kind: 'REAPLICACAO',
+      label: 'reaplicação',
+      code: 'R',
+    },
+    {
+      suffix: '-segunda-aplicacao',
+      kind: 'SEGUNDA_APLICACAO',
+      label: '2ª aplicação',
+      code: 'S',
+    },
+    {
+      suffix: '-terceira-aplicacao',
+      kind: 'TERCEIRA_APLICACAO',
+      label: '3ª aplicação',
+      code: 'T',
+    },
+    { suffix: '-digital', kind: 'DIGITAL', label: 'digital', code: 'D' },
+    {
+      suffix: '-belem',
+      kind: 'REGIONAL',
+      label: 'Belém, Ananindeua e Marituba',
+      code: 'B',
+    },
+  ];
+
+export const EXAM_KIND_ORDER: ExamKind[] = [
+  'REGULAR',
+  ...KINDS.map((k) => k.kind),
+];
+
+/** Aplicação de uma prova pelo nome do diretório ("2014-terceira-aplicacao"). */
+export function examKind(slug: string): ExamKind {
+  return KINDS.find((k) => slug.endsWith(k.suffix))?.kind ?? 'REGULAR';
+}
+
+function kindInfo(slug: string) {
+  return KINDS.find((k) => slug.endsWith(k.suffix)) ?? null;
 }
 
 /** Questão pronta para virar um `Question` + `Alternative[]`. */
@@ -187,7 +251,8 @@ const LANGUAGE_SUFFIX: Record<string, string> = {
  * Código da questão, no formato ENEM-ANO-QUESTÃO: "ENEM-2023-136".
  *
  * - Reaplicação ganha um "R" no ano: "ENEM-2023R-136". A reaplicação tem o
- *   mesmo ano e os mesmos números da prova regular.
+ *   mesmo ano e os mesmos números da prova regular. As outras aplicações têm
+ *   letra própria: S (2ª aplicação), T (3ª), D (digital), B (Belém).
  * - Língua estrangeira ganha o idioma: "ENEM-2023-001-ING". As questões 1–5
  *   existem em inglês e em espanhol com o mesmo número.
  * - O número tem três dígitos, para o código ordenar certo como texto.
@@ -198,7 +263,7 @@ export function questionCode(
   number: number,
   language: string | null,
 ): string {
-  const ano = examSlug.includes('reaplicacao') ? `${year}R` : `${year}`;
+  const ano = `${year}${kindInfo(examSlug)?.code ?? ''}`;
   const numero = String(number).padStart(3, '0');
   const idioma = language ? LANGUAGE_SUFFIX[language] : undefined;
   return ['ENEM', ano, numero, idioma].filter(Boolean).join('-');
@@ -262,14 +327,13 @@ export function imageRelativePath(url: string): string | null {
 
 /** Metadados da prova a partir do nome do diretório e do `details.json`. */
 export function mapExam(slug: string, raw: RawExam): MappedExam {
-  const isReapplication = slug.includes('reaplicacao');
+  const info = kindInfo(slug);
   return {
     slug,
     year: raw.year,
-    label: isReapplication
-      ? `ENEM ${raw.year} (reaplicação)`
-      : `ENEM ${raw.year}`,
-    isReapplication,
+    label: info ? `ENEM ${raw.year} (${info.label})` : `ENEM ${raw.year}`,
+    isReapplication: info?.kind === 'REAPLICACAO',
+    kind: info?.kind ?? 'REGULAR',
   };
 }
 

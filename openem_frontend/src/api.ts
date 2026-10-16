@@ -711,6 +711,9 @@ export interface SimulationTemplate {
     year: number;
     label: string;
     isReapplication: boolean;
+    /** Aplicação: REGULAR, REAPLICACAO, SEGUNDA_APLICACAO, TERCEIRA_APLICACAO,
+     * DIGITAL ou REGIONAL. Ausente em backend antigo. */
+    kind?: string;
   } | null;
   day?: number | null;
   /** Áreas do dia da prova, na ordem do caderno. */

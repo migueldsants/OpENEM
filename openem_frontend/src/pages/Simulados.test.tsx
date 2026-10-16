@@ -358,6 +358,28 @@ describe('Simulados — provas oficiais do ENEM', () => {
     expect(screen.getByText('Natureza')).toBeInTheDocument();
   });
 
+  it('nomeia as aplicações extras e põe a regular primeiro', async () => {
+    const comTipo = (slug: string, kind: string) => ({
+      ...prova(slug, 2016, 1),
+      exam: { slug, year: 2016, label: slug, isReapplication: false, kind },
+    });
+    vi.mocked(api.simulationTemplates).mockResolvedValue([
+      comTipo('2016-segunda-aplicacao', 'SEGUNDA_APLICACAO'),
+      comTipo('2016-reaplicacao', 'REAPLICACAO'),
+      comTipo('2016', 'REGULAR'),
+    ] as never);
+    renderPage();
+
+    const rotulos = await screen.findAllByText(
+      /^(Aplicação regular|Reaplicação|2ª aplicação)$/,
+    );
+    expect(rotulos.map((r) => r.textContent)).toEqual([
+      'Aplicação regular',
+      'Reaplicação',
+      '2ª aplicação',
+    ]);
+  });
+
   it('iniciar um dia chama o start com o template da prova', async () => {
     vi.mocked(api.simulationTemplates).mockResolvedValue([
       prova('2023', 2023, 1),

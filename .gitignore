@@ -84,3 +84,6 @@ prisma/*.db-journal
 # Stryker (mutation testing)
 reports/
 .stryker-tmp/
+
+# Cache de páginas renderizadas pela tools/enem-fix (render.mjs)
+/tools/pages/

@@ -269,6 +269,7 @@ export async function importEnem(
           year: prova.year,
           label: prova.label,
           isReapplication: prova.isReapplication,
+          kind: prova.kind,
         },
         create: prova,
       });

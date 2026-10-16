@@ -2,7 +2,9 @@ import {
   areaBlocks,
   dayAreas,
   disciplineFromNumber,
+  EXAM_KIND_ORDER,
   examDay,
+  examKind,
   normalizeCodeQuery,
   officialDurationMin,
   imageRelativePath,
@@ -42,8 +44,28 @@ describe('mapExam', () => {
       year: 2023,
       label: 'ENEM 2023',
       isReapplication: false,
+      kind: 'REGULAR',
     });
   });
+
+  it.each([
+    [
+      '2014-terceira-aplicacao',
+      'TERCEIRA_APLICACAO',
+      'ENEM 2014 (3ª aplicação)',
+    ],
+    ['2016-segunda-aplicacao', 'SEGUNDA_APLICACAO', 'ENEM 2016 (2ª aplicação)'],
+    ['2020-digital', 'DIGITAL', 'ENEM 2020 (digital)'],
+    ['2025-belem', 'REGIONAL', 'ENEM 2025 (Belém, Ananindeua e Marituba)'],
+  ])(
+    'aplicação extra %s: tipo próprio e não conta como reaplicação',
+    (slug, kind, label) => {
+      const ano = parseInt(slug, 10);
+      const prova = mapExam(slug, { title: '', year: ano });
+      expect(prova).toMatchObject({ kind, label, isReapplication: false });
+      expect(examKind(slug)).toBe(kind);
+    },
+  );
 
   it('distingue a reaplicação, que tem o MESMO ano da regular', () => {
     const rea = mapExam('2023-reaplicacao', {
@@ -53,7 +75,14 @@ describe('mapExam', () => {
     expect(rea.year).toBe(2023);
     expect(rea.slug).toBe('2023-reaplicacao');
     expect(rea.isReapplication).toBe(true);
+    expect(rea.kind).toBe('REAPLICACAO');
     expect(rea.label).toContain('reaplicação');
+  });
+
+  it('ordena a regular antes das aplicações extras', () => {
+    expect(EXAM_KIND_ORDER[0]).toBe('REGULAR');
+    expect(EXAM_KIND_ORDER[1]).toBe('REAPLICACAO');
+    expect(new Set(EXAM_KIND_ORDER).size).toBe(EXAM_KIND_ORDER.length);
   });
 });
 
@@ -423,6 +452,19 @@ describe('questionCode', () => {
     expect(questionCode('2023-reaplicacao', 2023, 136, null)).toBe(
       'ENEM-2023R-136',
     );
+  });
+
+  it('dá letra própria a cada aplicação extra, para o código não colidir', () => {
+    expect(questionCode('2016-segunda-aplicacao', 2016, 1, null)).toBe(
+      'ENEM-2016S-001',
+    );
+    expect(questionCode('2014-terceira-aplicacao', 2014, 1, null)).toBe(
+      'ENEM-2014T-001',
+    );
+    expect(questionCode('2020-digital', 2020, 1, 'ingles')).toBe(
+      'ENEM-2020D-001-ING',
+    );
+    expect(questionCode('2025-belem', 2025, 180, null)).toBe('ENEM-2025B-180');
   });
 
   it('distingue as versões em inglês e espanhol da mesma questão', () => {

@@ -86,24 +86,41 @@ function duracao(min: number): string {
   return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`;
 }
 
-/** Os dois dias de uma aplicação (regular ou reaplicação). */
+/** Os dois dias de uma aplicação (regular, reaplicação, digital...). */
 interface Aplicacao {
   label: string;
-  isReapplication: boolean;
+  ordem: number;
   dias: SimulationTemplate[];
 }
 
-/** Provas oficiais agrupadas por ano: regular primeiro, reaplicação depois. */
+/**
+ * Aplicações do mesmo ano, na ordem em que aparecem. Mesma ordem e mesmos
+ * tipos do backend (`ExamKind` em common/enem-import/mapping.ts).
+ */
+const APLICACOES: { kind: string; label: string }[] = [
+  { kind: 'REGULAR', label: 'Aplicação regular' },
+  { kind: 'REAPLICACAO', label: 'Reaplicação' },
+  { kind: 'SEGUNDA_APLICACAO', label: '2ª aplicação' },
+  { kind: 'TERCEIRA_APLICACAO', label: '3ª aplicação' },
+  { kind: 'DIGITAL', label: 'Aplicação digital' },
+  { kind: 'REGIONAL', label: 'Belém, Ananindeua e Marituba' },
+];
+
+function aplicacaoDa(exam: NonNullable<SimulationTemplate['exam']>) {
+  const kind = exam.kind ?? (exam.isReapplication ? 'REAPLICACAO' : 'REGULAR');
+  const i = APLICACOES.findIndex((a) => a.kind === kind);
+  return i < 0
+    ? { label: exam.label, ordem: APLICACOES.length }
+    : { label: APLICACOES[i].label, ordem: i };
+}
+
+/** Provas oficiais agrupadas por ano: regular primeiro, as outras depois. */
 function agruparProvas(templates: SimulationTemplate[]) {
   const porAno = new Map<number, Map<string, Aplicacao>>();
   for (const t of templates) {
     if (t.scope !== 'EXAM' || !t.exam) continue;
     const ano = porAno.get(t.exam.year) ?? new Map<string, Aplicacao>();
-    const ap = ano.get(t.exam.slug) ?? {
-      label: t.exam.isReapplication ? 'Reaplicação' : 'Aplicação regular',
-      isReapplication: t.exam.isReapplication,
-      dias: [],
-    };
+    const ap = ano.get(t.exam.slug) ?? { ...aplicacaoDa(t.exam), dias: [] };
     ap.dias.push(t);
     ano.set(t.exam.slug, ap);
     porAno.set(t.exam.year, ano);
@@ -113,7 +130,7 @@ function agruparProvas(templates: SimulationTemplate[]) {
     .map(([ano, aps]) => ({
       ano,
       aplicacoes: [...aps.values()]
-        .sort((a, b) => Number(a.isReapplication) - Number(b.isReapplication))
+        .sort((a, b) => a.ordem - b.ordem)
         .map((ap) => ({
           ...ap,
           dias: ap.dias.sort((a, b) => (a.day ?? 0) - (b.day ?? 0)),
