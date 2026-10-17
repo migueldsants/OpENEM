@@ -18,6 +18,7 @@ const SCRIPTS: Record<BootstrapStep, string> = {
   'db:seed': 'seed',
   'db:import:enem': 'import-enem',
   'db:classify:keywords': 'classify-heuristic',
+  'db:classify:catalog': 'classify-catalog',
   'db:seed:flashcards': 'seed-flashcards',
 };
 
