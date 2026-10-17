@@ -31,7 +31,33 @@ node verificar-gabaritos.mjs <pasta dos PDFs> [url do banco]
 npm test
 ```
 
-`--dry` não escreve nada: serve para ver o relatório antes. Os PDFs são os
+`--dry` não escreve nada: serve para ver o relatório antes.
+
+### Provas que o dataset não tem
+
+`criar.mjs` monta do zero, a partir do caderno e do gabarito oficiais, as
+provas que nem existem no dataset: as reaplicações/PPL de 2012 a 2016, a 3ª
+aplicação de 2014, a 2ª aplicação de 2016, o ENEM Digital (2020–2022) e a
+aplicação de Belém, Ananindeua e Marituba (2025). A lista, com o caderno e o
+gabarito de cada dia, fica em `provas-novas.json`.
+
+```bash
+node criar.mjs <dataset/public> <pasta dos PDFs> [--dry] [--only=2016-reaplicacao] [--saida=<pasta>]
+# validação do próprio extrator: recria uma prova que o dataset já tem e compara
+node criar.mjs <dataset/public> <pasta dos PDFs> --only=2016 --comparar=2016 --saida=/tmp/validacao
+```
+
+A questão só entra com cinco alternativas, gabarito oficial (anulada fica de
+fora), diagramação dentro do padrão e texto sem resíduo de extração; o resto
+vai para o relatório como pendência. A área sai da posição no caderno, como
+no import. Na última validação (ENEM 2016, refeito do zero e comparado com o
+dataset): 182 das 185 questões refeitas, gabarito 181/181, texto 177/181 —
+as diferenças restantes são questões em que o dataset traz o enunciado como
+imagem e o caderno tem texto.
+
+Ficam de fora, por não haver gabarito oficial publicado: a PPL de 2010 e de
+2011 e o ENEM de 1998 a 2008 (o INEP publica só o caderno; o de 1998 nem
+está mais no ar). Os PDFs são os
 cadernos e gabaritos oficiais do INEP (`download.inep.gov.br`), nomeados como o
 mapa `EXAMS` no topo de `build.mjs` espera.
 
@@ -47,6 +73,15 @@ casos: quando a fonte declara os nomes dos glifos (`/Differences` com `gNN`),
 do Windows; quando o próprio código do caractere é o número do glifo,
 `parse.mjs` decide por fonte, comparando quanto do texto vira palavra conhecida
 antes e depois de decodificar.
+
+**Diagramações diferentes.** O parser reconhece página de coluna única (o
+texto atravessa o vão do meio), a letra da alternativa pela fonte dela (o
+artigo "A" no começo de uma linha justificada não é alternativa), a prova
+digital (uma questão por página, letra num círculo, alternativa num
+retângulo branco ou cinza-claro, cartão com sombra em volta da questão),
+número de gabarito quebrado em dois itens ("12" + "1") e a ligadura "fi"/"fl"
+devolvida com espaço ("difi cultando"). Desenho que não aparece na página
+(caminho de recorte, preenchimento branco) não conta como figura.
 
 **Fórmula, gráfico e figura.** O que não vira texto limpo é recortado da página
 como imagem (`render.mjs`, via MuPDF). Entram nessa regra: alternativa com

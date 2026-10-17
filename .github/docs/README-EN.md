@@ -45,8 +45,12 @@ docker compose up --build
 
 Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`),
 waits for it to be ready and applies the migrations when the backend starts.
-The database starts empty: populate it with the seed and the import (see
-below), running the commands inside the backend container.
+On the first start, while the database has no questions yet, the backend
+populates it by itself: seed, import of the official exams (downloads the
+dataset, needs internet), keyword classification and flashcards
+(`prisma/bootstrap.ts`, a few minutes). Later starts skip this; to update
+afterwards, run the commands below inside the container. `AUTO_IMPORT=0` in
+`.env` turns the automatic import off.
 
 ### Option B — Local development
 
@@ -101,12 +105,17 @@ ships incomplete (no alternatives, inconsistent answer key) are rejected and
 listed in the final report. Images go to `ENEM_MEDIA_DIR` and are served by the
 backend itself at `/media/enem/`.
 
-With Docker, run the import inside the container — questions go to Postgres and
-images to the `enem-media` volume:
+With Docker, the first start already runs the import. To update later (new
+dataset), run it inside the container — the image has no ts-node, so the
+scripts run compiled, from `dist-scripts/`; questions go to Postgres and images
+to the `enem-media` volume:
 
 ```bash
-docker compose exec backend npx ts-node prisma/import-enem.ts
+docker compose exec backend node dist-scripts/prisma/import-enem.js --refresh
 ```
+
+The other scripts follow the same path: `seed.js`, `classify-heuristic.js`,
+`seed-flashcards.js`.
 
 Official questions come in classified by **area** only. So that the by-theme
 mock exam can reach them, there is a **keyword** classification pass —

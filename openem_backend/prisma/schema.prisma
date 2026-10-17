@@ -111,6 +111,9 @@ model ExamYear {
   /// Rótulo de exibição: "ENEM 2023", "ENEM 2023 (reaplicação)".
   label           String
   isReapplication Boolean              @default(false)
+  /// Aplicação: REGULAR | REAPLICACAO | SEGUNDA_APLICACAO | TERCEIRA_APLICACAO
+  /// | DIGITAL | REGIONAL — ver `ExamKind` em common/enem-import/mapping.ts.
+  kind            String               @default("REGULAR")
   questions       Question[]
   templates       SimulationTemplate[]
 

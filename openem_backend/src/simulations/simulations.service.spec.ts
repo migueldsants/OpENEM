@@ -947,7 +947,13 @@ describe('SimulationsService — provas oficiais do ENEM', () => {
       questionCount: 90,
       timeLimitMin: 300,
       day,
-      examYear: { slug: id, year, label: id, isReapplication: rea },
+      examYear: {
+        slug: id,
+        year,
+        label: id,
+        isReapplication: rea,
+        kind: rea ? 'REAPLICACAO' : 'REGULAR',
+      },
     });
     prisma.simulationTemplate.findMany.mockResolvedValue([
       prova('2019-d1', 2019, 1),
