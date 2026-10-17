@@ -133,7 +133,8 @@ What the keywords do not decide comes from the **topic catalog**
 Haiku 5.5 against each area's topic list, versioned in the repository —
 OpENEM's own classification, not official. It only fills questions that still
 have no topic, skips anything below 0.6 confidence and needs no AI key. With
-both passes, ~93% of the official questions get a topic. A new database comes
+both passes, every official question gets a topic except one whose
+statement is truncated in the dataset. A new database comes
 out that way (the container runs both on first start); on an existing one,
 run:
 

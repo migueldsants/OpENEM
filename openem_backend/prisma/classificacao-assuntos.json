@@ -1,5 +1,5 @@
 {
- "_fonte": "Assunto das questões oficiais do ENEM que a classificação por palavra-chave não decidiu, escolhido pelo Claude Haiku 5.5 na lista de assuntos da área (classificação do OpENEM, não oficial). Aplicado por `npm run db:classify:catalog`; abaixo de 0,6 de confiança não é gravado.",
+ "_fonte": "Assunto das questões oficiais do ENEM que a classificação por palavra-chave não decidiu (classificação do OpENEM, não oficial). Primeira passada: Claude Haiku 5.5, na lista de assuntos da área. As que ficaram abaixo de 0,6 tiveram uma segunda passada com o texto completo e as figuras, e as 49 que ainda ficaram em dúvida foram revisadas uma a uma. Aplicado por `npm run db:classify:catalog`; abaixo de 0,6 de confiança não é gravado (resta só a enem:2016:165, cujo enunciado está truncado no dataset).",
  "questoes": {
   "enem:1998:11": {
    "assunto": "Física / Energia e potência",
@@ -15,11 +15,11 @@
   },
   "enem:1998:18": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:1998:19": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:1998:2": {
    "assunto": "Matemática / Geometria espacial",
@@ -51,7 +51,7 @@
   },
   "enem:1998:30": {
    "assunto": "Física / Cinemática",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:1998:31": {
    "assunto": "Biologia / Genética",
@@ -122,8 +122,8 @@
    "confianca": 0.95
   },
   "enem:1998:61": {
-   "assunto": "Geografia / Geopolítica",
-   "confianca": 0.55
+   "assunto": "História / Século XX",
+   "confianca": 0.65
   },
   "enem:1998:62": {
    "assunto": "Física / Termologia",
@@ -135,7 +135,7 @@
   },
   "enem:1998:7": {
    "assunto": "Física / Leis de Newton",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:1998:8": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -159,7 +159,7 @@
   },
   "enem:1999:15": {
    "assunto": "Química / Soluções",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:1999:17": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -170,20 +170,20 @@
    "confianca": 0.8
   },
   "enem:1999:19": {
-   "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.45
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:1999:2": {
    "assunto": "Matemática / Matrizes e determinantes",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:1999:20": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.25
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.75
   },
   "enem:1999:21": {
-   "assunto": "Matemática / Geometria plana",
-   "confianca": 0.3
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.75
   },
   "enem:1999:22": {
    "assunto": "Geografia / População",
@@ -199,11 +199,11 @@
   },
   "enem:1999:26": {
    "assunto": "Física / Óptica geométrica",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:1999:27": {
    "assunto": "Física / Óptica geométrica",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:1999:28": {
    "assunto": "Biologia / Biotecnologia",
@@ -251,7 +251,7 @@
   },
   "enem:1999:42": {
    "assunto": "Literatura / Modernismo",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:1999:44": {
    "assunto": "Biologia / Ecologia",
@@ -327,7 +327,7 @@
   },
   "enem:2000:10": {
    "assunto": "Física / Hidrostática",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2000:11": {
    "assunto": "Biologia / Ecologia",
@@ -375,7 +375,7 @@
   },
   "enem:2000:24": {
    "assunto": "Física / Óptica geométrica",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2000:26": {
    "assunto": "Geografia / População",
@@ -411,11 +411,11 @@
   },
   "enem:2000:34": {
    "assunto": "Química / Reações químicas",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2000:35": {
-   "assunto": "Geografia / Globalização",
-   "confianca": 0.55
+   "assunto": "História / Era Vargas",
+   "confianca": 0.6
   },
   "enem:2000:36": {
    "assunto": "Biologia / Ecologia",
@@ -446,12 +446,12 @@
    "confianca": 0.6
   },
   "enem:2000:45": {
-   "assunto": "Física / Termologia",
-   "confianca": 0.3
+   "assunto": "Geografia / Relevo",
+   "confianca": 0.85
   },
   "enem:2000:46": {
-   "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.4
+   "assunto": "Geografia / Agricultura",
+   "confianca": 0.6
   },
   "enem:2000:47": {
    "assunto": "Biologia / Ecologia",
@@ -519,7 +519,7 @@
   },
   "enem:2000:9": {
    "assunto": "Física / Gravitação",
-   "confianca": 0.55
+   "confianca": 0.75
   },
   "enem:2001:1": {
    "assunto": "Língua Portuguesa / Coesão e coerência",
@@ -694,8 +694,8 @@
    "confianca": 0.85
   },
   "enem:2001:63": {
-   "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Semântica",
+   "confianca": 0.7
   },
   "enem:2001:7": {
    "assunto": "Química / Estequiometria",
@@ -787,7 +787,7 @@
   },
   "enem:2002:39": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2002:4": {
    "assunto": "Matemática / Função exponencial",
@@ -803,7 +803,7 @@
   },
   "enem:2002:42": {
    "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2002:43": {
    "assunto": "Física / Energia e potência",
@@ -851,7 +851,7 @@
   },
   "enem:2002:59": {
    "assunto": "Física / Termologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2002:6": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -903,7 +903,7 @@
   },
   "enem:2003:14": {
    "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2003:15": {
    "assunto": "Matemática / Porcentagem",
@@ -990,8 +990,8 @@
    "confianca": 0.75
   },
   "enem:2003:39": {
-   "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.55
+   "assunto": "Sociologia / Desigualdade social",
+   "confianca": 0.65
   },
   "enem:2003:40": {
    "assunto": "Física / Energia e potência",
@@ -1079,7 +1079,7 @@
   },
   "enem:2003:7": {
    "assunto": "Matemática / Áreas e perímetros",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2003:8": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -1111,7 +1111,7 @@
   },
   "enem:2004:14": {
    "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2004:15": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -1270,8 +1270,8 @@
    "confianca": 0.95
   },
   "enem:2004:58": {
-   "assunto": "Biologia / Bioquímica celular",
-   "confianca": 0.5
+   "assunto": "Biologia / Evolução",
+   "confianca": 0.65
   },
   "enem:2004:59": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -1298,8 +1298,8 @@
    "confianca": 0.6
   },
   "enem:2004:9": {
-   "assunto": "Matemática / Funções",
-   "confianca": 0.4
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.6
   },
   "enem:2005:1": {
    "assunto": "Artes / Música e dança",
@@ -1307,7 +1307,7 @@
   },
   "enem:2005:16": {
    "assunto": "Geografia / População",
-   "confianca": 0.5
+   "confianca": 0.8
   },
   "enem:2005:19": {
    "assunto": "Geografia / Regionalização do Brasil",
@@ -1334,8 +1334,8 @@
    "confianca": 0.95
   },
   "enem:2005:28": {
-   "assunto": "Matemática / Porcentagem",
-   "confianca": 0.3
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2005:30": {
    "assunto": "Matemática / Regra de três",
@@ -1363,15 +1363,15 @@
   },
   "enem:2005:4": {
    "assunto": "Geografia / Indústria",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2005:40": {
    "assunto": "Física / Energia e potência",
    "confianca": 0.6
   },
   "enem:2005:42": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "assunto": "Matemática / Média, mediana e moda",
+   "confianca": 0.6
   },
   "enem:2005:43": {
    "assunto": "Biologia / Zoologia",
@@ -1391,7 +1391,7 @@
   },
   "enem:2005:51": {
    "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2005:55": {
    "assunto": "Matemática / Operações e propriedades",
@@ -1474,8 +1474,8 @@
    "confianca": 0.85
   },
   "enem:2006:24": {
-   "assunto": "Matemática / Juros simples e compostos",
-   "confianca": 0.5
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.65
   },
   "enem:2006:25": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -1487,7 +1487,7 @@
   },
   "enem:2006:28": {
    "assunto": "Física / Gravitação",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2006:29": {
    "assunto": "Biologia / Ecologia",
@@ -1514,16 +1514,16 @@
    "confianca": 0.9
   },
   "enem:2006:36": {
-   "assunto": "Biologia / Ecologia",
-   "confianca": 0.5
+   "assunto": "Biologia / Botânica",
+   "confianca": 0.7
   },
   "enem:2006:37": {
    "assunto": "Biologia / Ecologia",
    "confianca": 0.85
   },
   "enem:2006:38": {
-   "assunto": "Química / Química orgânica",
-   "confianca": 0.5
+   "assunto": "Biologia / Ecologia",
+   "confianca": 0.6
   },
   "enem:2006:39": {
    "assunto": "Biologia / Ecologia",
@@ -1531,7 +1531,7 @@
   },
   "enem:2006:40": {
    "assunto": "Biologia / Ciclos biogeoquímicos",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2006:41": {
    "assunto": "Biologia / Ecologia",
@@ -1614,8 +1614,8 @@
    "confianca": 0.65
   },
   "enem:2006:63": {
-   "assunto": "Química / Funções orgânicas",
-   "confianca": 0.55
+   "assunto": "Biologia / Metabolismo energético",
+   "confianca": 0.6
   },
   "enem:2006:7": {
    "assunto": "Literatura / Modernismo",
@@ -1651,7 +1651,7 @@
   },
   "enem:2007:15": {
    "assunto": "Biologia / Metabolismo energético",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2007:17": {
    "assunto": "História / Brasil Império",
@@ -1698,8 +1698,8 @@
    "confianca": 0.8
   },
   "enem:2007:31": {
-   "assunto": "Geografia / População",
-   "confianca": 0.5
+   "assunto": "Geografia / Cartografia",
+   "confianca": 0.6
   },
   "enem:2007:32": {
    "assunto": "Biologia / Saúde e doenças",
@@ -1755,11 +1755,11 @@
   },
   "enem:2007:52": {
    "assunto": "Biologia / Evolução",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2007:54": {
    "assunto": "Biologia / Botânica",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2007:57": {
    "assunto": "Física / Trabalho e energia",
@@ -1779,7 +1779,7 @@
   },
   "enem:2007:62": {
    "assunto": "Química / Soluções",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2007:8": {
    "assunto": "Matemática / Análise combinatória",
@@ -1810,20 +1810,20 @@
    "confianca": 0.85
   },
   "enem:2008:15": {
-   "assunto": "História / Século XX",
-   "confianca": 0.4
+   "assunto": "Sociologia / Estado e poder",
+   "confianca": 0.65
   },
   "enem:2008:16": {
    "assunto": "Matemática / Operações e propriedades",
    "confianca": 0.6
   },
   "enem:2008:17": {
-   "assunto": "Língua Portuguesa / Semântica",
-   "confianca": 0.45
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.6
   },
   "enem:2008:18": {
-   "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.5
+   "assunto": "Química / Separação de misturas",
+   "confianca": 0.6
   },
   "enem:2008:2": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -2122,8 +2122,8 @@
    "confianca": 0.7
   },
   "enem:2009:137": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2009:14": {
    "assunto": "Física / Energia e potência",
@@ -2218,8 +2218,8 @@
    "confianca": 0.8
   },
   "enem:2009:166": {
-   "assunto": "Matemática / Geometria plana",
-   "confianca": 0.55
+   "assunto": "Matemática / Geometria analítica",
+   "confianca": 0.6
   },
   "enem:2009:167": {
    "assunto": "Matemática / Regra de três",
@@ -2230,16 +2230,16 @@
    "confianca": 0.6
   },
   "enem:2009:170": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.7
   },
   "enem:2009:171": {
    "assunto": "Matemática / Probabilidade",
    "confianca": 0.8
   },
   "enem:2009:172": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.55
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.65
   },
   "enem:2009:174": {
    "assunto": "Matemática / Trigonometria",
@@ -2247,7 +2247,7 @@
   },
   "enem:2009:176": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2009:177": {
    "assunto": "Matemática / Geometria espacial",
@@ -2270,8 +2270,8 @@
    "confianca": 0.8
   },
   "enem:2009:2": {
-   "assunto": "Biologia / Saúde e doenças",
-   "confianca": 0.5
+   "assunto": "Biologia / Fisiologia humana",
+   "confianca": 0.65
   },
   "enem:2009:20": {
    "assunto": "Física / Termodinâmica",
@@ -2283,7 +2283,7 @@
   },
   "enem:2009:22": {
    "assunto": "Física / Eletrostática",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2009:23": {
    "assunto": "Biologia / Ecologia",
@@ -2382,8 +2382,8 @@
    "confianca": 0.6
   },
   "enem:2009:59": {
-   "assunto": "História / Século XX",
-   "confianca": 0.5
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2009:60": {
    "assunto": "Sociologia / Cidadania",
@@ -2399,7 +2399,7 @@
   },
   "enem:2009:64": {
    "assunto": "Geografia / Geopolítica",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2009:65": {
    "assunto": "História / Independência do Brasil",
@@ -2418,8 +2418,8 @@
    "confianca": 0.65
   },
   "enem:2009:69": {
-   "assunto": "História / República Velha",
-   "confianca": 0.5
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2009:7": {
    "assunto": "Biologia / Biotecnologia",
@@ -2523,11 +2523,11 @@
   },
   "enem:2009:98": {
    "assunto": "Língua Portuguesa / Variação linguística",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:1": {
-   "assunto": "História / Pré-história",
-   "confianca": 0.5
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:100": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -2606,8 +2606,8 @@
    "confianca": 0.6
   },
   "enem:2010-reaplicacao:119": {
-   "assunto": "Língua Portuguesa / Ortografia",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Regência",
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:12": {
    "assunto": "Geografia / Agricultura",
@@ -2735,7 +2735,7 @@
   },
   "enem:2010-reaplicacao:154": {
    "assunto": "Matemática / Volumes",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2010-reaplicacao:155": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -2751,7 +2751,7 @@
   },
   "enem:2010-reaplicacao:16": {
    "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2010-reaplicacao:160": {
    "assunto": "Matemática / Porcentagem",
@@ -2870,8 +2870,8 @@
    "confianca": 0.75
   },
   "enem:2010-reaplicacao:4": {
-   "assunto": "História / Guerras mundiais",
-   "confianca": 0.55
+   "assunto": "Geografia / Geopolítica",
+   "confianca": 0.7
   },
   "enem:2010-reaplicacao:40": {
    "assunto": "História / Redemocratização",
@@ -2894,8 +2894,8 @@
    "confianca": 0.7
   },
   "enem:2010-reaplicacao:49": {
-   "assunto": "Física / Gravitação",
-   "confianca": 0.5
+   "assunto": "Física / Óptica geométrica",
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:5": {
    "assunto": "Geografia / Urbanização",
@@ -2923,7 +2923,7 @@
   },
   "enem:2010-reaplicacao:60": {
    "assunto": "Química / Reações químicas",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:61": {
    "assunto": "Biologia / Saúde e doenças",
@@ -2947,7 +2947,7 @@
   },
   "enem:2010-reaplicacao:67": {
    "assunto": "Química / Soluções",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:68": {
    "assunto": "Biologia / Evolução",
@@ -2987,11 +2987,11 @@
   },
   "enem:2010-reaplicacao:79": {
    "assunto": "Química / Química orgânica",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:8": {
    "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:82": {
    "assunto": "Biologia / Ecologia",
@@ -3006,8 +3006,8 @@
    "confianca": 0.8
   },
   "enem:2010-reaplicacao:89": {
-   "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.5
+   "assunto": "Química / Reações químicas",
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:9": {
    "assunto": "Geografia / Agricultura",
@@ -3018,8 +3018,8 @@
    "confianca": 0.7
   },
   "enem:2010-reaplicacao:96": {
-   "assunto": "Educação Física / Atividade física e qualidade de vida",
-   "confianca": 0.55
+   "assunto": "Educação Física / Esportes",
+   "confianca": 0.6
   },
   "enem:2010-reaplicacao:97": {
    "assunto": "Língua Portuguesa / Tipologia textual",
@@ -3070,8 +3070,8 @@
    "confianca": 0.85
   },
   "enem:2010:110": {
-   "assunto": "Educação Física / Atividade física e qualidade de vida",
-   "confianca": 0.55
+   "assunto": "Educação Física / Corpo e saúde",
+   "confianca": 0.6
   },
   "enem:2010:111": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
@@ -3162,8 +3162,8 @@
    "confianca": 0.75
   },
   "enem:2010:134": {
-   "assunto": "Literatura / Realismo e Naturalismo",
-   "confianca": 0.55
+   "assunto": "Literatura / Modernismo",
+   "confianca": 0.6
   },
   "enem:2010:135": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
@@ -3171,7 +3171,7 @@
   },
   "enem:2010:136": {
    "assunto": "Matemática / Porcentagem",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2010:138": {
    "assunto": "Matemática / Geometria espacial",
@@ -3179,7 +3179,7 @@
   },
   "enem:2010:14": {
    "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010:140": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -3246,8 +3246,8 @@
    "confianca": 0.6
   },
   "enem:2010:156": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.55
+   "assunto": "Matemática / Geometria analítica",
+   "confianca": 0.65
   },
   "enem:2010:157": {
    "assunto": "Matemática / Volumes",
@@ -3263,7 +3263,7 @@
   },
   "enem:2010:16": {
    "assunto": "História / Antiguidade",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010:160": {
    "assunto": "Matemática / Trigonometria",
@@ -3315,7 +3315,7 @@
   },
   "enem:2010:176": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2010:177": {
    "assunto": "Matemática / Regra de três",
@@ -3342,8 +3342,8 @@
    "confianca": 0.7
   },
   "enem:2010:20": {
-   "assunto": "História / Antiguidade",
-   "confianca": 0.5
+   "assunto": "Sociologia / Trabalho",
+   "confianca": 0.65
   },
   "enem:2010:21": {
    "assunto": "Sociologia / Cultura",
@@ -3439,7 +3439,7 @@
   },
   "enem:2010:54": {
    "assunto": "Física / Gravitação",
-   "confianca": 0.4
+   "confianca": 0.6
   },
   "enem:2010:56": {
    "assunto": "Física / Energia e potência",
@@ -3507,7 +3507,7 @@
   },
   "enem:2010:8": {
    "assunto": "Geografia / Relevo",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2010:80": {
    "assunto": "Química / Química orgânica",
@@ -3518,8 +3518,8 @@
    "confianca": 0.95
   },
   "enem:2010:82": {
-   "assunto": "Química / Separação de misturas",
-   "confianca": 0.55
+   "assunto": "Química / Funções orgânicas",
+   "confianca": 0.6
   },
   "enem:2010:84": {
    "assunto": "Física / Óptica geométrica",
@@ -3643,7 +3643,7 @@
   },
   "enem:2011-reaplicacao:118": {
    "assunto": "Língua Portuguesa / Variação linguística",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:119": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -3695,7 +3695,7 @@
   },
   "enem:2011-reaplicacao:13": {
    "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:130": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -3746,12 +3746,12 @@
    "confianca": 0.85
   },
   "enem:2011-reaplicacao:147": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Regra de três",
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:148": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.4
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:149": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -3770,8 +3770,8 @@
    "confianca": 0.7
   },
   "enem:2011-reaplicacao:154": {
-   "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "assunto": "Matemática / Geometria analítica",
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:155": {
    "assunto": "Matemática / Porcentagem",
@@ -3826,12 +3826,12 @@
    "confianca": 0.9
   },
   "enem:2011-reaplicacao:172": {
-   "assunto": "Matemática / Média, mediana e moda",
-   "confianca": 0.5
+   "assunto": "Matemática / Estatística",
+   "confianca": 0.75
   },
   "enem:2011-reaplicacao:173": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:174": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -3851,7 +3851,7 @@
   },
   "enem:2011-reaplicacao:178": {
    "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:179": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -3886,8 +3886,8 @@
    "confianca": 0.8
   },
   "enem:2011-reaplicacao:28": {
-   "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.5
+   "assunto": "Filosofia / Ética",
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:29": {
    "assunto": "História / Ditadura militar",
@@ -3959,7 +3959,7 @@
   },
   "enem:2011-reaplicacao:52": {
    "assunto": "Biologia / Ecologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:54": {
    "assunto": "Biologia / Genética",
@@ -3987,7 +3987,7 @@
   },
   "enem:2011-reaplicacao:61": {
    "assunto": "Física / Eletrodinâmica",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2011-reaplicacao:62": {
    "assunto": "Física / Óptica geométrica",
@@ -4011,7 +4011,7 @@
   },
   "enem:2011-reaplicacao:72": {
    "assunto": "Física / Termologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:74": {
    "assunto": "Biologia / Evolução",
@@ -4035,7 +4035,7 @@
   },
   "enem:2011-reaplicacao:81": {
    "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2011-reaplicacao:82": {
    "assunto": "Física / Ondas",
@@ -4218,12 +4218,12 @@
    "confianca": 0.85
   },
   "enem:2011:138": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2011:139": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2011:14": {
    "assunto": "Geografia / Geopolítica",
@@ -4347,7 +4347,7 @@
   },
   "enem:2011:172": {
    "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2011:173": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -4370,8 +4370,8 @@
    "confianca": 0.7
   },
   "enem:2011:178": {
-   "assunto": "Matemática / Funções",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.65
   },
   "enem:2011:179": {
    "assunto": "Matemática / Função afim",
@@ -4399,7 +4399,7 @@
   },
   "enem:2011:23": {
    "assunto": "Filosofia / Ética",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011:25": {
    "assunto": "História / Redemocratização",
@@ -4459,11 +4459,11 @@
   },
   "enem:2011:41": {
    "assunto": "História / Século XX",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2011:42": {
-   "assunto": "História / Guerra Fria",
-   "confianca": 0.5
+   "assunto": "História / Movimentos sociais",
+   "confianca": 0.6
   },
   "enem:2011:43": {
    "assunto": "História / República Velha",
@@ -4475,7 +4475,7 @@
   },
   "enem:2011:46": {
    "assunto": "Física / Cinemática",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011:47": {
    "assunto": "Biologia / Ecologia",
@@ -4487,15 +4487,15 @@
   },
   "enem:2011:51": {
    "assunto": "Biologia / Ecologia",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2011:54": {
    "assunto": "Química / Propriedades da matéria",
    "confianca": 0.7
   },
   "enem:2011:55": {
-   "assunto": "Química / Química orgânica",
-   "confianca": 0.55
+   "assunto": "Química / Soluções",
+   "confianca": 0.65
   },
   "enem:2011:57": {
    "assunto": "Biologia / Ecologia",
@@ -4511,7 +4511,7 @@
   },
   "enem:2011:6": {
    "assunto": "Geografia / Clima",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011:60": {
    "assunto": "Física / Eletrodinâmica",
@@ -4522,8 +4522,8 @@
    "confianca": 0.6
   },
   "enem:2011:63": {
-   "assunto": "Química / Estrutura atômica",
-   "confianca": 0.55
+   "assunto": "Física / Ondas",
+   "confianca": 0.6
   },
   "enem:2011:66": {
    "assunto": "Física / Termodinâmica",
@@ -4591,7 +4591,7 @@
   },
   "enem:2011:91": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2011:92": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -4747,7 +4747,7 @@
   },
   "enem:2012-reaplicacao:137": {
    "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2012-reaplicacao:139": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -4778,8 +4778,8 @@
    "confianca": 0.9
   },
   "enem:2012-reaplicacao:145": {
-   "assunto": "Matemática / Porcentagem",
-   "confianca": 0.45
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2012-reaplicacao:146": {
    "assunto": "Matemática / Operações e propriedades",
@@ -4794,8 +4794,8 @@
    "confianca": 0.8
   },
   "enem:2012-reaplicacao:150": {
-   "assunto": "Matemática / Estatística",
-   "confianca": 0.4
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2012-reaplicacao:151": {
    "assunto": "Matemática / Porcentagem",
@@ -4914,8 +4914,8 @@
    "confianca": 0.8
   },
   "enem:2012-reaplicacao:19": {
-   "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.55
+   "assunto": "Filosofia / Filosofia moderna",
+   "confianca": 0.6
   },
   "enem:2012-reaplicacao:2": {
    "assunto": "Filosofia / Estética",
@@ -4947,7 +4947,7 @@
   },
   "enem:2012-reaplicacao:28": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2012-reaplicacao:29": {
    "assunto": "Filosofia / Filosofia moderna",
@@ -5003,7 +5003,7 @@
   },
   "enem:2012-reaplicacao:43": {
    "assunto": "Geografia / Urbanização",
-   "confianca": 0.4
+   "confianca": 0.6
   },
   "enem:2012-reaplicacao:44": {
    "assunto": "Sociologia / Trabalho",
@@ -5231,7 +5231,7 @@
   },
   "enem:2012:116": {
    "assunto": "Artes / Movimentos artísticos",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2012:117": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -5263,7 +5263,7 @@
   },
   "enem:2012:124": {
    "assunto": "Literatura / Modernismo",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2012:125": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -5322,8 +5322,8 @@
    "confianca": 0.85
   },
   "enem:2012:14": {
-   "assunto": "Geografia / Agricultura",
-   "confianca": 0.5
+   "assunto": "Geografia / Globalização",
+   "confianca": 0.6
   },
   "enem:2012:140": {
    "assunto": "Matemática / Juros simples e compostos",
@@ -5338,8 +5338,8 @@
    "confianca": 0.6
   },
   "enem:2012:143": {
-   "assunto": "Matemática / Funções",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2012:144": {
    "assunto": "Matemática / Análise combinatória",
@@ -5347,11 +5347,11 @@
   },
   "enem:2012:145": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.8
   },
   "enem:2012:147": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2012:148": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -5374,8 +5374,8 @@
    "confianca": 0.7
   },
   "enem:2012:154": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.4
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2012:155": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -5394,8 +5394,8 @@
    "confianca": 0.8
   },
   "enem:2012:159": {
-   "assunto": "Matemática / Sistemas de equações",
-   "confianca": 0.45
+   "assunto": "Matemática / Áreas e perímetros",
+   "confianca": 0.65
   },
   "enem:2012:16": {
    "assunto": "História / Antiguidade",
@@ -5479,7 +5479,7 @@
   },
   "enem:2012:18": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2012:19": {
    "assunto": "Sociologia / Trabalho",
@@ -5523,7 +5523,7 @@
   },
   "enem:2012:29": {
    "assunto": "Geografia / Relevo",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2012:3": {
    "assunto": "Sociologia / Cidadania",
@@ -5543,7 +5543,7 @@
   },
   "enem:2012:34": {
    "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2012:35": {
    "assunto": "História / Brasil Colônia",
@@ -5587,7 +5587,7 @@
   },
   "enem:2012:47": {
    "assunto": "Física / Hidrostática",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2012:48": {
    "assunto": "Biologia / Genética",
@@ -5666,8 +5666,8 @@
    "confianca": 0.9
   },
   "enem:2012:79": {
-   "assunto": "Química / Bioquímica",
-   "confianca": 0.55
+   "assunto": "Química / Funções orgânicas",
+   "confianca": 0.65
   },
   "enem:2012:8": {
    "assunto": "História / Século XX",
@@ -5906,8 +5906,8 @@
    "confianca": 0.85
   },
   "enem:2013-reaplicacao:15": {
-   "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.55
+   "assunto": "Filosofia / Filosofia moderna",
+   "confianca": 0.6
   },
   "enem:2013-reaplicacao:150": {
    "assunto": "Matemática / Função quadrática",
@@ -5994,12 +5994,12 @@
    "confianca": 0.9
   },
   "enem:2013-reaplicacao:174": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2013-reaplicacao:175": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "assunto": "Matemática / Probabilidade",
+   "confianca": 0.6
   },
   "enem:2013-reaplicacao:177": {
    "assunto": "Matemática / Progressão aritmética",
@@ -6007,7 +6007,7 @@
   },
   "enem:2013-reaplicacao:178": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2013-reaplicacao:179": {
    "assunto": "Matemática / Juros simples e compostos",
@@ -6082,8 +6082,8 @@
    "confianca": 0.9
   },
   "enem:2013-reaplicacao:4": {
-   "assunto": "Geografia / Geopolítica",
-   "confianca": 0.55
+   "assunto": "História / Século XX",
+   "confianca": 0.65
   },
   "enem:2013-reaplicacao:40": {
    "assunto": "Geografia / Migrações",
@@ -6155,7 +6155,7 @@
   },
   "enem:2013-reaplicacao:66": {
    "assunto": "Física / Leis de Newton",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2013-reaplicacao:67": {
    "assunto": "Química / Funções orgânicas",
@@ -6182,8 +6182,8 @@
    "confianca": 0.85
   },
   "enem:2013-reaplicacao:75": {
-   "assunto": "Física / Física moderna",
-   "confianca": 0.5
+   "assunto": "Física / Ondas",
+   "confianca": 0.6
   },
   "enem:2013-reaplicacao:76": {
    "assunto": "Química / Eletroquímica",
@@ -6234,8 +6234,8 @@
    "confianca": 0.7
   },
   "enem:2013:1": {
-   "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.5
+   "assunto": "Geografia / População",
+   "confianca": 0.65
   },
   "enem:2013:10": {
    "assunto": "Filosofia / Política",
@@ -6275,7 +6275,7 @@
   },
   "enem:2013:109": {
    "assunto": "Artes / História da arte",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2013:11": {
    "assunto": "História / República Velha",
@@ -6314,8 +6314,8 @@
    "confianca": 0.9
   },
   "enem:2013:119": {
-   "assunto": "Língua Portuguesa / Sintaxe",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Coesão e coerência",
+   "confianca": 0.75
   },
   "enem:2013:12": {
    "assunto": "Sociologia / Cultura",
@@ -6398,16 +6398,16 @@
    "confianca": 0.9
   },
   "enem:2013:139": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.4
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2013:14": {
    "assunto": "Geografia / Biomas",
    "confianca": 0.9
   },
   "enem:2013:140": {
-   "assunto": "Matemática / Estatística",
-   "confianca": 0.5
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.65
   },
   "enem:2013:141": {
    "assunto": "Matemática / Geometria plana",
@@ -6415,7 +6415,7 @@
   },
   "enem:2013:142": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.4
+   "confianca": 0.6
   },
   "enem:2013:143": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -6447,7 +6447,7 @@
   },
   "enem:2013:15": {
    "assunto": "Sociologia / Estado e poder",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2013:151": {
    "assunto": "Matemática / Geometria analítica",
@@ -6486,8 +6486,8 @@
    "confianca": 0.9
   },
   "enem:2013:160": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.4
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.65
   },
   "enem:2013:161": {
    "assunto": "Matemática / Operações e propriedades",
@@ -6518,16 +6518,16 @@
    "confianca": 0.7
   },
   "enem:2013:168": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "assunto": "Matemática / Probabilidade",
+   "confianca": 0.7
   },
   "enem:2013:169": {
    "assunto": "Matemática / Análise combinatória",
    "confianca": 0.75
   },
   "enem:2013:17": {
-   "assunto": "História / Revolução Industrial",
-   "confianca": 0.5
+   "assunto": "Geografia / Indústria",
+   "confianca": 0.7
   },
   "enem:2013:170": {
    "assunto": "Matemática / Regra de três",
@@ -6538,8 +6538,8 @@
    "confianca": 0.65
   },
   "enem:2013:172": {
-   "assunto": "Matemática / Função exponencial",
-   "confianca": 0.5
+   "assunto": "Matemática / Função quadrática",
+   "confianca": 0.85
   },
   "enem:2013:173": {
    "assunto": "Matemática / Progressão aritmética",
@@ -6563,7 +6563,7 @@
   },
   "enem:2013:179": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.55
+   "confianca": 0.8
   },
   "enem:2013:18": {
    "assunto": "História / História da África",
@@ -6571,7 +6571,7 @@
   },
   "enem:2013:180": {
    "assunto": "Matemática / Geometria espacial",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2013:19": {
    "assunto": "Geografia / Globalização",
@@ -6607,7 +6607,7 @@
   },
   "enem:2013:28": {
    "assunto": "Geografia / Agricultura",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2013:29": {
    "assunto": "História / Brasil Colônia",
@@ -6670,8 +6670,8 @@
    "confianca": 0.9
   },
   "enem:2013:51": {
-   "assunto": "Física / Energia e potência",
-   "confianca": 0.5
+   "assunto": "Química / Termoquímica",
+   "confianca": 0.6
   },
   "enem:2013:52": {
    "assunto": "Física / Ondas",
@@ -6734,8 +6734,8 @@
    "confianca": 0.7
   },
   "enem:2013:72": {
-   "assunto": "Química / Eletroquímica",
-   "confianca": 0.55
+   "assunto": "Física / Circuitos elétricos",
+   "confianca": 0.8
   },
   "enem:2013:74": {
    "assunto": "Química / Eletroquímica",
@@ -6778,8 +6778,8 @@
    "confianca": 0.9
   },
   "enem:2013:9": {
-   "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "assunto": "Geografia / Globalização",
+   "confianca": 0.6
   },
   "enem:2013:90": {
    "assunto": "Química / Química orgânica",
@@ -6787,7 +6787,7 @@
   },
   "enem:2013:96": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2013:97": {
    "assunto": "Educação Física / Jogos e brincadeiras",
@@ -6838,8 +6838,8 @@
    "confianca": 0.9
   },
   "enem:2014-reaplicacao:110": {
-   "assunto": "Artes / Movimentos artísticos",
-   "confianca": 0.5
+   "assunto": "Artes / História da arte",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:111": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -6950,12 +6950,12 @@
    "confianca": 0.75
   },
   "enem:2014-reaplicacao:140": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:141": {
    "assunto": "Matemática / Regra de três",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:143": {
    "assunto": "Matemática / Volumes",
@@ -6974,12 +6974,12 @@
    "confianca": 0.8
   },
   "enem:2014-reaplicacao:147": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:148": {
    "assunto": "Matemática / Áreas e perímetros",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2014-reaplicacao:149": {
    "assunto": "Matemática / Probabilidade",
@@ -6990,8 +6990,8 @@
    "confianca": 0.9
   },
   "enem:2014-reaplicacao:150": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:151": {
    "assunto": "Matemática / Volumes",
@@ -7042,8 +7042,8 @@
    "confianca": 0.95
   },
   "enem:2014-reaplicacao:17": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "assunto": "História / Século XX",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:170": {
    "assunto": "Matemática / Porcentagem",
@@ -7067,7 +7067,7 @@
   },
   "enem:2014-reaplicacao:175": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:176": {
    "assunto": "Matemática / Volumes",
@@ -7131,11 +7131,11 @@
   },
   "enem:2014-reaplicacao:32": {
    "assunto": "Geografia / Urbanização",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:35": {
    "assunto": "Sociologia / Globalização e sociedade",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2014-reaplicacao:36": {
    "assunto": "Sociologia / Cultura",
@@ -7154,8 +7154,8 @@
    "confianca": 0.8
   },
   "enem:2014-reaplicacao:42": {
-   "assunto": "Geografia / Relevo",
-   "confianca": 0.55
+   "assunto": "Geografia / Urbanização",
+   "confianca": 0.7
   },
   "enem:2014-reaplicacao:43": {
    "assunto": "Geografia / Indústria",
@@ -7190,8 +7190,8 @@
    "confianca": 0.9
   },
   "enem:2014-reaplicacao:56": {
-   "assunto": "Física / Termologia",
-   "confianca": 0.55
+   "assunto": "Física / Energia e potência",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:57": {
    "assunto": "Química / Estequiometria",
@@ -7219,7 +7219,7 @@
   },
   "enem:2014-reaplicacao:64": {
    "assunto": "Química / Química orgânica",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:66": {
    "assunto": "Química / Soluções",
@@ -7250,8 +7250,8 @@
    "confianca": 0.75
   },
   "enem:2014-reaplicacao:80": {
-   "assunto": "Biologia / Saúde e doenças",
-   "confianca": 0.55
+   "assunto": "Biologia / Biotecnologia",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:82": {
    "assunto": "Física / Energia e potência",
@@ -7266,8 +7266,8 @@
    "confianca": 0.7
   },
   "enem:2014-reaplicacao:9": {
-   "assunto": "Sociologia / Estado e poder",
-   "confianca": 0.55
+   "assunto": "Filosofia / Política",
+   "confianca": 0.6
   },
   "enem:2014-reaplicacao:90": {
    "assunto": "Biologia / Ecologia",
@@ -7343,7 +7343,7 @@
   },
   "enem:2014-terceira-aplicacao:116": {
    "assunto": "Língua Portuguesa / Morfologia",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2014-terceira-aplicacao:117": {
    "assunto": "Educação Física / Corpo e saúde",
@@ -7415,15 +7415,15 @@
   },
   "enem:2014-terceira-aplicacao:137": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2014-terceira-aplicacao:138": {
    "assunto": "Matemática / Equações do 1º grau",
    "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:139": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "assunto": "Matemática / Regra de três",
+   "confianca": 0.75
   },
   "enem:2014-terceira-aplicacao:14": {
    "assunto": "Geografia / População",
@@ -7450,8 +7450,8 @@
    "confianca": 0.7
   },
   "enem:2014-terceira-aplicacao:146": {
-   "assunto": "Matemática / Média, mediana e moda",
-   "confianca": 0.45
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.8
   },
   "enem:2014-terceira-aplicacao:147": {
    "assunto": "Matemática / Razão e proporção",
@@ -7511,7 +7511,7 @@
   },
   "enem:2014-terceira-aplicacao:160": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:161": {
    "assunto": "Matemática / Equações do 2º grau",
@@ -7531,11 +7531,11 @@
   },
   "enem:2014-terceira-aplicacao:165": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:166": {
-   "assunto": "Matemática / Funções",
-   "confianca": 0.55
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.7
   },
   "enem:2014-terceira-aplicacao:167": {
    "assunto": "Matemática / Função afim",
@@ -7563,11 +7563,11 @@
   },
   "enem:2014-terceira-aplicacao:175": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2014-terceira-aplicacao:176": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:177": {
    "assunto": "Matemática / Progressão aritmética",
@@ -7583,7 +7583,7 @@
   },
   "enem:2014-terceira-aplicacao:18": {
    "assunto": "Geografia / Urbanização",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2014-terceira-aplicacao:180": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -7599,7 +7599,7 @@
   },
   "enem:2014-terceira-aplicacao:20": {
    "assunto": "Filosofia / Filosofia contemporânea",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:21": {
    "assunto": "Sociologia / Indústria cultural",
@@ -7615,7 +7615,7 @@
   },
   "enem:2014-terceira-aplicacao:25": {
    "assunto": "Sociologia / Cidadania",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:26": {
    "assunto": "História / República Velha",
@@ -7630,8 +7630,8 @@
    "confianca": 0.9
   },
   "enem:2014-terceira-aplicacao:3": {
-   "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.35
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:31": {
    "assunto": "Sociologia / Indústria cultural",
@@ -7706,8 +7706,8 @@
    "confianca": 0.65
   },
   "enem:2014-terceira-aplicacao:57": {
-   "assunto": "Biologia / Citologia",
-   "confianca": 0.5
+   "assunto": "Biologia / Sistema circulatório",
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:58": {
    "assunto": "Física / Eletrostática",
@@ -7718,12 +7718,12 @@
    "confianca": 0.9
   },
   "enem:2014-terceira-aplicacao:6": {
-   "assunto": "Sociologia / Globalização e sociedade",
-   "confianca": 0.5
+   "assunto": "História / Século XX",
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:60": {
-   "assunto": "Física / Termodinâmica",
-   "confianca": 0.55
+   "assunto": "Física / Radioatividade",
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:61": {
    "assunto": "Física / Termodinâmica",
@@ -7778,8 +7778,8 @@
    "confianca": 0.85
   },
   "enem:2014-terceira-aplicacao:80": {
-   "assunto": "Química / Reações químicas",
-   "confianca": 0.55
+   "assunto": "Química / Termoquímica",
+   "confianca": 0.6
   },
   "enem:2014-terceira-aplicacao:82": {
    "assunto": "Biologia / Ecologia",
@@ -7931,7 +7931,7 @@
   },
   "enem:2014:13": {
    "assunto": "Geografia / Cartografia",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2014:130": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -7974,8 +7974,8 @@
    "confianca": 0.7
   },
   "enem:2014:140": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2014:142": {
    "assunto": "Matemática / Volumes",
@@ -8022,8 +8022,8 @@
    "confianca": 0.9
   },
   "enem:2014:153": {
-   "assunto": "Matemática / Equações do 1º grau",
-   "confianca": 0.5
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2014:155": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -8039,7 +8039,7 @@
   },
   "enem:2014:159": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2014:16": {
    "assunto": "Sociologia / Cultura",
@@ -8050,8 +8050,8 @@
    "confianca": 0.7
   },
   "enem:2014:161": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "assunto": "Matemática / Estatística",
+   "confianca": 0.6
   },
   "enem:2014:162": {
    "assunto": "Matemática / Função afim",
@@ -8095,7 +8095,7 @@
   },
   "enem:2014:172": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2014:174": {
    "assunto": "Matemática / Volumes",
@@ -8110,8 +8110,8 @@
    "confianca": 0.9
   },
   "enem:2014:177": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.75
   },
   "enem:2014:178": {
    "assunto": "Matemática / Geometria plana",
@@ -8127,7 +8127,7 @@
   },
   "enem:2014:180": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2014:2": {
    "assunto": "História / Idade Média",
@@ -8174,8 +8174,8 @@
    "confianca": 0.6
   },
   "enem:2014:31": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "assunto": "Geografia / Urbanização",
+   "confianca": 0.6
   },
   "enem:2014:32": {
    "assunto": "História / Brasil Império",
@@ -8186,8 +8186,8 @@
    "confianca": 0.7
   },
   "enem:2014:34": {
-   "assunto": "Geografia / Agricultura",
-   "confianca": 0.5
+   "assunto": "Geografia / Energia",
+   "confianca": 0.9
   },
   "enem:2014:35": {
    "assunto": "Geografia / Clima",
@@ -8195,7 +8195,7 @@
   },
   "enem:2014:36": {
    "assunto": "Geografia / Relevo",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2014:37": {
    "assunto": "Geografia / Geopolítica",
@@ -8214,8 +8214,8 @@
    "confianca": 0.7
   },
   "enem:2014:41": {
-   "assunto": "Sociologia / Indústria cultural",
-   "confianca": 0.5
+   "assunto": "História / Século XX",
+   "confianca": 0.6
   },
   "enem:2014:42": {
    "assunto": "História / Ditadura militar",
@@ -8294,8 +8294,8 @@
    "confianca": 0.7
   },
   "enem:2014:62": {
-   "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.5
+   "assunto": "Física / Termodinâmica",
+   "confianca": 0.65
   },
   "enem:2014:63": {
    "assunto": "Biologia / Ciclos biogeoquímicos",
@@ -8374,8 +8374,8 @@
    "confianca": 0.85
   },
   "enem:2014:90": {
-   "assunto": "Química / Reações químicas",
-   "confianca": 0.5
+   "assunto": "Química / Cinética química",
+   "confianca": 0.65
   },
   "enem:2014:96": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -8595,7 +8595,7 @@
   },
   "enem:2015-reaplicacao:160": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2015-reaplicacao:161": {
    "assunto": "Matemática / Volumes",
@@ -8670,8 +8670,8 @@
    "confianca": 0.6
   },
   "enem:2015-reaplicacao:180": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Equações do 1º grau",
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:19": {
    "assunto": "História / História da África",
@@ -8695,11 +8695,11 @@
   },
   "enem:2015-reaplicacao:24": {
    "assunto": "Geografia / Urbanização",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2015-reaplicacao:27": {
    "assunto": "Geografia / Geopolítica",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:28": {
    "assunto": "Geografia / Cartografia",
@@ -8711,7 +8711,7 @@
   },
   "enem:2015-reaplicacao:31": {
    "assunto": "Sociologia / Trabalho",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:32": {
    "assunto": "Filosofia / Política",
@@ -8726,8 +8726,8 @@
    "confianca": 0.7
   },
   "enem:2015-reaplicacao:37": {
-   "assunto": "Geografia / Globalização",
-   "confianca": 0.5
+   "assunto": "Geografia / Urbanização",
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:38": {
    "assunto": "História / Revolução Industrial",
@@ -8742,8 +8742,8 @@
    "confianca": 0.8
   },
   "enem:2015-reaplicacao:41": {
-   "assunto": "Geografia / Urbanização",
-   "confianca": 0.5
+   "assunto": "Geografia / Regionalização do Brasil",
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:42": {
    "assunto": "Filosofia / Filosofia antiga",
@@ -8783,7 +8783,7 @@
   },
   "enem:2015-reaplicacao:56": {
    "assunto": "Química / Soluções",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:58": {
    "assunto": "Física / Óptica geométrica",
@@ -8879,7 +8879,7 @@
   },
   "enem:2015-reaplicacao:97": {
    "assunto": "Literatura / Literatura contemporânea",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2015-reaplicacao:98": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -9023,7 +9023,7 @@
   },
   "enem:2015:132": {
    "assunto": "Língua Portuguesa / Morfologia",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2015:133": {
    "assunto": "Educação Física / Jogos e brincadeiras",
@@ -9050,8 +9050,8 @@
    "confianca": 0.8
   },
   "enem:2015:139": {
-   "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.55
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2015:14": {
    "assunto": "Sociologia / Estado e poder",
@@ -9094,16 +9094,16 @@
    "confianca": 0.85
   },
   "enem:2015:151": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.6
   },
   "enem:2015:152": {
    "assunto": "Matemática / Função exponencial",
    "confianca": 0.6
   },
   "enem:2015:154": {
-   "assunto": "Matemática / Geometria analítica",
-   "confianca": 0.5
+   "assunto": "Matemática / Função logarítmica",
+   "confianca": 0.9
   },
   "enem:2015:157": {
    "assunto": "Matemática / Operações e propriedades",
@@ -9134,8 +9134,8 @@
    "confianca": 0.65
   },
   "enem:2015:163": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.55
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2015:164": {
    "assunto": "Matemática / Análise combinatória",
@@ -9147,7 +9147,7 @@
   },
   "enem:2015:166": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2015:167": {
    "assunto": "Matemática / Geometria plana",
@@ -9166,8 +9166,8 @@
    "confianca": 0.9
   },
   "enem:2015:170": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.5
+   "assunto": "Matemática / Média, mediana e moda",
+   "confianca": 0.8
   },
   "enem:2015:171": {
    "assunto": "Matemática / Volumes",
@@ -9179,7 +9179,7 @@
   },
   "enem:2015:173": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2015:174": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -9198,16 +9198,16 @@
    "confianca": 0.8
   },
   "enem:2015:178": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.7
   },
   "enem:2015:18": {
    "assunto": "História / Era Vargas",
    "confianca": 0.85
   },
   "enem:2015:180": {
-   "assunto": "Matemática / Função quadrática",
-   "confianca": 0.55
+   "assunto": "Matemática / Trigonometria",
+   "confianca": 0.9
   },
   "enem:2015:19": {
    "assunto": "História / Ditadura militar",
@@ -9242,8 +9242,8 @@
    "confianca": 0.85
   },
   "enem:2015:3": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "assunto": "Filosofia / Filosofia contemporânea",
+   "confianca": 0.6
   },
   "enem:2015:30": {
    "assunto": "Geografia / Relevo",
@@ -9291,7 +9291,7 @@
   },
   "enem:2015:40": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2015:41": {
    "assunto": "Filosofia / Ética",
@@ -9370,8 +9370,8 @@
    "confianca": 0.9
   },
   "enem:2015:7": {
-   "assunto": "Sociologia / Estado e poder",
-   "confianca": 0.5
+   "assunto": "História / Século XX",
+   "confianca": 0.6
   },
   "enem:2015:70": {
    "assunto": "Física / Trabalho e energia",
@@ -9414,8 +9414,8 @@
    "confianca": 0.9
   },
   "enem:2015:82": {
-   "assunto": "Química / Eletroquímica",
-   "confianca": 0.55
+   "assunto": "Física / Leis de Newton",
+   "confianca": 0.6
   },
   "enem:2015:84": {
    "assunto": "Química / Termoquímica",
@@ -9427,7 +9427,7 @@
   },
   "enem:2015:88": {
    "assunto": "Física / Ondas",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2015:89": {
    "assunto": "Biologia / Saúde e doenças",
@@ -9462,8 +9462,8 @@
    "confianca": 0.8
   },
   "enem:2016-reaplicacao:1": {
-   "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.45
+   "assunto": "Geografia / Indústria",
+   "confianca": 0.65
   },
   "enem:2016-reaplicacao:10": {
    "assunto": "História / Século XX",
@@ -9626,8 +9626,8 @@
    "confianca": 0.6
   },
   "enem:2016-reaplicacao:143": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.3
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2016-reaplicacao:144": {
    "assunto": "Matemática / Porcentagem",
@@ -9659,7 +9659,7 @@
   },
   "enem:2016-reaplicacao:150": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.75
   },
   "enem:2016-reaplicacao:151": {
    "assunto": "Matemática / Operações e propriedades",
@@ -9679,7 +9679,7 @@
   },
   "enem:2016-reaplicacao:158": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2016-reaplicacao:159": {
    "assunto": "Matemática / Geometria espacial",
@@ -9691,7 +9691,7 @@
   },
   "enem:2016-reaplicacao:160": {
    "assunto": "Matemática / Função afim",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2016-reaplicacao:161": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -9699,7 +9699,7 @@
   },
   "enem:2016-reaplicacao:163": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2016-reaplicacao:164": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -9747,7 +9747,7 @@
   },
   "enem:2016-reaplicacao:179": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2016-reaplicacao:18": {
    "assunto": "Filosofia / Ética",
@@ -9802,8 +9802,8 @@
    "confianca": 0.85
   },
   "enem:2016-reaplicacao:30": {
-   "assunto": "Geografia / Urbanização",
-   "confianca": 0.55
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2016-reaplicacao:31": {
    "assunto": "Geografia / Cartografia",
@@ -9811,7 +9811,7 @@
   },
   "enem:2016-reaplicacao:33": {
    "assunto": "Geografia / Geopolítica",
-   "confianca": 0.5
+   "confianca": 0.8
   },
   "enem:2016-reaplicacao:34": {
    "assunto": "História / Ditadura militar",
@@ -9850,8 +9850,8 @@
    "confianca": 0.6
   },
   "enem:2016-reaplicacao:49": {
-   "assunto": "Química / Estrutura atômica",
-   "confianca": 0.5
+   "assunto": "Química / Propriedades da matéria",
+   "confianca": 0.65
   },
   "enem:2016-reaplicacao:51": {
    "assunto": "Química / Soluções",
@@ -9919,7 +9919,7 @@
   },
   "enem:2016-reaplicacao:72": {
    "assunto": "Biologia / Zoologia",
-   "confianca": 0.5
+   "confianca": 0.8
   },
   "enem:2016-reaplicacao:73": {
    "assunto": "Física / Radioatividade",
@@ -10067,7 +10067,7 @@
   },
   "enem:2016-segunda-aplicacao:12": {
    "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:120": {
    "assunto": "Literatura / Literatura contemporânea",
@@ -10155,7 +10155,7 @@
   },
   "enem:2016-segunda-aplicacao:141": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.45
+   "confianca": 0.7
   },
   "enem:2016-segunda-aplicacao:142": {
    "assunto": "Matemática / Geometria espacial",
@@ -10262,8 +10262,8 @@
    "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:170": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Polinômios",
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:172": {
    "assunto": "Matemática / Análise combinatória",
@@ -10275,7 +10275,7 @@
   },
   "enem:2016-segunda-aplicacao:174": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2016-segunda-aplicacao:175": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -10294,8 +10294,8 @@
    "confianca": 0.95
   },
   "enem:2016-segunda-aplicacao:179": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:18": {
    "assunto": "História / Era Vargas",
@@ -10323,7 +10323,7 @@
   },
   "enem:2016-segunda-aplicacao:24": {
    "assunto": "Geografia / Geopolítica",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:25": {
    "assunto": "Sociologia / Trabalho",
@@ -10339,7 +10339,7 @@
   },
   "enem:2016-segunda-aplicacao:28": {
    "assunto": "História / República Velha",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:29": {
    "assunto": "Sociologia / Globalização e sociedade",
@@ -10387,11 +10387,11 @@
   },
   "enem:2016-segunda-aplicacao:40": {
    "assunto": "Sociologia / Trabalho",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:41": {
    "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:42": {
    "assunto": "Sociologia / Cultura",
@@ -10426,8 +10426,8 @@
    "confianca": 0.85
   },
   "enem:2016-segunda-aplicacao:5": {
-   "assunto": "Sociologia / Estado e poder",
-   "confianca": 0.5
+   "assunto": "Sociologia / Movimentos sociais",
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:56": {
    "assunto": "Biologia / Saúde e doenças",
@@ -10459,7 +10459,7 @@
   },
   "enem:2016-segunda-aplicacao:67": {
    "assunto": "Química / Soluções",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:68": {
    "assunto": "Biologia / Citologia",
@@ -10511,7 +10511,7 @@
   },
   "enem:2016-segunda-aplicacao:81": {
    "assunto": "Física / Energia e potência",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:82": {
    "assunto": "Biologia / Bioquímica celular",
@@ -10527,7 +10527,7 @@
   },
   "enem:2016-segunda-aplicacao:89": {
    "assunto": "Química / Reações químicas",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016-segunda-aplicacao:9": {
    "assunto": "História / Guerra Fria",
@@ -10702,8 +10702,8 @@
    "confianca": 0.75
   },
   "enem:2016:138": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2016:139": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -10746,8 +10746,8 @@
    "confianca": 0.95
   },
   "enem:2016:148": {
-   "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.55
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2016:149": {
    "assunto": "Matemática / Função afim",
@@ -10766,12 +10766,12 @@
    "confianca": 0.9
   },
   "enem:2016:155": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.4
+   "assunto": "Matemática / Função afim",
+   "confianca": 0.6
   },
   "enem:2016:156": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.4
+   "confianca": 0.6
   },
   "enem:2016:157": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -10806,7 +10806,7 @@
    "confianca": 0.6
   },
   "enem:2016:165": {
-   "assunto": "Matemática / Função afim",
+   "assunto": "Matemática / Regra de três",
    "confianca": 0.35
   },
   "enem:2016:166": {
@@ -10839,7 +10839,7 @@
   },
   "enem:2016:173": {
    "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2016:174": {
    "assunto": "Matemática / Regra de três",
@@ -10883,7 +10883,7 @@
   },
   "enem:2016:22": {
    "assunto": "História / Século XX",
-   "confianca": 0.4
+   "confianca": 0.65
   },
   "enem:2016:23": {
    "assunto": "Filosofia / Filosofia antiga",
@@ -10927,7 +10927,7 @@
   },
   "enem:2016:36": {
    "assunto": "Geografia / Hidrografia",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016:37": {
    "assunto": "Filosofia / Filosofia contemporânea",
@@ -10947,11 +10947,11 @@
   },
   "enem:2016:41": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016:42": {
-   "assunto": "Sociologia / Indústria cultural",
-   "confianca": 0.5
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2016:43": {
    "assunto": "História / República Velha",
@@ -11019,7 +11019,7 @@
   },
   "enem:2016:6": {
    "assunto": "Filosofia / Filosofia contemporânea",
-   "confianca": 0.5
+   "confianca": 0.75
   },
   "enem:2016:60": {
    "assunto": "Química / Ligações químicas",
@@ -11074,8 +11074,8 @@
    "confianca": 0.75
   },
   "enem:2016:78": {
-   "assunto": "Química / Funções orgânicas",
-   "confianca": 0.55
+   "assunto": "Química / Equilíbrio químico",
+   "confianca": 0.7
   },
   "enem:2016:8": {
    "assunto": "História / Escravidão no Brasil",
@@ -11087,19 +11087,19 @@
   },
   "enem:2016:81": {
    "assunto": "Química / Funções orgânicas",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2016:82": {
    "assunto": "Física / Leis de Newton",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016:83": {
    "assunto": "Biologia / Genética",
    "confianca": 0.9
   },
   "enem:2016:85": {
-   "assunto": "Física / Circuitos elétricos",
-   "confianca": 0.3
+   "assunto": "Química / Funções orgânicas",
+   "confianca": 0.6
   },
   "enem:2016:86": {
    "assunto": "Física / Calorimetria",
@@ -11110,16 +11110,16 @@
    "confianca": 0.9
   },
   "enem:2016:88": {
-   "assunto": "Física / Eletromagnetismo",
-   "confianca": 0.55
+   "assunto": "Física / Magnetismo",
+   "confianca": 0.6
   },
   "enem:2016:89": {
    "assunto": "Química / Ligações químicas",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2016:90": {
-   "assunto": "Biologia / Fisiologia humana",
-   "confianca": 0.3
+   "assunto": "Biologia / Evolução",
+   "confianca": 0.75
   },
   "enem:2016:93": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -11178,8 +11178,8 @@
    "confianca": 0.85
   },
   "enem:2017-reaplicacao:114": {
-   "assunto": "Química / Soluções",
-   "confianca": 0.55
+   "assunto": "Química / Ligações químicas",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:115": {
    "assunto": "Biologia / Evolução",
@@ -11246,24 +11246,24 @@
    "confianca": 0.95
   },
   "enem:2017-reaplicacao:139": {
-   "assunto": "Matemática / Equações do 1º grau",
-   "confianca": 0.55
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.7
   },
   "enem:2017-reaplicacao:141": {
    "assunto": "Matemática / Função afim",
    "confianca": 0.8
   },
   "enem:2017-reaplicacao:142": {
-   "assunto": "Matemática / Regra de três",
-   "confianca": 0.45
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:144": {
    "assunto": "Matemática / Regra de três",
    "confianca": 0.7
   },
   "enem:2017-reaplicacao:145": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:147": {
    "assunto": "Matemática / Regra de três",
@@ -11314,8 +11314,8 @@
    "confianca": 0.65
   },
   "enem:2017-reaplicacao:158": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:159": {
    "assunto": "Matemática / Porcentagem",
@@ -11334,8 +11334,8 @@
    "confianca": 0.9
   },
   "enem:2017-reaplicacao:162": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:163": {
    "assunto": "Matemática / Volumes",
@@ -11386,8 +11386,8 @@
    "confianca": 0.75
   },
   "enem:2017-reaplicacao:175": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Equações do 1º grau",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:177": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -11451,7 +11451,7 @@
   },
   "enem:2017-reaplicacao:31": {
    "assunto": "Literatura / Literatura contemporânea",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:32": {
    "assunto": "Artes / Movimentos artísticos",
@@ -11486,8 +11486,8 @@
    "confianca": 0.75
   },
   "enem:2017-reaplicacao:41": {
-   "assunto": "Língua Portuguesa / Sintaxe",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Coesão e coerência",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:42": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
@@ -11519,7 +11519,7 @@
   },
   "enem:2017-reaplicacao:49": {
    "assunto": "Sociologia / Estado e poder",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:50": {
    "assunto": "Geografia / Agricultura",
@@ -11531,7 +11531,7 @@
   },
   "enem:2017-reaplicacao:54": {
    "assunto": "História / República Velha",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:55": {
    "assunto": "Sociologia / Cultura",
@@ -11570,8 +11570,8 @@
    "confianca": 0.85
   },
   "enem:2017-reaplicacao:64": {
-   "assunto": "Filosofia / Filosofia contemporânea",
-   "confianca": 0.55
+   "assunto": "Sociologia / Indústria cultural",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:65": {
    "assunto": "Geografia / Agricultura",
@@ -11615,7 +11615,7 @@
   },
   "enem:2017-reaplicacao:78": {
    "assunto": "Sociologia / Cidadania",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:79": {
    "assunto": "História / Era Vargas",
@@ -11662,8 +11662,8 @@
    "confianca": 0.85
   },
   "enem:2017-reaplicacao:90": {
-   "assunto": "Sociologia / Estado e poder",
-   "confianca": 0.5
+   "assunto": "Sociologia / Cidadania",
+   "confianca": 0.6
   },
   "enem:2017-reaplicacao:91": {
    "assunto": "Física / Ondas",
@@ -11699,7 +11699,7 @@
   },
   "enem:2017:101": {
    "assunto": "Física / Ondas",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2017:102": {
    "assunto": "Química / Ligações químicas",
@@ -11707,19 +11707,19 @@
   },
   "enem:2017:103": {
    "assunto": "Física / Ondas",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2017:104": {
    "assunto": "Física / Radioatividade",
    "confianca": 0.9
   },
   "enem:2017:105": {
-   "assunto": "Física / Energia e potência",
-   "confianca": 0.55
+   "assunto": "Química / Termoquímica",
+   "confianca": 0.6
   },
   "enem:2017:106": {
    "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017:108": {
    "assunto": "Física / Trabalho e energia",
@@ -11763,7 +11763,7 @@
   },
   "enem:2017:120": {
    "assunto": "Química / Soluções",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2017:121": {
    "assunto": "Química / Eletroquímica",
@@ -11826,8 +11826,8 @@
    "confianca": 0.65
   },
   "enem:2017:141": {
-   "assunto": "Matemática / Média, mediana e moda",
-   "confianca": 0.5
+   "assunto": "Matemática / Equações do 1º grau",
+   "confianca": 0.6
   },
   "enem:2017:142": {
    "assunto": "Matemática / Volumes",
@@ -11867,15 +11867,15 @@
   },
   "enem:2017:154": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2017:156": {
    "assunto": "Matemática / Trigonometria",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017:157": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2017:158": {
    "assunto": "Matemática / Razão e proporção",
@@ -11902,8 +11902,8 @@
    "confianca": 0.85
   },
   "enem:2017:163": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Análise combinatória",
+   "confianca": 0.6
   },
   "enem:2017:165": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -11918,8 +11918,8 @@
    "confianca": 0.85
   },
   "enem:2017:168": {
-   "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "assunto": "Matemática / Função quadrática",
+   "confianca": 0.8
   },
   "enem:2017:169": {
    "assunto": "Matemática / Interpretação de gráficos",
@@ -12099,7 +12099,7 @@
   },
   "enem:2017:56": {
    "assunto": "Geografia / Agricultura",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017:57": {
    "assunto": "Geografia / Indústria",
@@ -12198,8 +12198,8 @@
    "confianca": 0.65
   },
   "enem:2017:82": {
-   "assunto": "História / Brasil Colônia",
-   "confianca": 0.55
+   "assunto": "História / República Velha",
+   "confianca": 0.6
   },
   "enem:2017:83": {
    "assunto": "História / Ditadura militar",
@@ -12227,7 +12227,7 @@
   },
   "enem:2017:91": {
    "assunto": "Química / Soluções",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2017:92": {
    "assunto": "Biologia / Microbiologia",
@@ -12403,7 +12403,7 @@
   },
   "enem:2018-reaplicacao:147": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2018-reaplicacao:148": {
    "assunto": "Matemática / Sistemas de equações",
@@ -12451,11 +12451,11 @@
   },
   "enem:2018-reaplicacao:161": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:162": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:165": {
    "assunto": "Matemática / Porcentagem",
@@ -12466,8 +12466,8 @@
    "confianca": 0.85
   },
   "enem:2018-reaplicacao:168": {
-   "assunto": "Matemática / Áreas e perímetros",
-   "confianca": 0.5
+   "assunto": "Matemática / Geometria espacial",
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:169": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -12483,7 +12483,7 @@
   },
   "enem:2018-reaplicacao:171": {
    "assunto": "Matemática / Áreas e perímetros",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:172": {
    "assunto": "Matemática / Funções",
@@ -12614,8 +12614,8 @@
    "confianca": 0.9
   },
   "enem:2018-reaplicacao:44": {
-   "assunto": "Educação Física / Atividade física e qualidade de vida",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.75
   },
   "enem:2018-reaplicacao:46": {
    "assunto": "Filosofia / Filosofia antiga",
@@ -12678,8 +12678,8 @@
    "confianca": 0.6
   },
   "enem:2018-reaplicacao:63": {
-   "assunto": "Sociologia / Movimentos sociais",
-   "confianca": 0.55
+   "assunto": "Filosofia / Política",
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:64": {
    "assunto": "Geografia / Regionalização do Brasil",
@@ -12694,8 +12694,8 @@
    "confianca": 0.6
   },
   "enem:2018-reaplicacao:67": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "assunto": "História / Revolução Industrial",
+   "confianca": 0.65
   },
   "enem:2018-reaplicacao:68": {
    "assunto": "Sociologia / Desigualdade social",
@@ -12715,7 +12715,7 @@
   },
   "enem:2018-reaplicacao:71": {
    "assunto": "Sociologia / Indústria cultural",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2018-reaplicacao:72": {
    "assunto": "Geografia / Urbanização",
@@ -12731,7 +12731,7 @@
   },
   "enem:2018-reaplicacao:75": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:76": {
    "assunto": "Sociologia / Cultura",
@@ -12758,20 +12758,20 @@
    "confianca": 0.85
   },
   "enem:2018-reaplicacao:83": {
-   "assunto": "Filosofia / Filosofia contemporânea",
-   "confianca": 0.55
+   "assunto": "Filosofia / Ética",
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:84": {
-   "assunto": "Geografia / Urbanização",
-   "confianca": 0.5
+   "assunto": "Geografia / Meio ambiente",
+   "confianca": 0.6
   },
   "enem:2018-reaplicacao:85": {
    "assunto": "História / Brasil Colônia",
    "confianca": 0.8
   },
   "enem:2018-reaplicacao:86": {
-   "assunto": "Geografia / Hidrografia",
-   "confianca": 0.55
+   "assunto": "Geografia / Relevo",
+   "confianca": 0.7
   },
   "enem:2018-reaplicacao:88": {
    "assunto": "Geografia / Meio ambiente",
@@ -12823,7 +12823,7 @@
   },
   "enem:2018:104": {
    "assunto": "Física / Leis de Newton",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2018:105": {
    "assunto": "Química / Tabela periódica",
@@ -12962,8 +12962,8 @@
    "confianca": 0.75
   },
   "enem:2018:144": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2018:145": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -13066,8 +13066,8 @@
    "confianca": 0.6
   },
   "enem:2018:173": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.55
+   "assunto": "Matemática / Geometria plana",
+   "confianca": 0.6
   },
   "enem:2018:174": {
    "assunto": "Matemática / Função exponencial",
@@ -13075,7 +13075,7 @@
   },
   "enem:2018:176": {
    "assunto": "Matemática / Probabilidade",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2018:177": {
    "assunto": "Matemática / Porcentagem",
@@ -13115,7 +13115,7 @@
   },
   "enem:2018:25": {
    "assunto": "Língua Portuguesa / Intertextualidade",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2018:27": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -13183,7 +13183,7 @@
   },
   "enem:2018:45": {
    "assunto": "Artes / História da arte",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2018:46": {
    "assunto": "Geografia / Geopolítica",
@@ -13235,7 +13235,7 @@
   },
   "enem:2018:63": {
    "assunto": "Geografia / Clima",
-   "confianca": 0.5
+   "confianca": 0.8
   },
   "enem:2018:64": {
    "assunto": "História / Brasil Colônia",
@@ -13363,7 +13363,7 @@
   },
   "enem:2018:99": {
    "assunto": "Química / Funções inorgânicas",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:10": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -13387,7 +13387,7 @@
   },
   "enem:2019-reaplicacao:106": {
    "assunto": "Física / Física moderna",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:107": {
    "assunto": "Biologia / Ecologia",
@@ -13471,7 +13471,7 @@
   },
   "enem:2019-reaplicacao:132": {
    "assunto": "Física / Leis de Newton",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:133": {
    "assunto": "Biologia / Ecologia",
@@ -13535,7 +13535,7 @@
   },
   "enem:2019-reaplicacao:15": {
    "assunto": "Literatura / Literatura contemporânea",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:150": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -13543,7 +13543,7 @@
   },
   "enem:2019-reaplicacao:151": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:152": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -13558,8 +13558,8 @@
    "confianca": 0.6
   },
   "enem:2019-reaplicacao:156": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:157": {
    "assunto": "Matemática / Geometria plana",
@@ -13582,8 +13582,8 @@
    "confianca": 0.7
   },
   "enem:2019-reaplicacao:161": {
-   "assunto": "Matemática / Estatística",
-   "confianca": 0.55
+   "assunto": "Matemática / Probabilidade",
+   "confianca": 0.85
   },
   "enem:2019-reaplicacao:163": {
    "assunto": "Matemática / Porcentagem",
@@ -13595,7 +13595,7 @@
   },
   "enem:2019-reaplicacao:165": {
    "assunto": "Matemática / Regra de três",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2019-reaplicacao:166": {
    "assunto": "Matemática / Progressão geométrica",
@@ -13663,7 +13663,7 @@
   },
   "enem:2019-reaplicacao:19": {
    "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:20": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -13771,7 +13771,7 @@
   },
   "enem:2019-reaplicacao:49": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:50": {
    "assunto": "História / Idade Moderna",
@@ -13779,7 +13779,7 @@
   },
   "enem:2019-reaplicacao:51": {
    "assunto": "História / Idade Moderna",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:53": {
    "assunto": "Filosofia / Estética",
@@ -13831,7 +13831,7 @@
   },
   "enem:2019-reaplicacao:65": {
    "assunto": "História / República Velha",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2019-reaplicacao:66": {
    "assunto": "História / Idade Média",
@@ -13967,7 +13967,7 @@
   },
   "enem:2019:104": {
    "assunto": "Biologia / Ecologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2019:105": {
    "assunto": "Química / Estrutura atômica",
@@ -13979,7 +13979,7 @@
   },
   "enem:2019:107": {
    "assunto": "Biologia / Zoologia",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019:108": {
    "assunto": "Química / Ligações químicas",
@@ -13987,7 +13987,7 @@
   },
   "enem:2019:109": {
    "assunto": "Física / Gravitação",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2019:11": {
    "assunto": "Educação Física / Esportes",
@@ -14011,7 +14011,7 @@
   },
   "enem:2019:115": {
    "assunto": "Biologia / Ecologia",
-   "confianca": 0.45
+   "confianca": 0.6
   },
   "enem:2019:116": {
    "assunto": "Biologia / Citologia",
@@ -14022,8 +14022,8 @@
    "confianca": 0.95
   },
   "enem:2019:119": {
-   "assunto": "Física / Termologia",
-   "confianca": 0.55
+   "assunto": "Física / Hidrostática",
+   "confianca": 0.6
   },
   "enem:2019:12": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -14075,11 +14075,11 @@
   },
   "enem:2019:134": {
    "assunto": "Física / Hidrostática",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2019:135": {
-   "assunto": "Física / Ondas",
-   "confianca": 0.55
+   "assunto": "Física / Óptica geométrica",
+   "confianca": 0.6
   },
   "enem:2019:136": {
    "assunto": "Matemática / Geometria espacial",
@@ -14174,8 +14174,8 @@
    "confianca": 0.85
   },
   "enem:2019:162": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "assunto": "Matemática / Regra de três",
+   "confianca": 0.6
   },
   "enem:2019:163": {
    "assunto": "Matemática / Operações e propriedades",
@@ -14190,8 +14190,8 @@
    "confianca": 0.8
   },
   "enem:2019:167": {
-   "assunto": "Matemática / Estatística",
-   "confianca": 0.5
+   "assunto": "Matemática / Média, mediana e moda",
+   "confianca": 0.8
   },
   "enem:2019:168": {
    "assunto": "Matemática / Função afim",
@@ -14279,11 +14279,11 @@
   },
   "enem:2019:33": {
    "assunto": "Literatura / Parnasianismo e Simbolismo",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019:34": {
    "assunto": "Língua Portuguesa / Variação linguística",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2019:35": {
    "assunto": "Educação Física / Corpo e saúde",
@@ -14339,7 +14339,7 @@
   },
   "enem:2019:51": {
    "assunto": "Filosofia / Política",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2019:53": {
    "assunto": "Geografia / Geopolítica",
@@ -14354,8 +14354,8 @@
    "confianca": 0.9
   },
   "enem:2019:59": {
-   "assunto": "Geografia / Geopolítica",
-   "confianca": 0.5
+   "assunto": "Geografia / Relevo",
+   "confianca": 0.65
   },
   "enem:2019:6": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -14390,8 +14390,8 @@
    "confianca": 0.8
   },
   "enem:2019:68": {
-   "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.45
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2019:69": {
    "assunto": "Geografia / Regionalização do Brasil",
@@ -14519,7 +14519,7 @@
   },
   "enem:2019:98": {
    "assunto": "Biologia / Fisiologia humana",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2019:99": {
    "assunto": "Biologia / Ciclos biogeoquímicos",
@@ -14567,7 +14567,7 @@
   },
   "enem:2020-digital:116": {
    "assunto": "Física / Cinemática",
-   "confianca": 0.3
+   "confianca": 0.6
   },
   "enem:2020-digital:117": {
    "assunto": "Física / Calorimetria",
@@ -14595,7 +14595,7 @@
   },
   "enem:2020-digital:123": {
    "assunto": "Química / Funções inorgânicas",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-digital:125": {
    "assunto": "Química / Funções inorgânicas",
@@ -14635,7 +14635,7 @@
   },
   "enem:2020-digital:138": {
    "assunto": "Matemática / Progressão aritmética",
-   "confianca": 0.5
+   "confianca": 0.85
   },
   "enem:2020-digital:14": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -14718,8 +14718,8 @@
    "confianca": 0.85
   },
   "enem:2020-digital:16": {
-   "assunto": "Língua Portuguesa / Intertextualidade",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.65
   },
   "enem:2020-digital:161": {
    "assunto": "Matemática / Geometria espacial",
@@ -14734,12 +14734,12 @@
    "confianca": 0.9
   },
   "enem:2020-digital:165": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.65
   },
   "enem:2020-digital:166": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2020-digital:167": {
    "assunto": "Matemática / Porcentagem",
@@ -14767,7 +14767,7 @@
   },
   "enem:2020-digital:176": {
    "assunto": "Matemática / Porcentagem",
-   "confianca": 0.55
+   "confianca": 0.9
   },
   "enem:2020-digital:178": {
    "assunto": "Matemática / Sistemas de equações",
@@ -14798,8 +14798,8 @@
    "confianca": 0.75
   },
   "enem:2020-digital:22": {
-   "assunto": "Língua Portuguesa / Variação linguística",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Morfologia",
+   "confianca": 0.6
   },
   "enem:2020-digital:23": {
    "assunto": "Língua Portuguesa / Funções da linguagem",
@@ -14807,7 +14807,7 @@
   },
   "enem:2020-digital:24": {
    "assunto": "Língua Portuguesa / Variação linguística",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-digital:25": {
    "assunto": "Educação Física / Corpo e saúde",
@@ -14982,8 +14982,8 @@
    "confianca": 0.8
   },
   "enem:2020-digital:74": {
-   "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "assunto": "Sociologia / Cultura",
+   "confianca": 0.6
   },
   "enem:2020-digital:75": {
    "assunto": "Sociologia / Cultura",
@@ -15063,15 +15063,15 @@
   },
   "enem:2020-reaplicacao:101": {
    "assunto": "Química / Funções inorgânicas",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:103": {
    "assunto": "Química / Soluções",
    "confianca": 0.6
   },
   "enem:2020-reaplicacao:104": {
-   "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.5
+   "assunto": "Química / Ligações químicas",
+   "confianca": 0.65
   },
   "enem:2020-reaplicacao:105": {
    "assunto": "Física / Hidrostática",
@@ -15122,8 +15122,8 @@
    "confianca": 0.95
   },
   "enem:2020-reaplicacao:125": {
-   "assunto": "Biologia / Microbiologia",
-   "confianca": 0.5
+   "assunto": "Biologia / Ecologia",
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:127": {
    "assunto": "Física / Ondas",
@@ -15146,8 +15146,8 @@
    "confianca": 0.7
   },
   "enem:2020-reaplicacao:132": {
-   "assunto": "Biologia / Ecologia",
-   "confianca": 0.45
+   "assunto": "Química / Eletroquímica",
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:133": {
    "assunto": "Biologia / Ecologia",
@@ -15179,11 +15179,11 @@
   },
   "enem:2020-reaplicacao:140": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:141": {
-   "assunto": "Matemática / Geometria espacial",
-   "confianca": 0.2
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.9
   },
   "enem:2020-reaplicacao:142": {
    "assunto": "Matemática / Porcentagem",
@@ -15215,7 +15215,7 @@
   },
   "enem:2020-reaplicacao:150": {
    "assunto": "Matemática / Geometria espacial",
-   "confianca": 0.55
+   "confianca": 0.8
   },
   "enem:2020-reaplicacao:151": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -15234,8 +15234,8 @@
    "confianca": 0.6
   },
   "enem:2020-reaplicacao:156": {
-   "assunto": "Matemática / Geometria espacial",
-   "confianca": 0.2
+   "assunto": "Matemática / Probabilidade",
+   "confianca": 0.9
   },
   "enem:2020-reaplicacao:157": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -15270,8 +15270,8 @@
    "confianca": 0.7
   },
   "enem:2020-reaplicacao:165": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Razão e proporção",
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:166": {
    "assunto": "Matemática / Porcentagem",
@@ -15279,7 +15279,7 @@
   },
   "enem:2020-reaplicacao:168": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:169": {
    "assunto": "Matemática / Função exponencial",
@@ -15335,7 +15335,7 @@
   },
   "enem:2020-reaplicacao:180": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:19": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -15367,7 +15367,7 @@
   },
   "enem:2020-reaplicacao:26": {
    "assunto": "Língua Portuguesa / Variação linguística",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:27": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
@@ -15591,7 +15591,7 @@
   },
   "enem:2020-reaplicacao:90": {
    "assunto": "História / República Velha",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:91": {
    "assunto": "Física / Cinemática",
@@ -15599,7 +15599,7 @@
   },
   "enem:2020-reaplicacao:92": {
    "assunto": "Física / Energia e potência",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2020-reaplicacao:94": {
    "assunto": "Química / Eletroquímica",
@@ -15654,8 +15654,8 @@
    "confianca": 0.6
   },
   "enem:2020:11": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "assunto": "Língua Portuguesa / Figuras de linguagem",
+   "confianca": 0.6
   },
   "enem:2020:111": {
    "assunto": "Física / Ondas",
@@ -15703,7 +15703,7 @@
   },
   "enem:2020:124": {
    "assunto": "Química / Hidrocarbonetos",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2020:125": {
    "assunto": "Biologia / Genética",
@@ -15723,11 +15723,11 @@
   },
   "enem:2020:131": {
    "assunto": "Química / Reações químicas",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2020:132": {
-   "assunto": "Biologia / Ecologia",
-   "confianca": 0.55
+   "assunto": "Química / Funções inorgânicas",
+   "confianca": 0.6
   },
   "enem:2020:133": {
    "assunto": "Física / Eletrostática",
@@ -15758,8 +15758,8 @@
    "confianca": 0.75
   },
   "enem:2020:144": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Regra de três",
+   "confianca": 0.6
   },
   "enem:2020:146": {
    "assunto": "Matemática / Equações do 1º grau",
@@ -15811,15 +15811,15 @@
   },
   "enem:2020:159": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2020:16": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
    "confianca": 0.7
   },
   "enem:2020:160": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "assunto": "Matemática / Regra de três",
+   "confianca": 0.6
   },
   "enem:2020:161": {
    "assunto": "Matemática / Volumes",
@@ -15850,8 +15850,8 @@
    "confianca": 0.9
   },
   "enem:2020:169": {
-   "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.55
+   "assunto": "Matemática / Sistemas de equações",
+   "confianca": 0.6
   },
   "enem:2020:17": {
    "assunto": "Educação Física / Atividade física e qualidade de vida",
@@ -15899,7 +15899,7 @@
   },
   "enem:2020:19": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
-   "confianca": 0.55
+   "confianca": 0.8
   },
   "enem:2020:20": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -16002,8 +16002,8 @@
    "confianca": 0.65
   },
   "enem:2020:5": {
-   "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Semântica",
+   "confianca": 0.6
   },
   "enem:2020:51": {
    "assunto": "Geografia / Agricultura",
@@ -16063,11 +16063,11 @@
   },
   "enem:2020:67": {
    "assunto": "Geografia / Relevo",
-   "confianca": 0.5
+   "confianca": 0.8
   },
   "enem:2020:68": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.4
+   "confianca": 0.6
   },
   "enem:2020:69": {
    "assunto": "Filosofia / Política",
@@ -16110,8 +16110,8 @@
    "confianca": 0.6
   },
   "enem:2020:8": {
-   "assunto": "Artes / Teatro e cinema",
-   "confianca": 0.55
+   "assunto": "Literatura / Literatura contemporânea",
+   "confianca": 0.6
   },
   "enem:2020:80": {
    "assunto": "Sociologia / Movimentos sociais",
@@ -16191,11 +16191,11 @@
   },
   "enem:2021-digital:107": {
    "assunto": "Física / Calorimetria",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-digital:109": {
-   "assunto": "Química / Química orgânica",
-   "confianca": 0.5
+   "assunto": "Biologia / Biotecnologia",
+   "confianca": 0.6
   },
   "enem:2021-digital:11": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -16223,7 +16223,7 @@
   },
   "enem:2021-digital:115": {
    "assunto": "Biologia / Botânica",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-digital:116": {
    "assunto": "Física / Gravitação",
@@ -16287,11 +16287,11 @@
   },
   "enem:2021-digital:136": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-digital:137": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2021-digital:138": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -16343,7 +16343,7 @@
   },
   "enem:2021-digital:151": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021-digital:152": {
    "assunto": "Matemática / Geometria espacial",
@@ -16374,8 +16374,8 @@
    "confianca": 0.8
   },
   "enem:2021-digital:159": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2021-digital:16": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -16431,7 +16431,7 @@
   },
   "enem:2021-digital:179": {
    "assunto": "Matemática / Polinômios",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-digital:18": {
    "assunto": "Artes / Movimentos artísticos",
@@ -16526,8 +16526,8 @@
    "confianca": 0.8
   },
   "enem:2021-digital:41": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "assunto": "Literatura / Parnasianismo e Simbolismo",
+   "confianca": 0.7
   },
   "enem:2021-digital:42": {
    "assunto": "Educação Física / Corpo e saúde",
@@ -16583,7 +16583,7 @@
   },
   "enem:2021-digital:56": {
    "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021-digital:57": {
    "assunto": "Sociologia / Indústria cultural",
@@ -16603,7 +16603,7 @@
   },
   "enem:2021-digital:60": {
    "assunto": "Sociologia / Cidadania",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-digital:61": {
    "assunto": "Geografia / Urbanização",
@@ -16611,7 +16611,7 @@
   },
   "enem:2021-digital:63": {
    "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021-digital:64": {
    "assunto": "Filosofia / Filosofia contemporânea",
@@ -16659,7 +16659,7 @@
   },
   "enem:2021-digital:77": {
    "assunto": "História / Independência do Brasil",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-digital:78": {
    "assunto": "História / Idade Moderna",
@@ -16678,8 +16678,8 @@
    "confianca": 0.6
   },
   "enem:2021-digital:81": {
-   "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.5
+   "assunto": "História / Era Vargas",
+   "confianca": 0.65
   },
   "enem:2021-digital:83": {
    "assunto": "História / História da África",
@@ -16706,8 +16706,8 @@
    "confianca": 0.85
   },
   "enem:2021-digital:89": {
-   "assunto": "Geografia / Clima",
-   "confianca": 0.55
+   "assunto": "Geografia / Cartografia",
+   "confianca": 0.6
   },
   "enem:2021-digital:9": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -16767,7 +16767,7 @@
   },
   "enem:2021-reaplicacao:107": {
    "assunto": "Química / Funções inorgânicas",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2021-reaplicacao:109": {
    "assunto": "Biologia / Ecologia",
@@ -16826,8 +16826,8 @@
    "confianca": 0.9
   },
   "enem:2021-reaplicacao:134": {
-   "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.45
+   "assunto": "Química / Química orgânica",
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:136": {
    "assunto": "Matemática / Geometria espacial",
@@ -16887,7 +16887,7 @@
   },
   "enem:2021-reaplicacao:154": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:156": {
    "assunto": "Matemática / Operações e propriedades",
@@ -16899,11 +16899,11 @@
   },
   "enem:2021-reaplicacao:158": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:159": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:16": {
    "assunto": "Artes / Arte brasileira",
@@ -16918,8 +16918,8 @@
    "confianca": 0.9
   },
   "enem:2021-reaplicacao:164": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.45
+   "assunto": "Matemática / Função exponencial",
+   "confianca": 0.9
   },
   "enem:2021-reaplicacao:165": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -16934,8 +16934,8 @@
    "confianca": 0.8
   },
   "enem:2021-reaplicacao:169": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:17": {
    "assunto": "Artes / História da arte",
@@ -16959,7 +16959,7 @@
   },
   "enem:2021-reaplicacao:176": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.3
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:177": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -16971,7 +16971,7 @@
   },
   "enem:2021-reaplicacao:179": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:18": {
    "assunto": "Artes / Música e dança",
@@ -16995,7 +16995,7 @@
   },
   "enem:2021-reaplicacao:24": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:25": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
@@ -17075,7 +17075,7 @@
   },
   "enem:2021-reaplicacao:51": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:53": {
    "assunto": "História / República Velha",
@@ -17183,7 +17183,7 @@
   },
   "enem:2021-reaplicacao:86": {
    "assunto": "História / Revolução Industrial",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2021-reaplicacao:87": {
    "assunto": "Filosofia / Filosofia antiga",
@@ -17214,8 +17214,8 @@
    "confianca": 0.9
   },
   "enem:2021-reaplicacao:96": {
-   "assunto": "Química / Química orgânica",
-   "confianca": 0.55
+   "assunto": "Química / Funções inorgânicas",
+   "confianca": 0.6
   },
   "enem:2021-reaplicacao:97": {
    "assunto": "Química / Estequiometria",
@@ -17282,8 +17282,8 @@
    "confianca": 0.8
   },
   "enem:2021:117": {
-   "assunto": "Biologia / Ecologia",
-   "confianca": 0.5
+   "assunto": "Biologia / Biotecnologia",
+   "confianca": 0.6
   },
   "enem:2021:118": {
    "assunto": "Biologia / Saúde e doenças",
@@ -17315,7 +17315,7 @@
   },
   "enem:2021:125": {
    "assunto": "Física / Calorimetria",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021:127": {
    "assunto": "Biologia / Ecologia",
@@ -17347,7 +17347,7 @@
   },
   "enem:2021:136": {
    "assunto": "Matemática / Polinômios",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021:137": {
    "assunto": "Matemática / Geometria espacial",
@@ -17431,7 +17431,7 @@
   },
   "enem:2021:160": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021:161": {
    "assunto": "Matemática / Função quadrática",
@@ -17482,12 +17482,12 @@
    "confianca": 0.7
   },
   "enem:2021:176": {
-   "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.55
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2021:177": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021:178": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -17647,7 +17647,7 @@
   },
   "enem:2021:56": {
    "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021:57": {
    "assunto": "Sociologia / Indústria cultural",
@@ -17667,7 +17667,7 @@
   },
   "enem:2021:60": {
    "assunto": "Sociologia / Cidadania",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021:61": {
    "assunto": "Geografia / Urbanização",
@@ -17675,7 +17675,7 @@
   },
   "enem:2021:63": {
    "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2021:64": {
    "assunto": "Filosofia / Filosofia contemporânea",
@@ -17723,7 +17723,7 @@
   },
   "enem:2021:77": {
    "assunto": "História / Independência do Brasil",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2021:78": {
    "assunto": "História / Idade Moderna",
@@ -17742,8 +17742,8 @@
    "confianca": 0.6
   },
   "enem:2021:81": {
-   "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.5
+   "assunto": "História / Era Vargas",
+   "confianca": 0.65
   },
   "enem:2021:83": {
    "assunto": "História / História da África",
@@ -17770,8 +17770,8 @@
    "confianca": 0.85
   },
   "enem:2021:89": {
-   "assunto": "Geografia / Clima",
-   "confianca": 0.55
+   "assunto": "Geografia / Cartografia",
+   "confianca": 0.6
   },
   "enem:2021:9": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -17911,7 +17911,7 @@
   },
   "enem:2022-digital:132": {
    "assunto": "Física / Gravitação",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022-digital:133": {
    "assunto": "Física / Circuitos elétricos",
@@ -17958,8 +17958,8 @@
    "confianca": 0.85
   },
   "enem:2022-digital:146": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2022-digital:147": {
    "assunto": "Matemática / Volumes",
@@ -18003,7 +18003,7 @@
   },
   "enem:2022-digital:159": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-digital:160": {
    "assunto": "Matemática / Razão e proporção",
@@ -18011,7 +18011,7 @@
   },
   "enem:2022-digital:161": {
    "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-digital:163": {
    "assunto": "Matemática / Geometria plana",
@@ -18047,7 +18047,7 @@
   },
   "enem:2022-digital:171": {
    "assunto": "Matemática / Progressão aritmética",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-digital:172": {
    "assunto": "Matemática / Operações e propriedades",
@@ -18063,7 +18063,7 @@
   },
   "enem:2022-digital:177": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022-digital:178": {
    "assunto": "Matemática / Geometria espacial",
@@ -18078,8 +18078,8 @@
    "confianca": 0.9
   },
   "enem:2022-digital:23": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.65
   },
   "enem:2022-digital:27": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -18138,8 +18138,8 @@
    "confianca": 0.7
   },
   "enem:2022-digital:41": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.6
   },
   "enem:2022-digital:42": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -18171,7 +18171,7 @@
   },
   "enem:2022-digital:50": {
    "assunto": "História / República Velha",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-digital:51": {
    "assunto": "Geografia / Globalização",
@@ -18203,7 +18203,7 @@
   },
   "enem:2022-digital:60": {
    "assunto": "Sociologia / Globalização e sociedade",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022-digital:61": {
    "assunto": "Sociologia / Trabalho",
@@ -18222,8 +18222,8 @@
    "confianca": 0.8
   },
   "enem:2022-digital:65": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.4
+   "assunto": "Sociologia / Desigualdade social",
+   "confianca": 0.6
   },
   "enem:2022-digital:66": {
    "assunto": "História / Brasil Império",
@@ -18263,7 +18263,7 @@
   },
   "enem:2022-digital:76": {
    "assunto": "Geografia / Hidrografia",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022-digital:77": {
    "assunto": "História / Escravidão no Brasil",
@@ -18290,8 +18290,8 @@
    "confianca": 0.9
   },
   "enem:2022-digital:82": {
-   "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "assunto": "Geografia / Relevo",
+   "confianca": 0.6
   },
   "enem:2022-digital:83": {
    "assunto": "Sociologia / Cidadania",
@@ -18310,8 +18310,8 @@
    "confianca": 0.9
   },
   "enem:2022-digital:89": {
-   "assunto": "História / Pré-história",
-   "confianca": 0.5
+   "assunto": "História / Antiguidade",
+   "confianca": 0.6
   },
   "enem:2022-digital:9": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -18387,7 +18387,7 @@
   },
   "enem:2022-reaplicacao:113": {
    "assunto": "Química / Separação de misturas",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:114": {
    "assunto": "Biologia / Ciclos biogeoquímicos",
@@ -18474,8 +18474,8 @@
    "confianca": 0.95
   },
   "enem:2022-reaplicacao:139": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:141": {
    "assunto": "Matemática / Volumes",
@@ -18503,7 +18503,7 @@
   },
   "enem:2022-reaplicacao:149": {
    "assunto": "Matemática / Equações do 1º grau",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:15": {
    "assunto": "Literatura / Modernismo",
@@ -18551,7 +18551,7 @@
   },
   "enem:2022-reaplicacao:162": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:163": {
    "assunto": "Matemática / Regra de três",
@@ -18579,11 +18579,11 @@
   },
   "enem:2022-reaplicacao:170": {
    "assunto": "Matemática / Média, mediana e moda",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:171": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.3
+   "assunto": "Matemática / Função quadrática",
+   "confianca": 0.7
   },
   "enem:2022-reaplicacao:172": {
    "assunto": "Matemática / Razão e proporção",
@@ -18614,8 +18614,8 @@
    "confianca": 0.9
   },
   "enem:2022-reaplicacao:179": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:18": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -18682,8 +18682,8 @@
    "confianca": 0.6
   },
   "enem:2022-reaplicacao:36": {
-   "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Funções da linguagem",
+   "confianca": 0.85
   },
   "enem:2022-reaplicacao:37": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -18734,8 +18734,8 @@
    "confianca": 0.75
   },
   "enem:2022-reaplicacao:50": {
-   "assunto": "História / Século XX",
-   "confianca": 0.55
+   "assunto": "História / Redemocratização",
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:52": {
    "assunto": "Sociologia / Desigualdade social",
@@ -18795,7 +18795,7 @@
   },
   "enem:2022-reaplicacao:68": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.4
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:7": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -18855,15 +18855,15 @@
   },
   "enem:2022-reaplicacao:83": {
    "assunto": "Geografia / Globalização",
-   "confianca": 0.5
+   "confianca": 0.7
   },
   "enem:2022-reaplicacao:84": {
    "assunto": "Filosofia / Filosofia contemporânea",
    "confianca": 0.9
   },
   "enem:2022-reaplicacao:85": {
-   "assunto": "História / Brasil Império",
-   "confianca": 0.55
+   "assunto": "História / Brasil Colônia",
+   "confianca": 0.6
   },
   "enem:2022-reaplicacao:87": {
    "assunto": "História / Escravidão no Brasil",
@@ -18871,7 +18871,7 @@
   },
   "enem:2022-reaplicacao:88": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2022-reaplicacao:89": {
    "assunto": "Sociologia / Trabalho",
@@ -18879,7 +18879,7 @@
   },
   "enem:2022-reaplicacao:90": {
    "assunto": "Geografia / Cartografia",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2022-reaplicacao:93": {
    "assunto": "Química / Propriedades da matéria",
@@ -18951,7 +18951,7 @@
   },
   "enem:2022:111": {
    "assunto": "Física / Gravitação",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022:114": {
    "assunto": "Biologia / Citologia",
@@ -19023,7 +19023,7 @@
   },
   "enem:2022:140": {
    "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022:142": {
    "assunto": "Matemática / Análise combinatória",
@@ -19035,7 +19035,7 @@
   },
   "enem:2022:144": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022:145": {
    "assunto": "Matemática / Razão e proporção",
@@ -19063,7 +19063,7 @@
   },
   "enem:2022:152": {
    "assunto": "Matemática / Progressão aritmética",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022:153": {
    "assunto": "Matemática / Volumes",
@@ -19087,7 +19087,7 @@
   },
   "enem:2022:159": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022:160": {
    "assunto": "Matemática / Geometria espacial",
@@ -19142,8 +19142,8 @@
    "confianca": 0.85
   },
   "enem:2022:177": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.6
   },
   "enem:2022:178": {
    "assunto": "Matemática / Volumes",
@@ -19166,8 +19166,8 @@
    "confianca": 0.85
   },
   "enem:2022:23": {
-   "assunto": "Literatura / Literatura contemporânea",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.65
   },
   "enem:2022:27": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -19222,12 +19222,12 @@
    "confianca": 0.85
   },
   "enem:2022:40": {
-   "assunto": "Literatura / Realismo e Naturalismo",
-   "confianca": 0.5
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.6
   },
   "enem:2022:41": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.6
   },
   "enem:2022:42": {
    "assunto": "Literatura / Literatura contemporânea",
@@ -19243,7 +19243,7 @@
   },
   "enem:2022:46": {
    "assunto": "Geografia / Clima",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022:47": {
    "assunto": "Filosofia / Política",
@@ -19283,7 +19283,7 @@
   },
   "enem:2022:58": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022:6": {
    "assunto": "Língua Portuguesa / Figuras de linguagem",
@@ -19310,8 +19310,8 @@
    "confianca": 0.85
   },
   "enem:2022:65": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.4
+   "assunto": "Sociologia / Desigualdade social",
+   "confianca": 0.6
   },
   "enem:2022:66": {
    "assunto": "História / Brasil Império",
@@ -19350,8 +19350,8 @@
    "confianca": 0.7
   },
   "enem:2022:76": {
-   "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "assunto": "Geografia / Hidrografia",
+   "confianca": 0.6
   },
   "enem:2022:77": {
    "assunto": "História / Escravidão no Brasil",
@@ -19379,7 +19379,7 @@
   },
   "enem:2022:82": {
    "assunto": "Geografia / Relevo",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2022:83": {
    "assunto": "Sociologia / Cidadania",
@@ -19399,7 +19399,7 @@
   },
   "enem:2022:89": {
    "assunto": "História / Antiguidade",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2022:9": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -19434,8 +19434,8 @@
    "confianca": 0.6
   },
   "enem:2023-reaplicacao:103": {
-   "assunto": "Química / Química orgânica",
-   "confianca": 0.55
+   "assunto": "Química / Isomeria",
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:104": {
    "assunto": "Física / Termodinâmica",
@@ -19518,8 +19518,8 @@
    "confianca": 0.75
   },
   "enem:2023-reaplicacao:132": {
-   "assunto": "Física / Física moderna",
-   "confianca": 0.55
+   "assunto": "Física / Ondas",
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:133": {
    "assunto": "Física / Eletrodinâmica",
@@ -19538,12 +19538,12 @@
    "confianca": 0.85
   },
   "enem:2023-reaplicacao:138": {
-   "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.55
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.7
   },
   "enem:2023-reaplicacao:139": {
-   "assunto": "Matemática / Função afim",
-   "confianca": 0.55
+   "assunto": "Matemática / Progressão aritmética",
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:14": {
    "assunto": "Língua Portuguesa / Coesão e coerência",
@@ -19631,11 +19631,11 @@
   },
   "enem:2023-reaplicacao:161": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:162": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.3
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:163": {
    "assunto": "Matemática / Porcentagem",
@@ -19762,8 +19762,8 @@
    "confianca": 0.85
   },
   "enem:2023-reaplicacao:35": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "assunto": "Língua Portuguesa / Figuras de linguagem",
+   "confianca": 0.65
   },
   "enem:2023-reaplicacao:36": {
    "assunto": "Língua Portuguesa / Gêneros textuais",
@@ -19814,12 +19814,12 @@
    "confianca": 0.9
   },
   "enem:2023-reaplicacao:50": {
-   "assunto": "Geografia / Globalização",
-   "confianca": 0.55
+   "assunto": "Geografia / Agricultura",
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:51": {
    "assunto": "Sociologia / Indústria cultural",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:52": {
    "assunto": "História / Revolução Industrial",
@@ -19831,11 +19831,11 @@
   },
   "enem:2023-reaplicacao:55": {
    "assunto": "Geografia / Hidrografia",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2023-reaplicacao:56": {
    "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2023-reaplicacao:57": {
    "assunto": "Geografia / Agricultura",
@@ -19911,7 +19911,7 @@
   },
   "enem:2023-reaplicacao:75": {
    "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:76": {
    "assunto": "História / Antiguidade",
@@ -19947,7 +19947,7 @@
   },
   "enem:2023-reaplicacao:87": {
    "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:89": {
    "assunto": "História / Brasil Colônia",
@@ -19971,7 +19971,7 @@
   },
   "enem:2023-reaplicacao:93": {
    "assunto": "Biologia / Ecologia",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2023-reaplicacao:94": {
    "assunto": "Química / Química orgânica",
@@ -20090,8 +20090,8 @@
    "confianca": 0.85
   },
   "enem:2023:130": {
-   "assunto": "Química / Polímeros",
-   "confianca": 0.5
+   "assunto": "Física / Termologia",
+   "confianca": 0.6
   },
   "enem:2023:131": {
    "assunto": "Química / Soluções",
@@ -20171,7 +20171,7 @@
   },
   "enem:2023:153": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2023:155": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -20186,8 +20186,8 @@
    "confianca": 0.7
   },
   "enem:2023:158": {
-   "assunto": "Matemática / Função afim",
-   "confianca": 0.5
+   "assunto": "Matemática / Porcentagem",
+   "confianca": 0.6
   },
   "enem:2023:159": {
    "assunto": "Matemática / Função exponencial",
@@ -20210,8 +20210,8 @@
    "confianca": 0.7
   },
   "enem:2023:166": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Matrizes e determinantes",
+   "confianca": 0.65
   },
   "enem:2023:169": {
    "assunto": "Matemática / Progressão geométrica",
@@ -20219,7 +20219,7 @@
   },
   "enem:2023:17": {
    "assunto": "Língua Portuguesa / Pontuação",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2023:170": {
    "assunto": "Matemática / Função quadrática",
@@ -20230,8 +20230,8 @@
    "confianca": 0.6
   },
   "enem:2023:174": {
-   "assunto": "Matemática / Geometria plana",
-   "confianca": 0.4
+   "assunto": "Matemática / Geometria analítica",
+   "confianca": 0.6
   },
   "enem:2023:175": {
    "assunto": "Matemática / Sistemas de equações",
@@ -20251,7 +20251,7 @@
   },
   "enem:2023:179": {
    "assunto": "Matemática / Conjuntos numéricos",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2023:18": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -20303,7 +20303,7 @@
   },
   "enem:2023:29": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2023:30": {
    "assunto": "Literatura / Literatura contemporânea",
@@ -20350,8 +20350,8 @@
    "confianca": 0.85
   },
   "enem:2023:43": {
-   "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Figuras de linguagem",
+   "confianca": 0.7
   },
   "enem:2023:44": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -20359,7 +20359,7 @@
   },
   "enem:2023:46": {
    "assunto": "Geografia / Regionalização do Brasil",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2023:47": {
    "assunto": "História / Brasil Império",
@@ -20399,7 +20399,7 @@
   },
   "enem:2023:56": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2023:57": {
    "assunto": "Filosofia / Ética",
@@ -20470,12 +20470,12 @@
    "confianca": 0.7
   },
   "enem:2023:72": {
-   "assunto": "Sociologia / Desigualdade social",
-   "confianca": 0.55
+   "assunto": "Sociologia / Globalização e sociedade",
+   "confianca": 0.6
   },
   "enem:2023:74": {
    "assunto": "História / Antiguidade",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2023:75": {
    "assunto": "Sociologia / Desigualdade social",
@@ -20510,8 +20510,8 @@
    "confianca": 0.85
   },
   "enem:2023:84": {
-   "assunto": "História / Século XX",
-   "confianca": 0.5
+   "assunto": "Sociologia / Trabalho",
+   "confianca": 0.6
   },
   "enem:2023:86": {
    "assunto": "História / Revolução Francesa",
@@ -20579,7 +20579,7 @@
   },
   "enem:2024-reaplicacao:103": {
    "assunto": "Física / Eletrodinâmica",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2024-reaplicacao:104": {
    "assunto": "Física / Ondas",
@@ -20714,8 +20714,8 @@
    "confianca": 0.8
   },
   "enem:2024-reaplicacao:143": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "assunto": "Matemática / Equações do 1º grau",
+   "confianca": 0.6
   },
   "enem:2024-reaplicacao:144": {
    "assunto": "Matemática / Razão e proporção",
@@ -20742,8 +20742,8 @@
    "confianca": 0.7
   },
   "enem:2024-reaplicacao:150": {
-   "assunto": "Matemática / Interpretação de gráficos",
-   "confianca": 0.55
+   "assunto": "Matemática / Volumes",
+   "confianca": 0.6
   },
   "enem:2024-reaplicacao:151": {
    "assunto": "Matemática / Geometria plana",
@@ -20803,7 +20803,7 @@
   },
   "enem:2024-reaplicacao:169": {
    "assunto": "Matemática / Sistemas de equações",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2024-reaplicacao:17": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -20855,7 +20855,7 @@
   },
   "enem:2024-reaplicacao:21": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2024-reaplicacao:22": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -21043,7 +21043,7 @@
   },
   "enem:2024-reaplicacao:8": {
    "assunto": "Artes / História da arte",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2024-reaplicacao:80": {
    "assunto": "Sociologia / Cultura",
@@ -21086,8 +21086,8 @@
    "confianca": 0.8
   },
   "enem:2024-reaplicacao:94": {
-   "assunto": "Biologia / Fisiologia humana",
-   "confianca": 0.55
+   "assunto": "Biologia / Biotecnologia",
+   "confianca": 0.6
   },
   "enem:2024-reaplicacao:95": {
    "assunto": "Química / Química orgânica",
@@ -21143,7 +21143,7 @@
   },
   "enem:2024:114": {
    "assunto": "Química / Reações químicas",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2024:115": {
    "assunto": "Biologia / Citologia",
@@ -21211,7 +21211,7 @@
   },
   "enem:2024:136": {
    "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2024:137": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -21223,7 +21223,7 @@
   },
   "enem:2024:139": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2024:14": {
    "assunto": "Língua Portuguesa / Variação linguística",
@@ -21259,7 +21259,7 @@
   },
   "enem:2024:150": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2024:151": {
    "assunto": "Matemática / Razão e proporção",
@@ -21271,7 +21271,7 @@
   },
   "enem:2024:154": {
    "assunto": "Matemática / Média, mediana e moda",
-   "confianca": 0.5
+   "confianca": 0.75
   },
   "enem:2024:155": {
    "assunto": "Matemática / Áreas e perímetros",
@@ -21446,8 +21446,8 @@
    "confianca": 0.75
   },
   "enem:2024:43": {
-   "assunto": "Artes / História da arte",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.6
   },
   "enem:2024:45": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -21487,7 +21487,7 @@
   },
   "enem:2024:55": {
    "assunto": "Filosofia / Filosofia antiga",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2024:56": {
    "assunto": "Sociologia / Cultura",
@@ -21530,12 +21530,12 @@
    "confianca": 0.85
   },
   "enem:2024:66": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.55
+   "assunto": "Geografia / População",
+   "confianca": 0.6
   },
   "enem:2024:67": {
    "assunto": "Geografia / Meio ambiente",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2024:68": {
    "assunto": "Geografia / Clima",
@@ -21599,7 +21599,7 @@
   },
   "enem:2024:84": {
    "assunto": "História / Brasil Império",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2024:85": {
    "assunto": "História / Ditadura militar",
@@ -21623,7 +21623,7 @@
   },
   "enem:2024:91": {
    "assunto": "Física / Trabalho e energia",
-   "confianca": 0.55
+   "confianca": 0.7
   },
   "enem:2024:92": {
    "assunto": "Química / Eletroquímica",
@@ -21642,8 +21642,8 @@
    "confianca": 0.85
   },
   "enem:2024:96": {
-   "assunto": "Física / Leis de Newton",
-   "confianca": 0.5
+   "assunto": "Física / Impulso e quantidade de movimento",
+   "confianca": 0.6
   },
   "enem:2024:99": {
    "assunto": "Física / Ondas",
@@ -21794,8 +21794,8 @@
    "confianca": 0.6
   },
   "enem:2025-belem:145": {
-   "assunto": "Matemática / Razão e proporção",
-   "confianca": 0.5
+   "assunto": "Matemática / Operações e propriedades",
+   "confianca": 0.6
   },
   "enem:2025-belem:148": {
    "assunto": "Matemática / Razão e proporção",
@@ -21891,7 +21891,7 @@
   },
   "enem:2025-belem:172": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-belem:173": {
    "assunto": "Matemática / Estatística",
@@ -21915,7 +21915,7 @@
   },
   "enem:2025-belem:179": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2025-belem:18": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -21970,8 +21970,8 @@
    "confianca": 0.6
   },
   "enem:2025-belem:32": {
-   "assunto": "Literatura / Modernismo",
-   "confianca": 0.5
+   "assunto": "Língua Portuguesa / Interpretação de texto",
+   "confianca": 0.6
   },
   "enem:2025-belem:33": {
    "assunto": "Língua Portuguesa / Intertextualidade",
@@ -22143,7 +22143,7 @@
   },
   "enem:2025-belem:78": {
    "assunto": "Filosofia / Epistemologia",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-belem:8": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -22191,7 +22191,7 @@
   },
   "enem:2025-belem:91": {
    "assunto": "Química / Equilíbrio químico",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-belem:92": {
    "assunto": "Biologia / Genética",
@@ -22242,8 +22242,8 @@
    "confianca": 0.9
   },
   "enem:2025-reaplicacao:108": {
-   "assunto": "Química / Propriedades da matéria",
-   "confianca": 0.55
+   "assunto": "Química / Estequiometria",
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:109": {
    "assunto": "Biologia / Biotecnologia",
@@ -22287,7 +22287,7 @@
   },
   "enem:2025-reaplicacao:122": {
    "assunto": "Física / Eletromagnetismo",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:123": {
    "assunto": "Química / Termoquímica",
@@ -22315,7 +22315,7 @@
   },
   "enem:2025-reaplicacao:132": {
    "assunto": "Biologia / Botânica",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:134": {
    "assunto": "Biologia / Microbiologia",
@@ -22342,8 +22342,8 @@
    "confianca": 0.8
   },
   "enem:2025-reaplicacao:140": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.55
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:141": {
    "assunto": "Matemática / Porcentagem",
@@ -22363,7 +22363,7 @@
   },
   "enem:2025-reaplicacao:146": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:147": {
    "assunto": "Matemática / Função quadrática",
@@ -22435,7 +22435,7 @@
   },
   "enem:2025-reaplicacao:164": {
    "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:165": {
    "assunto": "Matemática / Média, mediana e moda",
@@ -22623,7 +22623,7 @@
   },
   "enem:2025-reaplicacao:54": {
    "assunto": "Sociologia / Indústria cultural",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2025-reaplicacao:55": {
    "assunto": "História / Ditadura militar",
@@ -22639,7 +22639,7 @@
   },
   "enem:2025-reaplicacao:58": {
    "assunto": "Geografia / Geopolítica",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2025-reaplicacao:59": {
    "assunto": "Sociologia / Cultura",
@@ -22763,7 +22763,7 @@
   },
   "enem:2025-reaplicacao:90": {
    "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "confianca": 0.6
   },
   "enem:2025-reaplicacao:91": {
    "assunto": "Biologia / Ecologia",
@@ -22891,7 +22891,7 @@
   },
   "enem:2025:128": {
    "assunto": "Física / Termologia",
-   "confianca": 0.55
+   "confianca": 0.65
   },
   "enem:2025:129": {
    "assunto": "Biologia / Saúde e doenças",
@@ -22943,7 +22943,7 @@
   },
   "enem:2025:143": {
    "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.5
+   "confianca": 0.65
   },
   "enem:2025:146": {
    "assunto": "Matemática / Operações e propriedades",
@@ -22966,8 +22966,8 @@
    "confianca": 0.9
   },
   "enem:2025:151": {
-   "assunto": "Matemática / Operações e propriedades",
-   "confianca": 0.45
+   "assunto": "Matemática / Conjuntos numéricos",
+   "confianca": 0.65
   },
   "enem:2025:152": {
    "assunto": "Matemática / Probabilidade",
@@ -23010,16 +23010,16 @@
    "confianca": 0.8
   },
   "enem:2025:161": {
-   "assunto": "Matemática / Geometria plana",
-   "confianca": 0.5
+   "assunto": "Matemática / Geometria analítica",
+   "confianca": 0.6
   },
   "enem:2025:162": {
    "assunto": "Matemática / Equações do 1º grau",
    "confianca": 0.75
   },
   "enem:2025:163": {
-   "assunto": "Matemática / Análise combinatória",
-   "confianca": 0.3
+   "assunto": "Matemática / Interpretação de gráficos",
+   "confianca": 0.7
   },
   "enem:2025:164": {
    "assunto": "Matemática / Trigonometria",
@@ -23106,8 +23106,8 @@
    "confianca": 0.6
   },
   "enem:2025:30": {
-   "assunto": "Língua Portuguesa / Semântica",
-   "confianca": 0.55
+   "assunto": "Língua Portuguesa / Gêneros textuais",
+   "confianca": 0.6
   },
   "enem:2025:31": {
    "assunto": "Língua Portuguesa / Semântica",
@@ -23338,8 +23338,8 @@
    "confianca": 0.75
   },
   "enem:2025:89": {
-   "assunto": "Sociologia / Cultura",
-   "confianca": 0.5
+   "assunto": "História / Idade Média",
+   "confianca": 0.6
   },
   "enem:2025:9": {
    "assunto": "Língua Portuguesa / Interpretação de texto",
@@ -23347,7 +23347,7 @@
   },
   "enem:2025:90": {
    "assunto": "História / Século XX",
-   "confianca": 0.55
+   "confianca": 0.6
   },
   "enem:2025:91": {
    "assunto": "Química / Separação de misturas",

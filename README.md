@@ -133,7 +133,7 @@ O que a palavra-chave não decide vem do **catálogo de assuntos**
 Claude Haiku 5.5 na lista de assuntos de cada área, versionada no repositório
 — classificação do OpENEM, não oficial. Ela só preenche questão ainda sem
 assunto, ignora o que tiver confiança abaixo de 0,6 e não precisa de chave de
-IA. Com as duas etapas, ~93% das questões oficiais ficam com assunto. Banco
+IA. Com as duas etapas, todas as questões oficiais ficam com assunto, menos uma cujo enunciado está truncado no dataset. Banco
 novo já sai assim (o container roda as duas na primeira subida); num banco que
 já existia, rode:
 
