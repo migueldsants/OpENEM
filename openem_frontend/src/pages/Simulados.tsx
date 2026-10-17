@@ -118,7 +118,7 @@ function aplicacaoDa(exam: NonNullable<SimulationTemplate['exam']>) {
  * Até 2008 o ENEM era uma prova só, num dia, com 63 questões
  * interdisciplinares — sem as quatro áreas de hoje.
  */
-export function provaUnica(ano: number): boolean {
+function provaUnica(ano: number): boolean {
   return ano <= 2008;
 }
 
