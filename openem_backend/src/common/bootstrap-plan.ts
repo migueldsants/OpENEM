@@ -11,6 +11,7 @@ export type BootstrapStep =
   | 'db:seed'
   | 'db:import:enem'
   | 'db:classify:keywords'
+  | 'db:classify:catalog'
   | 'db:seed:flashcards';
 
 export interface BootstrapState {
@@ -33,6 +34,7 @@ export function bootstrapPlan(state: BootstrapState): BootstrapStep[] {
     'db:seed',
     'db:import:enem',
     'db:classify:keywords',
+    'db:classify:catalog',
     'db:seed:flashcards',
   ];
 }

@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "build:scripts": "tsc -p tsconfig.scripts.json && node -e \"require('fs').copyFileSync('prisma/seed-flashcards-data.json', 'dist-scripts/prisma/seed-flashcards-data.json')\"",
+    "build:scripts": "tsc -p tsconfig.scripts.json && node -e \"require('fs').copyFileSync('prisma/seed-flashcards-data.json', 'dist-scripts/prisma/seed-flashcards-data.json'); require('fs').copyFileSync('prisma/classificacao-assuntos.json', 'dist-scripts/prisma/classificacao-assuntos.json')\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -28,7 +28,8 @@
     "db:seed:flashcards": "ts-node prisma/seed-flashcards.ts",
     "db:import:enem": "ts-node prisma/import-enem.ts",
     "db:classify": "ts-node prisma/classify-questions.ts",
-    "db:classify:keywords": "ts-node prisma/classify-heuristic.ts"
+    "db:classify:keywords": "ts-node prisma/classify-heuristic.ts",
+    "db:classify:catalog": "ts-node prisma/classify-catalog.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

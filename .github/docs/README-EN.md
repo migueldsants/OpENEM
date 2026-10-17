@@ -115,7 +115,7 @@ docker compose exec backend node dist-scripts/prisma/import-enem.js --refresh
 ```
 
 The other scripts follow the same path: `seed.js`, `classify-heuristic.js`,
-`seed-flashcards.js`.
+`classify-catalog.js`, `seed-flashcards.js`.
 
 Official questions come in classified by **area** only. So that the by-theme
 mock exam can reach them, there is a **keyword** classification pass —
@@ -126,6 +126,20 @@ no topic:
 ```bash
 npm run db:classify:keywords -- --dry-run --sample=20  # review the decisions
 npm run db:classify:keywords
+```
+
+What the keywords do not decide comes from the **topic catalog**
+(`prisma/classificacao-assuntos.json`): a one-off classification by Claude
+Haiku 5.5 against each area's topic list, versioned in the repository —
+OpENEM's own classification, not official. It only fills questions that still
+have no topic, skips anything below 0.6 confidence and needs no AI key. With
+both passes, ~93% of the official questions get a topic. A new database comes
+out that way (the container runs both on first start); on an existing one,
+run:
+
+```bash
+npm run db:classify:catalog -- --dry-run  # how many would be written
+npm run db:classify:catalog
 ```
 
 With an AI provider configured, two more features become available:

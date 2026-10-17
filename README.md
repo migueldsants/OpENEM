@@ -115,7 +115,7 @@ docker compose exec backend node dist-scripts/prisma/import-enem.js --refresh
 ```
 
 Os outros scripts seguem o mesmo caminho: `seed.js`, `classify-heuristic.js`,
-`seed-flashcards.js`.
+`classify-catalog.js`, `seed-flashcards.js`.
 
 As questões oficiais entram classificadas só por **área**. Para o simulado por
 tema alcançá-las, há uma classificação **por palavra-chave**, determinística e
@@ -126,6 +126,20 @@ nenhum:
 ```bash
 npm run db:classify:keywords -- --dry-run --sample=20  # veja as decisões antes
 npm run db:classify:keywords
+```
+
+O que a palavra-chave não decide vem do **catálogo de assuntos**
+(`prisma/classificacao-assuntos.json`): a classificação feita uma vez pelo
+Claude Haiku 5.5 na lista de assuntos de cada área, versionada no repositório
+— classificação do OpENEM, não oficial. Ela só preenche questão ainda sem
+assunto, ignora o que tiver confiança abaixo de 0,6 e não precisa de chave de
+IA. Com as duas etapas, ~93% das questões oficiais ficam com assunto. Banco
+novo já sai assim (o container roda as duas na primeira subida); num banco que
+já existia, rode:
+
+```bash
+npm run db:classify:catalog -- --dry-run  # quantas seriam gravadas
+npm run db:classify:catalog
 ```
 
 Com um provedor de IA configurado, outros dois recursos ficam disponíveis:
