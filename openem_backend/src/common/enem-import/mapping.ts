@@ -9,6 +9,8 @@
  * questão, nível de dificuldade e parâmetros de TRI.
  */
 
+import { LEGACY_AREAS } from './legacy-areas';
+
 /** Uma alternativa como vem do dataset. */
 export interface RawAlternative {
   letter: string;
@@ -129,6 +131,11 @@ export interface MappedQuestion {
   areaName: string | null;
   /** true quando a área veio da numeração e divergiu do rótulo do dataset. */
   areaCorrected: boolean;
+  /**
+   * true quando a área é classificação do OpENEM, não do INEP: o ENEM de 1998
+   * a 2008 não tinha áreas (ver LEGACY_AREAS).
+   */
+  areaClassified: boolean;
   /** Matéria e assunto quando o próprio dataset já os determina (só LE). */
   subjectName: string | null;
   topicName: string | null;
@@ -374,10 +381,15 @@ export function mapQuestion(
 ): MappedQuestion {
   // A área vem da posição da questão no caderno; o rótulo do dataset só é
   // usado quando o número está fora da faixa oficial.
-  // No ENEM de caderno único (até 2008) não há área: fica nula.
+  // No ENEM de caderno único (até 2008) o INEP não dá área nenhuma: ela vem
+  // da classificação do próprio OpENEM pelo conteúdo (LEGACY_AREAS), e fica
+  // nula para a questão que não foi classificada.
   const semArea = isSingleBookletExam(raw.year);
   const pelaNumeracao = disciplineFromNumber(raw.year, raw.index);
-  const disciplina = semArea ? null : (pelaNumeracao ?? raw.discipline);
+  const classificada = semArea
+    ? (LEGACY_AREAS[examSlug]?.[questionDir] ?? null)
+    : null;
+  const disciplina = semArea ? classificada : (pelaNumeracao ?? raw.discipline);
   const areaName = disciplina ? (DISCIPLINE_TO_AREA[disciplina] ?? null) : null;
   if (!semArea && !areaName) {
     throw new QuestionValidationError(
@@ -422,6 +434,7 @@ export function mapQuestion(
     language: raw.language,
     areaName,
     areaCorrected: !semArea && disciplina !== raw.discipline,
+    areaClassified: !!classificada,
     subjectName: classificacao?.subject ?? null,
     topicName: classificacao?.topic ?? null,
     alternatives,

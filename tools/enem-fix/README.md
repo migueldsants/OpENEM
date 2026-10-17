@@ -107,10 +107,15 @@ O caderno antigo tem outro desenho, e o parser o lê com `{ antigo: true }`
   "gr·fico"), título em negrito falso desenhado duas vezes (2007, sai como
   imagem) e a marca d'água "ENEM 2007" do rodapé.
 
-Na última rodada: 645 de 693 questões antigas, 177 de 185 na PPL de 2010 e 176
+Na última rodada: 634 de 693 questões antigas, 177 de 185 na PPL de 2010 e 172
 de 185 na de 2011. O resto está no relatório: alternativas que são só imagem
 (sem letra no texto), diagramação fora do padrão e as duas questões de 2011 com
-gabarito em disputa.
+gabarito em disputa, e texto em fonte cifrada sem mapa ("Å~ãáë~"), que o
+`lixoso` recusa.
+
+A área dessas questões não está no dataset (`discipline: null`, como no INEP):
+é classificação do OpENEM pelo conteúdo e vive em
+`openem_backend/src/common/enem-import/legacy-areas.ts`.
 
 ## Como cada defeito é consertado
 

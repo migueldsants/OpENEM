@@ -1,6 +1,7 @@
 import {
   areaBlocks,
   dayAreas,
+  DISCIPLINE_TO_AREA,
   disciplineFromNumber,
   EXAM_KIND_ORDER,
   examDay,
@@ -18,6 +19,7 @@ import {
   rewriteImageUrl,
   rewriteImageUrls,
 } from './mapping';
+import { LEGACY_AREAS } from './legacy-areas';
 
 // Fixtures sintéticas: o formato é o do dataset, o conteúdo é nosso.
 function raw(overrides: Partial<RawQuestion> = {}): RawQuestion {
@@ -514,25 +516,43 @@ describe('ENEM de caderno único (1998–2008)', () => {
     expect(examDay(63)).toBe(1);
   });
 
-  it('a questão entra sem área, e isso não é "área corrigida"', () => {
+  it('a área vem da classificação do OpENEM, marcada como tal', () => {
+    // 1998/3: "O texto retrata duas situações..." — interpretação de texto.
     const q = mapQuestion(
-      raw({ year: 1998, index: 7, discipline: null }),
+      raw({ year: 1998, index: 3, discipline: null }),
       '1998',
+      '3',
+    );
+    expect(q.areaName).toBe('Linguagens, Códigos e suas Tecnologias');
+    expect(q.areaClassified).toBe(true);
+    expect(q.areaCorrected).toBe(false);
+    expect(q.code).toBe('ENEM-1998-003');
+  });
+
+  it('questão sem classificação entra sem área', () => {
+    const q = mapQuestion(
+      raw({ year: 1898, index: 7, discipline: null }),
+      '1898',
       '7',
     );
     expect(q.areaName).toBeNull();
-    expect(q.areaCorrected).toBe(false);
-    expect(q.code).toBe('ENEM-1998-007');
+    expect(q.areaClassified).toBe(false);
   });
 
-  it('mesmo que o dataset traga um rótulo de área, ele não vale', () => {
-    // Nenhum documento do INEP atribui área a essas questões.
+  it('o rótulo de área do dataset não vale: o INEP não dá área', () => {
     const q = mapQuestion(
-      raw({ year: 2005, index: 30, discipline: 'matematica' }),
-      '2005',
+      raw({ year: 1898, index: 30, discipline: 'matematica' }),
+      '1898',
       '30',
     );
     expect(q.areaName).toBeNull();
+  });
+
+  it('toda área classificada é uma das quatro', () => {
+    const validas = new Set(Object.keys(DISCIPLINE_TO_AREA));
+    const todas = Object.values(LEGACY_AREAS).flatMap((p) => Object.values(p));
+    expect(todas.length).toBeGreaterThan(600);
+    expect(todas.every((a) => validas.has(a))).toBe(true);
   });
 
   it('depois de 2008, disciplina ausente fora da numeração é erro', () => {

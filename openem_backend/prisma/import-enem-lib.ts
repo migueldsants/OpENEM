@@ -72,6 +72,8 @@ export interface ImportReport {
   alternativesRebuilt: number;
   /** Questões cuja área veio da numeração por o rótulo do dataset estar errado. */
   areasCorrected: number;
+  /** Questões do ENEM até 2008 com área classificada pelo OpENEM (não oficial). */
+  areasClassified: number;
   /** Simulados das provas oficiais criados/atualizados. */
   examTemplates: number;
   imagesCopied: number;
@@ -242,6 +244,7 @@ export async function importEnem(
     unmappedImages: 0,
     classified: 0,
     areasCorrected: 0,
+    areasClassified: 0,
     examTemplates: 0,
     failures: [],
   };
@@ -435,6 +438,7 @@ export async function importEnem(
       }
       if (topicId) report.classified += 1;
       if (questao.areaCorrected) report.areasCorrected += 1;
+      if (questao.areaClassified) report.areasClassified += 1;
       if (opts.verbose) log(`  ${questao.externalId}`);
     }
 
@@ -535,6 +539,11 @@ export function printReport(
   if (report.areasCorrected) {
     log(
       `áreas corrigidas:     ${report.areasCorrected} (rótulo do dataset divergia da numeração oficial)`,
+    );
+  }
+  if (report.areasClassified) {
+    log(
+      `áreas classificadas:  ${report.areasClassified} (ENEM até 2008: classificação do OpENEM, não oficial)`,
     );
   }
   if (report.unmappedImages) {
