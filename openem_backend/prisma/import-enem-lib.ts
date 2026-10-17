@@ -33,7 +33,9 @@ import { pipeline } from 'node:stream/promises';
 import { PrismaClient } from '@prisma/client';
 import {
   dayRange,
+  examDays,
   imageRelativePath,
+  isSingleBookletExam,
   mapExam,
   officialDurationMin,
   mapQuestion,
@@ -309,8 +311,11 @@ export async function importEnem(
         continue;
       }
 
-      const areaId = taxonomia.areaPorNome.get(questao.areaName);
-      if (!areaId) {
+      // Área nula é legítima no ENEM de 1998 a 2008 (ver mapQuestion).
+      const areaId = questao.areaName
+        ? taxonomia.areaPorNome.get(questao.areaName)
+        : null;
+      if (questao.areaName && !areaId) {
         areaFaltante.add(questao.areaName);
         report.failures.push({
           externalId: questao.externalId,
@@ -382,8 +387,13 @@ export async function importEnem(
         // Se a área mudou (rótulo corrigido pela numeração) e o assunto já
         // gravado é de outra área, o assunto está errado: sai, e a questão
         // volta para a fila da classificação.
+        // Sem área no dataset (ENEM até 2008), a área e o assunto gravados
+        // vieram de classificação feita depois do import: ficam como estão.
+        const semArea = !questao.areaName;
         const assuntoDeOutraArea =
-          !!existente.topic && existente.topic.subject.subjectAreaId !== areaId;
+          !semArea &&
+          !!existente.topic &&
+          existente.topic.subject.subjectAreaId !== areaId;
         await prisma.question.update({
           where: { id: existente.id },
           data: {
@@ -392,7 +402,7 @@ export async function importEnem(
             statement: questao.statement,
             questionPrompt: questao.questionPrompt,
             language: questao.language,
-            subjectAreaId: areaId,
+            ...(semArea ? {} : { subjectAreaId: areaId }),
             examYearId,
             ...(assuntoDeOutraArea
               ? {
@@ -466,7 +476,8 @@ const MIN_QUESTIONS_PER_DAY = 45;
 /**
  * Um simulado por dia de cada prova, na ordem do caderno. O id é estável
  * ("enem-2023-dia1") para reimportar sem duplicar. Dia abaixo do mínimo fica
- * arquivado, fora da lista.
+ * arquivado, fora da lista. O ENEM de 1998 a 2008 era de um dia só: um
+ * simulado, com a prova inteira.
  */
 async function upsertExamTemplates(
   prisma: PrismaClient,
@@ -474,7 +485,8 @@ async function upsertExamTemplates(
   prova: { slug: string; year: number; label: string },
 ): Promise<number> {
   let gravados = 0;
-  for (const day of [1, 2] as const) {
+  const unico = isSingleBookletExam(prova.year);
+  for (const day of examDays(prova.year)) {
     // Questões distintas pelo número: inglês e espanhol são a mesma questão.
     const numeros = await prisma.question.groupBy({
       by: ['number'],
@@ -482,7 +494,7 @@ async function upsertExamTemplates(
     });
     const id = `enem-${prova.slug}-dia${day}`;
     const dados = {
-      name: `${prova.label} · ${day}º dia`,
+      name: unico ? prova.label : `${prova.label} · ${day}º dia`,
       scope: 'EXAM',
       examYearId,
       day,

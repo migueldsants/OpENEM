@@ -358,6 +358,29 @@ describe('Simulados — provas oficiais do ENEM', () => {
     expect(screen.getByText('Natureza')).toBeInTheDocument();
   });
 
+  it('o ENEM até 2008 é uma prova única, interdisciplinar, de 5h', async () => {
+    vi.mocked(api.simulationTemplates).mockResolvedValue([
+      {
+        ...prova('1998', 1998, 1),
+        name: 'ENEM 1998',
+        questionCount: 54,
+        timeLimitMin: 300,
+        areas: [],
+      },
+    ] as never);
+    renderPage();
+
+    expect(await screen.findByText('ENEM 1998')).toBeInTheDocument();
+    expect(screen.getByText('Prova única')).toBeInTheDocument();
+    expect(screen.queryByText('1º dia')).not.toBeInTheDocument();
+    expect(screen.getByText('Interdisciplinar')).toBeInTheDocument();
+    expect(screen.getByText('54 questões')).toBeInTheDocument();
+    expect(screen.getByText('5h')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Baixar a prova de 1998 em PDF'),
+    ).toBeInTheDocument();
+  });
+
   it('nomeia as aplicações extras e põe a regular primeiro', async () => {
     const comTipo = (slug: string, kind: string) => ({
       ...prova(slug, 2016, 1),

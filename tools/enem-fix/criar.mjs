@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { parsePdf } from './parse.mjs';
 import { cropPng } from './render.mjs';
 import { lerGabarito } from './gabarito.mjs';
-import { norm, shingles, contencao, idioma, areaPorNumero, DISCIPLINAS, IDIOMAS, lixoso } from './comum.mjs';
+import { norm, shingles, contencao, idioma, areaPorNumero, DISCIPLINAS, IDIOMAS, lixoso, questoesDoApoio } from './comum.mjs';
 
 const [root, pdfDir, ...flags] = process.argv.slice(2);
 const DRY = flags.includes('--dry');
@@ -29,15 +29,20 @@ if (!root || !pdfDir) {
 }
 
 const PROVAS = JSON.parse(readFileSync(new URL('./provas-novas.json', import.meta.url), 'utf8'));
+// Gabarito oficial que só existe nos microdados do INEP (gabaritos-antigos.mjs).
+const OFICIAIS = JSON.parse(readFileSync(new URL('./gabaritos-antigos.json', import.meta.url), 'utf8'));
 
 /** Lê as questões de todos os cadernos da prova, chaveadas como as pastas do dataset. */
-async function questoesDaProva(cfg, rel) {
+async function questoesDaProva(slug, cfg, rel) {
   const qs = new Map();
+  const oficial = OFICIAIS[slug];
   for (const [i, dia] of cfg.dias.entries()) {
     const arquivo = join(pdfDir, dia.pdf);
     if (!existsSync(arquivo)) throw new Error(`caderno ausente: ${dia.pdf}`);
-    const r = await parsePdf(arquivo);
-    const gab = dia.gb && existsSync(join(pdfDir, dia.gb)) ? await lerGabarito(join(pdfDir, dia.gb), dia.caderno ?? null) : null;
+    const r = await parsePdf(arquivo, { antigo: !!cfg.antigo });
+    const gab = oficial
+      ? new Map(Object.entries(oficial.gabarito).map(([n, g]) => [+n, g]))
+      : dia.gb && existsSync(join(pdfDir, dia.gb)) ? await lerGabarito(join(pdfDir, dia.gb), dia.caderno ?? null) : null;
     if (dia.gb && !gab) rel.avisos.push(`gabarito ausente: ${dia.gb}`);
     const vistos = new Map();
     for (const q of r.questoes) {
@@ -78,7 +83,47 @@ async function questoesDaProva(cfg, rel) {
     q.gab = q.gab && typeof q.gab === 'object' ? q.gab[lang] : q.gab;
     qs.set(`${m[1]}-${lang}`, q);
   }
+  if (cfg.antigo) herdarApoio(slug, cfg, qs, rel);
   return qs;
+}
+
+/**
+ * No caderno antigo um texto de apoio serve a várias questões ("As questões 10
+ * e 11 referem-se ao poema abaixo") e só aparece antes da primeira. No dataset
+ * cada questão precisa do seu: as outras do grupo recebem uma cópia.
+ *
+ * Muitas vezes o grupo não é declarado: as questões seguintes ao texto só
+ * têm o comando ("O texto mostra...", "Suponha agora que..."). Com
+ * `apoioImplicito`, a questão sem texto de apoio cujo conteúdo próprio é só
+ * um comando curto, sem figura, usa o apoio da anterior — menos as de
+ * `semApoio`, que foram conferidas no caderno e se sustentam sozinhas. Toda
+ * herança vai para os avisos do relatório, para ser conferida.
+ */
+function herdarApoio(slug, cfg, qs, rel) {
+  if (cfg.apoioImplicito) {
+    for (let n = 2; n <= cfg.questoes; n++) {
+      const q = qs.get(String(n)), ant = qs.get(String(n - 1));
+      if (!q || !ant || q.blocos.some((b) => b.pre) || cfg.semApoio?.includes(n)) continue;
+      const proprio = q.blocos.filter((b) => !b.pre);
+      const tamanho = proprio.reduce((t, b) => t + (b.text?.length ?? 0), 0);
+      if (proprio.some((b) => b.fig && !b.formula) || tamanho >= 250) continue;
+      const apoio = ant.blocos.filter((b) => b.pre);
+      if (!apoio.length) continue;
+      q.blocos = [...apoio, ...q.blocos];
+      rel.avisos.push(`${slug}/${n}: texto de apoio da questão ${n - 1}`);
+    }
+  }
+  for (const [chave, q] of qs) {
+    const apoio = q.blocos.filter((b) => b.pre);
+    if (!apoio.length) continue;
+    const texto = apoio.filter((b) => b.text).map((b) => b.text).join(' ');
+    for (const n of questoesDoApoio(texto)) {
+      const alvo = qs.get(String(n));
+      if (!alvo || alvo === q || alvo.blocos.some((b) => b.pre)) continue;
+      alvo.blocos = [...apoio, ...alvo.blocos];
+      rel.avisos.push(`${slug}/${n}: texto de apoio da questão ${chave}`);
+    }
+  }
 }
 
 /** Monta o details.json de uma questão (e as imagens recortadas). null = pendência. */
@@ -88,6 +133,8 @@ async function montarQuestao(slug, cfg, chave, p, rel) {
   if (p.alternatives.length !== 5) return rel.pendencias.push(`${slug}/${chave}: caderno com ${p.alternatives.length} alternativas`), null;
   const correta = p.gab;
   if (correta === 'ANULADA') return rel.pendencias.push(`${slug}/${chave}: anulada no gabarito oficial`), null;
+  const conflito = OFICIAIS[slug]?.conflitos?.[chave];
+  if (conflito) return rel.pendencias.push(`${slug}/${chave}: fontes oficiais divergem (${conflito})`), null;
   if (!/^[A-E]$/.test(correta || '')) return rel.pendencias.push(`${slug}/${chave}: sem gabarito oficial`), null;
 
   const doc = { file: join(pdfDir, p.dia.render ?? p.dia.pdf) };
@@ -164,7 +211,7 @@ for (const [slug, cfg] of Object.entries(PROVAS)) {
   }
   const rel = { criadas: 0, pendencias: [], avisos: [] };
   relatorio[slug] = rel;
-  const qs = await questoesDaProva(cfg, rel);
+  const qs = await questoesDaProva(slug, cfg, rel);
   // Números que o caderno não trouxe (o parser não achou o "QUESTÃO NN").
   for (let n = 1; n <= cfg.questoes; n++) {
     const tem = cfg.lingua?.includes(n) ? ['ingles', 'espanhol'].some((l) => qs.has(`${n}-${l}`)) : qs.has(String(n));
@@ -189,7 +236,7 @@ for (const [slug, cfg] of Object.entries(PROVAS)) {
     const prova = {
       title: cfg.titulo,
       year: cfg.ano,
-      disciplines: DISCIPLINAS,
+      disciplines: cfg.semAreas ? [] : DISCIPLINAS,
       languages: cfg.lingua?.length ? IDIOMAS : [],
       questions: feitas.map(([, { q }]) => ({ title: q.title, index: q.index, discipline: q.discipline, language: q.language })),
     };

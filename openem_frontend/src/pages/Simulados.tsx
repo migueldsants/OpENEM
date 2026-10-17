@@ -114,6 +114,14 @@ function aplicacaoDa(exam: NonNullable<SimulationTemplate['exam']>) {
     : { label: APLICACOES[i].label, ordem: i };
 }
 
+/**
+ * Até 2008 o ENEM era uma prova só, num dia, com 63 questões
+ * interdisciplinares — sem as quatro áreas de hoje.
+ */
+export function provaUnica(ano: number): boolean {
+  return ano <= 2008;
+}
+
 /** Provas oficiais agrupadas por ano: regular primeiro, as outras depois. */
 function agruparProvas(templates: SimulationTemplate[]) {
   const porAno = new Map<number, Map<string, Aplicacao>>();
@@ -190,13 +198,17 @@ function ProvasOficiais({
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold">
-                            {t.day}º dia
+                            {provaUnica(ano) ? 'Prova única' : `${t.day}º dia`}
                           </span>
                           <span className="flex shrink-0 items-center gap-1">
                             <button
                               onClick={() => onPdf(t)}
                               className="btn btn-ghost px-2 py-1 text-xs"
-                              aria-label={`Baixar o ${t.day}º dia de ${ano} em PDF`}
+                              aria-label={
+                                provaUnica(ano)
+                                  ? `Baixar a prova de ${ano} em PDF`
+                                  : `Baixar o ${t.day}º dia de ${ano} em PDF`
+                              }
                             >
                               PDF
                             </button>
@@ -210,6 +222,9 @@ function ProvasOficiais({
                           </span>
                         </div>
                         <span className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+                          {provaUnica(ano) && (
+                            <span className="text-muted">Interdisciplinar</span>
+                          )}
                           {(t.areas ?? []).map((a) => (
                             <span
                               key={a}

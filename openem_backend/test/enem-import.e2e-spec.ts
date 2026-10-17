@@ -176,3 +176,78 @@ describe('importEnem (e2e)', () => {
     expect(q!.classificationConfidence).toBeNull();
   });
 });
+
+describe('importEnem (e2e) — ENEM de caderno único (até 2008)', () => {
+  const prisma = new PrismaClient();
+  const datasetDir = join(__dirname, 'fixtures', 'enem-dataset');
+  // Ano sintético (1898): até 2008 a prova era uma só, sem as quatro áreas.
+  const SLUG = '1898';
+
+  async function limpar() {
+    await prisma.question.deleteMany({
+      where: { externalId: { startsWith: `enem:${SLUG}:` } },
+    });
+    await prisma.simulationTemplate.deleteMany({
+      where: { id: { startsWith: `enem-${SLUG}-` } },
+    });
+    await prisma.examYear.deleteMany({ where: { slug: SLUG } });
+  }
+
+  beforeAll(limpar);
+  afterAll(async () => {
+    await limpar();
+    await prisma.$disconnect();
+  });
+
+  it('importa a questão sem área, sem tratar isso como erro', async () => {
+    const report = await importEnem(prisma, {
+      datasetDir,
+      exams: [SLUG],
+      log: () => {},
+    });
+    expect(report.created).toBe(1);
+    expect(report.failures).toEqual([]);
+
+    const q = await prisma.question.findUnique({
+      where: { externalId: `enem:${SLUG}:7` },
+    });
+    expect(q!.subjectAreaId).toBeNull();
+    expect(q!.code).toBe('ENEM-1898-007');
+  });
+
+  it('cria um simulado só, com a prova inteira e as 5 horas oficiais', async () => {
+    const dias = await prisma.simulationTemplate.findMany({
+      where: { id: { startsWith: `enem-${SLUG}-` } },
+    });
+    expect(dias).toHaveLength(1);
+    expect(dias[0]).toMatchObject({
+      id: `enem-${SLUG}-dia1`,
+      name: 'ENEM 1898',
+      day: 1,
+      questionCount: 1,
+      timeLimitMin: 300,
+    });
+  });
+
+  it('reimportar preserva a área e o assunto classificados depois', async () => {
+    const topico = await prisma.topic.findFirstOrThrow({
+      where: { name: 'Pré-história' },
+      include: { subject: true },
+    });
+    await prisma.question.update({
+      where: { externalId: `enem:${SLUG}:7` },
+      data: {
+        subjectAreaId: topico.subject.subjectAreaId,
+        topicId: topico.id,
+      },
+    });
+
+    await importEnem(prisma, { datasetDir, exams: [SLUG], log: () => {} });
+
+    const q = await prisma.question.findUnique({
+      where: { externalId: `enem:${SLUG}:7` },
+    });
+    expect(q!.subjectAreaId).toBe(topico.subject.subjectAreaId);
+    expect(q!.topicId).toBe(topico.id);
+  });
+});
