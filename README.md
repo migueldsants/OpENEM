@@ -105,12 +105,17 @@ incompletas (sem alternativas, gabarito inconsistente) são recusadas e
 listadas no relatório final. As imagens vão para `ENEM_MEDIA_DIR` e são
 servidas pelo próprio backend em `/media/enem/`.
 
-No Docker, rode o import dentro do container — as questões vão para o Postgres
-e as imagens para o volume `enem-media`:
+No Docker, a primeira subida já faz o import. Para atualizar depois (dataset
+novo), rode dentro do container — a imagem não tem ts-node, então os scripts
+rodam compilados, de `dist-scripts/`; as questões vão para o Postgres e as
+imagens para o volume `enem-media`:
 
 ```bash
-docker compose exec backend npx ts-node prisma/import-enem.ts
+docker compose exec backend node dist-scripts/prisma/import-enem.js --refresh
 ```
+
+Os outros scripts seguem o mesmo caminho: `seed.js`, `classify-heuristic.js`,
+`seed-flashcards.js`.
 
 As questões oficiais entram classificadas só por **área**. Para o simulado por
 tema alcançá-las, há uma classificação **por palavra-chave**, determinística e

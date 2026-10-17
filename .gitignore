@@ -87,3 +87,6 @@ reports/
 
 # Cache de páginas renderizadas pela tools/enem-fix (render.mjs)
 /tools/pages/
+
+# Scripts de banco compilados para a imagem Docker (npm run build:scripts)
+openem_backend/dist-scripts/

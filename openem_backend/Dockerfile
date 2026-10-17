@@ -10,9 +10,11 @@ RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Compila a aplicação
+# Compila a aplicação e os scripts de banco (seed, import, classificação,
+# flashcards, bootstrap): a imagem final não tem ts-node, então eles rodam
+# compilados, de dist-scripts/.
 COPY . .
-RUN npm run build
+RUN npm run build && npm run build:scripts
 
 # Remove as dependências de desenvolvimento (jest, stryker, ts-node, eslint…):
 # a imagem final não as precisa e cada pacote a mais é superfície a mais. O
@@ -30,6 +32,7 @@ RUN mkdir -p /data && chown -R node:node /data
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist-scripts ./dist-scripts
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 
@@ -43,4 +46,4 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=15m \
 
 # Aplica migrations pendentes, popula o banco se ele estiver sem questões
 # oficiais (prisma/bootstrap.ts; AUTO_IMPORT=0 desliga) e sobe a API.
-CMD ["sh", "-c", "npx prisma migrate deploy && npx ts-node prisma/bootstrap.ts && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist-scripts/prisma/bootstrap.js && node dist/main"]
