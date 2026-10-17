@@ -9,6 +9,8 @@
  * questão, nível de dificuldade e parâmetros de TRI.
  */
 
+import { LEGACY_AREAS } from './legacy-areas';
+
 /** Uma alternativa como vem do dataset. */
 export interface RawAlternative {
   letter: string;
@@ -23,7 +25,8 @@ export interface RawQuestion {
   index: number;
   year: number;
   language: string | null;
-  discipline: string;
+  /** null no ENEM de 1998 a 2008, que não tinha áreas. */
+  discipline: string | null;
   context: string | null;
   files?: string[];
   correctAlternative: string;
@@ -120,10 +123,19 @@ export interface MappedQuestion {
   statement: string;
   questionPrompt: string | null;
   language: string | null;
-  /** Nome da área do conhecimento, resolvido para id na hora da escrita. */
-  areaName: string;
+  /**
+   * Nome da área do conhecimento, resolvido para id na hora da escrita. null
+   * no ENEM de 1998 a 2008: a prova era interdisciplinar e o INEP não diz a
+   * área de nenhuma questão — inventar uma seria pior que deixar em branco.
+   */
+  areaName: string | null;
   /** true quando a área veio da numeração e divergiu do rótulo do dataset. */
   areaCorrected: boolean;
+  /**
+   * true quando a área é classificação do OpENEM, não do INEP: o ENEM de 1998
+   * a 2008 não tinha áreas (ver LEGACY_AREAS).
+   */
+  areaClassified: boolean;
   /** Matéria e assunto quando o próprio dataset já os determina (só LE). */
   subjectName: string | null;
   topicName: string | null;
@@ -172,6 +184,21 @@ export const LANGUAGE_TO_TOPIC: Record<
 };
 
 /**
+ * ENEM de 1998 a 2008: uma prova só, num dia, com 63 questões
+ * interdisciplinares e redação, em 5 horas. Não existiam as quatro áreas — a
+ * matriz era de competências e habilidades —, então a numeração não diz a
+ * área de nenhuma questão.
+ */
+export function isSingleBookletExam(year: number): boolean {
+  return year <= 2008;
+}
+
+/** Dias de prova da edição: dois desde 2009, um só antes disso. */
+export function examDays(year: number): (1 | 2)[] {
+  return isSingleBookletExam(year) ? [1] : [1, 2];
+}
+
+/**
  * Ordem oficial das áreas nos quatro blocos de 45 questões do caderno.
  *
  * A posição da questão define a área: o dataset de origem rotula errado
@@ -182,6 +209,7 @@ export const LANGUAGE_TO_TOPIC: Record<
  * - 2017 em diante: Linguagens, Humanas | Natureza, Matemática
  */
 export function areaBlocks(year: number): string[] {
+  if (isSingleBookletExam(year)) return [];
   if (year >= 2017) {
     return [
       'linguagens',
@@ -207,7 +235,7 @@ export function disciplineFromNumber(
   number: number,
 ): string | null {
   if (!Number.isInteger(number) || number < 1 || number > 180) return null;
-  return areaBlocks(year)[Math.floor((number - 1) / 45)];
+  return areaBlocks(year)[Math.floor((number - 1) / 45)] ?? null;
 }
 
 /** Dia da prova: as questões 1–90 caem no 1º dia, 91–180 no 2º. */
@@ -227,8 +255,10 @@ export function dayRange(day: 1 | 2): { gte: number; lte: number } {
  *   e redação) 5h30.
  * - 2017: 1º dia (Linguagens, Humanas e redação) 5h30; 2º dia 4h30.
  * - 2018 em diante: o 2º dia passou a 5h.
+ * - Até 2008: prova única de 5h (63 questões e a redação).
  */
 export function officialDurationMin(year: number, day: 1 | 2): number {
+  if (isSingleBookletExam(year)) return 300;
   if (year <= 2016) return day === 1 ? 270 : 330;
   if (year === 2017) return day === 1 ? 330 : 270;
   return day === 1 ? 330 : 300;
@@ -351,10 +381,17 @@ export function mapQuestion(
 ): MappedQuestion {
   // A área vem da posição da questão no caderno; o rótulo do dataset só é
   // usado quando o número está fora da faixa oficial.
+  // No ENEM de caderno único (até 2008) o INEP não dá área nenhuma: ela vem
+  // da classificação do próprio OpENEM pelo conteúdo (LEGACY_AREAS), e fica
+  // nula para a questão que não foi classificada.
+  const semArea = isSingleBookletExam(raw.year);
   const pelaNumeracao = disciplineFromNumber(raw.year, raw.index);
-  const disciplina = pelaNumeracao ?? raw.discipline;
-  const areaName = DISCIPLINE_TO_AREA[disciplina];
-  if (!areaName) {
+  const classificada = semArea
+    ? (LEGACY_AREAS[examSlug]?.[questionDir] ?? null)
+    : null;
+  const disciplina = semArea ? classificada : (pelaNumeracao ?? raw.discipline);
+  const areaName = disciplina ? (DISCIPLINE_TO_AREA[disciplina] ?? null) : null;
+  if (!semArea && !areaName) {
     throw new QuestionValidationError(
       `disciplina desconhecida: "${raw.discipline}"`,
     );
@@ -396,7 +433,8 @@ export function mapQuestion(
     questionPrompt,
     language: raw.language,
     areaName,
-    areaCorrected: disciplina !== raw.discipline,
+    areaCorrected: !semArea && disciplina !== raw.discipline,
+    areaClassified: !!classificada,
     subjectName: classificacao?.subject ?? null,
     topicName: classificacao?.topic ?? null,
     alternatives,

@@ -122,5 +122,125 @@
       { "pdf": "2025_PV_impresso_D3_CD1.pdf", "gb": "2025_GB_impresso_D3_CD1.pdf" },
       { "pdf": "2025_PV_impresso_D4_CD5.pdf", "gb": "2025_GB_impresso_D4_CD5.pdf" }
     ]
+  },
+  "1998": {
+    "titulo": "ENEM 1998",
+    "ano": 1998,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "semApoio": [44],
+    "dias": [{ "pdf": "1998_amarela.pdf" }]
+  },
+  "1999": {
+    "titulo": "ENEM 1999",
+    "ano": 1999,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "1999_amarela.pdf" }]
+  },
+  "2000": {
+    "titulo": "ENEM 2000",
+    "ano": 2000,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2000_amarela.pdf" }]
+  },
+  "2001": {
+    "titulo": "ENEM 2001",
+    "ano": 2001,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2001_amarela.pdf" }]
+  },
+  "2002": {
+    "titulo": "ENEM 2002",
+    "ano": 2002,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2002_amarela.pdf" }]
+  },
+  "2003": {
+    "titulo": "ENEM 2003",
+    "ano": 2003,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2003_amarela.pdf" }]
+  },
+  "2004": {
+    "titulo": "ENEM 2004",
+    "ano": 2004,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2004_amarela.pdf" }]
+  },
+  "2005": {
+    "titulo": "ENEM 2005",
+    "ano": 2005,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2005_amarela.pdf" }]
+  },
+  "2006": {
+    "titulo": "ENEM 2006",
+    "ano": 2006,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2006_amarela.pdf" }]
+  },
+  "2007": {
+    "titulo": "ENEM 2007",
+    "ano": 2007,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2007_amarela.pdf" }]
+  },
+  "2008": {
+    "titulo": "ENEM 2008",
+    "ano": 2008,
+    "questoes": 63,
+    "antigo": true,
+    "semAreas": true,
+    "apoioImplicito": true,
+    "dias": [{ "pdf": "2008_amarela.pdf" }]
+  },
+  "2010-reaplicacao": {
+    "titulo": "ENEM 2010 - Reaplicação",
+    "ano": 2010,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "2010_PV_reaplicacao_PPL_D1_CD1_fix.pdf", "render": "2010_PV_reaplicacao_PPL_D1_CD1.pdf" },
+      { "pdf": "2010_PV_reaplicacao_PPL_D2_CD7_fix.pdf", "render": "2010_PV_reaplicacao_PPL_D2_CD7.pdf" }
+    ]
+  },
+  "2011-reaplicacao": {
+    "titulo": "ENEM 2011 - Reaplicação",
+    "ano": 2011,
+    "questoes": 180,
+    "lingua": [91, 92, 93, 94, 95],
+    "dias": [
+      { "pdf": "PPL_ENEM_2011_03_BRANCO.pdf" },
+      { "pdf": "PPL_ENEM_2011_06_CINZA.pdf" }
+    ]
   }
 }

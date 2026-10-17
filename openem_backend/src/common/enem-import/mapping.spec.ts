@@ -1,10 +1,13 @@
 import {
   areaBlocks,
   dayAreas,
+  DISCIPLINE_TO_AREA,
   disciplineFromNumber,
   EXAM_KIND_ORDER,
   examDay,
+  examDays,
   examKind,
+  isSingleBookletExam,
   normalizeCodeQuery,
   officialDurationMin,
   imageRelativePath,
@@ -16,6 +19,7 @@ import {
   rewriteImageUrl,
   rewriteImageUrls,
 } from './mapping';
+import { LEGACY_AREAS } from './legacy-areas';
 
 // Fixtures sintéticas: o formato é o do dataset, o conteúdo é nosso.
 function raw(overrides: Partial<RawQuestion> = {}): RawQuestion {
@@ -484,6 +488,77 @@ describe('normalizeCodeQuery', () => {
     ['  2023/45  ', 'ENEM-2023-045'],
   ])('%j vira %j', (entrada, esperado) => {
     expect(normalizeCodeQuery(entrada)).toBe(esperado);
+  });
+});
+
+describe('ENEM de caderno único (1998–2008)', () => {
+  it('até 2008 a prova é de um dia, sem as quatro áreas', () => {
+    expect(isSingleBookletExam(1998)).toBe(true);
+    expect(isSingleBookletExam(2008)).toBe(true);
+    expect(isSingleBookletExam(2009)).toBe(false);
+    expect(examDays(2005)).toEqual([1]);
+    expect(examDays(2009)).toEqual([1, 2]);
+    expect(areaBlocks(2008)).toEqual([]);
+    expect(dayAreas(2003, 1)).toEqual([]);
+  });
+
+  it('a numeração não diz a área de nenhuma questão', () => {
+    expect(disciplineFromNumber(1998, 1)).toBeNull();
+    expect(disciplineFromNumber(2008, 63)).toBeNull();
+  });
+
+  it('a prova inteira tem 5 horas', () => {
+    expect(officialDurationMin(1998, 1)).toBe(300);
+    expect(officialDurationMin(2008, 1)).toBe(300);
+  });
+
+  it('as 63 questões caem no 1º dia', () => {
+    expect(examDay(63)).toBe(1);
+  });
+
+  it('a área vem da classificação do OpENEM, marcada como tal', () => {
+    // 1998/3: "O texto retrata duas situações..." — interpretação de texto.
+    const q = mapQuestion(
+      raw({ year: 1998, index: 3, discipline: null }),
+      '1998',
+      '3',
+    );
+    expect(q.areaName).toBe('Linguagens, Códigos e suas Tecnologias');
+    expect(q.areaClassified).toBe(true);
+    expect(q.areaCorrected).toBe(false);
+    expect(q.code).toBe('ENEM-1998-003');
+  });
+
+  it('questão sem classificação entra sem área', () => {
+    const q = mapQuestion(
+      raw({ year: 1898, index: 7, discipline: null }),
+      '1898',
+      '7',
+    );
+    expect(q.areaName).toBeNull();
+    expect(q.areaClassified).toBe(false);
+  });
+
+  it('o rótulo de área do dataset não vale: o INEP não dá área', () => {
+    const q = mapQuestion(
+      raw({ year: 1898, index: 30, discipline: 'matematica' }),
+      '1898',
+      '30',
+    );
+    expect(q.areaName).toBeNull();
+  });
+
+  it('toda área classificada é uma das quatro', () => {
+    const validas = new Set(Object.keys(DISCIPLINE_TO_AREA));
+    const todas = Object.values(LEGACY_AREAS).flatMap((p) => Object.values(p));
+    expect(todas.length).toBeGreaterThan(600);
+    expect(todas.every((a) => validas.has(a))).toBe(true);
+  });
+
+  it('depois de 2008, disciplina ausente fora da numeração é erro', () => {
+    expect(() =>
+      mapQuestion(raw({ index: 200, discipline: null }), '2023', '200'),
+    ).toThrow(QuestionValidationError);
   });
 });
 

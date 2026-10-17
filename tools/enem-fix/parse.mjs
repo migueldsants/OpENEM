@@ -27,6 +27,7 @@ export function fixSymbol(str) {
 
 const RODAPE = /(Caderno \d+|Página \d+|^\*[0-9A-Z]+\*$|^\d+ª aplicação$|^(ENEM ?20\d\d[ ]*)+$|^\d{1,2}$)/i;
 const RE_Q = /^QUEST[ÃA]O\s*0*(\d{1,3})\b/i;
+const ANO_SOLTO = /^(19|20)\d\d$/;
 const mult = (m, n) => [
   m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
   m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
@@ -124,11 +125,180 @@ export function decodificaGid(str, tabela) {
  * com um espaço depois: "difi cultando", "fl orescer". O par não existe solto
  * em português, então o espaço some quando a próxima letra é minúscula.
  */
+// Byte de cada caractere do MacRoman: o pdfjs lê como MacRoman fontes que
+// são, na verdade, WinAnsi (ENEM 2002): "gr·fico", "composiÁ„o".
+const MAC = new Map([...new TextDecoder('macintosh').decode(Uint8Array.from({ length: 256 }, (_, i) => i))].map((c, i) => [c, i]));
+const WIN = new TextDecoder('windows-1252');
+
+/**
+ * Desfaz a leitura em MacRoman de um texto WinAnsi: "As ·reas" → "As áreas".
+ * Caractere que não existe no MacRoman deixa o texto como está.
+ */
+export function deMacRoman(t) {
+  const bytes = [...t].map((c) => MAC.get(c));
+  return bytes.some((b) => b === undefined) ? t : WIN.decode(Uint8Array.from(bytes));
+}
+
 export function juntaLigadura(t) {
   return t.replace(/(^|[\s(«“"'a-zà-ÿ])(fi|fl) (?=[a-zà-ÿ])/g, '$1$2');
 }
 
-export async function parsePdf(file) {
+// ENEM antigo (1998–2008): cada ano tem um cabeçalho de questão — "03 O texto
+// retrata..." (1998/1999, número colado ao enunciado), o número solto numa
+// linha (2000–2003, 2005), "1." (2004) e "Questão 1" (2006–2008). O número é
+// sempre um item à parte, e o que separa cabeçalho de texto comum é ele ser o
+// próximo da sequência.
+const RE_Q_ANTIGO = /^(?:QUEST[ÃA]O\s*)?0*(\d{1,2})\s*\.?$/i;
+// Linhas de serviço do caderno antigo, repetidas no alto das páginas.
+const SERVICO_ANTIGO = /^(QUEST[ÕO]ES OBJETIVAS|PARTE OBJETIVA|ANTES DE MARCAR|CASO CONTR[ÁA]RIO|A COR DE SEU CADERNO|CADERNO DE QUEST[ÕO]ES\. CASO|ENEM\s*(19|20)?\d\d\b.*$|PROVA \d\b|AMARELA\b)|PROVA\s*\S{0,2}\s*[-–—₋]?\s*AMARELA|AMARELA\s*[-–—]\s*PROVA|^\S{1,3}\s+AMARELA$/i;
+
+/**
+ * Marca d'água "ENEM 2007" do rodapé (2006–2008), que vem espaçada
+ * ("E N E M 2 0 0 7") ou com as letras dobradas ("EE NENN EEE MM 22 0200").
+ */
+export function marcaDagua(texto) {
+  const t = texto.replace(/\s+/g, '');
+  return t.length <= 60 && /E{1,2}N{1,2}E{0,2}N{0,2}E{1,3}M{1,2}2{1,2}0{1,4}[0-9]{1,2}/.test(t) && !/[a-z]{3}/.test(t.replace(/PÁGINA|GINA|PROVA|AMARELA/gi, ''));
+}
+
+/**
+ * Linha que pode ser cabeçalho de questão no caderno antigo: o primeiro item é
+ * só o número ("03", "1.", "Questão 7"). Devolve o número, o resto da linha (o
+ * começo do enunciado em 1998/1999) e quantos itens o cabeçalho ocupa; null
+ * quando a linha não tem cara de cabeçalho.
+ */
+export function cabecalhoAntigo(itens) {
+  const limpos = itens.map((s) => s.trim()).filter(Boolean);
+  let [primeiro = '', ...resto] = limpos;
+  let consumidos = 1;
+  // "Questão" e o número podem vir em itens separados, e a própria palavra
+  // vem picada às vezes ("Quest" + "ã" + "o", em 2006)
+  let palavra = primeiro;
+  for (let k = 0; k < resto.length && /^QUEST/i.test(palavra) && !/^QUEST[ÃA]O$/i.test(palavra); k++) {
+    if (/\d/.test(resto[k])) break;
+    palavra += resto[k];
+    if (/^QUEST[ÃA]O$/i.test(palavra)) {
+      resto.splice(0, k + 1);
+      consumidos += k + 1;
+      primeiro = palavra;
+      break;
+    }
+  }
+  if (/^QUEST[ÃA]O$/i.test(primeiro) && resto.length) {
+    primeiro += ' ' + resto.shift();
+    consumidos++;
+  }
+  const m = RE_Q_ANTIGO.exec(primeiro);
+  if (!m || +m[1] < 1 || +m[1] > 99) return null;
+  return { n: +m[1], resto: resto.join(' ').trim(), consumidos };
+}
+
+/**
+ * Entre os candidatos a cabeçalho (em ordem de leitura), a sequência 1, 2, 3...
+ * que numera as questões. Número solto também aparece na capa (as instruções
+ * vão de 1 a 12), em rótulo de figura e em tabela; o que separa o cabeçalho é
+ * ele continuar a sequência. A sequência tolera saltar até dois números (um
+ * cabeçalho que o parser não achou vira pendência, não derruba o resto) e,
+ * entre as de mesmo tamanho, fica a que começa depois — a capa vem antes da
+ * prova. Depois refaz só com os candidatos da altura predominante dos
+ * escolhidos: o número do cabeçalho é maior que o da capa e o da tabela.
+ * `cands`: [{ n, alt }]. Devolve os índices escolhidos.
+ */
+export function sequenciaDeCabecalhos(cands) {
+  const cadeia = (lista) => {
+    const melhor = lista.map(() => null); // { tam, ini, ant }
+    for (let i = 0; i < lista.length; i++) {
+      if (lista[i].n <= 2) melhor[i] = { tam: 1, ini: i, ant: -1 };
+      for (let j = 0; j < i; j++) {
+        const d = lista[i].n - lista[j].n;
+        if (!melhor[j] || d < 1 || d > 3) continue;
+        const c = { tam: melhor[j].tam + 1, ini: melhor[j].ini, ant: j };
+        const m = melhor[i];
+        if (!m || c.tam > m.tam || (c.tam === m.tam && c.ini > m.ini)) melhor[i] = c;
+      }
+    }
+    let fim = -1;
+    for (let i = 0; i < lista.length; i++) {
+      const m = melhor[i], f = fim >= 0 ? melhor[fim] : null;
+      if (m && (!f || m.tam > f.tam || (m.tam === f.tam && m.ini > f.ini))) fim = i;
+    }
+    const idx = [];
+    for (let i = fim; i >= 0; i = melhor[i].ant) idx.unshift(i);
+    return idx;
+  };
+  const idx = cadeia(cands);
+  const conta = new Map();
+  for (const i of idx) conta.set(cands[i].alt, (conta.get(cands[i].alt) ?? 0) + 1);
+  const [alt, n] = [...conta].sort((a, b) => b[1] - a[1])[0] ?? [];
+  if (!n || n < idx.length * 0.6) return idx;
+  const mesmos = cands.map((c, i) => ({ ...c, i })).filter((c) => Math.abs(c.alt - alt) <= Math.max(1.5, alt * 0.15));
+  const idx2 = cadeia(mesmos).map((k) => mesmos[k].i);
+  return idx2.length >= n ? idx2 : idx;
+}
+
+/**
+ * Trechos "(X) texto" de uma linha com várias alternativas: "(A) 20. (B) 30."
+ * Linha que não começa com "(A)".."(E)" não é de alternativas: devolve [].
+ */
+export function trechosDeAlternativas(texto) {
+  if (!/^\([A-E]\)/.test(texto.trim())) return [];
+  return texto
+    .trim()
+    .split(/\s*(?=\([A-E]\))/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => ({ letra: t[1], texto: t }));
+}
+
+/**
+ * Alternativas em grade, várias por linha ("(A) 365 anos.  (D) 10 000 anos."
+ * em cima de "(B) 460 anos.  (E) ..."): cada uma vira uma linha própria, na
+ * ordem das letras, para o resto do parser vê-las uma embaixo da outra.
+ */
+function separaGrade(els) {
+  const out = [];
+  // "(A) 20. (B) 30." pelo texto; "A 20.  B 30." (2006–2008, letra num item
+  // à parte) pelos itens: letra solta, na fonte da letra A, depois de um vão.
+  const trechos = (l) => {
+    if (l.kind !== 'line') return [];
+    const t = trechosDeAlternativas(l.text);
+    if (t.length) return t.map((x) => ({ ...x, items: [{ ...l.items[0], str: x.texto }] }));
+    const its = l.items;
+    if (!/^[A-E]$/.test(its[0].str.trim())) return [];
+    const ks = [0];
+    for (let k = 1; k < its.length; k++) {
+      const letra = its[k].str.trim();
+      const ant = its[ks[ks.length - 1]].str.trim();
+      const vao = its[k].x - (its[k - 1].x + its[k - 1].w);
+      if (/^[A-E]$/.test(letra) && letra > ant && its[k].f === its[0].f && vao > 6) ks.push(k);
+    }
+    return ks.map((k, j) => {
+      const items = its.slice(k, ks[j + 1] ?? its.length);
+      return { letra: its[k].str.trim(), texto: items.map((i) => i.str).join(' '), items };
+    });
+  };
+  for (let i = 0; i < els.length; i++) {
+    const e = els[i];
+    if (trechos(e).length < 2) { out.push(e); continue; }
+    const linhas = [e];
+    while (i + 1 < els.length && els[i + 1].p === e.p && els[i + 1].c === e.c && trechos(els[i + 1]).length) linhas.push(els[++i]);
+    const todos = linhas.flatMap((l) => trechos(l).map((t) => ({ ...t, l })));
+    todos.sort((a, b) => a.letra.localeCompare(b.letra));
+    todos.forEach((t, k) => {
+      const x1 = Math.max(...t.items.map((i) => i.x + i.w));
+      out.push({ ...t.l, items: t.items, text: t.texto, x0: t.items[0].x, x1, y: e.y - k * 0.01, grade: true });
+    });
+  }
+  return out;
+}
+
+/** Letra de alternativa no formato "(A)" do caderno antigo; null se não for. */
+export function letraAntiga(texto) {
+  const m = /^\(([A-E])\)/.exec(texto.trim());
+  return m ? m[1] : null;
+}
+
+export async function parsePdf(file, { antigo = false } = {}) {
   const doc = await getDocument({ url: file, verbosity: 0, fontExtraProperties: true }).promise;
   const linhas = [];
   const figurasPag = [];
@@ -169,8 +339,6 @@ export async function parsePdf(file) {
     const g0 = await graficos(page, w, h);
     const desloca = (b) => ({ ...b, x0: b.x0 - vx0, x1: b.x1 - vx0, y0: b.y0 - vy0, y1: b.y1 - vy0 });
     const gr = g0.figs.map(desloca);
-    marcasPag.push(...g0.marcas.map(desloca).map((b) => ({ ...b, p })));
-    barrasPag.push(...g0.barras.map(desloca).map((b) => ({ ...b, p, c: (b.x0 + b.x1) / 2 < meio ? 0 : 1 })));
     const itens = [];
     const decod = (it) => {
       const f = amostras.get(it.fontName);
@@ -186,7 +354,16 @@ export async function parsePdf(file) {
         f.gid = longas >= 1 && nota(decodificaGid(f.txt, tab)) > nota(f.txt) + 0.1;
         if (f.gid) fontesGid.add(f.nome);
       }
-      return f.gid ? decodificaGid(it.str, f.tab) : it.str;
+      if (f.gid) return decodificaGid(it.str, f.tab);
+      // Caderno antigo: fonte WinAnsi lida como MacRoman. Decide por fonte:
+      // "·", "„", "Á" colados numa minúscula ("gr·fico", "composiÁ„o") não
+      // existem em português, e somem depois da conversão.
+      if (antigo && f.mac === undefined) {
+        const estranhos = (t) => (t.match(/[a-zà-ÿ][·„ı‡ÁÈÍÛ]|[·„ı][a-zà-ÿ]/g) ?? []).length;
+        const n = estranhos(f.txt);
+        f.mac = n >= 3 && estranhos(deMacRoman(f.txt)) < n / 4;
+      }
+      return f.mac ? deMacRoman(it.str) : it.str;
     };
     for (const it of tc.items) {
       if (!it.str.trim()) continue;
@@ -194,6 +371,37 @@ export async function parsePdf(file) {
       if (y < 12 || y > h - 12) continue;
       itens.push({ x, y, str: fixSymbol(decod(it)), hgt: it.height || Math.abs(it.transform[3]), w: it.width, f: it.fontName, c: x < meio - 5 ? 0 : 1 });
     }
+    // Caderno antigo em página mista: uma tabela ou figura larga faz a página
+    // parecer de coluna única, mas há cabeçalho de questão começando na metade
+    // direita (2002: a 4 e a 5 lado a lado embaixo da 3, que ocupa a largura
+    // toda). Da altura desse cabeçalho para baixo, o que começa na coluna da
+    // direita é a coluna 1. As colunas nem sempre são iguais (em 2006 a da
+    // esquerda é mais larga): a da direita começa onde está o cabeçalho dela,
+    // menos o recuo que o cabeçalho da esquerda tem em relação à margem.
+    let corteDir = null;
+    let xDir = null;
+    if (antigo && umaColuna) {
+      const hs = itens.map((i) => i.hgt).sort((a, b) => a - b);
+      const mediana = hs[Math.floor(hs.length / 2)] || 9;
+      const ehCab = (i) => i.y > 45 && (/^Quest/i.test(i.str.trim()) || (RE_Q_ANTIGO.test(i.str.trim()) && i.hgt >= mediana * 1.15));
+      const dir = itens.filter((i) => i.x > w / 2 - 30 && ehCab(i));
+      if (dir.length) {
+        const esq = itens.filter((i) => i.x <= w / 2 - 30 && ehCab(i));
+        const xs = itens.map((i) => i.x).sort((a, b) => a - b);
+        const margemEsq = xs[Math.floor(xs.length * 0.05)];
+        const recuo = esq.length ? Math.max(0, Math.min(...esq.map((i) => i.x)) - margemEsq) : 0;
+        xDir = Math.min(...dir.map((i) => i.x)) - recuo - 5;
+        corteDir = Math.max(...dir.map((i) => i.y)) + 10;
+        for (const i of itens) if (i.y <= corteDir && i.x >= xDir) i.c = 1;
+      }
+    }
+    const colunaDe = (b) => (corteDir !== null ? (b.y1 <= corteDir && b.x0 >= xDir ? 1 : 0) : (b.x0 + b.x1) / 2 < meio ? 0 : 1);
+    // Caderno antigo: palavra sublinhada ("inadequada", em 1998). O traço fica
+    // logo abaixo da linha de base e dentro da largura do texto — não é barra
+    // de fração, que fica entre duas linhas.
+    const sublinhado = (b) => antigo && b.y1 - b.y0 < 2 && itens.some((i) => b.y1 <= i.y + 0.5 && b.y1 >= i.y - 4 && b.x0 >= i.x - 2 && b.x1 <= i.x + i.w + 2);
+    marcasPag.push(...g0.marcas.map(desloca).filter((b) => !sublinhado(b)).map((b) => ({ ...b, p })));
+    barrasPag.push(...g0.barras.map(desloca).filter((b) => !sublinhado(b)).map((b) => ({ ...b, p, c: colunaDe(b) })));
     // altura "normal" do corpo de texto nesta página
     const alturas = itens.map((i) => Math.round(i.hgt * 2) / 2).sort((a, b) => a - b);
     const normal = alturas[Math.floor(alturas.length / 2)] || 9;
@@ -231,13 +439,17 @@ export async function parsePdf(file) {
       ls.sort((a, b) => b.y - a.y || Math.min(...a.items.map((i) => i.x)) - Math.min(...b.items.map((i) => i.x)));
       linhas.push(...ls);
     }
-    figurasPag.push(gr.map((g) => ({ ...g, p, c: (g.x0 + g.x1) / 2 < meio ? 0 : 1, w, h })));
+    figurasPag.push(gr.map((g) => ({ ...g, p, c: colunaDe(g), w, h })));
   }
   for (const l of linhas) {
     l.items.sort((a, b) => a.x - b.x);
     l.items = l.items.filter((it, i, arr) => !arr.slice(0, i).some((o) => o.str === it.str && Math.abs(o.x - it.x) < 1 && Math.abs(o.y - it.y) < 1));
     l.x0 = l.items[0].x;
     l.x1 = Math.max(...l.items.map((i) => i.x + i.w));
+    // Negrito falso (2007): o título é desenhado duas vezes, deslocado, e o
+    // pdfjs devolve itens sobrepostos ("O c", "ca", "an"...). Não dá para
+    // separar as cópias com segurança: o parágrafo sai como imagem.
+    l.dobrada = antigo && l.items.filter((it, k) => k > 0 && it.x < l.items[k - 1].x + l.items[k - 1].w - 1.5).length >= 3;
     let t = '';
     let fimAnterior = null;
     for (const i of l.items) {
@@ -249,10 +461,30 @@ export async function parsePdf(file) {
     l.text = juntaLigadura(t.replace(/\s+/g, ' ').replace(/ﬁ/g, 'fi').replace(/ﬂ/g, 'fl').trim());
   }
 
+  // Caderno antigo: os cabeçalhos de questão são escolhidos antes das figuras,
+  // para a caixinha em volta do número não virar figura nem engolir a linha.
+  if (antigo) {
+    const ord = [...linhas].sort((a, b) => a.p - b.p || a.c - b.c || b.y - a.y);
+    // número de página fica no rodapé; o cabeçalho, nunca
+    const cands = ord
+      .filter((l) => l.y > 45 && !SERVICO_ANTIGO.test(l.text))
+      .map((l) => ({ l, cab: cabecalhoAntigo(l.items.map((i) => i.str)) }))
+      .filter((c) => c.cab)
+      .map((c) => ({ ...c, n: c.cab.n, alt: Math.round(c.l.items[c.cab.consumidos - 1].hgt * 2) / 2 }));
+    if (process.env.DEBUG_CAB) console.log(cands.map((c) => `${c.n}@p${c.l.p}c${c.l.c}:${c.alt}`).join(' '));
+    for (const i of sequenciaDeCabecalhos(cands)) cands[i].l.cabecalho = cands[i].cab;
+    // Fio decorativo sob o número da questão (2004): não é barra de fração.
+    const cabs = linhas.filter((l) => l.cabecalho);
+    for (let k = barrasPag.length - 1; k >= 0; k--) {
+      const b = barrasPag[k];
+      if (cabs.some((l) => l.p === b.p && Math.abs(b.y1 - l.y) < 15 && b.x0 <= l.items[0].x + 20 && b.x1 >= l.items[0].x)) barrasPag.splice(k, 1);
+    }
+  }
+
   // Figuras: agrupa caixas próximas (mesma página/coluna) numa figura só.
   const figuras = [];
   // Linha que é só a letra de uma alternativa (o círculo dela é um desenho).
-  const soLetra = (l) => /^[A-E]$/.test(l.items[0].str.trim());
+  const soLetra = (l) => /^[A-E]$/.test(l.items[0].str.trim()) || (antigo && !!letraAntiga(l.items[0].str));
   // Peça de fundo (antes de agrupar, para não levar junto o que está dentro
   // dela): o cartão em volta da questão na prova digital de 2020 — imagem de
   // sombra ou retângulo que contém o cabeçalho, as alternativas ou vários
@@ -304,11 +536,17 @@ export async function parsePdf(file) {
       // Barra decorativa ao lado do "Questão NN": não é figura.
       const cabecalho = linhas.some((l) => l.p === g.p && RE_Q.test(l.text) && Math.abs((g.y0 + g.y1) / 2 - (l.y + 3)) < 10);
       if (cabecalho && g.y1 - g.y0 < 14) continue;
+      // Caderno antigo: moldura ou fundo do número da questão.
+      const numero = antigo && linhas.some((l) => l.p === g.p && l.cabecalho && g.y0 <= l.y + 12 && g.y1 >= l.y - 6 && g.x0 <= l.items[0].x + 4 && g.x1 >= l.items[0].x);
+      if (numero && g.y1 - g.y0 < 40 && g.x1 - g.x0 < 80) continue;
+      // Fio que separa as questões (em 1998, centenas de imagens minúsculas
+      // enfileiradas): largo e baixo demais para ser figura.
+      if (antigo && g.y1 - g.y0 < 20 && g.x1 - g.x0 > g.w * 0.6) continue;
       // Rótulos de eixo/legenda encostados no desenho fazem parte da figura.
       // Uma passada só, contra a caixa original: iterar cresceria em cadeia.
       const orig = { ...g };
       for (const l of linhas) {
-        if (l.p !== g.p || soLetra(l) || RE_Q.test(l.text) || l.absorvida) continue;
+        if (l.p !== g.p || soLetra(l) || RE_Q.test(l.text) || l.absorvida || l.cabecalho) continue;
         const lt = l.y + (l.items[0].hgt || 8), lb = l.y - 3;
         const perto = lb <= orig.y1 + 7 && lt >= orig.y0 - 7 && l.x0 >= orig.x0 - 12 && l.x1 <= orig.x1 + 12;
         if (!perto) continue;
@@ -333,9 +571,53 @@ export async function parsePdf(file) {
 
   const questoes = [];
   let q = null;
+  // Caderno antigo: o texto antes da 1ª questão, na mesma página, é dela.
+  const antes = [];
+  // Cabeçalho e rodapé de página: o mesmo texto (fora os números), na mesma
+  // altura, em três páginas ou mais. No caderno antigo eles não seguem um
+  // padrão ("ENEM 98" numa fonte simbólica, "È amarela").
+  const chaveRepetida = (e) => `${Math.round(e.y)}|${e.text.replace(/\d+/g, '#')}`;
+  const repetidas = new Set();
+  if (antigo) {
+    const paginas = new Map();
+    for (const e of seq) {
+      if (e.kind !== 'line' || (e.y > 60 && e.y < e.h - 60)) continue;
+      const k = chaveRepetida(e);
+      if (!paginas.has(k)) paginas.set(k, new Set());
+      paginas.get(k).add(e.p);
+    }
+    for (const [k, ps] of paginas) if (ps.size >= 3) repetidas.add(k);
+  }
   for (const e of seq) {
+    if (antigo && e.kind === 'line') {
+      if (!e.cabecalho && (SERVICO_ANTIGO.test(e.text) || marcaDagua(e.text) || repetidas.has(chaveRepetida(e)))) {
+        // A parte objetiva começa aqui: o que veio antes na página (a redação,
+        // em 1998) não é texto de apoio da questão 1.
+        if (/QUEST[ÕO]ES OBJETIVAS|PARTE OBJETIVA/i.test(e.text)) antes.length = 0;
+        continue;
+      }
+      const cab = e.cabecalho;
+      if (cab) {
+        q = { number: cab.n, elems: questoes.length ? [] : antes.filter((x) => x.p === e.p), page: e.p };
+        for (const x of q.elems) x.pre = true;
+        questoes.push(q);
+        if (cab.resto) {
+          const items = e.items.slice(cab.consumidos);
+          q.elems.push({ ...e, text: cab.resto, items, x0: items[0].x });
+        }
+        continue;
+      }
+      if (RODAPE.test(e.text)) continue;
+    }
+    if (antigo) {
+      if (q) q.elems.push(e);
+      else antes.push(e);
+      continue;
+    }
     if (e.kind === 'line') {
       if (RODAPE.test(e.text)) continue;
+      // O ano do logotipo no alto da coluna (PPL 2010): não é texto da questão.
+      if (ANO_SOLTO.test(e.text) && e.y > e.h - 90) continue;
       const m = e.text.match(RE_Q);
       if (m) {
         q = { number: +m[1], elems: [], page: e.p };
@@ -381,7 +663,11 @@ export async function parsePdf(file) {
     if (e.kind !== 'line' || !letra) return false;
     const it = e.items[0];
     const primeiro = it.str.trim();
+    // "(A)" é inconfundível e vem recuado da margem em vários anos (1998).
+    if (antigo && /^\(/.test(primeiro)) return letraAntiga(primeiro) === letra;
     if (fonteDasLetras && primeiro.length === 1 && !fonteDasLetras.has(it.f)) return false;
+    // Alternativa de uma grade já separada: a posição na linha não importa.
+    if (e.grade) return primeiro === letra;
     // A letra fica na margem da coluna (rótulo de figura não)...
     if (e.x0 > (margem.get(e.p + ':' + e.c) ?? e.x0) + 14) return false;
     if (primeiro === letra) {
@@ -394,13 +680,19 @@ export async function parsePdf(file) {
   };
   const mesmaColuna = (a, b) => a.p === b.p && a.c === b.c;
 
+  // Caderno antigo: o que vem depois da alternativa E é o texto de apoio da
+  // questão seguinte (às vezes de um grupo: "As questões 10 e 11 referem-se
+  // ao poema abaixo"), que lá aparece ANTES do número.
+  let carry = [];
   for (const q of questoes) {
-    const figs = q.elems.filter((e) => e.kind === 'fig');
+    let els = [...carry.map((e) => ({ ...e, pre: true })), ...q.elems];
+    if (antigo) els = separaGrade(els);
+    const sobra = [];
+    const figs = els.filter((e) => e.kind === 'fig');
     const alts = [];
     const corpo = [];
     let esperado = 0;
     let ultimaLinha = null;
-    const els = q.elems;
     let pendente = []; // numerador de fração: linha logo acima da letra seguinte
     for (let i = 0; i < els.length; i++) {
       const e = els[i];
@@ -412,7 +704,11 @@ export async function parsePdf(file) {
         if (prox && ehLetra(prox, 'ABCDE'[esperado]) && mesmaColuna(prox, e) && e.y1 - prox.y < 12) { pendente.push({ fracao: true }); continue; }
         // Só é fração da alternativa se estiver na altura da linha da letra.
         const ult = alts[alts.length - 1];
-        if (ult) { if (mesmaColuna(ult.box, e) && Math.abs(e.y0 - ult.box.yLetra) < 12) ult.fracao = true; continue; }
+        if (ult) {
+          if (mesmaColuna(ult.box, e) && Math.abs(e.y0 - ult.box.yLetra) < 12) ult.fracao = true;
+          else if (antigo && alts.length === 5) sobra.push(e);
+          continue;
+        }
         else corpo.push({ barra: e });
         continue;
       }
@@ -422,16 +718,22 @@ export async function parsePdf(file) {
           // Só é da alternativa se estiver na mesma coluna, logo abaixo da letra.
           const ult = alts[alts.length - 1];
           if (mesmaColuna(ult.box, e) && e.y1 <= ult.box.yTop + 30 && e.y1 >= ult.box.yBot - 40) ult.figs.push(e);
-        } else corpo.push({ fig: e });
+          else if (antigo && alts.length === 5) sobra.push(e);
+        } else corpo.push({ fig: e, pre: !!e.pre });
         continue;
       }
-      if (figs.some((f) => dentro(e, f)) && !/^[A-E]$/.test(e.items[0].str.trim())) continue;
+      if (figs.some((f) => dentro(e, f)) && !/^[A-E]$/.test(e.items[0].str.trim()) && !(antigo && letraAntiga(e.items[0].str))) continue;
       const letra = 'ABCDE'[esperado];
       if (ehLetra(e, letra)) {
-        const txt = e.text.slice(1).trim();
         const letraItem = e.items[0];
-        const xTexto = e.items[1]?.x ?? letraItem.x + letraItem.w + 3;
-        const a = { letter: letra, parts: txt ? [txt] : [], figs: [], box: { p: e.p, c: e.c, yLetra: e.y, xLetraFim: letraItem.x + letraItem.w, yTop: e.y + letraItem.hgt, yBot: e.y - 3, x0: e.x0, xTexto, x1: e.x1, w: e.w, h: e.h } };
+        // "(A)" pode vir num item só com o texto da alternativa
+        const tamLetra = antigo && letraAntiga(letraItem.str) ? 3 : 1;
+        const txt = e.text.trim().slice(tamLetra).trim();
+        const colada = letraItem.str.trim().length > tamLetra;
+        const xTexto = colada
+          ? letraItem.x + (letraItem.w * (tamLetra + 1)) / letraItem.str.length
+          : e.items[1]?.x ?? letraItem.x + letraItem.w + 3;
+        const a = { letter: letra, parts: txt ? [txt] : [], figs: [], box: { p: e.p, c: e.c, yLetra: e.y, xLetraFim: colada ? xTexto - 2 : letraItem.x + letraItem.w, yTop: e.y + letraItem.hgt, yBot: e.y - 3, x0: e.x0, xTexto, x1: e.x1, w: e.w, h: e.h } };
         for (const pd of pendente) {
           if (pd.fracao) { a.fracao = true; continue; }
           a.parts.unshift(pd.text);
@@ -447,7 +749,11 @@ export async function parsePdf(file) {
       }
       // Linha colada logo acima da próxima letra, recuada: numerador da fração dela.
       const prox = els.slice(i + 1).find((x) => x.kind === 'line');
-      if (alts.length && prox && ehLetra(prox, letra) && mesmaColuna(prox, e) && e.y - prox.y < 11 && e.x0 > prox.x0 + 3) {
+      // No caderno antigo a fração da alternativa vem na linha ("1/3"): linha
+      // recuada logo abaixo da alternativa anterior é continuação dela.
+      const ultAlt = alts[alts.length - 1];
+      const continua = antigo && ultAlt && mesmaColuna(e, ultAlt.box) && ultAlt.box.yBot + 3 - e.y < 16 && e.x0 > ultAlt.box.x0 + 3;
+      if (!continua && alts.length && prox && ehLetra(prox, letra) && mesmaColuna(prox, e) && e.y - prox.y < 11 && e.x0 > prox.x0 + 3) {
         pendente.push({ text: e.text, y: e.y, hgt: e.items[0].hgt, x0: e.x0, x1: e.x1 });
         continue;
       }
@@ -459,11 +765,14 @@ export async function parsePdf(file) {
           a.box.x1 = Math.max(a.box.x1, e.x1);
           continue;
         }
-        if (alts.length === 5) continue;
+        if (alts.length === 5) {
+          if (antigo) sobra.push(e);
+          continue;
+        }
       }
       if (!alts.length) {
         const gap = ultimaLinha && mesmaColuna(ultimaLinha, e) ? ultimaLinha.y - e.y : null;
-        corpo.push({ text: e.text, gap, x0: e.x0, x1: e.x1, y: e.y, p: e.p, c: e.c, hgt: e.items[0].hgt });
+        corpo.push({ text: e.text, gap, x0: e.x0, x1: e.x1, y: e.y, p: e.p, c: e.c, hgt: e.items[0].hgt, pre: !!e.pre, dobrada: e.dobrada });
         ultimaLinha = e;
       }
     }
@@ -500,15 +809,15 @@ export async function parsePdf(file) {
     let par = null;
     const minX = Math.min(...corpo.filter((c) => c.text).map((c) => c.x0));
     for (const c of corpo) {
-      if (c.fig) { par = null; pars.push({ fig: c.fig }); continue; }
+      if (c.fig) { par = null; pars.push({ fig: c.fig, pre: c.pre }); continue; }
       if (c.barra) { pars.push({ barra: c.barra }); continue; }
       // Novo parágrafo: salto vertical, troca do tamanho da fonte (a referência
       // bibliográfica é menor) ou recuo de primeira linha em relação à anterior.
       const ant = par?.linhas[par.linhas.length - 1];
       const trocaFonte = ant && Math.abs(ant.hgt - c.hgt) > 0.8;
       const recuo = ant && !trocaFonte && c.hgt >= ant.hgt - 0.5 && c.x0 > ant.x0 + 8 && ant.x0 <= minX + 3;
-      const novo = !par || (c.gap && c.gap > normal * 1.45) || c.gap === null || trocaFonte || recuo;
-      if (novo) { par = { linhas: [] }; pars.push(par); }
+      const novo = !par || (c.gap && c.gap > normal * 1.45) || c.gap === null || trocaFonte || recuo || par.pre !== c.pre;
+      if (novo) { par = { linhas: [], pre: c.pre }; pars.push(par); }
       par.linhas.push(c);
     }
     // Parágrafo com fórmula (barra de fração) vira imagem: o texto sairia torto.
@@ -516,18 +825,21 @@ export async function parsePdf(file) {
     const blocos = [];
     for (const b of pars) {
       if (b.barra) continue;
-      if (b.fig) { blocos.push({ fig: b.fig }); continue; }
+      if (b.fig) { blocos.push({ fig: b.fig, pre: b.pre }); continue; }
       const ls = b.linhas;
       const uma = ls.every((l) => mesmaColuna(l, ls[0]));
       const caixa = { p: ls[0].p, c: ls[0].c, x0: Math.min(...ls.map((l) => l.x0)), x1: Math.max(...ls.map((l) => l.x1)), y0: Math.min(...ls.map((l) => l.y)) - 3, y1: Math.max(...ls.map((l) => l.y + l.hgt)) };
       const temMarca = uma && marcasPag.some((r) => r.p === caixa.p && r.y0 >= caixa.y0 - 2 && r.y1 <= caixa.y1 + 2 && r.x0 >= caixa.x0 + 2 && r.x1 <= caixa.x1 + 2);
       const lixoTxt = /[\u0000-\u0008\u000b-\u001f\ue000-\uf8ff¡]/.test(ls.map((l) => l.text).join(' '));
-      const temFracao = (uma && lixoTxt) || temMarca || uma && barras.some((r) => r.p === caixa.p && r.y0 >= caixa.y0 - 8 && r.y1 <= caixa.y1 + 8 && r.x0 >= caixa.x0 - 4 && r.x1 <= caixa.x1 + 4);
+      // No caderno antigo a barra só é de fração dentro da altura do próprio
+      // parágrafo: acima dele é fio de cabeçalho ou de figura.
+      const folga = antigo ? 1 : 8;
+      const temFracao = (uma && lixoTxt) || temMarca || (uma && ls.some((l) => l.dobrada)) || uma && barras.some((r) => r.p === caixa.p && r.y0 >= caixa.y0 - folga && r.y1 <= caixa.y1 + folga && r.x0 >= caixa.x0 - 4 && r.x1 <= caixa.x1 + 4);
       if (temFracao) {
         const acima = barras.filter((r) => r.p === caixa.p && r.x0 >= caixa.x0 - 4 && r.x1 <= caixa.x1 + 4);
         caixa.y0 = Math.min(caixa.y0, ...acima.filter((r) => r.y0 >= caixa.y0 - 8).map((r) => r.y0 - 9));
-        blocos.push({ fig: caixa, formula: true, text: ls.map((l) => l.text).join('\n') });
-      } else blocos.push({ text: ls.map((l) => l.text).join('\n') });
+        blocos.push({ fig: caixa, formula: true, text: ls.map((l) => l.text).join('\n'), pre: b.pre });
+      } else blocos.push({ text: ls.map((l) => l.text).join('\n'), pre: b.pre });
     }
     q.fracCorpo = blocos.some((b) => b.formula);
     q.blocos = blocos;
@@ -549,13 +861,14 @@ export async function parsePdf(file) {
     }));
     q.body = blocos.filter((b) => b.text).map((b) => b.text).join('\n\n');
     delete q.elems;
+    carry = sobra;
   }
   return { questoes, numPages: doc.numPages, doc };
 }
 
 if (process.argv[1]?.endsWith('parse.mjs')) {
   const [file] = process.argv.slice(2);
-  const r = await parsePdf(file);
+  const r = await parsePdf(file, { antigo: !!process.env.ANTIGO });
   const ok = r.questoes.filter((q) => q.alternatives.length === 5).length;
   console.log(file, 'questões', r.questoes.length, 'com 5 alternativas', ok);
   console.log('faltando 5 alts:', r.questoes.filter((q) => q.alternatives.length !== 5).map((q) => `${q.number}(${q.alternatives.length})`).join(' '));

@@ -10,7 +10,9 @@ const FORMULA_SOLTA = /(^|\s)\S\s\S\s\S\s\S\s\S(\s|$)/;
 
 export function lixoso(q) {
   const txt = [q.context, q.alternativesIntroduction, ...q.alternatives.map((a) => a.text)].filter(Boolean).join('\n');
-  return PUA.test(txt) || MOJIBAKE.test(txt) || MARCADOR.test(txt) || q.alternatives.some((a) => FORMULA_SOLTA.test(a.text || ''));
+  // Fonte cifrada sem mapa (2000, 2006): "Å~ãáë~" no lugar de "camisa".
+  const CIFRA = /[A-Za-zÀ-ÿ][~`Åå]|[~`Åå][A-Za-zÀ-ÿ]/;
+  return PUA.test(txt) || MOJIBAKE.test(txt) || MARCADOR.test(txt) || CIFRA.test(txt) || q.alternatives.some((a) => FORMULA_SOLTA.test(a.text || ''));
 }
 
 export const norm = (s) =>
@@ -81,3 +83,19 @@ export const IDIOMAS = [
   { label: 'Espanhol', value: 'espanhol' },
   { label: 'Inglês', value: 'ingles' },
 ];
+
+/**
+ * Questões que um texto de apoio do caderno antigo diz servir: "As questões
+ * 10 e 11 referem-se ao poema", "Texto para as questões 1 e 2", "Observe nas
+ * questões 1 e 2", "questões de 21 a 23". Sem a frase, devolve [].
+ */
+export function questoesDoApoio(texto) {
+  const m = /quest(?:ões|oes)\s+(?:de\s+)?(?:n[úu]meros?\s+)?(\d{1,2})((?:\s*,\s*\d{1,2})*)\s*,?\s*(e|a|até)\s+(\d{1,2})\b/i.exec(texto || '');
+  if (!m) return [];
+  const ini = +m[1];
+  const fim = +m[4];
+  if (m[3].toLowerCase() === 'e') return [ini, ...(m[2].match(/\d+/g) ?? []).map(Number), fim];
+  const r = [];
+  for (let n = ini; n <= fim && n - ini < 10; n++) r.push(n);
+  return r;
+}

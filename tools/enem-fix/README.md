@@ -55,11 +55,67 @@ dataset): 182 das 185 questões refeitas, gabarito 181/181, texto 177/181 —
 as diferenças restantes são questões em que o dataset traz o enunciado como
 imagem e o caderno tem texto.
 
-Ficam de fora, por não haver gabarito oficial publicado: a PPL de 2010 e de
-2011 e o ENEM de 1998 a 2008 (o INEP publica só o caderno; o de 1998 nem
-está mais no ar). Os PDFs são os
-cadernos e gabaritos oficiais do INEP (`download.inep.gov.br`), nomeados como o
-mapa `EXAMS` no topo de `build.mjs` espera.
+Os PDFs são os cadernos e gabaritos oficiais do INEP (`download.inep.gov.br`),
+nomeados como o mapa `EXAMS` no topo de `build.mjs` espera.
+
+### ENEM de 1998 a 2008 e PPL de 2010 e 2011
+
+A página de provas do INEP traz só o caderno dessas provas, sem gabarito. O
+gabarito oficial existe, mas dentro dos **microdados** do próprio INEP
+(`download.inep.gov.br/microdados/microdados_enem_<ano>.zip`), e
+`gabaritos-antigos.mjs` o tira de lá sem baixar os zips (de 25 MB a 630 MB):
+lê por HTTP Range só o diretório do zip e as entradas que interessam
+(`zip-remoto.mjs`).
+
+- **1998–2008:** cada linha dos microdados traz o gabarito da prova do aluno
+  (`TX_GABARITO_OBJETIVA`, pela cor em `CO_PROVA`), e a pasta "PROVAS E
+  GABARITOS" do zip traz o gabarito da prova amarela em PDF. As duas fontes
+  são conferidas uma contra a outra e batem nas 63 questões de todos os anos.
+  O PDF de 2008 é imagem e foi conferido à mão; o de 2004 vem no zip com o
+  nome de 2005, e o script confere o ano pelo título.
+- **PPL 2010 e 2011:** `ITENS_PROVA_<ano>.csv` traz o gabarito item a item por
+  código de prova. A PPL de 2010 (a "2ª aplicação" dos microdados, o mesmo
+  arquivo do caderno publicado como PPL) é conferida com o gabarito gravado nas
+  linhas dos alunos; a de 2011, com o PDF de gabarito da PPL que vem no zip.
+  Onde as duas fontes oficiais discordam (2011, espanhol 92 e 93), a questão
+  fica sem gabarito e fora do dataset.
+
+```bash
+node gabaritos-antigos.mjs          # grava gabaritos-antigos.json
+node criar.mjs <dataset/public> <pasta dos PDFs> --only=1998,2010-reaplicacao --saida=<pasta>
+```
+
+O caderno antigo tem outro desenho, e o parser o lê com `{ antigo: true }`
+(`antigo` em `provas-novas.json`):
+
+- **63 questões num caderno só**, sem as quatro áreas: a questão sai com
+  `discipline: null` (`semAreas`).
+- **Cabeçalho de cada ano:** "03 O texto..." (1998/1999, o número colado ao
+  enunciado), o número solto (2000–2003, 2005), "1." (2004) e "Questão 1"
+  (2006–2008). O que separa o cabeçalho de um número qualquer é a sequência
+  1, 2, 3... — a capa traz as instruções numeradas de 1 a 12, e é a altura da
+  letra que as separa (`sequenciaDeCabecalhos`).
+- **Alternativas "(A)"**, às vezes em grade, várias por linha.
+- **Texto de apoio compartilhado:** vem antes do número da primeira questão do
+  grupo, e cada questão do dataset recebe uma cópia — pelo grupo declarado ("As
+  questões 10 e 11 referem-se ao poema") ou, com `apoioImplicito`, quando a
+  questão seguinte só tem um comando curto ("O texto mostra..."). Cada herança
+  vai para os avisos do relatório; as que não valem ficam em `semApoio`.
+- **Página mista:** a 4 e a 5 lado a lado embaixo da 3, que ocupa a largura
+  toda; a coluna da direita começa no cabeçalho dela, não no meio da página.
+- **Defeitos de fonte:** texto WinAnsi que o pdfjs lê como MacRoman (2002:
+  "gr·fico"), título em negrito falso desenhado duas vezes (2007, sai como
+  imagem) e a marca d'água "ENEM 2007" do rodapé.
+
+Na última rodada: 634 de 693 questões antigas, 177 de 185 na PPL de 2010 e 172
+de 185 na de 2011. O resto está no relatório: alternativas que são só imagem
+(sem letra no texto), diagramação fora do padrão e as duas questões de 2011 com
+gabarito em disputa, e texto em fonte cifrada sem mapa ("Å~ãáë~"), que o
+`lixoso` recusa.
+
+A área dessas questões não está no dataset (`discipline: null`, como no INEP):
+é classificação do OpENEM pelo conteúdo e vive em
+`openem_backend/src/common/enem-import/legacy-areas.ts`.
 
 ## Como cada defeito é consertado
 
