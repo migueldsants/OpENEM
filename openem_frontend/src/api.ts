@@ -210,6 +210,8 @@ export interface Achievement {
   icon: string;
   /** Classe Tailwind de destaque (issue #48). */
   color: string;
+  /** Conquista que o app não oferece mais; só vem para quem já a tem. */
+  retired?: boolean;
 }
 export interface GamificationDelta {
   xpGained: number;
@@ -389,12 +391,21 @@ export interface LeaderboardEntryXp {
   displayName: string;
   xp: number;
   level: number;
+  /** Posição real no ranking (1 = primeiro), também fora do top. */
+  rank: number;
+  /** A linha do próprio aluno; fora do top, vem por último. */
+  isMe: boolean;
 }
-export interface LeaderboardResult {
-  scope: 'global' | 'league';
-  league: string | null;
-  entries: LeaderboardEntryXp[];
-}
+export type LeaderboardResult =
+  | { enabled: false }
+  | {
+      enabled: true;
+      scope: 'global' | 'league';
+      league: string | null;
+      entries: LeaderboardEntryXp[];
+    };
+/** Catálogo de conquistas, ou { enabled: false } com a gamificação desligada. */
+export type AchievementsResult = AchievementView[] | { enabled: false };
 export interface Subject {
   id: string;
   name: string;
@@ -1207,7 +1218,8 @@ export const api = {
   tools: () => request<Tool[]>('/tools'),
 
   gamification: () => request<GamificationSummary>('/gamification/me'),
-  achievements: () => request<AchievementView[]>('/gamification/achievements'),
+  achievements: () =>
+    request<AchievementsResult>('/gamification/achievements'),
   xpHistory: (days = 30) =>
     request<XpHistory>(`/gamification/history?days=${days}`),
   dailyChallenge: () =>

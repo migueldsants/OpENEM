@@ -293,15 +293,20 @@ function AchievementsGrid({
   return (
     <section className="space-y-3">
       {next && (
-        <div className="card card-raised border-l-4 border-brand p-4">
-          <p className="eyebrow">Próxima conquista</p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-brand" aria-hidden>
+        <div className="card p-4">
+          <div className="flex items-start gap-3">
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand"
+              aria-hidden
+            >
               <AchievementIcon name={next.icon} size={20} />
             </span>
-            <p className="font-display text-sm font-bold">{next.name}</p>
+            <div className="min-w-0 flex-1">
+              <p className="eyebrow">Próxima conquista</p>
+              <p className="font-display text-sm font-bold">{next.name}</p>
+              <p className="mt-0.5 text-xs text-muted">{next.description}</p>
+            </div>
           </div>
-          <p className="mt-0.5 text-xs text-muted">{next.description}</p>
           <AchievementProgressBar item={next} />
         </div>
       )}
@@ -354,6 +359,7 @@ function ActivityFeed({ history }: { history: XpHistory }) {
     REVIEW: 'Revisão',
     STUDY_SESSION: 'Sessão',
     DAILY_CHALLENGE: 'Desafio diário',
+    ACHIEVEMENT: 'Conquista',
   };
   return (
     <section className="card p-5">
@@ -391,14 +397,17 @@ function ActivityFeed({ history }: { history: XpHistory }) {
 function LeaderboardSection() {
   const navigate = useNavigate();
   const [scope, setScope] = useState<'global' | 'league'>('league');
-  const [board, setBoard] = useState<LeaderboardResult | null>(null);
+  const [board, setBoard] = useState<Extract<
+    LeaderboardResult,
+    { enabled: true }
+  > | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     api
       .xpLeaderboard(scope, 10)
-      .then(setBoard)
+      .then((r) => setBoard(r.enabled ? r : null))
       .catch(() => setBoard(null))
       .finally(() => setLoading(false));
   }, [scope]);
@@ -440,40 +449,58 @@ function LeaderboardSection() {
         />
       ) : (
         <ol className="mt-3 space-y-1.5">
-          {board.entries.map((e, i) => (
-            <li key={e.userId}>
-              <button
-                type="button"
-                className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left text-sm hover:bg-surface-2"
-                onClick={() => navigate(`/usuarios/${e.userId}`)}
+          {board.entries.map((e, i) => {
+            // Fora do top, a linha do aluno vem depois de um intervalo na numeração.
+            const gap = i > 0 && e.rank > board.entries[i - 1].rank + 1;
+            return (
+              <li
+                key={e.userId}
+                aria-current={e.isMe ? 'true' : undefined}
+                className={gap ? 'border-t border-line pt-1.5' : undefined}
               >
-                <span
-                  aria-hidden
-                  className={`grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold tabular-nums ${
-                    i === 0
-                      ? 'bg-mat/15 text-mat'
-                      : i === 1
-                        ? 'bg-surface-2 text-muted'
-                        : i === 2
-                          ? 'bg-warning/15 text-warning'
-                          : 'bg-surface-2 text-muted'
+                <button
+                  type="button"
+                  className={`flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left text-sm ${
+                    e.isMe ? 'bg-surface-2' : 'hover:bg-surface-2'
                   }`}
+                  onClick={() => navigate(`/usuarios/${e.userId}`)}
                 >
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {e.displayName}
-                </span>
-                <span className="shrink-0 text-xs text-muted">
-                  Nível {e.level}
-                </span>
-                <span className="shrink-0 font-display font-bold tabular-nums text-brand">
-                  {e.xp.toLocaleString('pt-BR')}
-                </span>
-                <span className="sr-only">, ver perfil</span>
-              </button>
-            </li>
-          ))}
+                  <span
+                    aria-hidden
+                    className={`grid h-7 min-w-7 shrink-0 place-items-center rounded-lg px-1.5 text-xs font-bold tabular-nums ${
+                      e.rank === 1
+                        ? 'bg-mat/15 text-mat'
+                        : e.rank === 3
+                          ? 'bg-warning/15 text-warning'
+                          : e.isMe
+                            ? 'bg-surface text-fg'
+                            : 'bg-surface-2 text-muted'
+                    }`}
+                  >
+                    {e.rank}
+                  </span>
+                  <span className="sr-only">{e.rank}º lugar: </span>
+                  <span
+                    className={`min-w-0 flex-1 truncate ${e.isMe ? 'font-semibold' : 'font-medium'}`}
+                  >
+                    {e.displayName}
+                    {e.isMe && (
+                      <span className="ml-2 rounded-full border border-line bg-surface px-1.5 py-px text-xs font-medium text-muted">
+                        você
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted">
+                    Nível {e.level}
+                  </span>
+                  <span className="shrink-0 font-display font-bold tabular-nums text-brand">
+                    {e.xp.toLocaleString('pt-BR')}
+                  </span>
+                  <span className="sr-only">, ver perfil</span>
+                </button>
+              </li>
+            );
+          })}
         </ol>
       )}
     </section>
@@ -497,7 +524,8 @@ export default function Progresso() {
           api.achievements(),
           api.xpHistory(30),
         ]);
-        setAchievements(a);
+        // Gamificação desligada: a tela mostra o aviso, sem catálogo.
+        setAchievements(Array.isArray(a) ? a : []);
         setHistory(h);
       } catch (err) {
         // Sem aviso, a falha parecia "nenhuma conquista ainda".

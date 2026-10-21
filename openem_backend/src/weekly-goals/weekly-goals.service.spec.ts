@@ -11,11 +11,17 @@ function makePrisma() {
       delete: jest.fn(),
     },
     answer: { count: jest.fn().mockResolvedValue(0) },
-    studySession: {
-      aggregate: jest.fn().mockResolvedValue({ _sum: { minutes: null } }),
-    },
+    studySession: { findMany: jest.fn().mockResolvedValue([]) },
+    focusSession: { findMany: jest.fn().mockResolvedValue([]) },
   };
 }
+
+/** Bloco concluído de um plano criado na segunda 31/08/2026 (10h de Brasília). */
+const doneBlock = (dayIndex: number, minutes: number) => ({
+  dayIndex,
+  minutes,
+  plan: { createdAt: new Date('2026-08-31T13:00:00Z') },
+});
 
 function makeService() {
   const prisma = makePrisma() as any;
@@ -36,6 +42,12 @@ describe('WeeklyGoalsService (issue #44)', () => {
     it('domingo volta para a segunda anterior', () => {
       const sunday = weekStartOf(new Date('2026-09-06T10:00:00Z')); // domingo
       expect(sunday.toISOString().slice(0, 10)).toBe('2026-08-31');
+    });
+
+    it('domingo às 22h de Brasília ainda é da semana que acaba', () => {
+      // 22h de domingo 06/09 em Brasília = segunda 07/09, 01h em UTC.
+      const late = weekStartOf(new Date('2026-09-07T01:00:00Z'));
+      expect(late.toISOString().slice(0, 10)).toBe('2026-08-31');
     });
   });
 
@@ -95,9 +107,16 @@ describe('WeeklyGoalsService (issue #44)', () => {
       const { service, prisma } = makeService();
       prisma.weeklyGoal.findMany.mockResolvedValue([GOAL]);
       prisma.answer.count.mockResolvedValue(10);
-      prisma.studySession.aggregate.mockResolvedValue({
-        _sum: { minutes: 130 },
-      });
+      prisma.studySession.findMany.mockResolvedValue([
+        doneBlock(0, 60),
+        doneBlock(2, 45),
+      ]);
+      prisma.focusSession.findMany.mockResolvedValue([
+        {
+          completedAt: new Date('2026-09-02T15:00:00Z'),
+          durationSec: 25 * 60,
+        },
+      ]);
 
       const res = await service.listCurrentWeek('u1', new Date('2026-09-01'));
 
@@ -118,12 +137,69 @@ describe('WeeklyGoalsService (issue #44)', () => {
       const { service, prisma } = makeService();
       prisma.weeklyGoal.findMany.mockResolvedValue([GOAL]);
       prisma.answer.count.mockResolvedValue(7); // meta: 10
-      prisma.studySession.aggregate.mockResolvedValue({
-        _sum: { minutes: 500 },
-      });
+      prisma.studySession.findMany.mockResolvedValue([doneBlock(1, 500)]);
 
       const res = await service.listCurrentWeek('u1', new Date('2026-09-01'));
+      expect(res[0].minutesDone).toBe(500);
       expect(res[0].completed).toBe(false);
+    });
+
+    it('2ª semana do mesmo plano: conta os blocos dela, não zera', async () => {
+      const { service, prisma } = makeService();
+      const nextWeek = { ...GOAL, weekStart: new Date('2026-09-07T00:00:00Z') };
+      prisma.weeklyGoal.findMany.mockResolvedValue([nextWeek]);
+      // dayIndex 0..6 = semana 1; 7..13 = semana 2.
+      prisma.studySession.findMany.mockResolvedValue([
+        doneBlock(1, 300),
+        doneBlock(8, 40),
+        doneBlock(10, 50),
+      ]);
+
+      const res = await service.listCurrentWeek(
+        'u1',
+        new Date('2026-09-09T15:00:00Z'),
+      );
+      expect(res[0].minutesDone).toBe(90);
+      // Nenhum filtro pela data de criação do plano.
+      const blockWhere = prisma.studySession.findMany.mock.calls[0][0].where;
+      expect(blockWhere).toEqual({
+        done: true,
+        plan: { userId: 'u1' },
+        subject: { id: 'subj-mat' },
+      });
+    });
+
+    it('o Pomodoro da matéria entra nos minutos, dentro da semana de Brasília', async () => {
+      const { service, prisma } = makeService();
+      prisma.weeklyGoal.findMany.mockResolvedValue([GOAL]);
+      prisma.focusSession.findMany.mockResolvedValue([
+        {
+          completedAt: new Date('2026-09-01T15:00:00Z'),
+          durationSec: 50 * 60,
+        },
+      ]);
+
+      const res = await service.listCurrentWeek('u1', new Date('2026-09-01'));
+      expect(res[0].minutesDone).toBe(50);
+      const focusWhere = prisma.focusSession.findMany.mock.calls[0][0].where;
+      expect(focusWhere).toEqual({
+        userId: 'u1',
+        completedAt: {
+          gte: new Date('2026-08-31T03:00:00Z'),
+          lt: new Date('2026-09-07T03:00:00Z'),
+        },
+        subject: { id: 'subj-mat' },
+      });
+    });
+
+    it('meta só de questões não consulta minutos', async () => {
+      const { service, prisma } = makeService();
+      prisma.weeklyGoal.findMany.mockResolvedValue([
+        { ...GOAL, targetMinutes: 0 },
+      ]);
+      await service.listCurrentWeek('u1', new Date('2026-09-01'));
+      expect(prisma.studySession.findMany).not.toHaveBeenCalled();
+      expect(prisma.focusSession.findMany).not.toHaveBeenCalled();
     });
 
     it('filtra respostas pelo escopo da meta (subjectId)', async () => {
@@ -140,7 +216,9 @@ describe('WeeklyGoalsService (issue #44)', () => {
       await service.listCurrentWeek('u1', new Date('2026-09-01'));
       const where = prisma.answer.count.mock.calls[0][0].where;
       expect(where.question).toEqual({ topic: { subjectId: 'subj-mat' } });
-      expect(where.createdAt.gte).toEqual(new Date('2026-08-31T00:00:00Z'));
+      // A semana começa na segunda 00:00 de Brasília (03:00 UTC).
+      expect(where.createdAt.gte).toEqual(new Date('2026-08-31T03:00:00Z'));
+      expect(where.createdAt.lt).toEqual(new Date('2026-09-07T03:00:00Z'));
     });
   });
 

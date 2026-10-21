@@ -3,19 +3,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import {
+  addDays,
+  dayLabelDate,
+  startOfStudyDay,
+  studyDay,
+  weekStart,
+} from '../common/study-day';
+import { weekMinutes } from '../common/weekly-goal-minutes';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWeeklyGoalDto } from './dto/create-weekly-goal.dto';
 import { UpdateWeeklyGoalDto } from './dto/update-weekly-goal.dto';
 
-/** Início da semana (segunda-feira 00:00 UTC) da data de referência. */
+/**
+ * Semana da data de referência, como `WeeklyGoal.weekStart`: a segunda-feira
+ * (em Brasília) gravada como meia-noite UTC daquela data. É um rótulo; a semana
+ * em si vai da segunda 00:00 ao domingo 23:59 de Brasília.
+ */
 export function weekStartOf(now: Date = new Date()): Date {
-  const d = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
-  // getUTCDay: dom=0..sáb=6 — segunda=1. Recua até segunda-feira.
-  const day = (d.getUTCDay() + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - day);
-  return d;
+  return dayLabelDate(weekStart(studyDay(now)));
 }
 
 export interface WeeklyGoalView {
@@ -29,7 +36,7 @@ export interface WeeklyGoalView {
   targetMinutes: number;
   targetQuestions: number;
   weekStart: Date;
-  /** Progresso real da semana: minutos de sessões concluídas no escopo. */
+  /** Progresso real da semana: blocos concluídos + Pomodoro, no escopo. */
   minutesDone: number;
   /** Progresso real da semana: questões respondidas no escopo. */
   questionsDone: number;
@@ -132,14 +139,14 @@ export class WeeklyGoalsService {
   }
 
   /**
-   * Calcula o progresso real da meta na semana: questões respondidas e minutos
-   * de sessões de cronograma concluídas, filtrados pelo escopo
-   * (área/matéria/tópico da meta). `completed` quando TODOS os alvos
-   * definidos (min > 0 e/ou questões > 0) foram atingidos.
+   * Calcula o progresso real da meta na semana: questões respondidas e
+   * minutos estudados, filtrados pelo escopo (área/matéria/tópico da meta).
+   * `completed` quando TODOS os alvos definidos (min > 0 e/ou questões > 0)
+   * foram atingidos.
    *
-   * Minutos: sessões concluídas do plano vigente (criado a partir do início
-   * da semana da meta) — StudySession não carrega data de conclusão própria,
-   * então usamos planos gerados na semana corrente como fonte temporal.
+   * Minutos (`weekMinutes`): blocos concluídos do cronograma que caem na
+   * semana (o bloco não tem data própria; o dia é o início do plano +
+   * `dayIndex`) mais as sessões de foco do Pomodoro terminadas nela.
    */
   private async withProgress(
     userId: string,
@@ -156,8 +163,10 @@ export class WeeklyGoalsService {
       topic?: { name: string } | null;
     },
   ): Promise<WeeklyGoalView> {
-    const since = goal.weekStart;
-    const until = new Date(since.getTime() + 7 * 86_400_000);
+    // A semana de Brasília: da segunda 00:00 à segunda seguinte 00:00.
+    const week = goal.weekStart.toISOString().slice(0, 10);
+    const since = startOfStudyDay(week);
+    const until = startOfStudyDay(addDays(week, 7));
 
     // Escopo das respostas: tópico > matéria > área > geral.
     const topicScope = goal.topicId
@@ -176,7 +185,19 @@ export class WeeklyGoalsService {
             }
           : {};
 
-    const [answers, minutesRows] = await Promise.all([
+    // O bloco do cronograma e a sessão de foco são por MATÉRIA (issue #46),
+    // não por subtópico: uma meta de minutos por tópico é contada pelo tempo
+    // da matéria à qual esse tópico pertence.
+    const subjectScope: Prisma.SubjectWhereInput | undefined = goal.topicId
+      ? { topics: { some: { id: goal.topicId } } }
+      : goal.subjectId
+        ? { id: goal.subjectId }
+        : goal.subjectAreaId
+          ? { subjectAreaId: goal.subjectAreaId }
+          : undefined;
+
+    const hasMinutesGoal = goal.targetMinutes > 0;
+    const [answers, minutesDone] = await Promise.all([
       this.prisma.answer.count({
         where: {
           userId,
@@ -184,31 +205,11 @@ export class WeeklyGoalsService {
           question: topicScope,
         },
       }),
-      goal.targetMinutes > 0
-        ? this.prisma.studySession.aggregate({
-            where: {
-              done: true,
-              // Planos gerados a partir do início da semana da meta.
-              plan: { userId, createdAt: { gte: since } },
-              // O bloco do cronograma passou a ser por MATÉRIA (issue #46),
-              // não por subtópico: uma meta de minutos por tópico é contada
-              // pelos blocos da matéria à qual esse tópico pertence.
-              subject: goal.topicId
-                ? { topics: { some: { id: goal.topicId } } }
-                : goal.subjectId
-                  ? { id: goal.subjectId }
-                  : goal.subjectAreaId
-                    ? { subjectAreaId: goal.subjectAreaId }
-                    : undefined,
-            },
-            _sum: { minutes: true },
-          })
-        : Promise.resolve({ _sum: { minutes: null as number | null } }),
+      hasMinutesGoal
+        ? this.minutesInWeek(userId, subjectScope, week, since, until)
+        : Promise.resolve(0),
     ]);
 
-    const minutesDone = minutesRows._sum.minutes ?? 0;
-
-    const hasMinutesGoal = goal.targetMinutes > 0;
     const hasQuestionsGoal = goal.targetQuestions > 0;
     const completed =
       (!hasMinutesGoal || minutesDone >= goal.targetMinutes) &&
@@ -230,5 +231,40 @@ export class WeeklyGoalsService {
       questionsDone: answers,
       completed,
     };
+  }
+
+  /** Minutos da semana no escopo: blocos concluídos que caem nela + Pomodoro. */
+  private async minutesInWeek(
+    userId: string,
+    subject: Prisma.SubjectWhereInput | undefined,
+    week: string,
+    since: Date,
+    until: Date,
+  ): Promise<number> {
+    const [blocks, focus] = await Promise.all([
+      // Sem filtro de data: o bloco não tem data própria, e o dia dele sai do
+      // início do plano + dayIndex (`weekMinutes`).
+      this.prisma.studySession.findMany({
+        where: { done: true, plan: { userId }, subject },
+        select: {
+          dayIndex: true,
+          minutes: true,
+          plan: { select: { createdAt: true } },
+        },
+      }),
+      this.prisma.focusSession.findMany({
+        where: { userId, completedAt: { gte: since, lt: until }, subject },
+        select: { completedAt: true, durationSec: true },
+      }),
+    ]);
+    return weekMinutes(
+      blocks.map((b) => ({
+        planCreatedAt: b.plan.createdAt,
+        dayIndex: b.dayIndex,
+        minutes: b.minutes,
+      })),
+      focus,
+      week,
+    );
   }
 }

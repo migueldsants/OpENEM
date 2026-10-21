@@ -3,11 +3,14 @@
 // persistido em GamificationStat (o campo `points` é o XP total acumulado).
 // O design segue o PRD §5 (Fase 3): "calibrada para não infantilizar — toggle".
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { dayLabelDate, daysBetween, studyDay } from './study-day';
 
-/** Início do dia (UTC) em milissegundos — a sequência conta por dia de calendário. */
-function startOfDayUtc(date: Date): number {
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+/**
+ * Dia gravado em `lastActivityOn`: a coluna guarda o dia de Brasília como a
+ * meia-noite UTC daquela data (`dayLabelDate`), então a data UTC é o dia.
+ */
+function activityDay(lastActivityOn: Date): string {
+  return lastActivityOn.toISOString().slice(0, 10);
 }
 
 export interface StreakState {
@@ -31,20 +34,20 @@ export function updateStreak(
   state: StreakState,
   now: Date = new Date(),
 ): StreakUpdate {
-  const today = startOfDayUtc(now);
+  // A sequência conta por dia de calendário de Brasília, não de UTC.
+  const today = studyDay(now);
 
   if (!state.lastActivityOn) {
     const currentStreak = 1;
     return {
       currentStreak,
       longestStreak: Math.max(state.longestStreak, currentStreak),
-      lastActivityOn: new Date(today),
+      lastActivityOn: dayLabelDate(today),
       incremented: true,
     };
   }
 
-  const last = startOfDayUtc(state.lastActivityOn);
-  const diffDays = Math.round((today - last) / DAY_MS);
+  const diffDays = daysBetween(activityDay(state.lastActivityOn), today);
 
   if (diffDays <= 0) {
     // Mesmo dia (ou relógio atrasado): mantém o estado.
@@ -55,7 +58,7 @@ export function updateStreak(
   return {
     currentStreak,
     longestStreak: Math.max(state.longestStreak, currentStreak),
-    lastActivityOn: new Date(today),
+    lastActivityOn: dayLabelDate(today),
     incremented: true,
   };
 }
@@ -204,6 +207,11 @@ export interface AchievementDef {
   icon: string;
   /** Classe Tailwind de destaque (issue #48). */
   color: string;
+  /**
+   * Conquista que o app não oferece mais: não é concedida, sai do catálogo e
+   * do total, e só aparece para quem já a desbloqueou (ver `visibleAchievements`).
+   */
+  retired?: boolean;
 }
 
 /** Catálogo (fonte da verdade). Persistimos só o que cada usuário desbloqueou. */
@@ -321,6 +329,8 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     icon: 'medal',
     color: 'text-lin',
   },
+  // Aposentadas: o app não tem mais tela de redação (virou Ferramentas), então
+  // ninguém novo consegue desbloqueá-las. Quem já tem continua vendo.
   {
     code: 'FIRST_ESSAY',
     name: 'Primeira redação',
@@ -328,6 +338,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     xp: 100,
     icon: 'pen-nib',
     color: 'text-hum',
+    retired: true,
   },
   {
     code: 'HIGH_SCORE_ESSAY',
@@ -336,6 +347,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     xp: 400,
     icon: 'medal-military',
     color: 'text-hum',
+    retired: true,
   },
   {
     code: 'FIRST_REVIEW',
@@ -417,8 +429,21 @@ export function evaluateAchievements(
 ): string[] {
   const have = new Set(unlocked);
   return ACHIEVEMENTS.filter(
-    (a) => !have.has(a.code) && ACHIEVEMENT_RULES[a.code]?.(snapshot),
+    (a) =>
+      !a.retired && !have.has(a.code) && ACHIEVEMENT_RULES[a.code]?.(snapshot),
   ).map((a) => a.code);
+}
+
+/**
+ * Conquistas que o aluno vê, na ordem do catálogo: as ativas e as aposentadas
+ * que ele já desbloqueou. O total exibido ("3/18") é o tamanho desta lista,
+ * para que uma conquista impossível não fique para sempre faltando.
+ */
+export function visibleAchievements(
+  unlocked: Iterable<string>,
+): AchievementDef[] {
+  const have = new Set(unlocked);
+  return ACHIEVEMENTS.filter((a) => !a.retired || have.has(a.code));
 }
 
 /**
