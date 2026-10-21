@@ -11,7 +11,7 @@ Este projeto é desenvolvido com as seguintes tecnologias principais:
 *   **[Node.js](https://nodejs.org/)**: Ambiente de execução JavaScript.
 *   **[TypeScript](https://www.typescriptlang.org/)**: Linguagem que adiciona tipagem estática ao JavaScript.
 *   **[NestJS](https://nestjs.com/)**: Framework progressivo para construção de aplicações server-side eficientes e escaláveis.
-*   **[Prisma](https://www.prisma.io/)**: ORM e ferramenta de migrations (atualmente sobre **SQLite**; PostgreSQL planejado para produção).
+*   **[Prisma](https://www.prisma.io/)**: ORM e ferramenta de migrations, sobre **PostgreSQL**.
 *   **[React](https://react.dev/) + [Vite](https://vitejs.dev/)**: Frontend web responsivo (PWA *mobile-first*).
 *   **[Tailwind CSS](https://tailwindcss.com/)**: Framework CSS utilitário para estilização rápida.
 *   **[Swagger](https://swagger.io/)**: Ferramenta para design e documentação de APIs.
@@ -40,7 +40,7 @@ preencha `POSTGRES_PASSWORD` e `JWT_SECRET` (as duas são obrigatórias). Depois
 docker compose up --build
 ```
 
-*   API: <http://localhost:3000> · Swagger: <http://localhost:3000/api> · Healthcheck: <http://localhost:3000/health>
+*   API: <http://localhost:3000> · Healthcheck: <http://localhost:3000/health> (o Swagger fica desligado no compose, que roda com `NODE_ENV=production`)
 *   Frontend: <http://localhost:8080>
 
 O compose sobe um **PostgreSQL 17** (serviço `db`, volume nomeado `pg-data`),
@@ -69,7 +69,7 @@ cp .env.example .env        # DATABASE_URL com a senha do POSTGRES_PASSWORD; aju
 npm install
 npx prisma migrate dev      # aplica as migrations no Postgres
 npm run db:seed             # (opcional) dados de demonstração
-npm run start:dev           # API em http://localhost:3000
+npm run start:dev           # API em http://localhost:3000 · Swagger em http://localhost:3000/api
 ```
 
 A suíte e2e (`npm run test:e2e`) usa o mesmo Postgres do `DATABASE_URL`, num
@@ -198,7 +198,7 @@ Para acrescentar um projeto, edite `openem_backend/src/tools/tools-catalog.ts`.
 ```bash
 # backend (em openem_backend/)
 npm test            # unitários
-npm run test:e2e    # end-to-end (cria um banco SQLite de teste isolado)
+npm run test:e2e    # end-to-end (no Postgres do DATABASE_URL, schema test_e2e)
 ```
 
 ## Contribuidores

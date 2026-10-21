@@ -1,4 +1,5 @@
 import {
+  aiClassificationSource,
   buildClassificationPrompt,
   buildClassificationSchema,
   compactStatement,
@@ -27,6 +28,17 @@ const QUESTOES: QuestionToClassify[] = [
   { id: 'cuid-a', statement: 'Texto A', questionPrompt: null },
   { id: 'cuid-b', statement: 'Texto B', questionPrompt: 'Comando B?' },
 ];
+
+describe('aiClassificationSource', () => {
+  it('grava o provedor que classificou', () => {
+    expect(aiClassificationSource('gemini')).toBe('ai:gemini');
+  });
+
+  it('sem provedor conhecido, fica só "ai"', () => {
+    expect(aiClassificationSource(null)).toBe('ai');
+    expect(aiClassificationSource(undefined)).toBe('ai');
+  });
+});
 
 describe('topicLabel', () => {
   it('desambigua assuntos de mesmo nome em matérias diferentes', () => {

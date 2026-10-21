@@ -169,7 +169,8 @@ model Question {
   // (sem o contador, o job reprocessa para sempre as questões que a IA recusa).
   classificationConfidence Float?
   classificationAttempts   Int     @default(0)
-  /// Quem classificou o assunto: "dataset" | "keywords" | "ai:<provedor>".
+  /// Quem classificou o assunto: "dataset" | "keywords" |
+  /// "catalogo:claude-haiku" | "ai:<provedor>".
   /// Distingue o que a heurística decidiu do que a IA confirmou.
   classificationSource     String?
 

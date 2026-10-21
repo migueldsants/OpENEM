@@ -5,7 +5,8 @@
  *   npm run db:classify                            # o banco inteiro
  *   npm run db:classify -- --area="Matemática e suas Tecnologias"
  *
- * Use um modelo barato (AI_CLASSIFY_MODEL): são ~4 mil questões.
+ * Pega só o que ficou sem assunto depois das palavras-chave e do catálogo
+ * (db:classify:catalog). Use um modelo barato (AI_CLASSIFY_MODEL).
  */
 
 import { parseArgs } from 'node:util';

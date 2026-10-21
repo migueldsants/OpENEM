@@ -1,15 +1,23 @@
 // Provedor genérico via Google Gemini (@google/genai).
 
+import { envValue, firstPresent } from '../env';
 import { JsonCompletionRequest } from '../types';
 import { toGeminiSchema } from './gemini-schema';
 
 /** Aceita GEMINI_API_KEY ou GOOGLE_API_KEY. */
-function apiKey(): string | undefined {
-  return process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
+export function apiKey(): string | undefined {
+  return envValue('GEMINI_API_KEY') ?? envValue('GOOGLE_API_KEY');
 }
 
 export function isConfigured(): boolean {
   return !!apiKey();
+}
+
+/** Modelo da chamada: o do pedido, o do .env ou o padrão. */
+export function model(req: Pick<JsonCompletionRequest, 'model'>): string {
+  return (
+    firstPresent(req.model, envValue('GEMINI_MODEL')) ?? 'gemini-2.5-flash'
+  );
 }
 
 /** Executa a chamada e devolve o texto cru da resposta. */
@@ -20,7 +28,7 @@ export async function completeJson(
   const ai = new GoogleGenAI({ apiKey: apiKey() });
 
   const response = await ai.models.generateContent({
-    model: req.model ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+    model: model(req),
     contents: req.user,
     config: {
       systemInstruction: req.system,

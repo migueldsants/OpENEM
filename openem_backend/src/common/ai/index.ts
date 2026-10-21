@@ -12,6 +12,7 @@
  * indisponíveis e o app segue funcionando sem eles.
  */
 
+import { envValue } from './env';
 import * as anthropic from './providers/anthropic';
 import * as gemini from './providers/gemini';
 import * as openai from './providers/openai';
@@ -48,8 +49,8 @@ export function isProviderConfigured(provider: AiProvider): boolean {
 export function activeAiProvider(scope?: 'essay'): AiProvider | null {
   const explicit = (
     scope === 'essay'
-      ? (process.env.ESSAY_AI_PROVIDER ?? process.env.AI_PROVIDER)
-      : process.env.AI_PROVIDER
+      ? (envValue('ESSAY_AI_PROVIDER') ?? envValue('AI_PROVIDER'))
+      : envValue('AI_PROVIDER')
   ) as AiProvider | undefined;
   if (explicit) {
     return isProviderConfigured(explicit) ? explicit : null;

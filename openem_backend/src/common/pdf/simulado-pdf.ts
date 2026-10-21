@@ -69,20 +69,36 @@ export interface PdfOptions {
   now?: Date;
 }
 
-/** Descrição do projeto impressa na capa. */
-const ABOUT_OPENEM =
+/**
+ * Descrição do projeto impressa na capa. Só promete o que o app tem hoje: a
+ * tela de correção de redação saiu, e a questão oficial entra sem comentário.
+ */
+export const ABOUT_OPENEM =
   'O OpENEM é uma plataforma livre e de código aberto para quem vai prestar o ' +
-  'ENEM: questões oficiais comentadas, simulados realistas, correção de ' +
-  'redação, revisão espaçada e acompanhamento de desempenho. É gratuito, não ' +
-  'tem anúncio e não vende dados — o código é público e licenciado em AGPL-3.0, ' +
+  'ENEM: as provas oficiais de 1998 a 2025, simulados realistas, revisão ' +
+  'espaçada, flashcards e acompanhamento de desempenho. É gratuito, não tem ' +
+  'anúncio e não vende dados. O código é público e licenciado em AGPL-3.0, ' +
   'para qualquer escola ou professor poder usar, adaptar e hospedar.';
 
-const INSTRUCTIONS = [
+/** Linha sob a marca, na capa. O OpENEM não tem domínio oficial. */
+export const COVER_ORIGIN = 'Simulado gerado pelo OpENEM';
+
+/**
+ * Três destaques no pé da capa: dizem, em uma linha cada, o que o aluno
+ * encontra no app que gerou este caderno.
+ */
+export const COVER_HIGHLIGHTS: [string, string][] = [
+  ['Provas oficiais', 'O ENEM de 1998 a 2025, com gabarito.'],
+  ['Treino sob medida', 'Simulado por tema, revisão dos erros e flashcards.'],
+  ['Seu ritmo', 'Revisão espaçada, metas e desempenho por assunto.'],
+];
+
+export const INSTRUCTIONS = [
   'Confira, antes de começar, se este caderno contém todas as questões indicadas na capa.',
   'Use apenas caneta esferográfica de tinta preta ou azul para preencher o cartão-resposta.',
   'Marque uma única alternativa por questão; questão com duas marcas é anulada.',
   'O tempo sugerido é o da capa. Cronometre: administrar o tempo faz parte da prova.',
-  'Confira o gabarito só no fim — corrigir no meio do caminho distorce o resultado.',
+  'Confira o gabarito só no fim: corrigir no meio do caminho distorce o resultado.',
 ];
 
 /** Medidas do caderno, em pontos (1 pt = 1/72"). A4 = 595,28 × 841,89. */
@@ -313,7 +329,7 @@ function drawCover(
     .fontSize(8.5)
     .fillColor(ink)
     .opacity(0.85)
-    .text('Simulado gerado em openem.org', MARGIN.left + 64, 84, {
+    .text(COVER_ORIGIN, MARGIN.left + 64, 84, {
       lineBreak: false,
     });
   doc.opacity(1);
@@ -509,16 +525,8 @@ function drawCover(
       lineGap: 2,
     });
 
-  // Três destaques no pé da capa: preenchem o espaço que sobra e dizem, em uma
-  // linha cada, o que o aluno encontra no app que gerou este caderno.
-  const destaques: [string, string][] = [
-    [
-      '4 mil questões',
-      'Todas as provas oficiais de 2009 a 2025, com gabarito.',
-    ],
-    ['Correção que ensina', 'Comentário por questão e correção de redação.'],
-    ['Seu ritmo', 'Revisão espaçada, metas e desempenho por assunto.'],
-  ];
+  // Destaques no pé da capa: preenchem o espaço que sobra.
+  const destaques = COVER_HIGHLIGHTS;
   const destaqueW = (boxW - 24) / 3;
   const yDestaques = PAGE.height - MARGIN.bottom - 56;
   doc
@@ -1265,7 +1273,7 @@ export function renderSimuladoPdf(
       Title: options.title,
       Author: 'OpENEM',
       Subject: options.subtitle ?? 'Simulado ENEM',
-      Creator: 'OpENEM (openem.org)',
+      Creator: 'OpENEM',
     },
   });
   doc.page.margins.bottom = 0;

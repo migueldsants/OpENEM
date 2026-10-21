@@ -2,7 +2,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
+  ABOUT_OPENEM,
+  COVER_HIGHLIGHTS,
+  COVER_ORIGIN,
   formatDuration,
+  INSTRUCTIONS,
   PdfQuestion,
   resolveImagePath,
   shortArea,
@@ -73,6 +77,37 @@ describe('resolveImagePath', () => {
 
   it('sem diretório configurado, nenhuma imagem é lida', () => {
     expect(resolveImagePath('/media/enem/2023/136/fig.png', null)).toBeNull();
+  });
+});
+
+describe('texto da capa', () => {
+  const textos = [
+    ABOUT_OPENEM,
+    COVER_ORIGIN,
+    ...INSTRUCTIONS,
+    ...COVER_HIGHLIGHTS.flat(),
+  ];
+
+  it('cobre as provas de 1998 a 2025', () => {
+    expect(ABOUT_OPENEM).toContain('de 1998 a 2025');
+    expect(COVER_HIGHLIGHTS.flat().join(' ')).toContain('de 1998 a 2025');
+  });
+
+  it('não promete o que o app não tem mais', () => {
+    for (const texto of textos) {
+      // A tela de correção de redação saiu do app; a contagem de questões e o
+      // recorte "2009 a 2025" ficaram velhos com as provas de 1998 a 2008.
+      expect(texto).not.toMatch(/reda[çc][ãa]o/i);
+      expect(texto).not.toMatch(/2009 a 2025|mil questões/);
+    }
+  });
+
+  it('não cita domínio que o projeto não tem', () => {
+    for (const texto of textos) expect(texto).not.toMatch(/openem\.org/i);
+  });
+
+  it('não usa travessão', () => {
+    for (const texto of textos) expect(texto).not.toContain('—');
   });
 });
 

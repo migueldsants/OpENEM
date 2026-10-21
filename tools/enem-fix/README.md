@@ -173,6 +173,20 @@ o gabarito oficial, prova por prova. Na última execução: **4187/4187 conferem
 O que fica de fora são as provas sem gabarito publicado pelo INEP (2010, a
 reaplicação de 2018 e o 1º dia da reaplicação de 2017) e as questões anuladas.
 
+## Defeitos registrados
+
+Questões que já estão no banco, mas saíram erradas desta ferramenta. O
+conserto é aqui, e o resultado vai para o `updated-enem-api`, como o resto.
+
+- **`ENEM-2011R-170`** (reaplicação/PPL 2011, `criar.mjs` a partir de
+  `PPL_ENEM_2011_06_CINZA.pdf`, o caderno do 2º dia): a tabela do salário-mínimo saiu recortada
+  como imagem só em parte, e o resto dela virou texto corrido no enunciado
+  ("Ano R$ 1994 70,00 …"). A tabela inteira tem de sair numa figura só (ou
+  inteira como texto, em Markdown), sem linha da tabela no parágrafo. Suspeita,
+  ainda não conferida: as bordas da tabela não fecham uma caixa contínua, e o
+  agrupamento de figuras de `parse.mjs` (caixas a até 6 pt umas das outras) só
+  junta parte delas. Ao consertar, confira a questão no app e no caderno em PDF.
+
 ## Limites conhecidos
 
 - Questão **anulada** pelo INEP fica fora: sem resposta certa, o import recusa.

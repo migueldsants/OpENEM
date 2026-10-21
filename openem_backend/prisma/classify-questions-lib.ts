@@ -13,8 +13,14 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { completeJson, JsonCompletionRequest } from '../src/common/ai';
 import {
+  activeAiProvider,
+  AiProvider,
+  completeJson,
+  JsonCompletionRequest,
+} from '../src/common/ai';
+import {
+  aiClassificationSource,
   buildClassificationPrompt,
   buildClassificationSchema,
   ClassificationDecision,
@@ -41,6 +47,8 @@ export interface ClassifyOptions {
   log?: (m: string) => void;
   /** Injetável para teste. */
   complete?: (req: JsonCompletionRequest) => Promise<string>;
+  /** Provedor gravado em `classificationSource`; padrão: o ativo. */
+  provider?: AiProvider | null;
 }
 
 export interface ClassifyReport {
@@ -82,6 +90,9 @@ export async function classifyQuestions(
   const tamanhoLote = opts.batch ?? 10;
   const minConfianca = opts.minConfidence ?? 0.6;
   const maxTentativas = opts.maxAttempts ?? 2;
+  const origem = aiClassificationSource(
+    opts.provider === undefined ? activeAiProvider() : opts.provider,
+  );
   const report: ClassifyReport = {
     processed: 0,
     classified: 0,
@@ -189,7 +200,11 @@ export async function classifyQuestions(
         await prisma.question.update({
           where: { id: d.questionId },
           data: aceita
-            ? { topicId: d.topicId, classificationConfidence: d.confidence }
+            ? {
+                topicId: d.topicId,
+                classificationConfidence: d.confidence,
+                classificationSource: origem,
+              }
             : {
                 classificationConfidence: d.confidence,
                 classificationAttempts: { increment: 1 },

@@ -55,8 +55,8 @@ export const THEME_GROUPS: { key: ThemeGroup; label: string }[] = [
 
 /**
  * Famílias prontas (o personalizado fica fora: as cores dele moram no
- * localStorage). Os valores estão em src/themes.css; o script de boot do
- * index.html repete a lista de chaves.
+ * localStorage). Os valores estão em src/themes.css; o script de boot
+ * (public/theme-boot.js) repete a lista de chaves.
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export const FAMILIES: { key: Exclude<ThemeFamily, 'custom'>; label: string; group: ThemeGroup }[] =

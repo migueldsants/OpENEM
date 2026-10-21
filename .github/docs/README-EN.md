@@ -11,7 +11,7 @@ This project is developed with the following main technologies:
 *   **[Node.js](https://nodejs.org/)**: JavaScript runtime environment.
 *   **[TypeScript](https://www.typescriptlang.org/)**: Language that adds static typing to JavaScript.
 *   **[NestJS](https://nestjs.com/)**: Progressive framework for building efficient and scalable server-side applications.
-*   **[Prisma](https://www.prisma.io/)**: ORM and migrations tool (currently on **SQLite**; PostgreSQL planned for production).
+*   **[Prisma](https://www.prisma.io/)**: ORM and migrations tool, on **PostgreSQL**.
 *   **[React](https://react.dev/) + [Vite](https://vitejs.dev/)**: Responsive web frontend (mobile-first PWA).
 *   **[Tailwind CSS](https://tailwindcss.com/)**: Utility-first CSS framework for rapid styling.
 *   **[Swagger](https://swagger.io/)**: Tool for API design and documentation.
@@ -40,7 +40,7 @@ fill in `POSTGRES_PASSWORD` and `JWT_SECRET` (both are required). Then:
 docker compose up --build
 ```
 
-*   API: <http://localhost:3000> · Swagger: <http://localhost:3000/api> · Healthcheck: <http://localhost:3000/health>
+*   API: <http://localhost:3000> · Healthcheck: <http://localhost:3000/health> (Swagger is off under Compose, which runs with `NODE_ENV=production`)
 *   Frontend: <http://localhost:8080>
 
 Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`),
@@ -69,7 +69,7 @@ cp .env.example .env        # DATABASE_URL with the POSTGRES_PASSWORD password; 
 npm install
 npx prisma migrate dev      # applies the migrations to Postgres
 npm run db:seed             # (optional) demo data
-npm run start:dev           # API at http://localhost:3000
+npm run start:dev           # API at http://localhost:3000 · Swagger at http://localhost:3000/api
 ```
 
 The e2e suite (`npm run test:e2e`) uses the same Postgres as `DATABASE_URL`, in
@@ -201,7 +201,7 @@ one-hour cache. To add a project, edit `openem_backend/src/tools/tools-catalog.t
 ```bash
 # backend (in openem_backend/)
 npm test            # unit
-npm run test:e2e    # end-to-end (creates an isolated test SQLite database)
+npm run test:e2e    # end-to-end (on the DATABASE_URL Postgres, schema test_e2e)
 ```
 
 
