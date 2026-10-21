@@ -1,4 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import {
+  addDays,
+  buildWeeklySummary,
+  PRIORITY_WINDOW_DAYS,
+  studyDay,
+  weekStart,
+} from '../common/weekly-performance';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface Bucket {
@@ -134,5 +141,83 @@ export class PerformanceService {
       weakestTopics,
       timeline,
     };
+  }
+
+  /**
+   * Semana a semana (issue #90): a semana atual e as anteriores, contra a meta
+   * de minutos do perfil, mais as prioridades do último mês. Os dias são de
+   * Brasília (ver common/weekly-performance.ts).
+   */
+  async weeks(userId: string, weekCount = 8, now: Date = new Date()) {
+    const today = studyDay(now);
+    const firstWeek = addDays(weekStart(today), -7 * (weekCount - 1));
+    const windowStart = addDays(today, -(PRIORITY_WINDOW_DAYS - 1));
+    const firstDay = firstWeek < windowStart ? firstWeek : windowStart;
+    // Um dia de folga antes: a conversão para o dia de Brasília é feita na
+    // lógica pura, que descarta o que ficar fora das semanas.
+    const since = new Date(Date.parse(`${firstDay}T00:00:00Z`) - 86_400_000);
+
+    const [answers, focus, profile] = await Promise.all([
+      this.prisma.answer.findMany({
+        where: { userId, createdAt: { gte: since } },
+        select: {
+          isCorrect: true,
+          createdAt: true,
+          question: {
+            select: {
+              subjectArea: { select: { name: true } },
+              topic: {
+                select: {
+                  id: true,
+                  name: true,
+                  weight: true,
+                  subject: {
+                    select: {
+                      name: true,
+                      subjectArea: { select: { name: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.focusSession.findMany({
+        where: { userId, completedAt: { gte: since } },
+        select: { completedAt: true, durationSec: true },
+      }),
+      this.prisma.profile.findUnique({
+        where: { userId },
+        select: { minutesPerDay: true },
+      }),
+    ]);
+
+    const summary = buildWeeklySummary(
+      answers.map((a) => {
+        const topic = a.question.topic;
+        return {
+          createdAt: a.createdAt,
+          isCorrect: a.isCorrect,
+          areaName:
+            a.question.subjectArea?.name ??
+            topic?.subject.subjectArea.name ??
+            null,
+          topic: topic
+            ? {
+                id: topic.id,
+                name: topic.name,
+                weight: topic.weight,
+                subjectName: topic.subject.name,
+              }
+            : null,
+        };
+      }),
+      focus,
+      now,
+      weekCount,
+    );
+
+    return { ...summary, goalMinutesPerDay: profile?.minutesPerDay ?? null };
   }
 }

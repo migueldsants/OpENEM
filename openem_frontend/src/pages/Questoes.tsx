@@ -102,19 +102,64 @@ function QuestionView({
       <div className="flex items-start gap-3 p-4 sm:p-5">
         <span className={`mt-1 h-10 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`} />
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-x-2 text-xs">
-            <span className={`font-semibold ${AREA_TEXT[area]}`}>
-              {subjectLabel(question)}
-            </span>
-            {topicLabel(question) && (
-              <span className="text-muted">· {topicLabel(question)}</span>
-            )}
-            {codeLabel(question) && (
-              <span className="rounded-lg bg-surface-2 px-1.5 py-0.5 font-mono text-xs tracking-tight text-muted">
-                {codeLabel(question)}
+          {/* Os botões dividem a linha do rótulo, não uma coluna ao lado do
+              enunciado: no celular essa coluna espremia o texto em ~150px. */}
+          <div className="flex items-start justify-between gap-3">
+            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-xs">
+              <span className={`font-semibold ${AREA_TEXT[area]}`}>
+                {subjectLabel(question)}
               </span>
-            )}
-          </p>
+              {topicLabel(question) && (
+                <span className="text-muted">· {topicLabel(question)}</span>
+              )}
+              {codeLabel(question) && (
+                <span className="rounded-lg bg-surface-2 px-1.5 py-0.5 font-mono text-xs tracking-tight text-muted">
+                  {codeLabel(question)}
+                </span>
+              )}
+            </p>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {/* Todas as questões oficiais entram no nível padrão: mostrar "nível 3"
+                  em milhares de questões seria desinformação. O código já diz a prova. */}
+              {hasCalibratedDifficulty(question) && (
+                <span className="chip">nível {question.difficulty}</span>
+              )}
+              <button
+                onClick={onNote}
+                aria-label={hasNote ? 'Ver/editar anotação' : 'Anotar esta questão'}
+                title={hasNote ? 'Ver/editar anotação' : 'Adicionar nota'}
+                className={`grid size-9 place-items-center rounded-lg border transition-colors ${
+                  hasNote
+                    ? 'border-transparent bg-warning/15 text-warning'
+                    : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
+                }`}
+              >
+                <IconNote width={18} height={18} filled={hasNote} />
+              </button>
+              <button
+                onClick={onAnnotate}
+                aria-label="Anotar no quadro"
+                title="Anotar no quadro"
+                className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+              >
+                <IconBoard width={18} height={18} />
+              </button>
+              <button
+                onClick={onToggleFavorite}
+                aria-pressed={favorited}
+                aria-label={
+                  favorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'
+                }
+                className={`grid size-9 place-items-center rounded-lg border transition-colors ${
+                  favorited
+                    ? 'border-transparent bg-warning/15 text-warning'
+                    : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
+                }`}
+              >
+                <IconStar width={18} height={18} filled={favorited} />
+              </button>
+            </div>
+          </div>
           {/* Markdown: os enunciados oficiais trazem imagens, tabelas e LaTeX. */}
           <Markdown className="mt-2 text-[0.95rem] leading-relaxed sm:text-base">
             {question.statement}
@@ -124,47 +169,6 @@ function QuestionView({
               {question.questionPrompt}
             </Markdown>
           )}
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {/* Todas as questões oficiais entram no nível padrão: mostrar "nível 3"
-              em milhares de questões seria desinformação. O código já diz a prova. */}
-          {hasCalibratedDifficulty(question) && (
-            <span className="chip">nível {question.difficulty}</span>
-          )}
-          <button
-            onClick={onNote}
-            aria-label={hasNote ? 'Ver/editar anotação' : 'Anotar esta questão'}
-            title={hasNote ? 'Ver/editar anotação' : 'Adicionar nota'}
-            className={`grid size-9 place-items-center rounded-lg border transition-colors ${
-              hasNote
-                ? 'border-transparent bg-warning/15 text-warning'
-                : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
-            }`}
-          >
-            <IconNote width={18} height={18} filled={hasNote} />
-          </button>
-          <button
-            onClick={onAnnotate}
-            aria-label="Anotar no quadro"
-            title="Anotar no quadro"
-            className="grid size-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-          >
-            <IconBoard width={18} height={18} />
-          </button>
-          <button
-            onClick={onToggleFavorite}
-            aria-pressed={favorited}
-            aria-label={
-              favorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'
-            }
-            className={`grid size-9 place-items-center rounded-lg border transition-colors ${
-              favorited
-                ? 'border-transparent bg-warning/15 text-warning'
-                : 'border-line text-muted hover:bg-surface-2 hover:text-fg'
-            }`}
-          >
-            <IconStar width={18} height={18} filled={favorited} />
-          </button>
         </div>
       </div>
 

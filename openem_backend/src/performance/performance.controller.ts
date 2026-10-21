@@ -4,6 +4,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PerformanceQueryDto } from './dto/performance-query.dto';
+import { WeeksQueryDto } from './dto/weeks-query.dto';
 import { HeatmapService } from './heatmap.service';
 import { PerformanceService } from './performance.service';
 
@@ -27,6 +28,15 @@ export class PerformanceController {
     @Query() query: PerformanceQueryDto,
   ) {
     return this.performanceService.overview(user.userId, query.period ?? '30d');
+  }
+
+  @Get('weeks')
+  @ApiOperation({
+    summary:
+      'Semana a semana: a semana atual e as anteriores (acerto, minutos de foco, dias estudados, áreas) e as prioridades do último mês',
+  })
+  weeks(@CurrentUser() user: AuthenticatedUser, @Query() query: WeeksQueryDto) {
+    return this.performanceService.weeks(user.userId, query.weeks ?? 8);
   }
 
   @Get('heatmap')

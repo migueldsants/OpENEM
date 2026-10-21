@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 390px; height: 844px; overflow: hidden; }
+  body {
+    background: #17352b;
+    background-image: radial-gradient(ellipse at 30% 18%, rgba(255,255,255,.08), transparent 55%), radial-gradient(ellipse at 78% 82%, rgba(255,255,255,.05), transparent 50%);
+    border: 10px solid #5b3d22; color: #f4f1e6; font-family: Inter, system-ui, sans-serif;
+  }
+  .nav { height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+  .logo { font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: 21px; letter-spacing: -0.02em; }
+  .logo b { color: #fb5277; }
+  .nav a { color: #f4f1e6; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid rgba(244,241,230,.3); padding: 6px 12px; border-radius: 10px; }
+  .hoje { padding: 10px 16px 0; font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: rgba(244,241,230,.6); }
+  h1 { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: 38px; line-height: 1.04; letter-spacing: -0.03em; padding: 8px 16px 0; }
+  h1 u { text-decoration: none; border-bottom: 3px solid #fb5277; }
+  .sub { padding: 12px 16px 0; font-size: 15.5px; line-height: 1.45; color: rgba(244,241,230,.8); max-width: 33ch; }
+  .board { margin: 20px 16px 0; border-top: 1px dashed rgba(244,241,230,.25); padding-top: 16px; }
+  .meta { font-size: 12px; color: #e0a83c; font-weight: 600; letter-spacing: .02em; }
+  .q { margin-top: 8px; font-size: 15px; line-height: 1.5; }
+  .ask { margin-top: 8px; font-size: 15px; font-weight: 600; }
+  .alts { margin-top: 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .alt { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .alt span { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(244,241,230,.7); display: grid; place-items: center; font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: 20px; }
+  .alt small { font-size: 15px; color: rgba(244,241,230,.85); }
+  .cta { margin: 24px 16px 0; display: flex; align-items: center; justify-content: space-between; }
+  .btn { background: #fb5277; color: #15111c; font-weight: 700; font-size: 16px; padding: 14px 22px; border-radius: 14px; }
+  .free { font-size: 13px; color: rgba(244,241,230,.65); text-align: right; line-height: 1.35; }
+  .chalk { position: absolute; left: 26px; bottom: 26px; width: 46px; height: 10px; border-radius: 3px; background: #f4f1e6; opacity: .85; }
+  .tray { position: absolute; left: 10px; right: 10px; bottom: 10px; height: 14px; background: #4a3019; }
+</style>
+</head>
+<body>
+  <div class="nav"><div class="logo">Op<b>ENEM</b></div><a href="#">Entrar</a></div>
+
+  <h1>Estude com a <u>prova de verdade</u>, de graça.</h1>
+  <p class="sub">Todas as provas oficiais do ENEM de 1998 a 2025, com simulado, nota TRI e revisão do que você errou.</p>
+  <div class="board">
+    <p class="meta">Questão do dia: ENEM 2024, Matemática, questão 137</p>
+    <p class="q">Ao calcular a média de suas notas em 4 provas, um estudante dividiu, por engano, a soma das notas por 5. Com isso, a média obtida foi 1 unidade menor do que deveria ser.</p>
+    <p class="ask">O valor correto da média é</p>
+    <div class="alts">
+      <div class="alt"><span>A</span><small>4</small></div>
+      <div class="alt"><span>B</span><small>5</small></div>
+      <div class="alt"><span>C</span><small>6</small></div>
+      <div class="alt"><span>D</span><small>19</small></div>
+      <div class="alt"><span>E</span><small>21</small></div>
+    </div>
+  </div>
+  <div class="cta"><div class="btn">Começar a estudar</div><div class="free">Sem anúncio.<br>Sem plano pago.</div></div>
+  <div class="tray"></div><div class="chalk"></div>
+</body>
+</html>
