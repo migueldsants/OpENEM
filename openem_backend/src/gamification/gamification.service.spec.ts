@@ -1,4 +1,5 @@
-﻿import { GamificationService } from './gamification.service';
+﻿import { ACHIEVEMENTS } from '../common/gamification';
+import { GamificationService } from './gamification.service';
 
 function makePrismaMock() {
   const tx = {
@@ -19,10 +20,10 @@ function makePrismaMock() {
     gamificationStat: {
       findUnique: jest.fn(),
       findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
     },
     userAchievement: {
       findMany: jest.fn().mockResolvedValue([]),
-      count: jest.fn().mockResolvedValue(0),
     },
     xpLog: { findMany: jest.fn().mockResolvedValue([]) },
     dailyChallengeLog: { findUnique: jest.fn() },
@@ -234,32 +235,219 @@ describe('GamificationService', () => {
     });
   });
 
-  describe('leaderboard()', () => {
-    it('escopo global usa take no banco e inclui o solicitante', async () => {
+  describe('desafio diário no dia de Brasília', () => {
+    // 22h de 21/10 em Brasília = 01h de 22/10 em UTC.
+    const NOITE = new Date('2026-10-22T01:00:00Z');
+
+    it('conta as respostas desde a meia-noite de Brasília e usa a chave do dia local', async () => {
       const { service, prisma } = makeService();
+      prisma.answer = { count: jest.fn().mockResolvedValue(3) };
+      prisma.dailyChallengeLog.findUnique.mockResolvedValue(null);
+
+      const res = await service.getDailyChallenge('u1', NOITE);
+
+      expect(res).toMatchObject({ day: '2026-10-21', progress: 3 });
+      expect(prisma.answer.count).toHaveBeenCalledWith({
+        where: {
+          userId: 'u1',
+          createdAt: { gte: new Date('2026-10-21T03:00:00Z') },
+        },
+      });
+      expect(prisma.dailyChallengeLog.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId_day: { userId: 'u1', day: '2026-10-21' } },
+        }),
+      );
+    });
+
+    it('o resgate grava a chave do dia de Brasília e o XP no XpLog', async () => {
+      const { service, tx } = makeService();
+      tx.answer.count.mockResolvedValue(999);
+      tx.gamificationStat.upsert.mockResolvedValue({ ...STAT, points: 300 });
+
+      const res = await service.claimDailyChallenge('u1', NOITE);
+
+      expect(tx.dailyChallengeLog.create).toHaveBeenCalledWith({
+        data: { userId: 'u1', day: '2026-10-21' },
+      });
+      const xpAwarded = (res as { xpAwarded: number }).xpAwarded;
+      expect(xpAwarded).toBeGreaterThan(0);
+      expect(tx.xpLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId: 'u1',
+          action: 'DAILY_CHALLENGE',
+          xpGained: xpAwarded,
+        }),
+      });
+    });
+
+    it('resgate repetido não grava outro XpLog', async () => {
+      const { service, tx } = makeService();
+      tx.answer.count.mockResolvedValue(999);
+      tx.dailyChallengeLog.create.mockRejectedValue({ code: 'P2002' });
+
+      await service.claimDailyChallenge('u1', NOITE);
+      expect(tx.xpLog.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getHistory()', () => {
+    it('agrupa o XP pelo dia de Brasília', async () => {
+      const { service, prisma } = makeService();
+      prisma.xpLog.findMany.mockResolvedValue([
+        // 22h de 21/10 em Brasília
+        { xpGained: 30, createdAt: new Date('2026-10-22T01:00:00Z') },
+        { xpGained: 10, createdAt: new Date('2026-10-21T15:00:00Z') },
+        // 01h de 22/10 em Brasília
+        { xpGained: 5, createdAt: new Date('2026-10-22T04:00:00Z') },
+      ]);
+
+      const res = await service.getHistory(
+        'u1',
+        30,
+        new Date('2026-10-22T12:00:00Z'),
+      );
+
+      expect(res).toMatchObject({
+        byDay: [
+          { day: '2026-10-21', xp: 40 },
+          { day: '2026-10-22', xp: 5 },
+        ],
+      });
+      const where = prisma.xpLog.findMany.mock.calls[0][0].where;
+      expect(where.createdAt.gte).toEqual(new Date('2026-09-22T03:00:00Z'));
+    });
+  });
+
+  describe('listAchievements()', () => {
+    it('{ enabled: false } com a gamificação desligada', async () => {
+      const { service, prisma } = makeService();
+      prisma.profile.findUnique.mockResolvedValue({
+        gamificationEnabled: false,
+      });
+      await expect(service.listAchievements('u1')).resolves.toEqual({
+        enabled: false,
+      });
+    });
+
+    it('esconde as de redação de quem não as tem e mantém as já desbloqueadas', async () => {
+      const { service, prisma } = makeService();
+      prisma.gamificationStat.findUnique.mockResolvedValue(STAT);
+
+      const nenhuma = (await service.listAchievements('u1')) as {
+        code: string;
+      }[];
+      expect(nenhuma.map((a) => a.code)).not.toContain('FIRST_ESSAY');
+
+      prisma.userAchievement.findMany.mockResolvedValue([
+        { code: 'FIRST_ESSAY', unlockedAt: new Date('2026-01-10') },
+      ]);
+      const comRedacao = (await service.listAchievements('u1')) as {
+        code: string;
+        unlocked: boolean;
+      }[];
+      const essay = comRedacao.find((a) => a.code === 'FIRST_ESSAY');
+      expect(essay?.unlocked).toBe(true);
+      expect(comRedacao.map((a) => a.code)).not.toContain('HIGH_SCORE_ESSAY');
+      expect(comRedacao).toHaveLength(nenhuma.length + 1);
+    });
+  });
+
+  describe('getSummary()', () => {
+    it('o total de conquistas não conta as aposentadas que o aluno não tem', async () => {
+      const { service, prisma } = makeService();
+      prisma.gamificationStat.findUnique.mockResolvedValue(STAT);
+      prisma.userAchievement.findMany.mockResolvedValue([
+        { code: 'FIRST_ANSWER' },
+        { code: 'HIGH_SCORE_ESSAY' },
+      ]);
+
+      const res = await service.getSummary('u1');
+      expect(res).toMatchObject({
+        achievementsUnlocked: 2,
+        achievementsTotal: ACHIEVEMENTS.filter((a) => !a.retired).length + 1,
+      });
+    });
+  });
+
+  describe('leaderboard()', () => {
+    type Board = {
+      league: string | null;
+      entries: { userId: string; rank: number; isMe: boolean }[];
+    };
+
+    it('{ enabled: false } para quem desligou a gamificação', async () => {
+      const { service, prisma } = makeService();
+      prisma.profile.findUnique.mockResolvedValue({
+        gamificationEnabled: false,
+      });
+      await expect(service.leaderboard('u1')).resolves.toEqual({
+        enabled: false,
+      });
+      expect(prisma.gamificationStat.findMany).not.toHaveBeenCalled();
+    });
+
+    it('escopo global usa take no banco, numera o top e marca o solicitante', async () => {
+      const { service, prisma } = makeService();
+      prisma.gamificationStat.findUnique.mockResolvedValue({ points: 100 });
       prisma.gamificationStat.findMany.mockResolvedValue([
         { userId: 'u2', points: 500 },
-        { userId: 'u3', points: 100 },
+        { userId: 'u1', points: 100 },
       ]);
+      prisma.gamificationStat.count.mockResolvedValue(1);
       prisma.user.findMany.mockResolvedValue([
         { id: 'u2', profile: { displayName: 'Ana' } },
-        { id: 'u3', profile: { displayName: 'Bia' } },
         { id: 'u1', profile: { displayName: 'Eu' } },
       ]);
 
-      const res = await service.leaderboard('u1', 'global', 10);
+      const res = (await service.leaderboard('u1', 'global', 10)) as Board;
 
       expect(prisma.gamificationStat.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 10 }),
+        expect.objectContaining({
+          take: 10,
+          orderBy: [{ points: 'desc' }, { userId: 'asc' }],
+        }),
       );
-      expect(res.entries.map((e) => e.userId)).toEqual(['u2', 'u3', 'u1']);
+      expect(res.entries).toEqual([
+        expect.objectContaining({ userId: 'u2', rank: 1, isMe: false }),
+        expect.objectContaining({ userId: 'u1', rank: 2, isMe: true }),
+      ]);
+    });
+
+    it('fora do top, o solicitante vem no fim com a posição real', async () => {
+      const { service, prisma } = makeService();
+      prisma.gamificationStat.findUnique.mockResolvedValue({ points: 20 });
+      prisma.gamificationStat.findMany.mockResolvedValue([
+        { userId: 'u2', points: 500 },
+        { userId: 'u3', points: 300 },
+      ]);
+      prisma.gamificationStat.count.mockResolvedValue(41);
+
+      const res = (await service.leaderboard('u1', 'global', 2)) as Board;
+
+      expect(res.entries.map((e) => [e.userId, e.rank])).toEqual([
+        ['u2', 1],
+        ['u3', 2],
+        ['u1', 42],
+      ]);
+      // A posição conta quem está à frente, com o mesmo filtro do ranking.
+      const countWhere = prisma.gamificationStat.count.mock.calls[0][0].where;
+      expect(countWhere.AND[1]).toEqual({
+        OR: [{ points: { gt: 20 } }, { points: 20, userId: { lt: 'u1' } }],
+      });
+    });
+
+    it('quem desligou a gamificação não entra no ranking dos outros', async () => {
+      const { service, prisma } = makeService();
+      await service.leaderboard('u1', 'global', 10);
+      const where = prisma.gamificationStat.findMany.mock.calls[0][0].where;
+      expect(where.NOT).toEqual({
+        user: { profile: { is: { gamificationEnabled: false } } },
+      });
     });
 
     it('escopo de liga filtra no banco pela faixa de XP da liga (issue #49)', async () => {
       const { service, prisma } = makeService();
-      prisma.profile.findUnique.mockResolvedValue({
-        gamificationEnabled: true,
-      });
       // Solicitante com 1000 XP -> nível 7 -> liga Prata (níveis 5..9).
       prisma.gamificationStat.findUnique.mockResolvedValue({ points: 1000 });
       prisma.gamificationStat.findMany.mockResolvedValue([
@@ -269,14 +457,17 @@ describe('GamificationService', () => {
         { id: 'u1', profile: { displayName: 'Eu' } },
       ]);
 
-      const res = await service.leaderboard('u1', 'league', 10);
+      const res = (await service.leaderboard('u1', 'league', 10)) as Board;
 
       const arg = prisma.gamificationStat.findMany.mock.calls[0][0];
-      expect(arg.where).toBeDefined();
       // Prata: XP >= 25*(5-1)^2 = 400; Ouro começa em 25*(10-1)^2 = 2025.
       expect(arg.where.points.gte).toBe(400);
       expect(arg.where.points.lt).toBe(2025);
+      expect(arg.take).toBe(10);
       expect(res.league).toBe('Prata');
+      expect(res.entries).toEqual([
+        expect.objectContaining({ userId: 'u1', rank: 1, isMe: true }),
+      ]);
     });
   });
 });

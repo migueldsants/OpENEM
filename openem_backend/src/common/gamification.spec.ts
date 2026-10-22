@@ -11,6 +11,7 @@ import {
   pointsForAnswer,
   POINTS,
   updateStreak,
+  visibleAchievements,
   xpForAnswer,
   xpForEssay,
   xpForSimulation,
@@ -78,6 +79,34 @@ describe('updateStreak', () => {
     expect(r.currentStreak).toBe(1);
     expect(r.longestStreak).toBe(6);
     expect(r.incremented).toBe(true);
+  });
+
+  it('conta o dia de Brasília: a questão das 22h fica no mesmo dia', () => {
+    // 10h e 22h de 18/06 em Brasília; em UTC a segunda já é 19/06.
+    const manha = updateStreak(
+      { currentStreak: 0, longestStreak: 0, lastActivityOn: null },
+      new Date('2026-06-18T13:00:00Z'),
+    );
+    expect(manha.lastActivityOn?.toISOString()).toBe(
+      '2026-06-18T00:00:00.000Z',
+    );
+    const noite = updateStreak(manha, new Date('2026-06-19T01:00:00Z'));
+    expect(noite.incremented).toBe(false);
+    expect(noite.currentStreak).toBe(1);
+  });
+
+  it('o dia seguinte começa à meia-noite de Brasília (03h UTC)', () => {
+    const state = {
+      currentStreak: 2,
+      longestStreak: 2,
+      lastActivityOn: new Date('2026-06-18T00:00:00Z'),
+    };
+    expect(
+      updateStreak(state, new Date('2026-06-19T02:59:00Z')).incremented,
+    ).toBe(false);
+    const r = updateStreak(state, new Date('2026-06-19T03:00:00Z'));
+    expect(r.currentStreak).toBe(3);
+    expect(r.lastActivityOn?.toISOString()).toBe('2026-06-19T00:00:00.000Z');
   });
 });
 
@@ -246,7 +275,7 @@ describe('evaluateAchievements', () => {
     expect(earned).not.toContain('POINTS_2000');
   });
 
-  it('desbloqueia conquistas de simulado, redação, revisão e sessão', () => {
+  it('desbloqueia conquistas de simulado, revisão e sessão', () => {
     const earned = evaluateAchievements(
       {
         points: 0,
@@ -265,8 +294,6 @@ describe('evaluateAchievements', () => {
       expect.arrayContaining([
         'FIRST_SIMULATION',
         'FIVE_SIMULATIONS',
-        'FIRST_ESSAY',
-        'HIGH_SCORE_ESSAY',
         'FIRST_REVIEW',
         'TEN_REVIEWS',
         'FIRST_SESSION',
@@ -275,7 +302,26 @@ describe('evaluateAchievements', () => {
     );
   });
 
-  it('todo código de regra existe no catálogo', () => {
+  it('conquistas aposentadas (redação) não são mais concedidas', () => {
+    const earned = evaluateAchievements(
+      {
+        points: 0,
+        currentStreak: 1,
+        answersCount: 0,
+        correctCount: 0,
+        simulationsCount: 0,
+        essaysCount: 3,
+        highScoreEssays: 3,
+        reviewsCount: 0,
+        sessionsDone: 0,
+      },
+      [],
+    );
+    expect(earned).not.toContain('FIRST_ESSAY');
+    expect(earned).not.toContain('HIGH_SCORE_ESSAY');
+  });
+
+  it('todo código de regra ativo existe no catálogo', () => {
     const all = evaluateAchievements(
       {
         points: 999999,
@@ -290,7 +336,33 @@ describe('evaluateAchievements', () => {
       },
       [],
     );
-    expect(all.sort()).toEqual(ACHIEVEMENTS.map((a) => a.code).sort());
+    expect(all.sort()).toEqual(
+      ACHIEVEMENTS.filter((a) => !a.retired)
+        .map((a) => a.code)
+        .sort(),
+    );
+  });
+});
+
+describe('visibleAchievements', () => {
+  it('as de redação saem do catálogo e do total de quem não as tem', () => {
+    const codes = visibleAchievements([]).map((a) => a.code);
+    expect(codes).not.toContain('FIRST_ESSAY');
+    expect(codes).not.toContain('HIGH_SCORE_ESSAY');
+    expect(codes).toContain('FIRST_ANSWER');
+    expect(codes).toHaveLength(ACHIEVEMENTS.length - 2);
+  });
+
+  it('quem já desbloqueou continua vendo, na ordem do catálogo', () => {
+    const codes = visibleAchievements(['FIRST_ESSAY', 'FIRST_ANSWER']).map(
+      (a) => a.code,
+    );
+    expect(codes).toContain('FIRST_ESSAY');
+    expect(codes).not.toContain('HIGH_SCORE_ESSAY');
+    expect(codes).toHaveLength(ACHIEVEMENTS.length - 1);
+    expect(codes.indexOf('FIRST_ESSAY')).toBeGreaterThan(
+      codes.indexOf('FIVE_SIMULATIONS'),
+    );
   });
 });
 

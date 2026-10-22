@@ -2,9 +2,14 @@
 // O conteúdo é determinístico a partir da data (mesmo desafio para todos no dia),
 // então não precisa ser persistido — só registramos o resgate da recompensa.
 
-/** Dia de calendário (UTC) no formato YYYY-MM-DD, usado como chave do desafio. */
+import { studyDay } from './study-day';
+
+/**
+ * Dia de calendário de Brasília (YYYY-MM-DD), chave do desafio e de
+ * `DailyChallengeLog.day`. Em UTC o desafio renovava às 21h.
+ */
 export function dayKey(date: Date = new Date()): string {
-  return date.toISOString().slice(0, 10);
+  return studyDay(date);
 }
 
 /** Hash determinístico simples (FNV-1a) para semear o desafio a partir do dia. */

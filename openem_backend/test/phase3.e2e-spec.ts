@@ -120,6 +120,17 @@ describe('Fase 3 — gamificação (e2e)', () => {
     expect(first.unlocked).toBe(true);
     expect(first.unlockedAt).not.toBeNull();
     expect(res.body.some((a: { unlocked: boolean }) => !a.unlocked)).toBe(true);
+
+    // As de redação (sem tela no app) saem do catálogo de quem não as tem, e o
+    // total do resumo é o tamanho da lista.
+    const codes = res.body.map((a: { code: string }) => a.code);
+    expect(codes).not.toContain('FIRST_ESSAY');
+    expect(codes).not.toContain('HIGH_SCORE_ESSAY');
+    const me = await request(app.getHttpServer())
+      .get('/api/v1/gamification/me')
+      .set(auth())
+      .expect(200);
+    expect(me.body.achievementsTotal).toBe(res.body.length);
   });
 
   it('o toggle gamificationEnabled silencia a gamificação', async () => {
@@ -148,5 +159,14 @@ describe('Fase 3 — gamificação (e2e)', () => {
       .set(auth())
       .expect(200);
     expect(me.body.enabled).toBe(false);
+
+    // Conquistas e ranking também respeitam o toggle.
+    for (const path of ['achievements', 'leaderboard']) {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/gamification/${path}`)
+        .set(auth())
+        .expect(200);
+      expect(res.body).toEqual({ enabled: false });
+    }
   });
 });

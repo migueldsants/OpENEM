@@ -246,4 +246,78 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     // O solicitante deve aparecer (mesmo fora do top).
     expect(res.body.entries.some((e: any) => e.userId === userId)).toBe(true);
   });
+
+  it('fora do top, o solicitante vem com a posição real (não "11º")', async () => {
+    const prisma = app.get(PrismaService);
+    // Com 0 XP e top 1, o solicitante só é o 1º se não houver mais ninguém.
+    await prisma.gamificationStat.upsert({
+      where: { userId },
+      create: { userId, points: 0 },
+      update: { points: 0 },
+    });
+    const ahead = () =>
+      prisma.gamificationStat.count({
+        where: {
+          NOT: { user: { profile: { is: { gamificationEnabled: false } } } },
+          OR: [{ points: { gt: 0 } }, { points: 0, userId: { lt: userId } }],
+        },
+      });
+    // As outras suítes ganham XP em paralelo: a posição fica entre as
+    // contagens de antes e de depois da chamada.
+    const before = await ahead();
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/gamification/leaderboard?limit=1')
+      .set(auth())
+      .expect(200);
+    const after = await ahead();
+    const meRow = res.body.entries.find((e: any) => e.isMe);
+    expect(meRow.userId).toBe(userId);
+    expect(meRow.rank).toBeGreaterThanOrEqual(Math.min(before, after) + 1);
+    expect(meRow.rank).toBeLessThanOrEqual(Math.max(before, after) + 1);
+    expect(res.body.entries[0].rank).toBe(1);
+  });
+
+  it('quem desliga a gamificação some do ranking dos outros', async () => {
+    const prisma = app.get(PrismaService);
+    const other = await request(app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set(otherAuth())
+      .expect(200);
+    const otherId: string = other.body.id;
+    // XP alto o bastante para ser o 1º do ranking geral.
+    await prisma.gamificationStat.upsert({
+      where: { userId: otherId },
+      create: { userId: otherId, points: 2_000_000_000 },
+      update: { points: 2_000_000_000 },
+    });
+    try {
+      const before = await request(app.getHttpServer())
+        .get('/api/v1/gamification/leaderboard?limit=5')
+        .set(auth())
+        .expect(200);
+      expect(before.body.entries[0]).toMatchObject({
+        userId: otherId,
+        rank: 1,
+      });
+
+      await request(app.getHttpServer())
+        .put('/api/v1/users/me/profile')
+        .set(otherAuth())
+        .send({ gamificationEnabled: false })
+        .expect(200);
+
+      const after = await request(app.getHttpServer())
+        .get('/api/v1/gamification/leaderboard?limit=50')
+        .set(auth())
+        .expect(200);
+      expect(after.body.entries.some((e: any) => e.userId === otherId)).toBe(
+        false,
+      );
+    } finally {
+      await prisma.gamificationStat.update({
+        where: { userId: otherId },
+        data: { points: 0 },
+      });
+    }
+  });
 });

@@ -18,8 +18,11 @@ import {
   levelFromXp,
   pointsForAnswer,
   updateStreak,
+  visibleAchievements,
   xpToReachLevel,
 } from '../common/gamification';
+import { aheadOf, rankRows } from '../common/leaderboard';
+import { addDays, startOfStudyDay, studyDay } from '../common/study-day';
 
 /**
  * Chaves de ação registradas no XpLog (issue #17). O histórico ainda pode ter
@@ -259,9 +262,11 @@ export class GamificationService {
     const stat = await this.prisma.gamificationStat.findUnique({
       where: { userId },
     });
-    const unlocked = await this.prisma.userAchievement.count({
+    const unlocked = await this.prisma.userAchievement.findMany({
       where: { userId },
+      select: { code: true },
     });
+    const unlockedCodes = unlocked.map((u) => u.code);
 
     const xp = stat?.points ?? 0;
     const levelInfo = levelFromXp(xp);
@@ -288,8 +293,9 @@ export class GamificationService {
       highScoreEssays: stat?.highScoreEssays ?? 0,
       reviewsCount: stat?.reviewsCount ?? 0,
       sessionsDone: stat?.sessionsDone ?? 0,
-      achievementsUnlocked: unlocked,
-      achievementsTotal: ACHIEVEMENTS.length,
+      achievementsUnlocked: unlockedCodes.length,
+      // Sem as aposentadas que o aluno não tem (ver `visibleAchievements`).
+      achievementsTotal: visibleAchievements(unlockedCodes).length,
     };
   }
 
@@ -297,13 +303,11 @@ export class GamificationService {
    * Histórico de XP do usuário (XpLog), opcionalmente limitado aos últimos N
    * dias. Retorna os logs ordenados do mais recente ao mais antigo.
    */
-  async getHistory(userId: string, days = 30) {
+  async getHistory(userId: string, days = 30, now: Date = new Date()) {
     if (!(await this.isEnabled(userId))) {
       return { enabled: false as const };
     }
-    const since = new Date();
-    since.setUTCDate(since.getUTCDate() - Math.max(1, days));
-    since.setUTCHours(0, 0, 0, 0);
+    const since = startOfStudyDay(addDays(studyDay(now), -Math.max(1, days)));
 
     const logs = await this.prisma.xpLog.findMany({
       where: { userId, createdAt: { gte: since } },
@@ -317,11 +321,10 @@ export class GamificationService {
       },
     });
 
-    // Agrega XP por dia (YYYY-MM-DD UTC) para o gráfico da tela Progresso.
+    // Agrega XP por dia de Brasília (YYYY-MM-DD) para o gráfico da tela Progresso.
     const byDay = new Map<string, number>();
     for (const log of logs) {
-      const d = new Date(log.createdAt);
-      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      const key = studyDay(log.createdAt);
       byDay.set(key, (byDay.get(key) ?? 0) + log.xpGained);
     }
 
@@ -334,12 +337,6 @@ export class GamificationService {
     };
   }
 
-  private startOfDayUtc(now: Date): Date {
-    return new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
-  }
-
   /** Status do desafio diário (ou { enabled: false } se a gamificação está off). */
   async getDailyChallenge(userId: string, now: Date = new Date()) {
     if (!(await this.isEnabled(userId))) {
@@ -348,7 +345,7 @@ export class GamificationService {
     const spec = dailyChallengeFor(now);
     const [answeredToday, log] = await Promise.all([
       this.prisma.answer.count({
-        where: { userId, createdAt: { gte: this.startOfDayUtc(now) } },
+        where: { userId, createdAt: { gte: startOfStudyDay(spec.day) } },
       }),
       this.prisma.dailyChallengeLog.findUnique({
         where: { userId_day: { userId, day: spec.day } },
@@ -373,7 +370,7 @@ export class GamificationService {
 
     return this.prisma.$transaction(async (tx) => {
       const answeredToday = await tx.answer.count({
-        where: { userId, createdAt: { gte: this.startOfDayUtc(now) } },
+        where: { userId, createdAt: { gte: startOfStudyDay(spec.day) } },
       });
       if (answeredToday < spec.goal) {
         return {
@@ -415,6 +412,15 @@ export class GamificationService {
         create: { userId, points: spec.xpReward },
         update: { points: { increment: spec.xpReward } },
       });
+      // Sem o log, o gráfico de XP por dia não fechava com o XP total.
+      await tx.xpLog.create({
+        data: {
+          userId,
+          action: 'DAILY_CHALLENGE' satisfies XpAction,
+          xpGained: spec.xpReward,
+          detail: `Desafio diário: ${spec.goal} questões`,
+        },
+      });
       const level = levelFromXp(stat.points);
 
       return {
@@ -433,6 +439,9 @@ export class GamificationService {
    * de cada uma ainda travada (issue #48) — todas com barra visível.
    */
   async listAchievements(userId: string) {
+    if (!(await this.isEnabled(userId))) {
+      return { enabled: false as const };
+    }
     const [unlocked, stat] = await Promise.all([
       this.prisma.userAchievement.findMany({
         where: { userId },
@@ -452,7 +461,7 @@ export class GamificationService {
       reviewsCount: stat?.reviewsCount ?? 0,
       sessionsDone: stat?.sessionsDone ?? 0,
     };
-    return ACHIEVEMENTS.map((a) => ({
+    return visibleAchievements(byCode.keys()).map((a) => ({
       ...a,
       unlocked: byCode.has(a.code),
       unlockedAt: byCode.get(a.code) ?? null,
@@ -463,119 +472,85 @@ export class GamificationService {
   /**
    * Ranking de XP (issue #19). `scope = 'league'` restringe à liga do usuário
    * que pede (ranking social entre pares); `scope = 'global'` (default) é o
-   * ranking geral. Sempre inclui o próprio usuário mesmo se fora do top N.
-   * Retorna { entries, scope, league? }.
+   * ranking geral. Cada linha traz a posição real (`rank`) e `isMe`; o próprio
+   * usuário sempre aparece, no fim e com a posição dele quando está fora do
+   * top N. Quem desligou a gamificação não aparece no ranking dos outros nem
+   * vê o ranking ({ enabled: false }).
    */
   async leaderboard(
     userId: string,
     scope: 'global' | 'league' = 'global',
     limit = 10,
   ) {
+    if (!(await this.isEnabled(userId))) {
+      return { enabled: false as const };
+    }
     const cap = Math.min(Math.max(1, limit), 50);
 
-    // Liga do solicitante (para o scope=league). Se a gamificação está off,
-    // cai no ranking global (não há como filtrar por liga sem o próprio XP).
-    let leagueKey: string | null = null;
-    if (scope === 'league') {
-      const stat = await this.prisma.gamificationStat.findUnique({
-        where: { userId },
-        select: { points: true },
-      });
-      const xp = stat?.points ?? 0;
-      leagueKey = leagueForLevel(levelFromXp(xp).level).key;
-    }
+    const mine = await this.prisma.gamificationStat.findUnique({
+      where: { userId },
+      select: { points: true },
+    });
+    const myXp = mine?.points ?? 0;
 
-    // Faixa de níveis que cobre a liga (para filtrar por nível derivado do XP).
-    // Como a liga é função do nível, filtramos pelos níveis daquela liga.
-    const levelRange = leagueKey
-      ? LEAGUES.filter((l) => l.key === leagueKey)[0]
-      : null;
-    const minLevel = levelRange?.minLevel ?? 0;
-    const nextLeague = levelRange
-      ? LEAGUES.find((l) => l.minLevel > minLevel)
-      : null;
-    const maxLevelExclusive = nextLeague ? nextLeague.minLevel : Infinity;
-
-    // Busca no máximo o necessário (issue #49): para o escopo global, `take`
-    // direto; para o escopo de liga, filtra no banco pela faixa exata de XP
-    // que cobre os níveis da liga (level L começa em xpToReachLevel(L), logo
-    // `gte`/`lt` batem exatamente com minLevel/maxLevelExclusive).
-    const minLeagueXp = leagueKey ? xpToReachLevel(minLevel) : 0;
-    const maxLeagueXp =
-      leagueKey && Number.isFinite(maxLevelExclusive)
-        ? xpToReachLevel(maxLevelExclusive)
-        : null;
-
-    const stats = await this.prisma.gamificationStat.findMany({
-      orderBy: { points: 'desc' },
-      select: { userId: true, points: true },
-      take: leagueKey ? undefined : cap,
-      where: leagueKey
+    // A liga é função do nível, e o nível L começa em xpToReachLevel(L): a
+    // faixa de XP [início da liga, início da próxima) cobre exatamente a liga.
+    const league =
+      scope === 'league' ? leagueForLevel(levelFromXp(myXp).level) : null;
+    const nextLeague = league
+      ? LEAGUES.find((l) => l.minLevel > league.minLevel)
+      : undefined;
+    const where = {
+      NOT: { user: { profile: { is: { gamificationEnabled: false } } } },
+      ...(league
         ? {
             points: {
-              gte: minLeagueXp,
-              ...(maxLeagueXp != null ? { lt: maxLeagueXp } : {}),
+              gte: xpToReachLevel(league.minLevel),
+              ...(nextLeague
+                ? { lt: xpToReachLevel(nextLeague.minLevel) }
+                : {}),
             },
           }
-        : undefined,
-    });
+        : {}),
+    };
 
-    const enriched = stats.map((s) => ({
-      userId: s.userId,
-      xp: s.points,
-      level: levelFromXp(s.points).level,
-    }));
+    const [top, ahead] = await Promise.all([
+      this.prisma.gamificationStat.findMany({
+        where,
+        // O desempate por userId deixa a ordem estável e casa com `aheadOf`.
+        orderBy: [{ points: 'desc' }, { userId: 'asc' }],
+        select: { userId: true, points: true },
+        take: cap,
+      }),
+      this.prisma.gamificationStat.count({
+        where: { AND: [where, aheadOf(myXp, userId)] },
+      }),
+    ]);
 
-    // Garante que o solicitante esteja presente (mesmo sem stat ainda — XP 0).
-    if (!enriched.some((e) => e.userId === userId)) {
-      enriched.push({ userId, xp: 0, level: levelFromXp(0).level });
-    }
-
-    const filtered = leagueKey
-      ? enriched.filter(
-          (e) => e.level >= minLevel && e.level < maxLevelExclusive,
-        )
-      : enriched;
-
-    const top = filtered.slice(0, cap);
+    const rows = rankRows(
+      top.map((s) => ({ userId: s.userId, xp: s.points })),
+      { userId, xp: myXp, ahead },
+    );
     const users = await this.prisma.user.findMany({
-      where: { id: { in: top.map((e) => e.userId) } },
+      where: { id: { in: rows.map((r) => r.userId) } },
       select: { id: true, profile: { select: { displayName: true } } },
     });
     const nameById = new Map(
       users.map((u) => [u.id, u.profile?.displayName ?? 'Estudante']),
     );
 
-    const entries = top.map((e) => ({
-      userId: e.userId,
-      displayName: nameById.get(e.userId) ?? 'Estudante',
-      xp: e.xp,
-      level: e.level,
-    }));
-
-    // Garante que o solicitante aparece (mesmo fora do top).
-    const meInEntries = entries.some((e) => e.userId === userId);
-    if (!meInEntries) {
-      const me = enriched.find((e) => e.userId === userId);
-      if (me) {
-        entries.push({
-          userId: me.userId,
-          displayName: nameById.get(me.userId) ?? 'Estudante',
-          xp: me.xp,
-          level: me.level,
-        });
-      }
-    }
-
     return {
+      enabled: true as const,
       scope,
-      league: leagueKey
-        ? leagueForLevel(
-            levelFromXp(enriched.find((e) => e.userId === userId)?.xp ?? 0)
-              .level,
-          ).name
-        : null,
-      entries,
+      league: league?.name ?? null,
+      entries: rows.map((r) => ({
+        userId: r.userId,
+        displayName: nameById.get(r.userId) ?? 'Estudante',
+        xp: r.xp,
+        level: levelFromXp(r.xp).level,
+        rank: r.rank,
+        isMe: r.isMe,
+      })),
     };
   }
 }

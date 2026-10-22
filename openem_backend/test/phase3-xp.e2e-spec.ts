@@ -105,9 +105,10 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
     const g = sub.body.gamification;
     expect(g).toBeDefined();
     expect(g.xpGained).toBeGreaterThan(0);
-    expect(g.newAchievements.map((a: { code: string }) => a.code)).toContain(
-      'FIRST_ESSAY',
-    );
+    // FIRST_ESSAY foi aposentada: o app não tem mais tela de redação.
+    expect(
+      g.newAchievements.map((a: { code: string }) => a.code),
+    ).not.toContain('FIRST_ESSAY');
   });
 
   it('marcar uma sessão do cronograma como concluída concede XP', async () => {
