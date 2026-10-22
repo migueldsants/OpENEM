@@ -8,6 +8,7 @@ describe('bootstrapPlan', () => {
       'db:seed',
       'db:import:enem',
       'db:classify:keywords',
+      'db:classify:catalog',
       'db:seed:flashcards',
     ]);
   });

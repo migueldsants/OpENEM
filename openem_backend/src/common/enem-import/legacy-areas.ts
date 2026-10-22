@@ -6,7 +6,7 @@
  * nenhuma questão. É classificação do OpENEM pelo conteúdo — pelo conhecimento
  * que a questão cobra, não pelo tema do texto —, feita com o Claude Haiku 5.5
  * e conferida por amostragem. Questão interdisciplinar fica com a área
- * predominante. Totais: linguagens 96, ciencias-humanas 137, ciencias-natureza 238, matematica 163; confiança alta 430, média 198, baixa 6.
+ * predominante. Totais: linguagens 96, ciencias-humanas 138, ciencias-natureza 237, matematica 163; confiança alta 430, média 198, baixa 6.
  *
  * Questão que não está aqui entra sem área.
  */
@@ -169,7 +169,7 @@ export const LEGACY_AREAS: Record<string, Record<string, string>> = {
     '42': 'matematica',
     '43': 'matematica',
     '44': 'matematica',
-    '45': 'ciencias-natureza',
+    '45': 'ciencias-humanas',
     '46': 'ciencias-humanas',
     '47': 'ciencias-natureza',
     '48': 'ciencias-natureza',
