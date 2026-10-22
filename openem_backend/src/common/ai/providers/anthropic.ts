@@ -1,19 +1,27 @@
 // Provedor genérico via Claude (Anthropic).
 
 import Anthropic from '@anthropic-ai/sdk';
+import { envValue, firstPresent } from '../env';
 import { JsonCompletionRequest } from '../types';
 
 export function isConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
+  return !!envValue('ANTHROPIC_API_KEY');
+}
+
+/** Modelo da chamada: o do pedido, o do .env ou o padrão. */
+export function model(req: Pick<JsonCompletionRequest, 'model'>): string {
+  return (
+    firstPresent(req.model, envValue('ANTHROPIC_MODEL')) ?? 'claude-opus-4-8'
+  );
 }
 
 /** Executa a chamada e devolve o texto cru da resposta. */
 export async function completeJson(
   req: JsonCompletionRequest,
 ): Promise<string> {
-  const client = new Anthropic();
+  const client = new Anthropic({ apiKey: envValue('ANTHROPIC_API_KEY') });
   const response = await client.messages.create({
-    model: req.model ?? process.env.ANTHROPIC_MODEL ?? 'claude-opus-4-8',
+    model: model(req),
     max_tokens: req.maxTokens ?? 4096,
     thinking: { type: 'adaptive' },
     system: req.system,

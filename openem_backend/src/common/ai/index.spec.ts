@@ -1,5 +1,8 @@
 import { activeAiProvider, isAiConfigured } from './index';
+import * as anthropic from './providers/anthropic';
+import * as gemini from './providers/gemini';
 import { toGeminiSchema } from './providers/gemini-schema';
+import * as openai from './providers/openai';
 
 const CHAVES = [
   'AI_PROVIDER',
@@ -54,6 +57,60 @@ describe('seleção de provedor de IA', () => {
   it('endpoint compatível é o último da fila', () => {
     process.env.OPENAI_BASE_URL = 'http://localhost:11434/v1';
     expect(activeAiProvider()).toBe('openai-compatible');
+  });
+
+  // O docker-compose passa `${VAR:-}`: o que falta no .env chega vazio.
+  it('variável vazia conta como ausente', () => {
+    for (const k of CHAVES) process.env[k] = '';
+    expect(activeAiProvider()).toBeNull();
+
+    process.env.GEMINI_API_KEY = '  ';
+    process.env.GOOGLE_API_KEY = 'g-test';
+    expect(activeAiProvider()).toBe('gemini');
+    expect(gemini.apiKey()).toBe('g-test');
+  });
+
+  it('AI_PROVIDER vazio cai na detecção', () => {
+    process.env.ANTHROPIC_API_KEY = 'sk-ant';
+    process.env.GEMINI_API_KEY = 'g-test';
+    process.env.AI_PROVIDER = '';
+    expect(activeAiProvider()).toBe('anthropic');
+  });
+});
+
+describe('modelo de cada provedor', () => {
+  const MODELOS = ['ANTHROPIC_MODEL', 'OPENAI_MODEL', 'GEMINI_MODEL'];
+  const original = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...original };
+  });
+
+  it('modelo vazio no .env usa o padrão, nunca a string vazia', () => {
+    for (const k of MODELOS) process.env[k] = '';
+    expect(anthropic.model({})).toBe('claude-opus-4-8');
+    expect(openai.model({})).toBe('gpt-4o');
+    expect(openai.model({}, true)).toBe('llama3.1');
+    expect(gemini.model({})).toBe('gemini-2.5-flash');
+  });
+
+  it('modelo do .env vence o padrão', () => {
+    process.env.ANTHROPIC_MODEL = 'claude-sonnet-5-5';
+    process.env.OPENAI_MODEL = 'gpt-x';
+    process.env.GEMINI_MODEL = 'gemini-x';
+    expect(anthropic.model({})).toBe('claude-sonnet-5-5');
+    expect(openai.model({})).toBe('gpt-x');
+    expect(openai.model({}, true)).toBe('gpt-x');
+    expect(gemini.model({})).toBe('gemini-x');
+  });
+
+  it('modelo do pedido vence o .env, e pedido vazio é ignorado', () => {
+    process.env.ANTHROPIC_MODEL = 'claude-sonnet-5-5';
+    expect(anthropic.model({ model: 'claude-haiku-5-5' })).toBe(
+      'claude-haiku-5-5',
+    );
+    // AI_EXPLANATION_MODEL/AI_CLASSIFY_MODEL vazios chegam como model: ''.
+    expect(anthropic.model({ model: '' })).toBe('claude-sonnet-5-5');
   });
 });
 

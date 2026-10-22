@@ -35,6 +35,14 @@ export interface ClassificationDecision {
  */
 export const EXCLUDED_SUBJECTS = new Set(['Redação', 'Língua Estrangeira']);
 
+/**
+ * Valor de `Question.classificationSource` para o que a IA classificou:
+ * `ai:<provedor>`, ou só `ai` quando o provedor não é conhecido.
+ */
+export function aiClassificationSource(provider?: string | null): string {
+  return provider ? `ai:${provider}` : 'ai';
+}
+
 /** Enunciado cortado: área + começo do texto bastam para achar o assunto. */
 export const MAX_STATEMENT_CHARS = 1200;
 

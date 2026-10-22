@@ -4,7 +4,7 @@
    Convenção: [data-theme='familia-light'] | [data-theme='familia-dark'].
 
    Família nova mexe em 3 lugares: este arquivo, FAMILIES em src/theme.tsx e
-   a lista do script de boot no index.html. theme-boot.test.ts e
+   a lista do script de boot em public/theme-boot.js. theme-boot.test.ts e
    theme-palettes.test.ts (contraste AAA/AA de cada lado) seguram os três.
 
    Os seletores valem em qualquer elemento, não só no <html>: a galeria de

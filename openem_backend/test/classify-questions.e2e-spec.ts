@@ -78,6 +78,7 @@ describe('classifyQuestions (e2e)', () => {
       area: AREA,
       batch: 2,
       complete: ia,
+      provider: 'anthropic',
       log: () => {},
     });
 
@@ -89,6 +90,9 @@ describe('classifyQuestions (e2e)', () => {
     expect(questoes.every((q) => q.classificationConfidence === 0.9)).toBe(
       true,
     );
+    expect(
+      questoes.every((q) => q.classificationSource === 'ai:anthropic'),
+    ).toBe(true);
     expect(report.classified).toBeGreaterThanOrEqual(3);
     // O schema enviado restringe o assunto aos da área.
     const schema = ia.mock.calls[0][0].schema as any;
@@ -111,6 +115,7 @@ describe('classifyQuestions (e2e)', () => {
     const questoes = await prisma.question.findMany(doTeste());
     expect(questoes.every((q) => q.topicId === null)).toBe(true);
     expect(questoes.every((q) => q.classificationAttempts === 1)).toBe(true);
+    expect(questoes.every((q) => q.classificationSource === null)).toBe(true);
   });
 
   it('desiste da questão depois do teto de tentativas', async () => {

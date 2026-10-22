@@ -10,6 +10,7 @@
  * app segue funcionando sem eles.
  */
 
+import { envValue } from './env';
 import * as anthropic from './providers/anthropic';
 import * as gemini from './providers/gemini';
 import * as openai from './providers/openai';
@@ -43,7 +44,7 @@ export function isProviderConfigured(provider: AiProvider): boolean {
  * configurado. Devolve null quando não há provedor utilizável.
  */
 export function activeAiProvider(): AiProvider | null {
-  const explicit = process.env.AI_PROVIDER as AiProvider | undefined;
+  const explicit = envValue('AI_PROVIDER') as AiProvider | undefined;
   if (explicit) {
     return isProviderConfigured(explicit) ? explicit : null;
   }

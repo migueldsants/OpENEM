@@ -88,7 +88,7 @@ const DICAS = [
 
 const SOBRE =
   'O OpENEM é uma plataforma livre e gratuita de preparação para o ENEM: ' +
-  'questões oficiais, simulados, revisão espaçada e correção de redação. ' +
+  'questões oficiais, simulados, revisão espaçada e flashcards. ' +
   'Código aberto (AGPL-3.0), sem anúncios.';
 
 // ------------------------------------------------------------ utilidades

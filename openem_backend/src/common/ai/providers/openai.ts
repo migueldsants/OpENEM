@@ -3,10 +3,11 @@
 // diferença é a base URL e o formato de resposta que dá para pedir.
 
 import type OpenAI from 'openai';
+import { envValue, firstPresent } from '../env';
 import { JsonCompletionRequest } from '../types';
 
 export function isConfigured(): boolean {
-  return !!process.env.OPENAI_API_KEY;
+  return !!envValue('OPENAI_API_KEY');
 }
 
 /**
@@ -14,21 +15,32 @@ export function isConfigured(): boolean {
  * servidores locais como o Ollama não pedem autenticação.
  */
 export function isCompatibleConfigured(): boolean {
-  return !!process.env.OPENAI_BASE_URL;
+  return !!envValue('OPENAI_BASE_URL');
+}
+
+/** Modelo da chamada: o do pedido, o do .env ou o padrão do modo. */
+export function model(
+  req: Pick<JsonCompletionRequest, 'model'>,
+  compatible = false,
+): string {
+  return (
+    firstPresent(req.model, envValue('OPENAI_MODEL')) ??
+    (compatible ? 'llama3.1' : 'gpt-4o')
+  );
 }
 
 /** Carrega o SDK sob demanda (dependência opcional). */
 async function createClient(baseURL?: string) {
   const { default: OpenAIClient } = await import('openai');
   return new OpenAIClient({
-    apiKey: process.env.OPENAI_API_KEY ?? 'not-required',
+    apiKey: envValue('OPENAI_API_KEY') ?? 'not-required',
     ...(baseURL ? { baseURL } : {}),
   });
 }
 
 async function run(
   req: JsonCompletionRequest,
-  opts: { baseURL?: string; defaultModel: string; strictSchema: boolean },
+  opts: { baseURL?: string; strictSchema: boolean },
 ): Promise<string> {
   const client = await createClient(opts.baseURL);
 
@@ -52,7 +64,7 @@ async function run(
       `sem nenhum texto fora do JSON:\n${JSON.stringify(req.schema)}`;
 
   const response = await client.chat.completions.create({
-    model: req.model ?? process.env.OPENAI_MODEL ?? opts.defaultModel,
+    model: model(req, !!opts.baseURL),
     ...(req.maxTokens ? { max_tokens: req.maxTokens } : {}),
     response_format: responseFormat,
     messages: [
@@ -70,7 +82,7 @@ async function run(
 
 /** API oficial da OpenAI. */
 export function completeJson(req: JsonCompletionRequest): Promise<string> {
-  return run(req, { defaultModel: 'gpt-4o', strictSchema: true });
+  return run(req, { strictSchema: true });
 }
 
 /** Endpoint compatível com a API da OpenAI. */
@@ -78,8 +90,7 @@ export function completeJsonCompatible(
   req: JsonCompletionRequest,
 ): Promise<string> {
   return run(req, {
-    baseURL: process.env.OPENAI_BASE_URL,
-    defaultModel: process.env.OPENAI_MODEL ?? 'llama3.1',
+    baseURL: envValue('OPENAI_BASE_URL'),
     strictSchema: false,
   });
 }
