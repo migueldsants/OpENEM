@@ -41,22 +41,8 @@ html {
     transform: scale(0.97);
   }
 
-  /* O letreiro da hero: a frase em escala de cartaz, do tamanho da tela. O
-     cartão da questão usa a mesma medida para começar na linha de base da
-     primeira linha. */
-  .letreiro {
-    --letreiro: clamp(3.1rem, 10.2vw, 11rem);
-  }
-
-  .letreiro h1 {
-    font-size: var(--letreiro);
-  }
-  .letreiro-fim {
-    font-size: clamp(2.75rem, 7.4vw, 7rem);
-  }
-
-  /* Troca de questão (o cartão remonta): entra com opacidade, leve escala e
-     um blur curto, a mesma linguagem das camadas. */
+  /* Troca de ano no caderno da hero (a capa remonta): entra com opacidade,
+     leve escala e um blur curto. */
   .troca {
     transition:
       opacity 260ms var(--ease-saida),
@@ -68,105 +54,15 @@ html {
       filter: blur(6px);
     }
   }
-
-  /* Janela do app: sombra do aparelho, neutra e com deslocamento. */
-  .janela {
-    box-shadow:
-      0 1px 2px color-mix(in oklab, var(--fg) 8%, transparent),
-      0 32px 64px -28px color-mix(in oklab, var(--fg) 30%, transparent);
-  }
-  [data-theme$='-dark'] .janela {
-    box-shadow: 0 32px 64px -28px rgb(0 0 0 / 0.7);
-  }
-  .camada > picture {
-    display: block;
-    height: 100%;
-  }
-
-  /* Camadas da janela do app: troca com opacidade, leve escala e um blur
-     curto, que funde as duas telas em vez de mostrar duas coisas sobrepostas. */
-  .camada {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transform: scale(0.985);
-    filter: blur(6px);
-    transition:
-      opacity 260ms var(--ease-saida),
-      transform 260ms var(--ease-saida),
-      filter 260ms var(--ease-saida);
-    pointer-events: none;
-  }
-  .camada[data-ativa='true'] {
-    opacity: 1;
-    transform: none;
-    filter: none;
-    pointer-events: auto;
-  }
-
-  /* Capturas do app nos dois lados do tema: mostra a do tema atual. */
-  [data-theme$='-dark'] .tela-clara,
-  :root:not([data-theme$='-dark']) .tela-escura {
-    display: none;
-  }
-
-  /* Perguntas frequentes: <details> nativo, com a seta girando. */
-  .faq summary {
-    list-style: none;
-    cursor: pointer;
-  }
-  .faq summary::-webkit-details-marker {
-    display: none;
-  }
-  .faq summary .seta {
-    transition: transform 200ms var(--ease-saida);
-  }
-  .faq details[open] summary .seta {
-    transform: rotate(45deg);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .camada,
   .troca {
     transform: none;
     filter: none;
-  }
-  .troca {
     @starting-style {
       transform: none;
       filter: none;
     }
-  }
-}
-
-/* O cartão da hero sobe sobre a parte de baixo da primeira linha do
-   letreiro (z-index acima do título) e reserva a altura da questão mais
-   longa, para a faixa de anos não pular ao trocar de ano. Fora das camadas,
-   para valer sobre o mt-10 do celular. */
-@media (min-width: 64rem) {
-  .cartao-hero {
-    /* Na linha de baixo da grade, puxado para cima: o título tem duas
-       linhas de 0,88 (1,76 letreiro) e o cartão começa a 0,56 do topo. */
-    margin-top: calc(var(--letreiro) * -1.2);
-    min-height: 36.75rem;
-  }
-}
-
-/* Desktop baixo (notebook de 800 px): letreiro, cartão e faixa mais justos,
-   para a faixa de anos caber na primeira tela. Fora das camadas, para valer
-   sobre os utilitários; o zoom encolhe o cartão inteiro por igual, reserva de
-   altura incluída. */
-@media (min-width: 64rem) and (max-height: 820px) {
-  .letreiro {
-    --letreiro: clamp(3.1rem, min(10.2vw, 15.5vh), 11rem);
-  }
-  .cartao-hero {
-    zoom: 0.9;
-    /* O zoom também encolhe a margem: dividir por 0,9 mantém a mordida. */
-    margin-top: calc(var(--letreiro) * -1.2 / 0.9);
-  }
-  .faixa-anos {
-    padding-block: 0.6rem;
   }
 }

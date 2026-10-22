@@ -1,291 +1,381 @@
-import { ArrowRight, GithubLogo, Plus } from '@phosphor-icons/react';
-import { useState, type ReactNode } from 'react';
+import {
+  ArrowRight,
+  Cards,
+  ChartBar,
+  ChatsCircle,
+  Flame,
+  GithubLogo,
+  Palette,
+  Timer,
+  type Icon,
+} from '@phosphor-icons/react';
+import temas from 'virtual:arquivo-redacoes';
 import { Wordmark } from '../components/Wordmark';
 import { APP_URL, DOCS_URL, GITHUB_URL } from '../config';
-import { Arquivo } from './Arquivo';
-import { JanelaDoApp } from './JanelaDoApp';
-import { QuestaoAoVivo } from './QuestaoAoVivo';
-import { ANOS_DO_ENEM, anoDaQuestao, proximaQuestao, QUESTOES } from './questoes';
+import { Caderno } from './Caderno';
+import { ANOS_DO_ENEM } from './prova';
+
+/** Questões oficiais no banco (1998 a 2025, todas as aplicações). */
+const QUESTOES_OFICIAIS = '7.781';
 
 function BotaoEstudar({ className = '' }: { className?: string }) {
   return (
-    <a href={APP_URL} className={`btn btn-primary aperta px-5 py-3.5 text-base ${className}`}>
+    <a href={APP_URL} className={`btn btn-primary aperta px-6 py-3.5 text-base ${className}`}>
       Começar a estudar
       <ArrowRight size={18} weight="bold" />
     </a>
   );
 }
 
+const TITULO_H2 =
+  'font-display text-[2.15rem] leading-[1.05] font-extrabold tracking-[-0.03em] text-balance sm:text-5xl lg:text-[3.25rem]';
+
 function Cabecalho() {
   return (
-    <header className="mx-auto flex h-[4.5rem] max-w-[1760px] items-center justify-between px-4 sm:px-6 lg:px-14">
+    <header className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
       <Wordmark />
-      <nav aria-label="Principal" className="flex items-center gap-1 sm:gap-3">
-        <a
-          href={DOCS_URL}
-          className="hidden rounded-lg px-3 py-2 text-[0.95rem] font-medium text-muted hover:text-fg sm:inline-block"
-        >
-          Documentação
+      <nav aria-label="Seções" className="hidden gap-7 text-[0.95rem] font-medium md:flex">
+        <a href="#recursos" className="text-muted hover:text-fg">
+          Recursos
         </a>
-        <a
-          href={GITHUB_URL}
-          className="hidden rounded-lg p-2 text-muted hover:text-fg sm:inline-grid"
-          aria-label="Código no GitHub"
-        >
-          <GithubLogo size={20} />
+        <a href="#redacoes" className="text-muted hover:text-fg">
+          Redações
         </a>
-        <a href={APP_URL} className="btn btn-ghost aperta bg-surface">
-          Entrar
+        <a href="#papel" className="text-muted hover:text-fg">
+          No papel
+        </a>
+        <a href="#aberto" className="text-muted hover:text-fg">
+          Hospedar
         </a>
       </nav>
+      <div className="flex items-center gap-2">
+        <a href={GITHUB_URL} className="btn btn-ghost aperta min-h-11 bg-surface" aria-label="Código no GitHub">
+          <GithubLogo size={18} />
+          <span className="hidden sm:inline">GitHub</span>
+        </a>
+        <a href={APP_URL} className="btn btn-primary aperta min-h-11">
+          Abrir o app
+        </a>
+      </div>
     </header>
   );
 }
 
-/**
- * O chão da hero: os 28 anos de ENEM. Os anos com questão de demonstração são
- * botões que trocam a questão do cartão; os outros estão no app.
- */
-function FaixaDeAnos({ indice, onEscolher }: { indice: number; onEscolher: (i: number) => void }) {
-  const anoAtivo = anoDaQuestao(QUESTOES[indice]);
+function Hero() {
   return (
-    <div className="border-t border-line bg-surface">
-      <div className="faixa-anos mx-auto flex max-w-[1760px] flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:gap-6 lg:px-14 xl:gap-8">
-        <p className="shrink-0 text-sm leading-snug text-muted lg:w-56">
-          Todos os ENEM de 1998 a 2025. Experimente{' '}
-          {QUESTOES.map((q, i) => (
-            <span key={q.id}>
-              <span className="font-data text-fg">{anoDaQuestao(q)}</span>
-              {i < QUESTOES.length - 2 ? ', ' : i === QUESTOES.length - 2 ? ' ou ' : '.'}
-            </span>
-          ))}
-        </p>
-        <ul
-          aria-label="Anos do ENEM"
-          className="-mx-4 flex min-w-0 flex-1 gap-1 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-[repeat(28,minmax(0,1fr))] lg:overflow-visible lg:px-0"
+    <section
+      aria-labelledby="titulo"
+      className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 pt-8 pb-16 sm:px-6 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-14 lg:pb-20"
+    >
+      <div className="flex flex-col gap-7">
+        <div className="flex flex-wrap gap-2">
+          <span className="chip bg-surface text-[0.8rem] font-semibold text-muted">
+            <span className="size-2 rounded-full bg-nat" aria-hidden="true" />
+            Gratuito
+          </span>
+          <span className="chip bg-surface text-[0.8rem] font-semibold text-muted">Código aberto · AGPL-3.0</span>
+        </div>
+        <h1
+          id="titulo"
+          className="font-display text-[2.7rem] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-6xl lg:text-[4.6rem]"
         >
-          {ANOS_DO_ENEM.map((ano) => {
-            const i = QUESTOES.findIndex((q) => anoDaQuestao(q) === ano);
-            const ativo = ano === anoAtivo;
-            const base = 'font-data block shrink-0 rounded-lg px-2 py-2.5 text-center text-[0.82rem] tabular-nums lg:px-0 lg:text-[0.72rem] min-[1400px]:text-[0.82rem]';
-            return (
-              <li key={ano}>
-                {i < 0 ? (
-                  <span className={`${base} text-fg/70`}>{ano}</span>
-                ) : (
-                  <button
-                    type="button"
-                    aria-pressed={ativo}
-                    aria-label={`Questão do ENEM ${ano}`}
-                    onClick={() => onEscolher(i)}
-                    className={`aperta w-full border ${base} font-medium ${
-                      ativo
-                        ? 'border-brand bg-brand font-semibold text-brand-ink shadow-[var(--shadow)]'
-                        : 'border-fg/25 bg-surface text-fg hover:border-brand hover:text-brand'
-                    }`}
-                  >
-                    {ano}
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+          Treine com as questões que já caíram no ENEM.
+        </h1>
+        <p className="max-w-[34em] text-lg leading-relaxed text-muted sm:text-[1.2rem]">
+          Todas as provas oficiais de 1998 a 2025, simulados no tempo da prova, os temas de redação de
+          todos os anos e revisão do que você errou. Sem anúncio e sem plano pago.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <BotaoEstudar />
+          <a href="#aberto" className="btn btn-ghost aperta bg-surface px-5 py-3.5 text-base">
+            Hospedar o seu
+          </a>
+        </div>
       </div>
+      <Caderno />
+    </section>
+  );
+}
+
+function Numeros() {
+  const itens: { valor: string; texto: string }[] = [
+    { valor: QUESTOES_OFICIAIS, texto: 'questões oficiais, com gabarito' },
+    { valor: `${ANOS_DO_ENEM.length} anos`, texto: `de provas, de ${ANOS_DO_ENEM[0]} a ${ANOS_DO_ENEM[ANOS_DO_ENEM.length - 1]}` },
+    { valor: `${temas.length} temas`, texto: 'de redação, com a página do caderno' },
+    { valor: 'R$ 0', texto: 'para estudar, sem limite de questões' },
+  ];
+  return (
+    <section aria-label="O OpENEM em números" className="border-y border-line bg-surface">
+      <dl className="mx-auto grid max-w-[1200px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-9 sm:px-6 lg:grid-cols-4">
+        {itens.map(({ valor, texto }) => (
+          <div key={valor} className="flex flex-col-reverse">
+            <dt className="text-[0.95rem] text-muted">{texto}</dt>
+            <dd className="font-display text-[2.1rem] leading-tight font-extrabold tracking-[-0.03em] sm:text-[2.75rem]">
+              {valor}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+const PASSOS: { titulo: string; texto: string }[] = [
+  {
+    titulo: 'Pratique',
+    texto:
+      'Questões oficiais filtradas por área, matéria, assunto e ano. Responda, veja o gabarito na hora e guarde nos favoritos as que quer rever.',
+  },
+  {
+    titulo: 'Simule',
+    texto:
+      'A prova inteira no tempo de verdade, ou um recorte só seu: some áreas, matérias e assuntos, escolha os anos e veja quantas questões cabem antes de começar.',
+  },
+  {
+    titulo: 'Revise',
+    texto:
+      'O que você erra volta no intervalo certo, por repetição espaçada. O que você acerta vai ficando cada vez mais longe.',
+  },
+];
+
+const RECURSOS: { icone: Icon; cor: string; titulo: string; texto: string }[] = [
+  {
+    icone: ChartBar,
+    cor: 'text-mat',
+    titulo: 'Desempenho semana a semana',
+    texto:
+      'Minutos de foco, questões e acerto por área contra a sua meta, e as três prioridades do mês com um botão para praticar.',
+  },
+  {
+    icone: Cards,
+    cor: 'text-nat',
+    titulo: 'Flashcards e fórmulas',
+    texto: 'Decks prontos por matéria e um caderno de fórmulas em PDF, montado só com as que você escolher.',
+  },
+  {
+    icone: Flame,
+    cor: 'text-hum',
+    titulo: 'Sequência, XP e ligas',
+    texto: 'Dias seguidos, desafio diário e ligas do Bronze ao Diamante. Não curte? Um botão no perfil desliga tudo.',
+  },
+  {
+    icone: ChatsCircle,
+    cor: 'text-lin',
+    titulo: 'Comunidade',
+    texto: 'Um fórum para tirar dúvida e discutir questão com quem está estudando para a mesma prova.',
+  },
+  {
+    icone: Timer,
+    cor: 'text-red',
+    titulo: 'Cronograma e cronômetros',
+    texto: 'Monte a sua semana bloco a bloco, use o Pomodoro para o foco e quantos timers precisar ao mesmo tempo.',
+  },
+  {
+    icone: Palette,
+    cor: 'text-fg',
+    titulo: 'Temas customizáveis',
+    texto: 'Claro, escuro, OLED, alto contraste ou com as suas cores. Estude do jeito que cansa menos o olho.',
+  },
+];
+
+const AREAS: { nome: string; cor: string }[] = [
+  { nome: 'Matemática', cor: 'text-mat bg-mat/10' },
+  { nome: 'Ciências da Natureza', cor: 'text-nat bg-nat/10' },
+  { nome: 'Ciências Humanas', cor: 'text-hum bg-hum/10' },
+  { nome: 'Linguagens', cor: 'text-lin bg-lin/10' },
+  { nome: 'Redação', cor: 'text-red bg-red/10' },
+];
+
+function Recursos() {
+  return (
+    <section aria-labelledby="recursos-titulo" id="recursos" className="mx-auto max-w-[1200px] px-4 pt-24 sm:px-6 sm:pt-28">
+      <h2 id="recursos-titulo" className={`max-w-[760px] ${TITULO_H2}`}>
+        Pratique, simule, revise. E repita até a prova.
+      </h2>
+      <ol className="mt-14 grid gap-10 md:grid-cols-3">
+        {PASSOS.map(({ titulo, texto }, i) => (
+          <li key={titulo} className="flex flex-col gap-3 border-t-2 border-fg pt-5">
+            <span className="font-data text-sm text-muted">{String(i + 1).padStart(2, '0')}</span>
+            <h3 className="font-display text-[1.75rem] font-bold tracking-tight">{titulo}</h3>
+            <p className="leading-relaxed text-muted">{texto}</p>
+          </li>
+        ))}
+      </ol>
+      <ul className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {RECURSOS.map(({ icone: Icone, cor, titulo, texto }) => (
+          <li key={titulo} className="card flex flex-col gap-2.5 rounded-[1.25rem] p-6">
+            <Icone size={26} className={cor} aria-hidden="true" />
+            <h3 className="text-[1.15rem] font-bold">{titulo}</h3>
+            <p className="leading-relaxed text-muted">{texto}</p>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-8 flex flex-wrap items-center gap-2.5">
+        <p className="mr-1.5 text-[0.95rem] text-muted">Todas as áreas da prova:</p>
+        {AREAS.map(({ nome, cor }) => (
+          <span key={nome} className={`rounded-full px-3.5 py-2 text-[0.95rem] font-semibold ${cor}`}>
+            {nome}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Uma amostra dos temas, de ponta a ponta do arquivo (todos estão no app).
+const ANOS_DA_AMOSTRA = [2025, 2024, 2019, 2013, 1998];
+
+function Redacoes() {
+  const amostra = ANOS_DA_AMOSTRA.map((ano) => temas.find((t) => t.ano === ano && t.aplicacao === 'regular')).filter(
+    (t) => t !== undefined,
+  );
+  return (
+    <section
+      aria-labelledby="redacoes-titulo"
+      id="redacoes"
+      className="mx-auto grid max-w-[1200px] items-start gap-12 px-4 pt-28 sm:px-6 lg:grid-cols-2 lg:gap-14"
+    >
+      <div className="flex flex-col gap-4.5">
+        <h2 id="redacoes-titulo" className={TITULO_H2}>
+          Todos os temas de redação, como saíram na prova.
+        </h2>
+        <p className="text-lg leading-relaxed text-muted">
+          De 1998 a 2025, da aplicação regular à reaplicação e às demais. Cada tema traz a proposta, os
+          textos motivadores e a página do caderno. Nada resumido, nada reescrito.
+        </p>
+        <a
+          href={APP_URL}
+          className="inline-flex min-h-11 items-center gap-2 self-start font-semibold text-brand hover:underline"
+        >
+          Ver os {temas.length} temas
+          <ArrowRight size={16} weight="bold" />
+        </a>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {amostra.map((t) => (
+          <li key={t.ano} className="card flex items-baseline gap-5 px-5 py-4.5">
+            <span className="font-data text-sm font-semibold text-red">{t.ano}</span>
+            <span className="font-semibold">{t.tema}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function LinhasDoCaderno({ larguras }: { larguras: string[] }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {larguras.map((w, i) =>
+        w === 'figura' ? (
+          <div key={i} className="h-11 rounded bg-line" />
+        ) : (
+          <div key={i} className="h-1.5 rounded-sm bg-line" style={{ width: w }} />
+        ),
+      )}
     </div>
   );
 }
 
-function Hero() {
-  const [indice, setIndice] = useState(0);
+function NoPapel() {
   return (
-    <section aria-labelledby="titulo" className="flex flex-col lg:min-h-[calc(100svh-4.5rem)]">
-      <div className="letreiro mx-auto grid w-full max-w-[1760px] flex-1 px-4 pt-6 pb-12 sm:px-6 sm:pt-10 lg:grid-cols-[minmax(0,1fr)_min(34rem,40vw)] lg:content-center lg:gap-x-14 lg:px-14 lg:pt-4 lg:pb-6">
-        <h1
-          id="titulo"
-          className="relative font-display leading-[0.88] font-extrabold tracking-[-0.04em] lg:col-[1/3] lg:row-start-1"
-        >
-          <span className="block">A prova de verdade.</span>
-          <span className="block">De graça.</span>
-        </h1>
-
-        <div className="mt-7 lg:col-start-1 lg:row-start-2 lg:mt-12 lg:self-start">
-          <p className="max-w-[34ch] text-lg leading-relaxed text-muted sm:text-xl">
-            Todas as provas oficiais do ENEM, de 1998 a 2025, com simulados no padrão do INEP e um
-            app que mostra onde você está errando.
-          </p>
-          <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <BotaoEstudar />
-            <p className="text-sm font-medium text-muted">Sem anúncio, sem plano pago.</p>
+    <section aria-labelledby="papel-titulo" id="papel" className="mt-28 border-y border-line bg-surface">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:gap-14">
+        {/* Esboço do caderno em PDF e da lousa: ilustração, sem conteúdo real. */}
+        <div aria-hidden="true" className="grid grid-cols-2 items-end gap-4">
+          <div className="flex aspect-[0.72] flex-col gap-2.5 rounded-xl border border-line bg-surface-2 p-4 shadow-[var(--shadow)]">
+            <div className="h-2.5 w-[55%] rounded-sm bg-brand" />
+            <div className="grid flex-1 grid-cols-2 gap-2.5">
+              <LinhasDoCaderno larguras={['100%', '100%', '70%', 'figura', '100%', '60%']} />
+              <LinhasDoCaderno larguras={['100%', '80%', '100%', '50%', '100%', '75%']} />
+            </div>
+            <p className="font-data text-[0.7rem] text-muted">Caderno · 2 colunas · PDF</p>
+          </div>
+          {/* A lousa tem cores fixas, como no app (fora dos temas). */}
+          <div className="flex aspect-[0.86] flex-col gap-3.5 rounded-xl border-8 border-[#6b4a32] bg-[#1f2b25] p-5 text-[#eef3ea]">
+            <p className="font-data text-xs tracking-[0.1em] uppercase opacity-80">Quadro da sala</p>
+            <div className="font-display text-lg leading-snug sm:text-xl">
+              <p>
+                Início <strong>13h30</strong>
+              </p>
+              <p>
+                Término <strong>19h00</strong>
+              </p>
+            </div>
+            <div className="border-t border-dashed border-[#eef3ea]/40 pt-3">
+              <p className="text-sm opacity-85">Tempo restante</p>
+              <p className="font-display text-[2.1rem] leading-tight font-extrabold sm:text-[2.5rem]">2h30</p>
+            </div>
           </div>
         </div>
-
-        {/* No desktop o cartão morde o letreiro: sobe sobre a parte de baixo da
-            primeira linha e ocupa o vazio à direita de "De graça.". */}
-        <div
-          id="questao"
-          className="cartao-hero relative z-10 mt-10 scroll-mt-24 lg:col-start-2 lg:row-start-2 lg:self-start"
-        >
-          <QuestaoAoVivo indice={indice} onOutra={() => setIndice((i) => proximaQuestao(i))} />
+        <div className="flex flex-col gap-4.5">
+          <h2 id="papel-titulo" className={TITULO_H2}>
+            Prefere fazer a prova impressa? Também dá.
+          </h2>
+          <p className="text-lg leading-relaxed text-muted">
+            Gere o caderno em PDF no padrão do ENEM: duas colunas, capa, cartão-resposta, gabarito e
+            comentários se quiser, na cor do seu tema.
+          </p>
+          <p className="text-lg leading-relaxed text-muted">
+            Na hora de fazer, abra o quadro da sala em tela cheia: início, término e o tempo restante,
+            atualizado de tempos em tempos, como o fiscal faz no quadro.
+          </p>
         </div>
       </div>
-      <FaixaDeAnos indice={indice} onEscolher={setIndice} />
     </section>
   );
 }
 
-function Secao({
-  id,
-  titulo,
-  texto,
-  children,
-  className = '',
-}: {
-  id: string;
-  titulo: string;
-  texto?: string;
-  children: ReactNode;
-  className?: string;
-}) {
+const COMANDOS = [
+  `git clone ${GITHUB_URL}.git`,
+  'cd OpENEM',
+  'cp .env.example .env',
+  'docker compose up --build',
+];
+
+function Aberto() {
   return (
-    <section aria-labelledby={`${id}-titulo`} className={`mx-auto max-w-[1760px] px-4 sm:px-6 lg:px-14 ${className}`}>
-      <h2
-        id={`${id}-titulo`}
-        className="max-w-[20ch] font-display text-[2.25rem] leading-[1] font-extrabold tracking-[-0.035em] text-balance sm:text-5xl lg:text-[4rem]"
-      >
-        {titulo}
-      </h2>
-      {texto && <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-muted">{texto}</p>}
-      <div className="mt-10 sm:mt-14">{children}</div>
+    // Sempre no escuro padrão: os seletores de tema valem em qualquer elemento.
+    <section aria-labelledby="aberto-titulo" id="aberto" data-theme="default-dark" className="bg-bg text-fg">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:gap-14">
+        <div className="flex flex-col gap-4.5">
+          <h2 id="aberto-titulo" className={TITULO_H2}>
+            Aberto de verdade. Rode o seu.
+          </h2>
+          <p className="text-lg leading-relaxed text-muted">
+            O código é AGPL-3.0. Escola, cursinho popular ou coletivo pode subir o próprio OpENEM: banco,
+            API e app num comando, com as provas oficiais importadas na primeira vez.
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-3">
+            <a href={`${DOCS_URL}hospedar/instalacao/`} className="btn btn-primary aperta min-h-12 px-5 text-base">
+              Guia de instalação
+            </a>
+            <a href={`${DOCS_URL}contribuir/desenvolvimento/`} className="btn btn-ghost aperta min-h-12 px-5 text-base">
+              Como contribuir
+            </a>
+          </div>
+        </div>
+        <div className="card overflow-hidden rounded-[1.25rem]">
+          <p className="font-data border-b border-line bg-surface-2 px-5.5 py-3 text-xs text-muted">terminal</p>
+          <pre className="font-data overflow-x-auto p-5.5 text-sm leading-[1.9]">
+            <code>
+              {COMANDOS.map((c) => (
+                <span key={c} className="block">
+                  <span className="text-muted select-none">$ </span>
+                  {c}
+                </span>
+              ))}
+            </code>
+          </pre>
+          <p className="border-t border-line px-5.5 py-3.5 text-sm text-muted">
+            No <code className="font-data">.env</code>, defina <code className="font-data">POSTGRES_PASSWORD</code> e{' '}
+            <code className="font-data">JWT_SECRET</code> antes de subir.
+          </p>
+        </div>
+      </div>
     </section>
   );
 }
-
-// Capturas reais do app local (ver public/telas). `temas` marca as que têm
-// versão clara e escura; `celular` as que têm uma captura de celular, servida
-// em tela estreita (a de desktop encolhida ficava ilegível). Caderno e lousa
-// têm cores fixas.
-interface ImagemDoBento {
-  src: string;
-  alt: string;
-  w: number;
-  h: number;
-  temas?: boolean;
-  celular?: boolean;
-}
-
-const SIMULADO: { titulo: string; texto: string; img: ImagemDoBento }[] = [
-  {
-    titulo: 'Simulado no padrão do ENEM',
-    texto: 'Por prova ou por tema, com o tempo da prova e a correção na hora.',
-    img: {
-      src: '/telas/simulado',
-      alt: 'Simulado do ENEM 2023, 2º dia, em andamento no OpENEM, com o cronômetro e a primeira questão.',
-      w: 1600,
-      h: 1000,
-      temas: true,
-      celular: true,
-    },
-  },
-  {
-    titulo: 'Caderno em PDF',
-    texto: 'Duas colunas, cartão-resposta e gabarito, prontos para imprimir.',
-    img: {
-      src: '/telas/caderno.webp',
-      alt: 'Página do caderno em PDF do ENEM 2024, 2º dia, gerado pelo OpENEM, em duas colunas.',
-      w: 900,
-      h: 1273,
-    },
-  },
-  {
-    titulo: 'Quadro da sala',
-    texto: 'Fazendo no papel? A lousa marca o tempo que falta, como o fiscal faz na sala.',
-    img: {
-      src: '/telas/quadro.webp',
-      alt: 'Lousa do OpENEM com o horário de início, de término e o tempo restante.',
-      w: 1600,
-      h: 1000,
-    },
-  },
-  {
-    titulo: 'Do seu jeito',
-    texto: 'Área, matéria e assunto se somam no mesmo simulado, e o recorte fica salvo para repetir.',
-    img: {
-      src: '/telas/recorte',
-      alt: 'Cartão Monte o seu por tema do OpENEM, com as áreas, a matéria e a quantidade de questões.',
-      w: 716,
-      h: 1198,
-      temas: true,
-    },
-  },
-];
-
-/** Imagem de um bloco da grade: lados claro/escuro e, quando há, a versão de celular. */
-function ImagemDoBloco({ img, className }: { img: ImagemDoBento; className: string }) {
-  const lados = img.temas
-    ? (['clara', 'escura'] as const).map((lado) => ({
-        src: `${img.src}-${lado}.webp`,
-        celular: img.celular ? `${img.src}-celular-${lado}.webp` : null,
-        cls: lado === 'clara' ? 'tela-clara' : 'tela-escura',
-      }))
-    : [{ src: img.src, celular: null, cls: '' }];
-  return (
-    <>
-      {lados.map(({ src, celular, cls }) => (
-        <picture key={src} className={cls}>
-          {celular && <source media="(max-width: 767px)" srcSet={celular} />}
-          <img
-            src={src}
-            alt={img.alt}
-            width={img.w}
-            height={img.h}
-            loading="lazy"
-            decoding="async"
-            className={`w-full border border-line object-cover object-top ${className}`}
-          />
-        </picture>
-      ))}
-    </>
-  );
-}
-
-const JEITOS: { titulo: string; texto: string }[] = [
-  {
-    titulo: 'No celular ou no computador',
-    texto: 'Instala direto do navegador, sem loja, e a conta é a mesma nos dois.',
-  },
-  {
-    titulo: 'Sem internet, em parte',
-    texto: 'As questões que você já abriu ficam no aparelho, e as respostas sobem quando a conexão volta.',
-  },
-  {
-    titulo: 'Temas customizáveis',
-    texto: 'Claro, escuro, OLED e alto contraste, ou um tema com as suas cores.',
-  },
-  {
-    titulo: 'Gamificação se você quiser',
-    texto: 'XP, ligas e dias seguidos para quem gosta; um botão no perfil desliga tudo.',
-  },
-];
-
-const PERGUNTAS: { p: string; r: string }[] = [
-  {
-    p: 'É grátis mesmo?',
-    r: 'Sim. Não existe plano pago nem anúncio. O OpENEM é software livre, com o código aberto no GitHub.',
-  },
-  {
-    p: 'Preciso criar conta?',
-    r: 'Sim, com e-mail e senha. É a conta que guarda suas respostas, a sua revisão e o seu progresso.',
-  },
-  {
-    p: 'De onde vêm as questões?',
-    r: 'Das provas oficiais do ENEM aplicadas pelo INEP, de 1998 a 2025, incluindo reaplicações e outras aplicações. O texto é reproduzido como saiu no caderno.',
-  },
-  {
-    p: 'Funciona sem internet?',
-    r: 'Em parte. As questões que você já abriu ficam no aparelho, e as respostas dadas sem internet são enviadas quando a conexão volta. Avaliar flashcards e entregar um simulado precisam de conexão.',
-  },
-];
 
 export function Landing() {
   return (
@@ -300,139 +390,39 @@ export function Landing() {
 
       <main id="conteudo">
         <Hero />
-
-        <Secao
-          id="depois"
-          titulo="Respondeu? O app cuida do resto."
-          texto="Cada resposta alimenta a sua revisão, as questões recomendadas e o seu desempenho. São estas as telas, do app de verdade."
-          className="pt-24 sm:pt-32 lg:pt-40"
-        >
-          <JanelaDoApp />
-        </Secao>
-
-        <Secao id="simulado" titulo="No fim de semana, a prova inteira." className="pt-28 sm:pt-36 lg:pt-44">
-          <div className="grid gap-4 md:grid-cols-6 md:grid-rows-[auto_auto] lg:gap-5">
-            {SIMULADO.map((s, i) => (
-              <article
-                key={s.titulo}
-                className={`card flex flex-col overflow-hidden ${
-                  i === 0
-                    ? 'md:col-span-4'
-                    : i === 1
-                      ? 'md:col-span-2 md:row-span-2'
-                      : i === 2
-                        ? 'md:col-span-2'
-                        : 'md:col-span-2'
-                }`}
-              >
-                <div className="p-5 sm:p-7">
-                  <h3 className="font-display text-xl font-bold tracking-tight sm:text-2xl">{s.titulo}</h3>
-                  <p className="mt-2 max-w-[42ch] leading-relaxed text-muted">{s.texto}</p>
-                </div>
-                <div
-                  className={`px-5 sm:px-7 ${
-                    // O caderno ocupa a altura do bloco (duas linhas da grade).
-                    i === 1 ? 'min-h-0 flex-1 pb-5 sm:pb-7 md:[&_img]:h-full md:[&_picture]:block md:[&_picture]:h-full' : 'mt-auto'
-                  }`}
-                >
-                  <ImagemDoBloco
-                    img={s.img}
-                    className={
-                      i === 0
-                        ? 'aspect-[4/5] rounded-t-xl border-b-0 md:aspect-[16/9]'
-                        : i === 1
-                          ? 'rounded-xl md:object-left-top'
-                          : 'aspect-[16/9] rounded-t-xl border-b-0'
-                    }
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
-        </Secao>
-
-        <Secao
-          id="arquivo"
-          titulo="Todos os temas de redação, desde 1998."
-          texto="Escolha um ano para ver o tema da redação daquela prova. A proposta completa, com os textos motivadores, está no app."
-          className="pt-28 sm:pt-36 lg:pt-44"
-        >
-          <Arquivo />
-        </Secao>
-
-        <Secao id="jeito" titulo="Do jeito que você estuda." className="pt-28 sm:pt-36 lg:pt-44">
-          <dl className="grid border-t border-line md:grid-cols-2 md:gap-x-14">
-            {JEITOS.map(({ titulo, texto }) => (
-              <div key={titulo} className="grid gap-1.5 border-b border-line py-6 sm:py-7">
-                <dt className="font-display text-lg font-bold tracking-tight">{titulo}</dt>
-                <dd className="max-w-[44ch] leading-relaxed text-muted">{texto}</dd>
-              </div>
-            ))}
-          </dl>
-        </Secao>
-
-        <section aria-labelledby="livre-titulo" className="mt-28 border-y border-line bg-surface sm:mt-36 lg:mt-44">
-          <div className="mx-auto grid max-w-[1760px] gap-8 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end lg:gap-14 lg:px-14 lg:py-28">
-            <h2
-              id="livre-titulo"
-              className="max-w-[14ch] font-display text-[2.25rem] leading-[1] font-extrabold tracking-[-0.035em] text-balance sm:text-5xl lg:text-[4rem]"
-            >
-              Ninguém cobra. O&nbsp;código é aberto.
-            </h2>
-            <div>
-              <p className="max-w-[52ch] text-lg leading-relaxed text-muted">
-                Sem anúncio e sem plano pago. O OpENEM é software livre (AGPL-3.0): o código está no
-                GitHub, e qualquer escola ou cursinho pode rodar a própria cópia.
-              </p>
-              <a
-                href={GITHUB_URL}
-                className="mt-7 inline-flex items-center gap-2 font-semibold text-fg underline decoration-brand decoration-2 underline-offset-[6px] hover:text-brand"
-              >
-                <GithubLogo size={20} />
-                Ver o código no GitHub
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <Secao id="perguntas" titulo="Perguntas frequentes" className="pt-28 sm:pt-36 lg:pt-44">
-          <div className="faq max-w-4xl divide-y divide-line border-y border-line">
-            {PERGUNTAS.map(({ p, r }) => (
-              <details key={p} className="group">
-                <summary className="flex items-center justify-between gap-4 py-6 text-lg font-semibold sm:text-xl">
-                  {p}
-                  <Plus size={20} className="seta shrink-0 text-muted" />
-                </summary>
-                <p className="max-w-[62ch] pb-7 text-lg leading-relaxed text-muted">{r}</p>
-              </details>
-            ))}
-          </div>
-        </Secao>
+        <Numeros />
+        <Recursos />
+        <Redacoes />
+        <NoPapel />
+        <Aberto />
 
         <section
           aria-labelledby="fim-titulo"
-          className="mx-auto max-w-[1760px] px-4 pt-28 pb-24 sm:px-6 sm:pt-36 sm:pb-32 lg:px-14 lg:pt-48 lg:pb-40"
+          className="mx-auto flex max-w-[1200px] flex-col items-center gap-5.5 px-4 py-28 text-center sm:px-6 sm:py-32"
         >
           <h2
             id="fim-titulo"
-            className="letreiro-fim font-display leading-[0.9] font-extrabold tracking-[-0.04em] text-balance"
+            className="max-w-[14em] font-display text-[2.5rem] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-6xl lg:text-[4rem]"
           >
-            A próxima questão é sua.
+            Sua próxima questão está a um clique.
           </h2>
-          <div className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <BotaoEstudar />
-            <p className="text-sm font-medium text-muted">Grátis, sem anúncio.</p>
-          </div>
+          <p className="max-w-[34em] text-lg leading-relaxed text-muted">
+            Crie a conta, diga sua meta e quantos minutos tem por dia, e comece pela prova que quiser.
+          </p>
+          <BotaoEstudar className="mt-1 py-4 text-lg" />
         </section>
       </main>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1760px] flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-14">
-          <div>
+        <div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-6 px-4 pt-9 pb-12 sm:px-6">
+          <div className="flex max-w-[30em] flex-col gap-1.5">
             <Wordmark />
-            <p className="mt-1 text-sm text-muted">Preparação gratuita e de código aberto para o ENEM.</p>
+            <p className="text-[0.95rem] text-muted">
+              Preparação gratuita e de código aberto para o ENEM. Questões e temas de redação são das provas
+              oficiais do INEP; o OpENEM não tem vínculo com o INEP.
+            </p>
           </div>
-          <nav aria-label="Rodapé" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <nav aria-label="Rodapé" className="flex flex-wrap items-start gap-x-6 gap-y-2 text-[0.95rem]">
             <a href={DOCS_URL} className="text-muted hover:text-fg">
               Documentação
             </a>
