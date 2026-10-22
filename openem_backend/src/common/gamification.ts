@@ -73,8 +73,9 @@ export function activeStreak(
   now: Date = new Date(),
 ): number {
   if (!state.lastActivityOn) return 0;
-  const diffDays = Math.round(
-    (startOfDayUtc(now) - startOfDayUtc(state.lastActivityOn)) / DAY_MS,
+  const diffDays = daysBetween(
+    activityDay(state.lastActivityOn),
+    studyDay(now),
   );
   return diffDays <= 1 ? state.currentStreak : 0;
 }
