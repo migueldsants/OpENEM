@@ -63,6 +63,22 @@ export function updateStreak(
   };
 }
 
+/**
+ * Sequência que vale agora. O valor gravado só muda quando há atividade, então
+ * quem parou de estudar continuava vendo "5 dias" uma semana depois. Se a
+ * última atividade foi hoje ou ontem a sequência segue viva; antes disso, é 0.
+ */
+export function activeStreak(
+  state: Pick<StreakState, 'currentStreak' | 'lastActivityOn'>,
+  now: Date = new Date(),
+): number {
+  if (!state.lastActivityOn) return 0;
+  const diffDays = Math.round(
+    (startOfDayUtc(now) - startOfDayUtc(state.lastActivityOn)) / DAY_MS,
+  );
+  return diffDays <= 1 ? state.currentStreak : 0;
+}
+
 // ---- XP (os "pontos" acumulados são o XP total que sobe de nível) ----
 
 export const POINTS = {

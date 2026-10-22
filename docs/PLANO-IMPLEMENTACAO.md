@@ -62,6 +62,8 @@ Frontend:
 ## Frente 6 — IA: Correção de Redação (Fase 3)
 **Branch:** `feature/fase3-ia-redacao` · **Esforço:** L
 
+> **Removida (out/2026):** a correção de redação por IA saiu da API (rotas `ai-available` e `ai-evaluation`, `common/essay-ai/`, `ESSAY_AI_PROVIDER` e `AI_ESSAY_DAILY_LIMIT`). O corretor vive no repositório separado `AI-Skill-Corretor-Redacao-ENEM`, listado na tela Ferramentas. A camada `common/ai/` continua para o comentário de questão e a classificação de assunto.
+
 - [ ] Provedor: Claude (Anthropic), `claude-opus-4-8`; chave via `.env`.
 - [ ] Endpoint que gera `EssayEvaluation` (5 competências + feedback).
 - [ ] Fallback para rubrica manual quando IA desabilitada.

@@ -1,5 +1,6 @@
 import {
   computeNextReview,
+  MAX_INTERVAL_DAYS,
   qualityFromCorrectness,
   ReviewState,
 } from './spaced-repetition';
@@ -49,6 +50,20 @@ describe('computeNextReview (SM-2)', () => {
       s = computeNextReview(s, 0, now);
     }
     expect(s.easeFactor).toBeGreaterThanOrEqual(1.3);
+  });
+
+  it('acertos seguidos não passam do teto de um ano (data sempre válida)', () => {
+    let s: ReviewState = { easeFactor: 2.5, intervalD: 0, repetition: 0 };
+    let r = computeNextReview(s, 5, now);
+    for (let i = 0; i < 40; i++) {
+      r = computeNextReview(s, 5, now);
+      s = r;
+    }
+    expect(r.intervalD).toBe(MAX_INTERVAL_DAYS);
+    expect(Number.isNaN(r.dueAt.getTime())).toBe(false);
+    expect(r.dueAt.getTime() - now.getTime()).toBe(
+      MAX_INTERVAL_DAYS * 86_400_000,
+    );
   });
 
   it('qualityFromCorrectness mapeia acerto/erro', () => {

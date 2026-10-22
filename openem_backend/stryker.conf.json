@@ -19,7 +19,6 @@
     "!src/auth/jwt-auth.guard.ts",
     "!src/auth/jwt.strategy.ts",
     "!src/auth/current-user.decorator.ts",
-    "!src/common/essay-ai/**",
     "!src/essays/essays.service.ts",
     "!src/common/pdf/simulado-pdf.ts",
     "!src/common/pdf/themes.ts",

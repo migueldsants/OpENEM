@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -61,24 +60,5 @@ export class EssaysController {
     @Body() dto: EvaluateEssayDto,
   ) {
     return this.essaysService.evaluate(user.userId, id, dto);
-  }
-
-  @Get('ai-available')
-  @ApiOperation({ summary: 'Indica se a correção por IA está disponível' })
-  aiAvailable() {
-    return this.essaysService.aiAvailable();
-  }
-
-  // Cada correção é uma chamada paga ao provedor de IA. Uma redação só é
-  // corrigida uma vez, mas criar redações é livre: sem teto próprio, um script
-  // gastaria a chave do projeto no ritmo do limite global (100/min).
-  @Post('submissions/:id/ai-evaluation')
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @ApiOperation({ summary: 'Corrige a redação por IA (provedor configurado)' })
-  evaluateWithAi(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string,
-  ) {
-    return this.essaysService.evaluateWithAi(user.userId, id);
   }
 }

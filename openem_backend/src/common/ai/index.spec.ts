@@ -3,7 +3,6 @@ import { toGeminiSchema } from './providers/gemini-schema';
 
 const CHAVES = [
   'AI_PROVIDER',
-  'ESSAY_AI_PROVIDER',
   'ANTHROPIC_API_KEY',
   'OPENAI_API_KEY',
   'OPENAI_BASE_URL',
@@ -45,16 +44,6 @@ describe('seleção de provedor de IA', () => {
   it('AI_PROVIDER apontando para provedor sem chave não vale', () => {
     process.env.AI_PROVIDER = 'anthropic';
     expect(activeAiProvider()).toBeNull();
-  });
-
-  it('o escopo da redação respeita ESSAY_AI_PROVIDER, que já está publicado', () => {
-    // Retrocompatibilidade: o docker-compose entregue passa essa variável.
-    process.env.ANTHROPIC_API_KEY = 'sk-ant';
-    process.env.GEMINI_API_KEY = 'g-test';
-    process.env.ESSAY_AI_PROVIDER = 'gemini';
-    expect(activeAiProvider('essay')).toBe('gemini');
-    // Fora do escopo da redação, ESSAY_AI_PROVIDER é ignorado.
-    expect(activeAiProvider()).toBe('anthropic');
   });
 
   it('GOOGLE_API_KEY também configura o Gemini', () => {

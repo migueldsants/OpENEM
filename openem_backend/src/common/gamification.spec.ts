@@ -1,6 +1,7 @@
 import {
   ACHIEVEMENTS,
   achievementProgress,
+  activeStreak,
   comboMultiplierForStreak,
   dailyBonusXp,
   evaluateAchievements,
@@ -18,6 +19,27 @@ import {
 } from './gamification';
 
 const day = (iso: string) => new Date(`${iso}T12:00:00Z`);
+
+describe('activeStreak', () => {
+  const state = (last: string | null, currentStreak = 5) => ({
+    currentStreak,
+    lastActivityOn: last ? day(last) : null,
+  });
+
+  it('segue valendo se a última atividade foi hoje ou ontem', () => {
+    expect(activeStreak(state('2026-10-21'), day('2026-10-21'))).toBe(5);
+    expect(activeStreak(state('2026-10-20'), day('2026-10-21'))).toBe(5);
+  });
+
+  it('zera quando o aluno ficou um dia inteiro sem estudar', () => {
+    expect(activeStreak(state('2026-10-19'), day('2026-10-21'))).toBe(0);
+    expect(activeStreak(state('2026-10-01', 30), day('2026-10-21'))).toBe(0);
+  });
+
+  it('sem atividade nenhuma é zero', () => {
+    expect(activeStreak(state(null), day('2026-10-21'))).toBe(0);
+  });
+});
 
 describe('updateStreak', () => {
   it('inicia a sequência na primeira atividade', () => {

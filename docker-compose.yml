@@ -57,10 +57,11 @@ services:
       # limiting vê só o IP do container e trata o site inteiro como um cliente
       # (10 senhas erradas bloqueariam o login de todos).
       - TRUST_PROXY=1
-      # Correção de redação por IA (Fase 3) — opcionais. Sem nenhuma chave
-      # configurada a correção por IA fica indisponível e o app recai na rubrica
-      # manual. Ver openem_backend/.env.example para detalhes de cada provedor.
-      - ESSAY_AI_PROVIDER=${ESSAY_AI_PROVIDER:-}
+      # Provedor de IA — opcional. Serve o comentário gerado das questões e a
+      # classificação de assunto; sem nenhuma chave configurada esses recursos
+      # ficam indisponíveis e o resto do app segue igual. Ver
+      # openem_backend/.env.example para detalhes de cada provedor.
+      - AI_PROVIDER=${AI_PROVIDER:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -69,9 +70,8 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-}
       # Cota das chamadas pagas à IA (24 h). Vazio usa o padrão do backend:
-      # 5 correções e 30 comentários por aluno, sem teto global. Em produção,
-      # defina AI_DAILY_LIMIT (soma de todos os alunos) para limitar o custo.
-      - AI_ESSAY_DAILY_LIMIT=${AI_ESSAY_DAILY_LIMIT:-}
+      # 30 comentários por aluno, sem teto global. Em produção, defina
+      # AI_DAILY_LIMIT (soma de todos os alunos) para limitar o custo.
       - AI_EXPLANATION_DAILY_LIMIT=${AI_EXPLANATION_DAILY_LIMIT:-}
       - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-}
     ports:
