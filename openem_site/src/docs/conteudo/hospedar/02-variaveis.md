@@ -59,8 +59,7 @@ Esse é o limite padrão. As rotas caras (cadastro, login, PDF, IA, escrita no f
 
 | Variável | Padrão | O que faz |
 | --- | --- | --- |
-| `AI_PROVIDER` | detecção automática | `anthropic`, `openai`, `openai-compatible` ou `gemini`. Vale para o comentário de questão e a classificação de assunto. Fora do compose. |
-| `ESSAY_AI_PROVIDER` | o valor de `AI_PROVIDER` | Mesmos valores; vale só para a correção de redação. |
+| `AI_PROVIDER` | detecção automática | `anthropic`, `openai`, `openai-compatible` ou `gemini`. Vale para o comentário de questão e a classificação de assunto. |
 | `AI_EXPLANATION_MODEL` | modelo do provedor | Modelo do comentário de questão. Fora do compose. |
 | `AI_CLASSIFY_MODEL` | modelo do provedor | Modelo do script de classificação de assunto. Fora do compose. |
 | `ANTHROPIC_API_KEY` | nenhum | Chave da Anthropic (Claude). |
@@ -80,9 +79,8 @@ Detalhes em [Inteligência artificial](/docs/hospedar/ia/).
 
 | Variável | Padrão | O que faz |
 | --- | --- | --- |
-| `AI_ESSAY_DAILY_LIMIT` | `5` | Correções de redação por IA por aluno, numa janela de 24 horas. `0` desliga esse limite. |
-| `AI_EXPLANATION_DAILY_LIMIT` | `30` | Comentários de questão gerados por aluno em 24 horas. Abrir um comentário já gravado não conta. `0` desliga esse limite. |
-| `AI_DAILY_LIMIT` | `0` (sem teto) | Teto global: soma das chamadas pagas de todos os alunos e dos dois recursos em 24 horas. |
+| `AI_EXPLANATION_DAILY_LIMIT` | `30` | Comentários de questão gerados por aluno, numa janela de 24 horas. Abrir um comentário já gravado não conta. `0` desliga esse limite. |
+| `AI_DAILY_LIMIT` | `0` (sem teto) | Teto global: soma das chamadas pagas de todos os alunos em 24 horas. |
 
 ## PDF
 

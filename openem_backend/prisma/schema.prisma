@@ -513,9 +513,11 @@ model EssayEvaluation {
   c5                 Int
   total              Int // 0..1000
   feedback           String? // comentário geral da redação
-  // JSON (IA): resumo por competência { c1..c5: string }
+  // As duas colunas JSON abaixo vinham da correção por IA, que foi removida:
+  // ficam para não perder as avaliações antigas, e nada novo as preenche.
+  // JSON: resumo por competência { c1..c5: string }
   competencyFeedback String?
-  // JSON (IA): anotações por erro [{ competency, start, end, excerpt, comment, suggestion }]
+  // JSON: anotações por erro [{ competency, start, end, excerpt, comment, suggestion }]
   annotations        String?
   evaluatedAt        DateTime        @default(now())
 }
@@ -734,14 +736,15 @@ model UserThemeLike {
   @@unique([themeId, userId])
 }
 
-/// Chamada paga à IA feita para um aluno (correção de redação, comentário de
-/// questão). Uma linha por tentativa, gravada antes da chamada: é o que conta
-/// a cota de 24 h por aluno e o teto global (ver ai-usage/ai-usage.service.ts).
+/// Chamada paga à IA feita para um aluno (comentário de questão). Uma linha por
+/// tentativa, gravada antes da chamada: é o que conta a cota de 24 h por aluno
+/// e o teto global (ver ai-usage/ai-usage.service.ts).
 model AiUsage {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// essay | explanation
+  /// explanation. Linhas antigas podem ter `essay`, da correção de redação por
+  /// IA que foi removida; elas só contam no teto global até saírem da janela.
   feature   String
   createdAt DateTime @default(now())
 

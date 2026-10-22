@@ -9,7 +9,7 @@ A tela **Redações** reúne os 48 temas oficiais de redação do ENEM, de 1998 
 
 Cada tema traz a proposta, os textos motivadores e a imagem da página do caderno, como o INEP imprimiu.
 
-> **Atenção:** esta tela é um catálogo para ler e praticar. O app não tem uma tela para escrever nem para corrigir redação.
+> **Atenção:** esta tela é um catálogo para ler e praticar. O app não tem uma tela para escrever redação.
 
 ## Encontrar um tema
 
@@ -44,10 +44,6 @@ Uma forma de usar o catálogo:
 2. Escreva a redação à mão, numa folha.
 3. Marque o tempo com um timer em [Cronômetros](/docs/alunos/cronograma-e-foco/).
 4. No fim, releia a proposta e confira se o seu texto responde exatamente ao que ela pede.
-
-## Correção fora do app
-
-Na tela **Ferramentas** há um link para o **Corretor de redação do Enem**, um projeto aberto separado do app. Ele é uma skill para agentes de IA que dá nota de 0 a 200 em cada uma das cinco competências da matriz do INEP. Para usar, você cola a redação e o tema num chat de IA que tenha a skill instalada. Ela não roda dentro do OpENEM.
 
 ## Sem internet
 

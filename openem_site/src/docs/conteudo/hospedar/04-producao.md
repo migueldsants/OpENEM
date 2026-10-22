@@ -51,7 +51,7 @@ Se o seu proxy HTTPS reescrever cabeçalhos, preserve esses. Quem mudar o app pa
 ## Rate limiting
 
 - Limite padrão: 100 requisições por minuto, contadas por rota e por IP (`THROTTLE_TTL_MS` e `THROTTLE_LIMIT`).
-- Limites próprios, por minuto e por IP: cadastro 5, login 10, PDF 10, comentário por IA 10, correção de redação por IA 5, criar tópico ou responder no fórum 10, criar tema 20 e editar tema 30.
+- Limites próprios, por minuto e por IP: cadastro 5, login 10, PDF 10, comentário por IA 10, criar tópico ou responder no fórum 10, criar tema 20 e editar tema 30.
 - Quem passa do limite recebe HTTP 429.
 - Os contadores ficam na memória do processo da API: reiniciar o backend zera todos, e com mais de uma instância cada uma conta por conta própria.
 

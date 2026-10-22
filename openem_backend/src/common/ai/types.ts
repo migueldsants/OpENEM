@@ -9,7 +9,7 @@ export type AiProvider =
  * Uma chamada de IA que devolve JSON conforme um schema.
  *
  * Os provedores devolvem o TEXTO cru da resposta e não normalizam nada: cada
- * caso de uso (redação, comentário de questão, classificação) tem a sua própria
+ * caso de uso (comentário de questão, classificação) tem a sua própria
  * validação, e é ela que sabe o que fazer com uma resposta fora do esperado.
  */
 export interface JsonCompletionRequest {

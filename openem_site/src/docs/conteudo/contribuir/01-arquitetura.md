@@ -32,7 +32,7 @@ Cada projeto tem o próprio `package.json`: os comandos `npm` rodam de dentro da
 - **Materiais:** `flashcards`, `formulas` (com o caderno de fórmulas em PDF), `videos` e `tools` (a lista da tela Ferramentas, com as estrelas do GitHub).
 - **Progresso e comunidade:** `gamification` (XP, nível, liga, sequência, conquistas, desafio diário), `community` (fórum) e `themes` (temas de cor dos alunos).
 - **Infraestrutura:** `prisma`, `health` e `ai-usage` (cotas das chamadas pagas de IA).
-- **`essays`:** correção de redação por rubrica e por IA. Continua na API, mas o app não tem tela para ele.
+- **`essays`:** envio de redação e correção por rubrica. Continua na API, mas o app não tem tela para ele.
 
 ### Lógica pura em src/common
 
@@ -40,7 +40,7 @@ Regra de negócio que não depende de banco nem de rede fica em `src/common/`, c
 
 O `rootDir` do Jest é `src/`. Por isso lógica testável não mora em `prisma/`: os scripts de lá (seed, import, classificação) importam de `src/common/`. Duas subpastas merecem nota:
 
-- `src/common/ai/` é a camada de provedores de IA (escolha do provedor e uma chamada que devolve JSON). Comentário, classificação e redação passam por ela.
+- `src/common/ai/` é a camada de provedores de IA (escolha do provedor e uma chamada que devolve JSON). O comentário de questão e a classificação de assunto passam por ela.
 - `src/common/pdf/` desenha os PDFs com PDFKit. Todo PDF passa pela fila do `PdfRenderService`, que desenha cada um numa worker thread, porque o desenho é CPU síncrona e travaria a API. Não chame as funções de desenho direto de um serviço.
 
 ### Banco
