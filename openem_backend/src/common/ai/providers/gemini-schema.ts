@@ -3,8 +3,7 @@
  *
  * Sem isso, cada caso de uso precisaria escrever o mesmo schema duas vezes —
  * uma em JSON Schema (Anthropic/OpenAI) e outra com os enums `Type.*` do
- * Gemini. Era exatamente o que acontecia com o schema da redação, e as duas
- * cópias já tinham saído de sincronia.
+ * Gemini, e as duas cópias acabam saindo de sincronia.
  */
 
 type JsonSchema = Record<string, unknown>;

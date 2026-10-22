@@ -6,7 +6,6 @@ import * as openai from './providers/openai';
 
 const CHAVES = [
   'AI_PROVIDER',
-  'ESSAY_AI_PROVIDER',
   'ANTHROPIC_API_KEY',
   'OPENAI_API_KEY',
   'OPENAI_BASE_URL',
@@ -50,16 +49,6 @@ describe('seleção de provedor de IA', () => {
     expect(activeAiProvider()).toBeNull();
   });
 
-  it('o escopo da redação respeita ESSAY_AI_PROVIDER, que já está publicado', () => {
-    // Retrocompatibilidade: o docker-compose entregue passa essa variável.
-    process.env.ANTHROPIC_API_KEY = 'sk-ant';
-    process.env.GEMINI_API_KEY = 'g-test';
-    process.env.ESSAY_AI_PROVIDER = 'gemini';
-    expect(activeAiProvider('essay')).toBe('gemini');
-    // Fora do escopo da redação, ESSAY_AI_PROVIDER é ignorado.
-    expect(activeAiProvider()).toBe('anthropic');
-  });
-
   it('GOOGLE_API_KEY também configura o Gemini', () => {
     process.env.GOOGLE_API_KEY = 'g-test';
     expect(activeAiProvider()).toBe('gemini');
@@ -81,12 +70,11 @@ describe('seleção de provedor de IA', () => {
     expect(gemini.apiKey()).toBe('g-test');
   });
 
-  it('ESSAY_AI_PROVIDER vazio cai no AI_PROVIDER', () => {
+  it('AI_PROVIDER vazio cai na detecção', () => {
     process.env.ANTHROPIC_API_KEY = 'sk-ant';
     process.env.GEMINI_API_KEY = 'g-test';
-    process.env.ESSAY_AI_PROVIDER = '';
-    process.env.AI_PROVIDER = 'gemini';
-    expect(activeAiProvider('essay')).toBe('gemini');
+    process.env.AI_PROVIDER = '';
+    expect(activeAiProvider()).toBe('anthropic');
   });
 });
 

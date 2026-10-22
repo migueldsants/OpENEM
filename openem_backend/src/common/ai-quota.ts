@@ -6,7 +6,7 @@
  * mais um teto global opcional para o projeto inteiro. Zero desliga o teto.
  */
 
-export type AiFeature = 'essay' | 'explanation';
+export type AiFeature = 'explanation';
 
 export interface AiQuotaLimits {
   /** Chamadas por aluno em 24 h, por recurso. */
@@ -16,7 +16,7 @@ export interface AiQuotaLimits {
 }
 
 export const AI_QUOTA_DEFAULTS: AiQuotaLimits = {
-  perUser: { essay: 5, explanation: 30 },
+  perUser: { explanation: 30 },
   global: 0,
 };
 
@@ -32,10 +32,6 @@ export function aiQuotaLimitsFromEnv(
   };
   return {
     perUser: {
-      essay: naoNegativo(
-        env.AI_ESSAY_DAILY_LIMIT,
-        AI_QUOTA_DEFAULTS.perUser.essay,
-      ),
       explanation: naoNegativo(
         env.AI_EXPLANATION_DAILY_LIMIT,
         AI_QUOTA_DEFAULTS.perUser.explanation,

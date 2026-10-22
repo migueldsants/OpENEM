@@ -20,6 +20,9 @@ import {
   Printer,
   Scroll,
   ArrowUpRight,
+  ArrowUp,
+  ArrowDown,
+  Equals,
   Atom,
   BookOpen,
   CalendarBlank,
@@ -132,6 +135,10 @@ export const IconChevronLeft = shim(CaretLeft, 'bold');
 export const IconChevronRight = shim(CaretRight, 'bold');
 export const IconChevronDown = shim(CaretDown, 'bold');
 export const IconChevronUp = shim(CaretUp, 'bold');
+// Variação de uma semana para a outra (Desempenho).
+export const IconArrowUp = shim(ArrowUp, 'bold');
+export const IconArrowDown = shim(ArrowDown, 'bold');
+export const IconEquals = shim(Equals, 'bold');
 export const IconFilter = shim(SlidersHorizontal, 'bold');
 export const IconFlame = shim(Flame, 'fill');
 export const IconBolt = shim(Lightning, 'fill');

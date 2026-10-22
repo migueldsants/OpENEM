@@ -387,6 +387,15 @@
     box-shadow: var(--glow);
   }
 
+  /* Barra de meta que enche uma vez ao aparecer (Desempenho). Só transform; o
+     bloco de reduced-motion do topo zera a transição. */
+  .barra-enche {
+    transition: transform 700ms cubic-bezier(0.23, 1, 0.32, 1);
+    @starting-style {
+      transform: scaleX(0);
+    }
+  }
+
   /* Ergue no hover — usado em cartões clicáveis. */
   .lift {
     transition:

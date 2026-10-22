@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1440px; height: 900px; overflow: hidden; }
+  body { background: #f5f1f6; color: #211b26; font-family: Inter, sans-serif; position: relative; }
+  .nav { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 56px; }
+  .logo { font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: 24px; letter-spacing: -0.02em; display: flex; gap: 10px; align-items: center; }
+  .logo i { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#d91748,#ff5a7d); display: inline-block; }
+  .logo b { background: linear-gradient(90deg,#d91748,#ff5a7d); -webkit-background-clip: text; color: transparent; }
+  .links { display: flex; gap: 28px; align-items: center; font-size: 15px; font-weight: 500; color: #6b6473; }
+  .links .entrar { color: #211b26; border: 1px solid #ece5ee; background: #fff; padding: 9px 16px; border-radius: 12px; font-weight: 600; }
+  h1 { font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: 158px; line-height: .9; letter-spacing: -0.05em; padding: 34px 56px 0; }
+  h1 .l2 { display: block; color: #d91748; }
+  .apoio { position: absolute; left: 56px; top: 470px; width: 470px; }
+  .apoio p { font-size: 20px; line-height: 1.55; color: #4d4555; }
+  .acoes { margin-top: 28px; display: flex; align-items: center; gap: 18px; }
+  .btn { background: #d91748; color: #fff; font-weight: 600; font-size: 17px; padding: 15px 24px; border-radius: 14px; }
+  .acoes span { font-size: 15px; color: #6b6473; }
+  .card { position: absolute; right: 56px; top: 236px; width: 520px; background: #fff; border: 1px solid #ece5ee; border-radius: 20px; box-shadow: 0 1px 2px rgba(40,14,22,.05), 0 30px 60px -20px rgba(40,14,22,.22); }
+  .cab { display: flex; gap: 14px; padding: 22px 24px 8px; }
+  .faixa { width: 4px; height: 44px; border-radius: 9px; background: #2e63bf; flex: none; margin-top: 3px; }
+  .meta { font-size: 13px; display: flex; gap: 10px; align-items: center; }
+  .meta b { color: #2e63bf; }
+  .meta code { font-family: 'JetBrains Mono'; background: #faf6fa; color: #6b6473; padding: 2px 7px; border-radius: 7px; font-size: 12px; }
+  .enun { font-size: 15px; line-height: 1.55; margin-top: 8px; }
+  .cmd { font-size: 15px; font-weight: 600; margin-top: 10px; }
+  .alts { padding: 10px 24px 0; display: grid; gap: 7px; }
+  .alt { display: flex; gap: 12px; align-items: center; border: 1px solid #ece5ee; border-radius: 12px; padding: 9px 12px; font-size: 15px; }
+  .alt i { width: 26px; height: 26px; border-radius: 8px; background: #faf6fa; color: #6b6473; font-style: normal; font-weight: 600; font-size: 13px; display: grid; place-items: center; }
+  .alt.sel { border-color: #d91748; background: rgba(217,23,72,.06); }
+  .alt.sel i { background: #d91748; color: #fff; }
+  .resp { margin: 14px 24px 22px; background: #d91748; color: #fff; text-align: center; font-weight: 600; padding: 12px; border-radius: 12px; font-size: 16px; }
+  .chao { position: absolute; left: 0; right: 0; bottom: 0; height: 92px; border-top: 1px solid #ece5ee; background: #fff; display: flex; align-items: center; gap: 0; padding: 0 56px; }
+  .chao .rot { font-size: 13px; color: #6b6473; width: 190px; line-height: 1.35; }
+  .anos { flex: 1; display: grid; grid-template-columns: repeat(28, 1fr); gap: 4px; }
+  .ano { font-family: 'JetBrains Mono'; font-size: 11px; color: #a39bab; text-align: center; padding: 8px 0; border-radius: 7px; }
+  .ano.tem { color: #211b26; background: #faf6fa; border: 1px solid #ece5ee; }
+  .ano.on { background: #d91748; color: #fff; border-color: #d91748; }
+</style>
+</head>
+<body>
+  <div class="nav">
+    <div class="logo"><i></i>Op<b>ENEM</b></div>
+    <div class="links"><span>Documentação</span><span>GitHub</span><span class="entrar">Entrar</span></div>
+  </div>
+  <h1>A prova de verdade.<span class="l2">De graça.</span></h1>
+  <div class="apoio">
+    <p>Todas as provas oficiais do ENEM, de 1998 a 2025, com simulados no padrão do INEP e um app que mostra onde você está errando.</p>
+    <div class="acoes"><span class="btn">Começar a estudar →</span><span>Sem anúncio, sem plano pago.</span></div>
+  </div>
+  <div class="card">
+    <div class="cab">
+      <span class="faixa"></span>
+      <div>
+        <div class="meta"><b>Matemática</b><code>ENEM 2024 · 137</code></div>
+        <p class="enun">Ao calcular a média de suas notas em 4 provas, um estudante dividiu, por engano, a soma das notas por 5. Com isso, a média obtida foi 1 unidade menor do que deveria ser, caso fosse calculada corretamente.</p>
+        <p class="cmd">O valor correto da média das notas desse estudante é</p>
+      </div>
+    </div>
+    <div class="alts">
+      <div class="alt"><i>A</i>4.</div>
+      <div class="alt sel"><i>B</i>5.</div>
+      <div class="alt"><i>C</i>6.</div>
+      <div class="alt"><i>D</i>19.</div>
+      <div class="alt"><i>E</i>21.</div>
+    </div>
+    <div class="resp">Responder</div>
+  </div>
+  <div class="chao">
+    <div class="rot">Todas as provas de 1998 a 2025. Toque num ano marcado:</div>
+    <div class="anos">
+      <span class="ano">1998</span><span class="ano">1999</span><span class="ano">2000</span><span class="ano">2001</span><span class="ano">2002</span><span class="ano">2003</span><span class="ano">2004</span><span class="ano">2005</span><span class="ano">2006</span><span class="ano">2007</span><span class="ano">2008</span><span class="ano">2009</span><span class="ano">2010</span><span class="ano">2011</span><span class="ano">2012</span><span class="ano">2013</span><span class="ano">2014</span><span class="ano">2015</span><span class="ano">2016</span><span class="ano">2017</span><span class="ano tem">2018</span><span class="ano">2019</span><span class="ano">2020</span><span class="ano">2021</span><span class="ano">2022</span><span class="ano tem">2023</span><span class="ano on">2024</span><span class="ano">2025</span>
+    </div>
+  </div>
+</body>
+</html>

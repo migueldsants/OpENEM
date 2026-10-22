@@ -1,7 +1,6 @@
 import { EssaysService } from './essays.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiUsageService } from '../ai-usage/ai-usage.service';
 
 describe('EssaysService', () => {
   it('lista os temas do mais recente ao mais antigo, com os sem ano no fim', async () => {
@@ -11,7 +10,6 @@ describe('EssaysService', () => {
     const service = new EssaysService(
       prisma as unknown as PrismaService,
       {} as GamificationService,
-      { reserve: jest.fn() } as unknown as AiUsageService,
     );
 
     await service.listPrompts();

@@ -169,3 +169,74 @@ describe('PerformanceService.overview() — questão sem assunto classificado', 
     expect(res.bySubject).toEqual([]);
   });
 });
+
+describe('PerformanceService.weeks()', () => {
+  // Quarta-feira, 21/10/2026, 15h em Brasília.
+  const AGORA = new Date('2026-10-21T18:00:00Z');
+
+  function makeWeeksService(
+    answers: unknown[],
+    focus: unknown[] = [],
+    minutesPerDay = 90,
+  ) {
+    const prisma = {
+      answer: { findMany: jest.fn().mockResolvedValue(answers) },
+      focusSession: { findMany: jest.fn().mockResolvedValue(focus) },
+      profile: { findUnique: jest.fn().mockResolvedValue({ minutesPerDay }) },
+    } as any;
+    return { service: new PerformanceService(prisma), prisma };
+  }
+
+  it('busca desde a semana mais antiga (ou a janela das prioridades) com um dia de folga', async () => {
+    const { service, prisma } = makeWeeksService([]);
+    await service.weeks('u-1', 8, AGORA);
+    const gte: Date =
+      prisma.answer.findMany.mock.calls[0][0].where.createdAt.gte;
+    // 8 semanas a partir da segunda 19/10 começam em 31/08; menos um dia.
+    expect(gte.toISOString()).toBe('2026-08-30T00:00:00.000Z');
+    expect(prisma.focusSession.findMany.mock.calls[0][0].where.userId).toBe(
+      'u-1',
+    );
+  });
+
+  it('usa a área da questão, ou a da matéria do assunto, e devolve a meta do perfil', async () => {
+    const { service } = makeWeeksService(
+      [
+        {
+          isCorrect: true,
+          createdAt: new Date('2026-10-21T12:00:00Z'),
+          question: {
+            subjectArea: { name: 'Matemática e suas Tecnologias' },
+            topic: null,
+          },
+        },
+        {
+          isCorrect: false,
+          createdAt: new Date('2026-10-21T12:05:00Z'),
+          question: {
+            subjectArea: null,
+            topic: {
+              id: 't1',
+              name: 'Cinemática',
+              weight: 4,
+              subject: {
+                name: 'Física',
+                subjectArea: {
+                  name: 'Ciências da Natureza e suas Tecnologias',
+                },
+              },
+            },
+          },
+        },
+      ],
+      [{ completedAt: new Date('2026-10-21T13:00:00Z'), durationSec: 1800 }],
+    );
+    const r = await service.weeks('u-1', 2, AGORA);
+    expect(r.goalMinutesPerDay).toBe(90);
+    expect(r.weeks).toHaveLength(2);
+    const atual = r.weeks[0];
+    expect(atual.minutes).toBe(30);
+    expect(atual.areas.find((a) => a.area === 'mat')?.answers).toBe(1);
+    expect(atual.areas.find((a) => a.area === 'nat')?.answers).toBe(1);
+  });
+});

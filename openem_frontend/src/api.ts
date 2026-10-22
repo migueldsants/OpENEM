@@ -443,6 +443,50 @@ export interface HeatmapArea {
   subjects: HeatmapSubject[];
 }
 
+/** Desempenho semana a semana (GET /performance/weeks, issue #90). */
+export type AreaDaSemana = 'mat' | 'nat' | 'hum' | 'lin';
+export interface DiaDaSemana {
+  date: string;
+  answers: number;
+  correct: number;
+  minutes: number;
+  studied: boolean;
+}
+export interface SemanaDeEstudo {
+  start: string;
+  end: string;
+  days: DiaDaSemana[];
+  answers: number;
+  correct: number;
+  /** 0..100, ou null sem resposta na semana. */
+  accuracy: number | null;
+  minutes: number;
+  daysStudied: number;
+  areas: { area: AreaDaSemana; answers: number; correct: number; accuracy: number | null }[];
+  /** Pontos de acerto contra a semana anterior (null se uma delas não teve resposta). */
+  delta: number | null;
+}
+export interface PrioridadeDeEstudo {
+  topicId: string;
+  topic: string;
+  subject: string;
+  area: AreaDaSemana | null;
+  answers: number;
+  correct: number;
+  accuracy: number;
+  /** Incidência do assunto na prova, 1 a 5. */
+  weight: number;
+}
+export interface DesempenhoSemanal {
+  today: string;
+  /** A semana atual primeiro. */
+  weeks: SemanaDeEstudo[];
+  priorities: PrioridadeDeEstudo[];
+  unclassified: number;
+  streak: number;
+  goalMinutesPerDay: number | null;
+}
+
 /** Meta semanal (issue #44) com progresso calculado. */
 export interface WeeklyGoal {
   id: string;
@@ -918,6 +962,8 @@ export const api = {
   performance: (period: '7d' | '30d' | 'all' = '30d') =>
     request<Performance>(`/performance?period=${period}`),
   performanceHeatmap: () => request<HeatmapArea[]>('/performance/heatmap'),
+  performanceWeeks: (weeks = 8) =>
+    request<DesempenhoSemanal>(`/performance/weeks?weeks=${weeks}`),
 
   weeklyGoals: () => request<WeeklyGoal[]>('/weekly-goals'),
   createWeeklyGoal: (goal: {
