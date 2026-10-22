@@ -154,8 +154,9 @@ describe('Performance — filtro de período (issue #20, e2e)', () => {
     const [atual] = res.body.weeks;
     expect(atual.days).toHaveLength(7);
     expect(atual.answers).toBe(1);
-    expect(atual.days.find((d: { date: string }) => d.date === res.body.today))
-      .toMatchObject({ answers: 1, studied: true });
+    expect(
+      atual.days.find((d: { date: string }) => d.date === res.body.today),
+    ).toMatchObject({ answers: 1, studied: true });
     expect(res.body.streak).toBe(1);
     expect(Array.isArray(res.body.priorities)).toBe(true);
     expect(res.body.goalMinutesPerDay).toEqual(expect.any(Number));
