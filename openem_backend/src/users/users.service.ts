@@ -3,6 +3,7 @@ import {
   levelFromXp,
   leagueForLevel,
   ACHIEVEMENTS,
+  visibleAchievements,
 } from '../common/gamification';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -85,7 +86,7 @@ export class UsersService {
       league: { key: league.key, name: league.name },
       currentStreak: user.gamification?.currentStreak ?? 0,
       achievementsUnlocked: unlockedCodes.size,
-      achievementsTotal: ACHIEVEMENTS.length,
+      achievementsTotal: visibleAchievements(unlockedCodes).length,
       featuredAchievements: featured,
     };
   }

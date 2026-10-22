@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () => {
   let app: INestApplication<App>;
@@ -70,6 +71,66 @@ describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () 
       .expect(201);
     expect(res.body.claimed).toBe(false);
     expect(res.body.xpAwarded).toBe(0);
+  });
+
+  it('o resgate entra no histórico de XP, que fecha com o XP total', async () => {
+    const challenge = await request(app.getHttpServer())
+      .get('/api/v1/gamification/daily-challenge')
+      .set(auth())
+      .expect(200);
+    const list = await request(app.getHttpServer())
+      .get(`${SEED_QUESTIONS_URL}&limit=1`)
+      .set(auth())
+      .expect(200);
+    const question = await request(app.getHttpServer())
+      .get(`/api/v1/questions/${list.body.items[0].id}`)
+      .set(auth())
+      .expect(200);
+    for (let i = challenge.body.progress; i < challenge.body.goal; i++) {
+      await request(app.getHttpServer())
+        .post('/api/v1/answers')
+        .set(auth())
+        .send({
+          questionId: question.body.id,
+          chosenId: question.body.alternatives[0].id,
+        })
+        .expect(201);
+    }
+
+    const claim = await request(app.getHttpServer())
+      .post('/api/v1/gamification/daily-challenge/claim')
+      .set(auth())
+      .expect(201);
+    expect(claim.body.claimed).toBe(true);
+    expect(claim.body.xpAwarded).toBe(challenge.body.xpReward);
+
+    const again = await request(app.getHttpServer())
+      .post('/api/v1/gamification/daily-challenge/claim')
+      .set(auth())
+      .expect(201);
+    expect(again.body).toMatchObject({ xpAwarded: 0, reason: 'ja_resgatado' });
+
+    const [history, me] = await Promise.all([
+      request(app.getHttpServer())
+        .get('/api/v1/gamification/history?days=7')
+        .set(auth())
+        .expect(200),
+      request(app.getHttpServer())
+        .get('/api/v1/gamification/me')
+        .set(auth())
+        .expect(200),
+    ]);
+    const daily = history.body.logs.filter(
+      (l: { action: string }) => l.action === 'DAILY_CHALLENGE',
+    );
+    expect(daily).toHaveLength(1);
+    expect(daily[0].xpGained).toBe(challenge.body.xpReward);
+    // Aluno novo: todo o XP dele cabe na janela, então as barras somam o total.
+    const sum = history.body.byDay.reduce(
+      (s: number, d: { xp: number }) => s + d.xp,
+      0,
+    );
+    expect(sum).toBe(me.body.xp);
   });
 
   it('recomenda questões sem revelar o gabarito', async () => {

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { api, type AchievementView } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconTrophy } from '../components/icons';
+import { IconLock, IconTrophy } from '../components/icons';
 import { SkeletonCard } from '../components/Skeleton';
 import { AchievementCard } from './Progresso';
 import { PageHeader } from '../components/PageHeader';
@@ -64,12 +65,15 @@ const CATEGORIES: { key: string; label: string; codes: string[] }[] = [
  */
 export default function Conquistas() {
   const [items, setItems] = useState<AchievementView[] | null>(null);
+  const [disabled, setDisabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
       try {
-        setItems(await api.achievements());
+        const res = await api.achievements();
+        if (Array.isArray(res)) setItems(res);
+        else setDisabled(true);
       } catch (err) {
         setError(
           err instanceof Error
@@ -97,7 +101,21 @@ export default function Conquistas() {
 
       <ErrorBanner message={error} />
 
-      {items === null && !error ? (
+      {disabled ? (
+        <EmptyState
+          icon={IconLock}
+          title="Gamificação desativada"
+          description={
+            <>
+              Ative no{' '}
+              <NavLink to="/perfil" className="font-medium text-brand">
+                perfil
+              </NavLink>{' '}
+              para ganhar XP e conquistas.
+            </>
+          }
+        />
+      ) : items === null && !error ? (
         <div className="space-y-3" aria-busy>
           <SkeletonCard lines={1} />
           <SkeletonCard lines={6} />

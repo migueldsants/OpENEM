@@ -347,7 +347,8 @@ model StudySession {
 // ---- Metas semanais (issue #44) ----
 
 // Meta de estudo da semana: "estudar X min de Biologia" ou "resolver Y
-// questões de Matemática". weekStart é a segunda-feira (00:00 UTC) da semana;
+// questões de Matemática". weekStart é a segunda-feira da semana de Brasília
+// (rótulo: 00:00 UTC da data);
 // `completed` é recalculado a cada leitura a partir do progresso real.
 model WeeklyGoal {
   id              String       @id @default(cuid())
@@ -533,7 +534,7 @@ model GamificationStat {
   points           Int       @default(0)
   currentStreak    Int       @default(0) // dias consecutivos com atividade
   longestStreak    Int       @default(0)
-  lastActivityOn   DateTime? // dia (00:00) da última atividade contabilizada
+  lastActivityOn   DateTime? // dia de Brasília da última atividade contabilizada (00:00 UTC da data)
   answersCount     Int       @default(0)
   correctCount     Int       @default(0)
   // Contadores por atividade (Fase 3, issue #17) — alimentam conquistas específicas.
@@ -580,7 +581,7 @@ model DailyChallengeLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  day       String // dia no formato YYYY-MM-DD (UTC)
+  day       String // dia de Brasília no formato YYYY-MM-DD
   claimedAt DateTime @default(now())
 
   @@unique([userId, day])

@@ -6,8 +6,10 @@
 // quem estuda à noite via a questão das 22h cair no dia seguinte.
 
 import { rankTopicsForReinforcement } from './recommendation';
+import { addDays, studyDay, weekStart } from './study-day';
 
-export const STUDY_TIME_ZONE = 'America/Sao_Paulo';
+// Os helpers de dia vivem em study-day.ts, que a gamificação também usa.
+export { STUDY_TIME_ZONE, addDays, studyDay, weekStart } from './study-day';
 
 export type AreaKey = 'mat' | 'nat' | 'hum' | 'lin';
 export const AREA_KEYS: AreaKey[] = ['mat', 'nat', 'hum', 'lin'];
@@ -81,39 +83,11 @@ export interface WeeklySummary {
   streak: number;
 }
 
-const DAY_MS = 86_400_000;
 /** Janela das prioridades: o que o aluno errou no último mês, não no ano. */
 export const PRIORITY_WINDOW_DAYS = 30;
 /** Uma resposta só não diz nada sobre o assunto. */
 export const PRIORITY_MIN_ANSWERS = 2;
 export const PRIORITY_LIMIT = 3;
-
-const formatador = new Intl.DateTimeFormat('en-CA', {
-  timeZone: STUDY_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-
-/** Dia de calendário em Brasília, como "2026-10-21". */
-export function studyDay(date: Date): string {
-  return formatador.format(date);
-}
-
-/** Soma dias a uma data "AAAA-MM-DD" (aritmética de calendário, sem fuso). */
-export function addDays(day: string, n: number): string {
-  const [y, m, d] = day.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d) + n * DAY_MS)
-    .toISOString()
-    .slice(0, 10);
-}
-
-/** Segunda-feira da semana do dia (a semana vai de segunda a domingo). */
-export function weekStart(day: string): string {
-  const [y, m, d] = day.split('-').map(Number);
-  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = domingo
-  return addDays(day, -((weekday + 6) % 7));
-}
 
 /** Área do ENEM pelo nome da área ou da matéria; Redação conta em Linguagens. */
 export function areaKeyFromName(

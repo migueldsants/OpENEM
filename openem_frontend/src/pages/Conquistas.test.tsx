@@ -102,6 +102,16 @@ describe('Conquistas (issue #48)', () => {
     ).toBeInTheDocument();
   });
 
+  it('gamificação desligada: avisa em vez de mostrar catálogo vazio', async () => {
+    vi.mocked(api.achievements).mockResolvedValue({ enabled: false });
+    renderPage();
+
+    expect(
+      await screen.findByText('Gamificação desativada'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Nenhuma conquista ainda')).toBeNull();
+  });
+
   it('exibe erro quando a API falha', async () => {
     vi.mocked(api.achievements).mockRejectedValue(new Error('Falhou'));
     renderPage();

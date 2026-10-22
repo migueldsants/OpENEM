@@ -158,6 +158,53 @@ describe('Metas semanais (issue #44, e2e)', () => {
     ).toBe(false);
   });
 
+  it('meta de minutos soma o Pomodoro e os blocos concluídos do cronograma', async () => {
+    // Aluno novo: nenhum tempo de outros testes entra na conta.
+    const reg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        email: `wg_minutos_${Date.now()}@exemplo.com`,
+        password: 'senhaForte123',
+      })
+      .expect(201);
+    const mine = { Authorization: `Bearer ${reg.body.accessToken}` };
+
+    const goal = await request(app.getHttpServer())
+      .post('/api/v1/weekly-goals')
+      .set(mine)
+      .send({ targetMinutes: 60 })
+      .expect(201);
+    expect(goal.body.minutesDone).toBe(0);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/pomodoro/sessions')
+      .set(mine)
+      .send({
+        durationSec: 25 * 60,
+        startedAt: new Date(Date.now() - 25 * 60_000).toISOString(),
+      })
+      .expect(201);
+
+    // Bloco de hoje (dayIndex 0 de um plano criado agora), marcado como feito.
+    const block = await request(app.getHttpServer())
+      .post('/api/v1/study-plan/sessions')
+      .set(mine)
+      .send({ label: 'Revisar simulado', dayIndex: 0, minutes: 45 })
+      .expect(201);
+    await request(app.getHttpServer())
+      .patch(`/api/v1/study-plan/sessions/${block.body.id}`)
+      .set(mine)
+      .send({ done: true })
+      .expect(200);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/v1/weekly-goals')
+      .set(mine)
+      .expect(200);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0]).toMatchObject({ minutesDone: 70, completed: true });
+  });
+
   it('sem token retorna 401', async () => {
     await request(app.getHttpServer()).get('/api/v1/weekly-goals').expect(401);
   });
