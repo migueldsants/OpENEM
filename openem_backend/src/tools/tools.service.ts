@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { fetchGithubStars, StarsCache } from './github-stars';
+import { CacheService } from '../cache/cache.service';
+import {
+  fetchGithubStars,
+  StarsCache,
+  type StarsStore,
+  type StoredStars,
+} from './github-stars';
 import { githubUrl, TOOLS } from './tools-catalog';
 
 export interface ToolView {
@@ -12,11 +18,31 @@ export interface ToolView {
   stars: number | null;
 }
 
+/**
+ * Quanto a contagem fica guardada. Bem mais que a hora da renovação: é o que
+ * permite responder o último valor conhecido quando o GitHub falha.
+ */
+const STARS_KEEP_MS = 7 * 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class ToolsService {
-  // Um cache por processo basta: são poucos repositórios e o número só
-  // precisa estar perto do atual.
-  private readonly stars = new StarsCache(fetchGithubStars);
+  private readonly stars: StarsCache;
+
+  constructor(cache: CacheService) {
+    // No cache compartilhado, as instâncias dividem a contagem e o número de
+    // chamadas ao GitHub não cresce com elas.
+    const store: StarsStore = {
+      get: (repo) => cache.get<StoredStars>(['stars', repo]),
+      set: (repo, value) => cache.set(['stars', repo], value, STARS_KEEP_MS),
+    };
+    this.stars = new StarsCache(
+      fetchGithubStars,
+      Date.now,
+      undefined,
+      undefined,
+      store,
+    );
+  }
 
   async list(): Promise<ToolView[]> {
     const stars = await this.stars.get(TOOLS.map((t) => t.repo));

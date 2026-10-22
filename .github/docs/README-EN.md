@@ -34,7 +34,8 @@ The full application plan — frontend, backend, data model, Dockerized CI/CD in
 ### Option A — Docker Compose (everything at once)
 
 Requires Docker. From the repository root, copy `.env.example` to `.env` and
-fill in `POSTGRES_PASSWORD` and `JWT_SECRET` (both are required). Then:
+fill in `POSTGRES_PASSWORD`, `REDIS_PASSWORD` and `JWT_SECRET` (all three are
+required). Then:
 
 ```bash
 docker compose up --build
@@ -43,8 +44,9 @@ docker compose up --build
 *   API: <http://localhost:3000> · Healthcheck: <http://localhost:3000/health> (Swagger is off under Compose, which runs with `NODE_ENV=production`)
 *   Frontend: <http://localhost:8080>
 
-Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`),
-waits for it to be ready and applies the migrations when the backend starts.
+Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`) and
+a **Valkey 8** (service `redis`, the API cache, no persistence), waits for both
+to be ready and applies the migrations when the backend starts.
 On the first start, while the database has no questions yet, the backend
 populates it by itself: seed, import of the official exams (downloads the
 dataset, needs internet), keyword classification and flashcards
@@ -71,6 +73,10 @@ npx prisma migrate dev      # applies the migrations to Postgres
 npm run db:seed             # (optional) demo data
 npm run start:dev           # API at http://localhost:3000 · Swagger at http://localhost:3000/api
 ```
+
+Without `REDIS_URL` the backend keeps its cache in the process memory, which is
+enough for development. To test with Redis, run `docker compose up -d redis`
+and set `REDIS_URL` in `openem_backend/.env` (see `.env.example`).
 
 The e2e suite (`npm run test:e2e`) uses the same Postgres as `DATABASE_URL`, in
 its own schema (`test_e2e`) that it drops and recreates on every run; dev data

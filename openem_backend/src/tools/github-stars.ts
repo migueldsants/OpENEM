@@ -32,12 +32,32 @@ export const fetchGithubStars: FetchStars = async (repo) => {
   }
 };
 
-interface Entry {
-  /** undefined = nunca buscado; null = buscado sem sucesso. */
-  value: number | null | undefined;
+/** O que fica guardado por repositório. */
+export interface StoredStars {
+  /** null = buscado sem sucesso. */
+  value: number | null;
   /** Quando buscar de novo (ms desde a época). */
   next: number;
-  inflight?: Promise<void>;
+}
+
+/**
+ * Onde as contagens ficam. Na API é o `CacheService` (Redis, compartilhado
+ * entre instâncias); sem nada, um Map do próprio processo.
+ */
+export interface StarsStore {
+  get(repo: string): Promise<StoredStars | undefined>;
+  set(repo: string, value: StoredStars): Promise<void>;
+}
+
+export function memoryStarsStore(): StarsStore {
+  const map = new Map<string, StoredStars>();
+  return {
+    get: (repo) => Promise.resolve(map.get(repo)),
+    set: (repo, value) => {
+      map.set(repo, value);
+      return Promise.resolve();
+    },
+  };
 }
 
 /**
@@ -46,56 +66,56 @@ interface Entry {
  * apaga o valor conhecido; só agenda nova tentativa mais cedo.
  */
 export class StarsCache {
-  private readonly entries = new Map<string, Entry>();
+  /** Buscas em andamento neste processo, por repositório. */
+  private readonly inflight = new Map<string, Promise<StoredStars>>();
 
   constructor(
     private readonly fetchStars: FetchStars,
     private readonly now: () => number = Date.now,
     private readonly ttlMs = 60 * 60 * 1000,
     private readonly retryMs = 5 * 60 * 1000,
+    private readonly store: StarsStore = memoryStarsStore(),
   ) {}
 
   async get(repos: string[]): Promise<Record<string, number | null>> {
-    const pending: Promise<void>[] = [];
-    for (const repo of repos) {
-      const entry = this.entry(repo);
-      if (this.now() >= entry.next) {
-        const refresh = this.refresh(repo, entry);
-        // Só a primeira busca segura a resposta; as outras correm por trás.
-        if (entry.value === undefined) pending.push(refresh);
-      }
-    }
-    await Promise.all(pending);
-    return Object.fromEntries(
-      repos.map((r) => [r, this.entries.get(r)?.value ?? null]),
-    );
-  }
-
-  private entry(repo: string): Entry {
-    let e = this.entries.get(repo);
-    if (!e) {
-      e = { value: undefined, next: 0 };
-      this.entries.set(repo, e);
-    }
-    return e;
-  }
-
-  private refresh(repo: string, entry: Entry): Promise<void> {
-    // Pedidos simultâneos dividem a mesma busca.
-    entry.inflight ??= this.fetchStars(repo)
-      .catch(() => null)
-      .then((stars) => {
-        if (stars === null) {
-          if (entry.value === undefined) entry.value = null;
-          entry.next = this.now() + this.retryMs;
-        } else {
-          entry.value = stars;
-          entry.next = this.now() + this.ttlMs;
+    const entries = await Promise.all(repos.map((r) => this.store.get(r)));
+    const values = await Promise.all(
+      repos.map(async (repo, i) => {
+        const entry = entries[i];
+        if (!entry || this.now() >= entry.next) {
+          const refresh = this.refresh(repo, entry);
+          // Só a primeira busca segura a resposta; as outras correm por trás.
+          if (!entry) return (await refresh).value;
         }
-      })
-      .finally(() => {
-        entry.inflight = undefined;
-      });
-    return entry.inflight;
+        return entry.value;
+      }),
+    );
+    return Object.fromEntries(repos.map((r, i) => [r, values[i]]));
+  }
+
+  private refresh(
+    repo: string,
+    previous: StoredStars | undefined,
+  ): Promise<StoredStars> {
+    // Pedidos simultâneos dividem a mesma busca.
+    let tarefa = this.inflight.get(repo);
+    if (!tarefa) {
+      tarefa = this.fetchStars(repo)
+        .catch(() => null)
+        .then(async (stars) => {
+          const next: StoredStars =
+            stars === null
+              ? {
+                  value: previous?.value ?? null,
+                  next: this.now() + this.retryMs,
+                }
+              : { value: stars, next: this.now() + this.ttlMs };
+          await this.store.set(repo, next).catch(() => undefined);
+          return next;
+        })
+        .finally(() => this.inflight.delete(repo));
+      this.inflight.set(repo, tarefa);
+    }
+    return tarefa;
   }
 }

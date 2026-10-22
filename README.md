@@ -34,7 +34,8 @@ O planejamento completo da aplicação — frontend, backend, modelo de dados, i
 ### Opção A — Docker Compose (tudo de uma vez)
 
 Requer Docker. Na raiz do repositório, copie `.env.example` para `.env` e
-preencha `POSTGRES_PASSWORD` e `JWT_SECRET` (as duas são obrigatórias). Depois:
+preencha `POSTGRES_PASSWORD`, `REDIS_PASSWORD` e `JWT_SECRET` (as três são
+obrigatórias). Depois:
 
 ```bash
 docker compose up --build
@@ -43,8 +44,9 @@ docker compose up --build
 *   API: <http://localhost:3000> · Healthcheck: <http://localhost:3000/health> (o Swagger fica desligado no compose, que roda com `NODE_ENV=production`)
 *   Frontend: <http://localhost:8080>
 
-O compose sobe um **PostgreSQL 17** (serviço `db`, volume nomeado `pg-data`),
-espera o banco ficar pronto e aplica as migrations no start do backend. Na
+O compose sobe um **PostgreSQL 17** (serviço `db`, volume nomeado `pg-data`) e
+um **Valkey 8** (serviço `redis`, o cache da API, sem persistência), espera os
+dois ficarem prontos e aplica as migrations no start do backend. Na
 primeira subida, com o banco ainda sem questões, o backend o popula sozinho:
 seed, import das provas oficiais (baixa o dataset, precisa de internet),
 classificação por palavra-chave e flashcards (`prisma/bootstrap.ts`, alguns
@@ -71,6 +73,10 @@ npx prisma migrate dev      # aplica as migrations no Postgres
 npm run db:seed             # (opcional) dados de demonstração
 npm run start:dev           # API em http://localhost:3000 · Swagger em http://localhost:3000/api
 ```
+
+Sem `REDIS_URL` o backend usa um cache na memória do próprio processo, o que
+basta em dev. Para testar com o Redis, suba `docker compose up -d redis` e
+defina `REDIS_URL` no `openem_backend/.env` (ver `.env.example`).
 
 A suíte e2e (`npm run test:e2e`) usa o mesmo Postgres do `DATABASE_URL`, num
 schema próprio (`test_e2e`) que ela apaga e recria a cada execução; os dados de

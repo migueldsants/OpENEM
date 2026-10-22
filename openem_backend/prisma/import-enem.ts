@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { ensureDataset, importEnem, printReport } from './import-enem-lib';
 import { isTestDatabaseUrl } from '../src/common/test-database';
+import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
 
 const prisma = new PrismaClient();
 
@@ -71,6 +72,9 @@ async function main() {
   printReport(report);
   if (values['dry-run']) {
     console.log('\n(dry-run: nada foi gravado)');
+  } else {
+    // Provas e questões novas: o cache de catálogo da API fica velho.
+    await invalidateCatalogCache();
   }
 }
 

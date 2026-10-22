@@ -1,3 +1,4 @@
+import { memoryCache } from '../cache/testing';
 import { NotFoundException } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 
@@ -23,7 +24,7 @@ describe('QuestionsService', () => {
         },
       ];
       prisma.$transaction.mockResolvedValue([1, items]);
-      const service = new QuestionsService(prisma);
+      const service = new QuestionsService(prisma, memoryCache());
 
       const res = await service.findMany({ page: 2, limit: 10 } as never);
 
@@ -38,7 +39,7 @@ describe('QuestionsService', () => {
     it('aplica filtros de difficulty/topicId/subjectId/year', async () => {
       const prisma = makePrisma() as any;
       prisma.$transaction.mockResolvedValue([0, []]);
-      const service = new QuestionsService(prisma);
+      const service = new QuestionsService(prisma, memoryCache());
 
       await service.findMany({
         difficulty: 3,
@@ -66,7 +67,7 @@ describe('QuestionsService', () => {
         explanation: 'porque',
         alternatives: [{ id: 'a1', text: 'x', isCorrect: true }],
       });
-      const service = new QuestionsService(prisma);
+      const service = new QuestionsService(prisma, memoryCache());
 
       const res = await service.findOne('q1');
       expect(res.alternatives[0].isCorrect).toBe(true);
@@ -75,11 +76,35 @@ describe('QuestionsService', () => {
     it('retorna 404 para questão inexistente', async () => {
       const prisma = makePrisma() as any;
       prisma.question.findUnique.mockResolvedValue(null);
-      const service = new QuestionsService(prisma);
+      const service = new QuestionsService(prisma, memoryCache());
 
       await expect(service.findOne('nao-existe')).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+
+    it('a segunda leitura da mesma questão sai do cache', async () => {
+      const prisma = makePrisma() as any;
+      prisma.question.findUnique.mockResolvedValue({ id: 'q1' });
+      const service = new QuestionsService(prisma, memoryCache());
+
+      await service.findOne('q1');
+      await service.findOne('q1');
+      expect(prisma.question.findUnique).toHaveBeenCalledTimes(1);
+    });
+
+    it('questão inexistente não fica no cache', async () => {
+      const prisma = makePrisma() as any;
+      prisma.question.findUnique.mockResolvedValue(null);
+      const service = new QuestionsService(prisma, memoryCache());
+
+      await expect(service.findOne('x')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      await expect(service.findOne('x')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(prisma.question.findUnique).toHaveBeenCalledTimes(2);
     });
   });
 });
@@ -95,7 +120,10 @@ describe('QuestionsService — código e língua estrangeira', () => {
       examYear: { findMany: jest.fn() },
       $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     };
-    return { prisma, service: new QuestionsService(prisma as any) };
+    return {
+      prisma,
+      service: new QuestionsService(prisma as any, memoryCache()),
+    };
   }
 
   it('busca por código normalizando o que o aluno digita', async () => {

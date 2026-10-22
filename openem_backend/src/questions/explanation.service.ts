@@ -2,7 +2,19 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { activeAiProvider, isAiConfigured } from '../common/ai';
 import { generateExplanation } from '../common/ai/explanation';
 import { AiUsageService } from '../ai-usage/ai-usage.service';
+import { CacheService } from '../cache/cache.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { questionCacheKey } from './questions.service';
+
+/**
+ * Quanto a trava da geração dura. Passa do tempo de uma chamada de IA: se a
+ * instância que gerava cair, a trava expira e outra assume.
+ */
+export const EXPLANATION_LOCK_TTL_MS = 120_000;
+/** De quanto em quanto tempo quem espera outra instância olha o banco. */
+export const EXPLANATION_POLL_MS = 1000;
+
+type QuestaoParaComentar = Parameters<ExplanationService['gerar']>[0];
 
 export interface ExplanationResult {
   explanation: string | null;
@@ -25,15 +37,17 @@ export class ExplanationService {
   private readonly logger = new Logger(ExplanationService.name);
   /**
    * Gerações em andamento, por questão. Dois alunos abrindo o mesmo gabarito
-   * ao mesmo tempo esperam a mesma chamada em vez de pagar por duas. Com várias
-   * instâncias do backend ainda pode haver geração duplicada — custo a mais,
-   * nunca dado corrompido, porque a gravação é idempotente.
+   * ao mesmo tempo esperam a mesma chamada em vez de pagar por duas. Entre
+   * instâncias do backend, quem segura isso é a trava no cache (`gerarComTrava`).
    */
   private readonly emAndamento = new Map<string, Promise<ExplanationResult>>();
+  /** Espera entre duas olhadas no banco; os testes trocam. */
+  esperar = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly usage: AiUsageService,
+    private readonly cache: CacheService,
   ) {}
 
   async explain(
@@ -82,11 +96,49 @@ export class ExplanationService {
     const pendente = this.emAndamento.get(questionId);
     if (pendente) return pendente;
 
-    const tarefa = this.gerar(questao).finally(() =>
+    const tarefa = this.gerarComTrava(questao).finally(() =>
       this.emAndamento.delete(questionId),
     );
     this.emAndamento.set(questionId, tarefa);
     return tarefa;
+  }
+
+  /**
+   * Gera segurando a trava da questão no cache (`SET NX PX`). Se outra
+   * instância já a tem, espera o comentário dela aparecer no banco em vez de
+   * pagar outra chamada. Se a trava sumir sem comentário (a outra falhou),
+   * tenta pegá-la. Passado o dobro do prazo da trava, gera assim mesmo.
+   */
+  private async gerarComTrava(
+    questao: QuestaoParaComentar,
+  ): Promise<ExplanationResult> {
+    const trava = ['explanation', questao.id];
+    const inicio = Date.now();
+    for (;;) {
+      const dono = await this.cache.lock(trava, EXPLANATION_LOCK_TTL_MS);
+      if (dono) {
+        try {
+          return await this.gerar(questao);
+        } finally {
+          await this.cache.unlock(trava, dono);
+        }
+      }
+      if (Date.now() - inicio > 2 * EXPLANATION_LOCK_TTL_MS) {
+        return this.gerar(questao);
+      }
+      await this.esperar(EXPLANATION_POLL_MS);
+      const atual = await this.prisma.question.findUnique({
+        where: { id: questao.id },
+        select: { explanation: true, explanationSource: true },
+      });
+      if (atual?.explanation) {
+        return {
+          explanation: atual.explanation,
+          source: atual.explanationSource,
+          available: true,
+        };
+      }
+    }
   }
 
   private async gerar(questao: {
@@ -132,6 +184,8 @@ export class ExplanationService {
       where: { id: questao.id, explanation: null },
       data: { explanation, explanationSource: source },
     });
+    // O detalhe da questão em cache ainda está sem o comentário.
+    await this.cache.del(questionCacheKey(questao.id), { ns: 'catalog' });
     if (count === 0) {
       const atual = await this.prisma.question.findUnique({
         where: { id: questao.id },

@@ -7,6 +7,7 @@ import { AnswersModule } from './answers/answers.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CacheModule } from './cache/cache.module';
 import { throttleConfigFromEnv } from './common/throttle-config';
 import { CommunityModule } from './community/community.module';
 import { EssaysModule } from './essays/essays.module';
@@ -50,6 +51,7 @@ import { ToolsModule } from './tools/tools.module';
       }),
     }),
     PrismaModule,
+    CacheModule,
     HealthModule,
     AuthModule,
     UsersModule,

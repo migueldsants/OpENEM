@@ -11,6 +11,7 @@
 
 import { parseArgs } from 'node:util';
 import { PrismaClient } from '@prisma/client';
+import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
 import { activeAiProvider } from '../src/common/ai';
 import { classifyQuestions } from './classify-questions-lib';
 import { isTestDatabaseUrl } from '../src/common/test-database';
@@ -72,6 +73,7 @@ async function main() {
     console.log(`lotes com falha:   ${report.failedBatches}`);
   }
   if (values['dry-run']) console.log('\n(dry-run: nada foi gravado)');
+  else await invalidateCatalogCache();
 }
 
 main()

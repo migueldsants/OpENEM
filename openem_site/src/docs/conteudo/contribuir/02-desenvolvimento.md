@@ -11,14 +11,14 @@ descricao: Como rodar o OpENEM na sua máquina, rodar os testes e seguir as conv
 
 ## Banco
 
-Na raiz do repositório, crie o `.env` como na [Instalação](/docs/hospedar/instalacao/) (o compose exige `POSTGRES_PASSWORD` e `JWT_SECRET`) e suba só o banco:
+Na raiz do repositório, crie o `.env` como na [Instalação](/docs/hospedar/instalacao/) (o compose exige `POSTGRES_PASSWORD`, `REDIS_PASSWORD` e `JWT_SECRET`) e suba só o banco:
 
 ```bash
 cp .env.example .env
 docker compose up -d db
 ```
 
-Ele fica em `127.0.0.1:5432`.
+Ele fica em `127.0.0.1:5432`. O Redis é opcional em desenvolvimento: sem `REDIS_URL`, o backend guarda o cache na própria memória. Para testar com ele, rode `docker compose up -d redis` e defina `REDIS_URL` no `openem_backend/.env`.
 
 ## Backend
 

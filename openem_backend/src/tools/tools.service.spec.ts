@@ -1,3 +1,4 @@
+import { memoryCache } from '../cache/testing';
 import * as stars from './github-stars';
 import { TOOLS } from './tools-catalog';
 import { ToolsService } from './tools.service';
@@ -11,7 +12,7 @@ describe('ToolsService', () => {
       .mockImplementation((repo) =>
         Promise.resolve(repo.endsWith('updated-enem-api') ? 12 : null),
       );
-    const list = await new ToolsService().list();
+    const list = await new ToolsService(memoryCache()).list();
 
     expect(list.map((t) => t.repo)).toEqual(TOOLS.map((t) => t.repo));
     expect(list).toContainEqual(

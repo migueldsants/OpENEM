@@ -30,6 +30,17 @@ Nas variáveis numéricas (rate limiting, PDF e cotas de IA), valor ausente ou i
 | `POSTGRES_PORT` | `5432` | Porta do banco publicada em `127.0.0.1`, para o backend de desenvolvimento, `psql` ou `pg_dump` na própria máquina. O backend do compose usa a rede interna. |
 | `DATABASE_URL` | nenhum | URL de conexão do Prisma. No compose, é montada com as três variáveis acima; em desenvolvimento, vem do `openem_backend/.env`. |
 
+## Cache (Redis)
+
+| Variável | Padrão | O que faz |
+| --- | --- | --- |
+| `REDIS_PASSWORD` | nenhum | Obrigatória no compose. Senha do Redis (Valkey), só letras e números. |
+| `REDIS_PORT` | `6379` | Porta do Redis publicada em `127.0.0.1`, para o backend de desenvolvimento. O backend do compose usa a rede interna. |
+| `REDIS_MAXMEMORY` | `128mb` | Memória máxima do cache. Cheio, ele descarta as chaves menos usadas. |
+| `REDIS_URL` | nenhum | URL do Redis, como `redis://:senha@redis:6379`. No compose, é montada com `REDIS_PASSWORD`. Sem ela, o cache fica na memória do processo da API, o que serve para uma instância só. |
+
+O cache guarda o que é igual para todo aluno: matérias, provas, facetas da busca, o detalhe de cada questão e as estrelas da tela Ferramentas. Os scripts de seed, import e classificação o invalidam ao terminar. Se o Redis cair, a API lê do banco e o `/health` mostra `redis: down`, sem mudar o `status`.
+
 ## Autenticação
 
 | Variável | Padrão | O que faz |

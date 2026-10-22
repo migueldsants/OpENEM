@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { CacheService } from '../cache/cache.service';
+import { CATALOG_TTL_MS } from '../cache/catalog-invalidation';
 import { normalizeCodeQuery } from '../common/enem-import/mapping';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
@@ -8,9 +10,17 @@ import {
   QUESTION_PUBLIC_SELECT,
 } from './question.select';
 
+/** Chave do detalhe da questão no cache de catálogo. */
+export function questionCacheKey(id: string): string[] {
+  return ['question', id];
+}
+
 @Injectable()
 export class QuestionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   /** Filtro comum à listagem e às contagens. */
   private buildWhere(query: QueryQuestionsDto): Prisma.QuestionWhereInput {
@@ -71,8 +81,20 @@ export class QuestionsService {
    * idioma. O painel de filtros usa isso para esconder assunto vazio: a maior
    * parte do banco oficial ainda não foi classificada por assunto, e oferecer
    * "Funções (0)" seria mandar o aluno para uma lista vazia.
+   *
+   * São quatro agregações sobre o banco inteiro, iguais para todo aluno do
+   * mesmo idioma: ficam no cache de catálogo.
    */
-  async facets(language?: string) {
+  facets(language?: string) {
+    return this.cache.getOrSet(
+      ['facets', language ?? 'todas'],
+      CATALOG_TTL_MS,
+      () => this.loadFacets(language),
+      { ns: 'catalog' },
+    );
+  }
+
+  private async loadFacets(language?: string) {
     const where = this.buildWhere({ language } as QueryQuestionsDto);
     const [total, areas, topics, exams, provas] = await Promise.all([
       this.prisma.question.count({ where }),
@@ -113,19 +135,37 @@ export class QuestionsService {
 
   /** Provas com questões no banco, da mais recente para a mais antiga. */
   exams() {
-    return this.prisma.examYear.findMany({
-      where: { questions: { some: {} } },
-      orderBy: [{ year: 'desc' }, { slug: 'asc' }],
-      select: { slug: true, year: true, label: true },
-    });
+    return this.cache.getOrSet(
+      ['exams'],
+      CATALOG_TTL_MS,
+      () =>
+        this.prisma.examYear.findMany({
+          where: { questions: { some: {} } },
+          orderBy: [{ year: 'desc' }, { slug: 'asc' }],
+          select: { slug: true, year: true, label: true },
+        }),
+      { ns: 'catalog' },
+    );
   }
 
+  /**
+   * A questão comentada não tem nada do aluno (nem favorito, nem resposta),
+   * então vai para o cache de catálogo. O comentário gerado por IA apaga a
+   * chave ao ser gravado (`ExplanationService`).
+   */
   async findOne(id: string) {
-    const question = await this.prisma.question.findUnique({
-      where: { id },
-      // No detalhe (questão comentada) revelamos o gabarito + explicação.
-      select: QUESTION_DETAIL_SELECT,
-    });
+    const question = await this.cache.getOrSet(
+      questionCacheKey(id),
+      CATALOG_TTL_MS,
+      async () =>
+        // undefined não é gravado: id inventado não ocupa o cache.
+        (await this.prisma.question.findUnique({
+          where: { id },
+          // No detalhe (questão comentada) revelamos o gabarito + explicação.
+          select: QUESTION_DETAIL_SELECT,
+        })) ?? undefined,
+      { ns: 'catalog' },
+    );
     if (!question) {
       throw new NotFoundException('Questão não encontrada');
     }
