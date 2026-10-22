@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { SEED_QUESTIONS_URL } from './seed-questions';
 
 describe('Performance — filtro de período (issue #20, e2e)', () => {
   let app: INestApplication<App>;
@@ -118,5 +119,46 @@ describe('Performance — filtro de período (issue #20, e2e)', () => {
     await request(app.getHttpServer())
       .get('/api/v1/performance/heatmap')
       .expect(401);
+  });
+
+  it('GET /performance/weeks sem token retorna 401', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/performance/weeks')
+      .expect(401);
+  });
+
+  it('GET /performance/weeks fora de 1..12 retorna 400', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/performance/weeks?weeks=13')
+      .set(auth())
+      .expect(400);
+  });
+
+  it('GET /performance/weeks conta a resposta de hoje na semana atual (issue #90)', async () => {
+    const list = await request(app.getHttpServer())
+      .get(SEED_QUESTIONS_URL)
+      .set(auth())
+      .expect(200);
+    const question = list.body.items[0];
+    await request(app.getHttpServer())
+      .post('/api/v1/answers')
+      .set(auth())
+      .send({ questionId: question.id, chosenId: question.alternatives[0].id })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/performance/weeks?weeks=3')
+      .set(auth())
+      .expect(200);
+    expect(res.body.weeks).toHaveLength(3);
+    const [atual] = res.body.weeks;
+    expect(atual.days).toHaveLength(7);
+    expect(atual.answers).toBe(1);
+    expect(
+      atual.days.find((d: { date: string }) => d.date === res.body.today),
+    ).toMatchObject({ answers: 1, studied: true });
+    expect(res.body.streak).toBe(1);
+    expect(Array.isArray(res.body.priorities)).toBe(true);
+    expect(res.body.goalMinutesPerDay).toEqual(expect.any(Number));
   });
 });

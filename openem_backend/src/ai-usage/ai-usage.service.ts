@@ -38,7 +38,7 @@ export class AiUsageService {
 
     await this.prisma.aiUsage.delete({ where: { id: linha.id } });
     throw new HttpException(
-      'Você atingiu o limite de correções por IA de hoje. Tente amanhã ou use a correção por rubrica.',
+      'Você atingiu o limite de pedidos à IA de hoje. Tente de novo amanhã.',
       HttpStatus.TOO_MANY_REQUESTS,
     );
   }

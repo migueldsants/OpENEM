@@ -31,11 +31,11 @@ function makeService(
 
 describe('AiUsageService.reserve', () => {
   it('grava a linha de uso antes de contar e deixa passar dentro da cota', async () => {
-    const { service, prisma } = makeService({ user: 5, global: 0 });
-    await expect(service.reserve('u1', 'essay')).resolves.toBeUndefined();
+    const { service, prisma } = makeService({ user: 30, global: 0 });
+    await expect(service.reserve('u1', 'explanation')).resolves.toBeUndefined();
 
     expect(prisma.aiUsage.create).toHaveBeenCalledWith({
-      data: { userId: 'u1', feature: 'essay' },
+      data: { userId: 'u1', feature: 'explanation' },
       select: { id: true },
     });
     const [primeira] = prisma.aiUsage.create.mock.invocationCallOrder;
@@ -58,8 +58,11 @@ describe('AiUsageService.reserve', () => {
   });
 
   it('acima da cota do aluno: apaga a própria linha e responde 429', async () => {
-    const { service, prisma } = makeService({ user: 6, global: 0 });
-    const erro = await service.reserve('u1', 'essay').catch((e: unknown) => e);
+    // Padrão: 30 comentários por aluno em 24 h.
+    const { service, prisma } = makeService({ user: 31, global: 0 });
+    const erro = await service
+      .reserve('u1', 'explanation')
+      .catch((e: unknown) => e);
 
     expect(erro).toBeInstanceOf(HttpException);
     expect((erro as HttpException).getStatus()).toBe(
@@ -72,7 +75,7 @@ describe('AiUsageService.reserve', () => {
 
   it('sem teto global, nem conta o total', async () => {
     const { service, prisma } = makeService({ user: 1, global: 9999 });
-    await service.reserve('u1', 'essay');
+    await service.reserve('u1', 'explanation');
     expect(prisma.aiUsage.count).toHaveBeenCalledTimes(1);
   });
 
@@ -81,7 +84,7 @@ describe('AiUsageService.reserve', () => {
       { user: 1, global: 11 },
       { AI_DAILY_LIMIT: '10' },
     );
-    await expect(service.reserve('u1', 'essay')).rejects.toBeInstanceOf(
+    await expect(service.reserve('u1', 'explanation')).rejects.toBeInstanceOf(
       HttpException,
     );
     expect(prisma.aiUsage.count).toHaveBeenCalledTimes(2);

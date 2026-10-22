@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AiUsageService } from './ai-usage.service';
 
-/** Cota das chamadas pagas à IA, compartilhada por redações e comentários. */
+/** Cota das chamadas pagas à IA (hoje, os comentários gerados das questões). */
 @Module({
   providers: [AiUsageService],
   exports: [AiUsageService],

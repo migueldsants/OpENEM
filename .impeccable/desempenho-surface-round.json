@@ -1,0 +1,46 @@
+{
+  "title": "Desempenho e Progresso: escolha a estrutura",
+  "question": "A estética do app fica. A auditoria achou que nenhuma das telas responde o que estudar agora. Escolha como elas se organizam, peça outra mão ou direcione.",
+  "options": [
+    {
+      "id": "mapa-da-prova",
+      "kind": "assigned",
+      "kicker": "THE ROLL",
+      "label": "Mapa da prova",
+      "thesis": "Desempenho abre com a prova desenhada como mapa: cada área do tamanho que pesa no ENEM, cada assunto pintado pelo seu acerto, e tocar num assunto leva a praticar.",
+      "palette": ["#d91748", "#f5f1f6", "#2e63bf", "#087752", "#905b1f", "#7651ba"],
+      "materials": ["mapa de assuntos por peso", "lista de prioridades"],
+      "viewport": "Barra do app, título Desempenho e o seletor 7 dias / 30 dias / Tudo sempre visível; o mapa das 4 áreas ocupa a primeira tela; abaixo, 3 prioridades com Praticar. Progresso vira Ritmo: semana contra a meta, sequência e a gamificação só se estiver ligada.",
+      "risk": "Com pouco assunto classificado o mapa fica cinza: precisa cair para o nível de área e dizer quantas respostas estão sem assunto.",
+      "html": ".impeccable/mocks/decision/mapa-da-prova.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "abas",
+      "kind": "dealt",
+      "label": "Uma tela, três abas",
+      "thesis": "Desempenho reúne tudo em abas Diagnóstico, Ritmo e Conquistas; Progresso e Conquistas viram atalhos que abrem a aba certa.",
+      "palette": ["#d91748", "#f5f1f6", "#211b26", "#2e63bf", "#087752"],
+      "materials": ["abas segmentadas", "lista de prioridades"],
+      "viewport": "Abas no topo; Diagnóstico abre com 3 a 5 prioridades (erro vezes peso na prova) com Praticar, depois as 4 áreas e a evolução por semana.",
+      "risk": "Abas escondem o Ritmo de quem não toca nelas, e a navegação travada pelos testes do app muda.",
+      "html": ".impeccable/mocks/decision/abas.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "semanas",
+      "kind": "dealt",
+      "label": "Semana a semana",
+      "thesis": "Desempenho e Progresso viram um diário de semanas: a atual aberta no topo com questões, minutos contra a meta, acerto por área e prioridades; as anteriores recolhidas com a variação.",
+      "palette": ["#d91748", "#f5f1f6", "#211b26", "#087752", "#b8383c"],
+      "materials": ["faixa dos 7 dias", "linhas de semanas"],
+      "viewport": "Faixa com os 7 dias da semana marcando os dias estudados; cartão da semana atual com a meta, o acerto por área e 3 prioridades; abaixo, as semanas passadas em linhas com a variação.",
+      "risk": "Quem estuda pouco vê semanas vazias, e o diagnóstico por assunto fica mais escondido que no mapa.",
+      "html": ".impeccable/mocks/decision/semanas.html",
+      "htmlFrame": "390x844"
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": { "value": "code" }
+}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}html,body{width:390px;height:844px;overflow:hidden}
+body{background:#f5f1f6;color:#211b26;font-family:Inter,sans-serif;font-size:14px}
+.top{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #ece5ee}
+.logo{font-family:'Bricolage Grotesque';font-weight:800;font-size:19px}.logo b{color:#d91748}
+.lvl{font:500 12px 'JetBrains Mono';background:#fff;border:1px solid #ece5ee;border-radius:99px;padding:4px 10px}
+main{padding:14px 16px}
+h1{font-family:'Bricolage Grotesque';font-weight:800;font-size:28px;letter-spacing:-.03em}
+.sub{margin-top:2px;font-size:12.5px;color:#6b6473}
+.week{margin-top:12px;background:#fff;border:1px solid #ece5ee;border-radius:18px;padding:14px;box-shadow:0 10px 28px rgba(40,14,22,.07)}
+.wh{display:flex;justify-content:space-between;align-items:baseline}.wh b{font-family:'Bricolage Grotesque';font-size:18px}.wh span{font:500 12px 'JetBrains Mono';color:#6b6473}
+.days{margin-top:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;font-size:11px;color:#6b6473}
+.d{height:34px;border-radius:10px;display:grid;place-items:center;font:500 12px 'JetBrains Mono';background:#f3eef4;color:#6b6473}
+.d.on{background:#d91748;color:#fff}.d.hoje{outline:2px solid #d91748;outline-offset:2px;background:#fff;color:#d91748}
+.goal{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g{border:1px solid #ece5ee;border-radius:12px;padding:8px 10px}.g small{font-size:11px;color:#6b6473}.g p{font:500 17px 'JetBrains Mono'}.g p em{font-style:normal;font-size:12px;color:#6b6473}
+.trk{margin-top:5px;height:6px;border-radius:9px;background:#f3eef4}.trk i{display:block;height:100%;border-radius:9px;background:#d91748}
+.areas{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:11px;color:#6b6473;text-align:center}
+.areas b{display:block;font:500 15px 'JetBrains Mono';color:#211b26}
+.pri{margin-top:12px;border-top:1px solid #ece5ee;padding-top:10px;font-size:12.5px}.pri p{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+.go{background:#d91748;color:#fff;font-weight:600;font-size:12px;padding:6px 10px;border-radius:10px}
+.past{margin-top:12px;background:#fff;border:1px solid #ece5ee;border-radius:16px}
+.past p{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:11px 14px;border-top:1px solid #ece5ee;font-size:13px}.past p:first-child{border-top:0}
+.past span{font:500 12.5px 'JetBrains Mono'}.up{color:#087752}.dn{color:#b8383c}
+.tab{position:absolute;left:0;right:0;bottom:0;height:62px;border-top:1px solid #ece5ee;background:#fff;display:flex;justify-content:space-around;align-items:center;font-size:11px;color:#6b6473}
+.tab span{display:flex;flex-direction:column;align-items:center;gap:4px}.tab i{width:20px;height:20px;border-radius:6px;background:#ece5ee}.tab .on{color:#d91748}.tab .on i{background:#d91748}
+</style></head><body>
+<div class="top"><div class="logo">Op<b>ENEM</b></div><span class="lvl">Nível 7</span></div>
+<main>
+<h1>Seu desempenho</h1><p class="sub">Semana a semana, contra a sua meta de 60 min por dia</p>
+<div class="week">
+ <div class="wh"><b>Esta semana</b><span>13 a 19 out</span></div>
+ <div class="days"><div>seg<div class="d on">13</div></div><div>ter<div class="d on">14</div></div><div>qua<div class="d">15</div></div><div>qui<div class="d on">16</div></div><div>sex<div class="d on">17</div></div><div>sáb<div class="d hoje">18</div></div><div>dom<div class="d">19</div></div></div>
+ <div class="goal"><div class="g"><small>Minutos</small><p>230 <em>de 420</em></p><div class="trk"><i style="width:55%"></i></div></div><div class="g"><small>Questões</small><p>86 <em>58% certas</em></p><div class="trk"><i style="width:58%;background:#087752"></i></div></div></div>
+ <div class="areas"><div><b style="color:#2e63bf">42%</b>Mat</div><div><b style="color:#087752">55%</b>Nat</div><div><b style="color:#905b1f">64%</b>Hum</div><div><b style="color:#7651ba">71%</b>Ling</div></div>
+ <div class="pri"><p>Porcentagem, 35% em 23 <span class="go">Praticar</span></p><p>Eletricidade, 36% em 14 <span class="go">Praticar</span></p></div>
+</div>
+<div class="past">
+ <p>6 a 12 out <span>74 questões</span><span class="up">+6 pts</span></p>
+ <p>29 set a 5 out <span>52 questões</span><span class="dn">−3 pts</span></p>
+</div>
+</main>
+<div class="tab"><span><i></i>Início</span><span class="on"><i></i>Painel</span><span><i></i>Questões</span><span><i></i>Simulados</span><span><i></i>Mais</span></div>
+</body></html>

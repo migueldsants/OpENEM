@@ -3,20 +3,9 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma, EssayEvaluation } from '@prisma/client';
-import {
-  activeEssayAiProvider,
-  gradeEssayWithAi,
-  isAiEssayConfigured,
-} from '../common/essay-ai';
-import {
-  ResolvedAnnotation,
-  resolveAnnotations,
-} from '../common/essay-ai/annotations';
 import { totalEssayScore } from '../common/essay-score';
-import { AiUsageService } from '../ai-usage/ai-usage.service';
 import { xpForEssay } from '../common/gamification';
 import {
   GamificationDelta,
@@ -26,10 +15,24 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { EvaluateEssayDto } from './dto/evaluate-essay.dto';
 
+/**
+ * Anotação por trecho gravada pela antiga correção por IA, que foi removida.
+ * As colunas `competencyFeedback` e `annotations` continuam no banco para não
+ * perder as avaliações já feitas; nenhuma avaliação nova as preenche.
+ */
+export interface StoredAnnotation {
+  competency: number; // 1..5
+  start: number | null; // índice no conteúdo (null = não localizado)
+  end: number | null;
+  excerpt: string;
+  comment: string;
+  suggestion: string;
+}
+
 /** Tipo da avaliação com os campos JSON já parseados para o cliente. */
 type EvaluationWithJson<T> = Omit<T, 'competencyFeedback' | 'annotations'> & {
   competencyFeedback: Record<string, string> | null;
-  annotations: ResolvedAnnotation[] | null;
+  annotations: StoredAnnotation[] | null;
 };
 
 /** Faz o parse seguro de uma string JSON; devolve null em caso de falha. */
@@ -55,7 +58,7 @@ function parseEvaluation<
     competencyFeedback: safeParse<Record<string, string>>(
       ev.competencyFeedback,
     ),
-    annotations: safeParse<ResolvedAnnotation[]>(ev.annotations),
+    annotations: safeParse<StoredAnnotation[]>(ev.annotations),
   };
 }
 
@@ -64,7 +67,6 @@ export class EssaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
-    private readonly usage: AiUsageService,
   ) {}
 
   listPrompts() {
@@ -204,83 +206,6 @@ export class EssaysService {
       throw e;
     }
     return this.withEssayBonus(userId, created, total);
-  }
-
-  /** Indica se a correção por IA está habilitada e qual provedor está ativo. */
-  aiAvailable() {
-    return {
-      available: isAiEssayConfigured(),
-      provider: activeEssayAiProvider(),
-    };
-  }
-
-  /** Corrige a redação por IA (provedor ativo) e persiste a avaliação. */
-  async evaluateWithAi(userId: string, id: string) {
-    if (!isAiEssayConfigured()) {
-      throw new ServiceUnavailableException(
-        'Correção por IA indisponível. Use a correção por rubrica.',
-      );
-    }
-    const submission = await this.prisma.essaySubmission.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        userId: true,
-        content: true,
-        evaluation: { select: { id: true } },
-        prompt: { select: { theme: true, instructions: true } },
-      },
-    });
-    if (!submission) {
-      throw new NotFoundException('Redação não encontrada');
-    }
-    if (submission.userId !== userId) {
-      throw new ForbiddenException();
-    }
-    if (submission.evaluation) {
-      throw new ConflictException('Esta redação já foi avaliada');
-    }
-
-    // Só depois das checagens de dono e de já avaliada: pedido recusado não gasta cota.
-    await this.usage.reserve(userId, 'essay');
-    const scores = await gradeEssayWithAi({
-      theme: submission.prompt.theme,
-      instructions: submission.prompt.instructions,
-      content: submission.content,
-    });
-    const total = totalEssayScore(scores);
-    const annotations = resolveAnnotations(
-      submission.content,
-      scores.annotations,
-    );
-    let created: EssayEvaluation;
-    try {
-      created = await this.prisma.essayEvaluation.create({
-        data: {
-          submissionId: id,
-          c1: scores.c1,
-          c2: scores.c2,
-          c3: scores.c3,
-          c4: scores.c4,
-          c5: scores.c5,
-          total,
-          feedback: scores.feedback,
-          competencyFeedback: JSON.stringify(scores.competencyFeedback),
-          annotations: JSON.stringify(annotations),
-        },
-      });
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2002'
-      ) {
-        throw new ConflictException('Esta redação já foi avaliada');
-      }
-      throw e;
-    }
-    const parsed = parseEvaluation(created);
-    const base = parsed ?? created;
-    return this.withEssayBonus(userId, base, total);
   }
 
   /**

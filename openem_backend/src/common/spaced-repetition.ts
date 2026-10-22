@@ -13,6 +13,14 @@ export interface NextReview extends ReviewState {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
+ * Teto do intervalo entre revisões. Sem ele o intervalo crescia sem limite:
+ * depois de uns 10 acertos seguidos a revisão caía no século seguinte, e por
+ * volta do 16º a data ficava inválida, o Prisma recusava gravar e POST /answers
+ * respondia 500 (e o simulado não conseguia ser entregue).
+ */
+export const MAX_INTERVAL_DAYS = 365;
+
+/**
  * Calcula o próximo agendamento de revisão.
  * @param state estado atual (fator de facilidade, intervalo em dias, repetições)
  * @param quality qualidade da lembrança, 0..5 (>=3 = acerto)
@@ -36,7 +44,10 @@ export function computeNextReview(
     } else if (repetition === 2) {
       intervalD = 6;
     } else {
-      intervalD = Math.round(intervalD * easeFactor);
+      intervalD = Math.min(
+        MAX_INTERVAL_DAYS,
+        Math.round(intervalD * easeFactor),
+      );
     }
   }
 

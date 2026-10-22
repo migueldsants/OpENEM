@@ -8,6 +8,7 @@ import {
   ACHIEVEMENTS,
   AchievementDef,
   achievementProgress,
+  activeStreak,
   comboMultiplierForStreak,
   dailyBonusXp,
   evaluateAchievements,
@@ -276,7 +277,8 @@ export class GamificationService {
         forNext: levelInfo.xpForNextLevel,
         pct: levelInfo.progress,
       },
-      currentStreak: stat?.currentStreak ?? 0,
+      // O gravado só muda com atividade; o que vale hoje pode já ter zerado.
+      currentStreak: stat ? activeStreak(stat) : 0,
       longestStreak: stat?.longestStreak ?? 0,
       lastActivityOn: stat?.lastActivityOn ?? null,
       answersCount: stat?.answersCount ?? 0,
@@ -441,7 +443,7 @@ export class GamificationService {
     const byCode = new Map(unlocked.map((u) => [u.code, u.unlockedAt]));
     const snapshot: GamificationSnapshot = {
       points: stat?.points ?? 0,
-      currentStreak: stat?.currentStreak ?? 0,
+      currentStreak: stat ? activeStreak(stat) : 0,
       answersCount: stat?.answersCount ?? 0,
       correctCount: stat?.correctCount ?? 0,
       simulationsCount: stat?.simulationsCount ?? 0,

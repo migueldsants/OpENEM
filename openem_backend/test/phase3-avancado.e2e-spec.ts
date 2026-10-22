@@ -118,12 +118,4 @@ describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () 
     ]);
     expect(detail.body.nextCursor).toBeNull();
   });
-
-  it('indica disponibilidade da correção por IA', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/essays/ai-available')
-      .set(auth())
-      .expect(200);
-    expect(typeof res.body.available).toBe('boolean');
-  });
 });
