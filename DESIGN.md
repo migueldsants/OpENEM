@@ -39,24 +39,24 @@ colors:
   gold-dark: "#e0a83c"
   plat-dark: "#3fa7c4"
 typography:
-  letreiro:
+  hero:
     fontFamily: "'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif"
-    fontSize: "clamp(3.1rem, 10.2vw, 11rem)"
+    fontSize: "4.6rem"
     fontWeight: 800
-    lineHeight: 0.88
-    letterSpacing: "-0.04em"
+    lineHeight: 1.02
+    letterSpacing: "-0.035em"
   display:
     fontFamily: "'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif"
-    fontSize: "clamp(2.75rem, 7.4vw, 7rem)"
+    fontSize: "4rem"
     fontWeight: 800
-    lineHeight: 0.9
-    letterSpacing: "-0.04em"
+    lineHeight: 1.02
+    letterSpacing: "-0.035em"
   headline:
     fontFamily: "'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif"
-    fontSize: "2.25rem"
+    fontSize: "3.25rem"
     fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "-0.035em"
+    lineHeight: 1.05
+    letterSpacing: "-0.03em"
   page-title:
     fontFamily: "'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.5rem"
@@ -152,35 +152,25 @@ components:
     width: "4px"
     height: "40px"
     rounded: "{rounded.full}"
-  cartao-hero:
+  caderno-hero:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.vitrine}"
-    width: "min(34rem, 40vw)"
-    height: "36.75rem"
-  responder-desabilitado:
-    backgroundColor: "{colors.surface-2}"
-    textColor: "{colors.muted}"
-    rounded: "{rounded.xl}"
-    padding: "0.75rem 1rem"
-  ano-demo:
+    width: "30rem"
+  caderno-capa:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.brand-ink}"
+    padding: "20px 24px"
+  ano:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
-    padding: "0.625rem 0.5rem"
+    height: "44px"
   ano-ativo:
     backgroundColor: "{colors.brand}"
     textColor: "{colors.brand-ink}"
     rounded: "{rounded.lg}"
-    padding: "0.625rem 0.5rem"
-  janela:
-    backgroundColor: "{colors.surface}"
-    rounded: "{rounded.vitrine}"
-  janela-barra:
-    backgroundColor: "{colors.surface-2}"
-    textColor: "{colors.muted}"
-    height: "40px"
-    padding: "0 16px"
+    height: "44px"
 ---
 
 # Design System: OpENEM
@@ -207,7 +197,7 @@ O sistema é multitema. A família `default` (descrita aqui) é a marca; outras 
 Neutros frios levemente lilases, uma cor quente de ação e uma paleta de cinco tons de conteúdo calibrada para contraste.
 
 ### Primary
-- **Rosa OpENEM** (`brand`; `brand-dark` no escuro): botão principal, link de ação, dia de hoje e dias estudados na faixa da semana, barra de meta, item ativo do menu (traço de 2 px), foco (`outline: 2px solid`), seleção de texto (28% de mistura); na landing, o ano escolhido (preenchido), o hover dos anos de demonstração e o XP ganho na questão.
+- **Rosa OpENEM** (`brand`; `brand-dark` no escuro): botão principal, link de ação, dia de hoje e dias estudados na faixa da semana, barra de meta, item ativo do menu (traço de 2 px), foco (`outline: 2px solid`), seleção de texto (28% de mistura); na landing, o ano escolhido no caderno da hero (o botão preenchido e a capa do caderno) e o hover dos anos.
 - **Rosa Claro** (`brand-2`): só como segundo ponto do gradiente da marca (wordmark "ENEM", liga Diamante). Nunca sozinho.
 - **Tinta da Marca** (`brand-ink`): texto sobre preenchimento da marca. Branco no claro, quase preto no escuro.
 
@@ -230,7 +220,7 @@ Aparecem como texto do nome da área, como faixa de área nos itens de lista e c
 - **Pauta** (`line`): toda borda e divisória (1 px).
 
 ### Named Rules
-**The Rose Means Act Rule.** O rosa da marca é reservado a ação, progresso e "hoje" (decisão do usuário, registrada nos contratos de direção do Desempenho e da landing). Um número, um título ou uma decoração nunca ficam rosa só para chamar atenção; o dado da landing em rosa (`font-data text-brand`) é sempre o XP ganho na questão ou o ano escolhido no arquivo, isto é, progresso e seleção. O botão Responder só fica rosa depois que uma alternativa foi escolhida: antes disso não há ação a fazer.
+**The Rose Means Act Rule.** O rosa da marca é reservado a ação, progresso e "hoje" (decisão do usuário, registrada nos contratos de direção do Desempenho e da landing). Um número, um título ou uma decoração nunca ficam rosa só para chamar atenção: na landing, o título da hero, os números ("R$ 0" incluído) e as folhas atrás do caderno ficam neutros, e o rosa aparece só nos botões de ação e no ano escolhido (botão e capa do caderno), isto é, ação e seleção.
 
 **The Area Is Content Rule.** As cinco cores de área marcam matéria e só matéria. Uma área nunca vira cor de ação nem de estado; estado usa os aliases `success`/`warning`/`danger`.
 
@@ -245,9 +235,9 @@ Aparecem como texto do nome da área, como faixa de área nos itens de lista e c
 **Character:** Bricolage extra-negrito e apertado dá aos títulos um peso de cartaz escolar; Inter some atrás do conteúdo; JetBrains Mono tabular deixa minutos, porcentagens e anos com cara de gabarito. Inter é a face de texto sancionada do app, exceção registrada em `.impeccable/config.json` (decisão do usuário: preservar e expandir a identidade do app). O site serve as três famílias pelo fontsource (variáveis, sem Google Fonts); nos temas Cyberpunk e Terminal `--font-display` vira JetBrains Mono.
 
 ### Hierarchy
-- **Letreiro** (800, `clamp(3.1rem, 10.2vw, 11rem)`, altura 0,88, -0,04em): só a frase de abertura da landing, em duas linhas de bloco, ocupando a largura da página. Passa de propósito do teto usual de display: é o cartaz da hero. No desktop baixo (até 820px de altura) a escala também segue a altura (`min(10.2vw, 15.5vh)`).
-- **Display** (800, `clamp(2.75rem, 7.4vw, 7rem)`, 0,9, -0,04em, `text-balance`): o título de fechamento da landing.
-- **Headline** (800, 2,25rem → 3rem a partir de `sm` → 4rem a partir de `lg`, altura 1, -0,035em, `max-width` de 14 a 20ch, `text-balance`): títulos de seção do site.
+- **Hero** (800, 2,7rem → 3,75rem a partir de `sm` → 4,6rem a partir de `lg`, altura 1,02, -0,035em, `text-balance`): só o `h1` da landing, na coluna da esquerda da hero.
+- **Display** (800, 2,5rem → 3,75rem a partir de `sm` → 4rem a partir de `lg`, altura 1,02, -0,035em, `text-balance`, até 14em): o título de fechamento da landing, centralizado.
+- **Headline** (800, 2,15rem → 3rem a partir de `sm` → 3,25rem a partir de `lg`, altura 1,05, -0,03em, `text-balance`): títulos de seção do site, sem eyebrow em cima.
 - **Page title** (800, 1,5rem → 1,875rem a partir de `sm`, `tracking-tight`): `h1` do `PageHeader` em toda tela do app.
 - **Title** (700, 1,125rem): título de cartão e de seção dentro de tela (o uso mais comum da display no app); 1,25rem para o título do cartão principal ("Esta semana").
 - **Body** (400, 0,875rem): texto de interface; botões em 600 a 0,9rem.
@@ -258,7 +248,7 @@ Aparecem como texto do nome da área, como faixa de área nos itens de lista e c
 ### Named Rules
 **The Mono Numbers Rule.** Minuto, questão, porcentagem, data, ano e XP vão em `.font-data` com `tabular-nums`. Texto corrido nunca vai em mono.
 
-**The One Letreiro Rule.** A escala de letreiro aparece uma vez por página, na abertura da landing, e nada se sobrepõe a ela além do cartão da questão. Telas do app e da documentação ficam no teto de `page-title`.
+**The One Hero Rule.** A escala de hero aparece uma vez por página, na abertura da landing, e nada se sobrepõe a ela. Telas do app e da documentação ficam no teto de `page-title`.
 
 **The Two Weights Rule.** Títulos em display são 700 ou 800; texto em Inter fica entre 400 e 600. Não há display leve nem Inter extra-negrito.
 
@@ -266,7 +256,7 @@ Aparecem como texto do nome da área, como faixa de área nos itens de lista e c
 
 App mobile-first. No celular: barra superior fixa com desfoque (`bg-bg/85`, `backdrop-blur`) e barra de abas inferior (`bg-bg/90`); a partir de `md` (768px) o menu vira barra lateral de 240px (`w-60`) em `sidebar`, com rolagem própria e regras de altura (`max-height: 920px` aperta o ritmo; `620px` esconde o cartão de XP). As telas empilham seções com 24px (`space-y-6`); dentro do cartão o ritmo é 12 a 16px (`space-y-3`/`space-y-4`), gap padrão 12px entre itens e 8px entre controles. Desempenho vira duas colunas a partir de `xl` (`1.35fr / 1fr`).
 
-A landing centraliza em 1760px com 16px de margem (24px a partir de `sm`, 56px a partir de `lg`); cabeçalho de 4,5rem. No desktop a hero ocupa a primeira tela (`100svh` menos o cabeçalho) numa grade de duas colunas, `1fr` e `min(34rem, 40vw)`, com 56px de gap: o letreiro atravessa as duas na primeira linha; na segunda ficam o texto de apoio e o botão à esquerda e o cartão da questão à direita, puxado para cima sobre a primeira linha do letreiro. Embaixo, o chão de anos ocupa a largura toda. No celular tudo empilha (letreiro, texto, cartão, chão rolando na horizontal). As seções seguintes abrem com 96 a 176px no topo (`pt-24 sm:pt-32 lg:pt-40` a `pt-28 sm:pt-36 lg:pt-44`); o fechamento vai a 192px. `scroll-padding-top: 5rem` compensa a barra.
+A landing centraliza em 1200px com 16px de margem (24px a partir de `sm`); o cabeçalho tem o wordmark, as âncoras das seções (a partir de `md`), o GitHub e "Abrir o app". A partir de `lg` a hero é uma grade de duas colunas, `1fr` e `30rem`, com 56px de gap: título, texto e botões à esquerda, o caderno à direita; no celular tudo empilha. Embaixo, uma faixa de números em `surface` com bordas `line` (quatro colunas no desktop, duas no celular). As seções seguem com 112px no topo (`pt-28`): como funciona (três passos e seis recursos), redações, no papel (faixa em `surface`), código aberto (faixa sempre em `default-dark`, via `data-theme` na seção) e o fechamento centralizado. Seções de duas colunas viram uma no celular. `scroll-padding-top: 5rem` compensa a barra.
 
 ## Elevation & Depth
 
@@ -275,14 +265,13 @@ Híbrido, quase plano. A separação vem primeiro de tom (`bg` → `surface`) e 
 ### Shadow Vocabulary
 - **Sombra do app** (`--shadow`, claro: `0 1px 2px rgba(40,14,22,0.05), 0 10px 28px rgba(40,14,22,0.07)`; escuro: `0 1px 2px rgba(0,0,0,0.34), 0 14px 34px rgba(0,0,0,0.4)`): `.card-raised` (o cartão principal da tela), item ativo do segmentado, hover de `.lift`, popover de busca da documentação.
 - **Brilho da marca** (`--glow`, anel de 18% + halo de 22% da marca): definido em todo tema e exposto como `.card-glow`, mas sem uso no código atual; não é vocabulário ativo.
-- **Janela** (`0 1px 2px` a 8% de `fg` + `0 32px 64px -28px` a 30% de `fg`; no escuro, só `0 32px 64px -28px` preto a 70%): só a janela do app na landing, sombra neutra deslocada para baixo. Sem halo da marca.
 
 ### Named Rules
 **The Line Before Shadow Rule.** Todo cartão tem borda; `--shadow` marca os cartões principais da tela (um a dois na maioria das telas), nunca a grade inteira. A borda separa; a sombra só hierarquiza.
 
 ## Shapes
 
-Cantos arredondados em três degraus, todos via variáveis do Tailwind que os temas podem redefinir: 8px (`lg`) para células, itens de menu e skeleton; 12px (`xl`) para botões, campos e segmentados; 16px (`2xl`) para cartões e `.slab`. Chips, barras de progresso, faixas de área e avatares são pílulas (`999px`). Cyberpunk e Terminal fecham os cantos (2 a 8px); Sakura os abre (12 a 32px). Na landing, as duas peças de vitrine (o cartão da questão da hero e a janela do app) abrem para 1,25rem (`vitrine`); a janela recorta a captura em 390 × 600 no celular e 16 × 10 a partir de `md`. Bordas são sempre 1 px sólidas; a única tracejada é o dia futuro da faixa da semana.
+Cantos arredondados em três degraus, todos via variáveis do Tailwind que os temas podem redefinir: 8px (`lg`) para células, itens de menu e skeleton; 12px (`xl`) para botões, campos e segmentados; 16px (`2xl`) para cartões e `.slab`. Chips, barras de progresso, faixas de área e avatares são pílulas (`999px`). Cyberpunk e Terminal fecham os cantos (2 a 8px); Sakura os abre (12 a 32px). Na landing, as peças de vitrine (o caderno da hero, os cartões de recurso e o terminal) abrem para 1,25rem (`vitrine`). Bordas são sempre 1 px sólidas; a única tracejada é o dia futuro da faixa da semana.
 
 ## Components
 
@@ -291,8 +280,7 @@ Cantos arredondados em três degraus, todos via variáveis do Tailwind que os te
 - **Primary:** fundo `brand`, texto `brand-ink`, 600 a 0,9rem, 0,6rem × 1rem; em linha de lista encolhe para 0,375rem × 0,75rem a 0,75rem.
 - **Hover / Focus:** hover escurece 12% para o preto (`color-mix`); `:active` desce 1px; foco é contorno de 2px na marca com 2px de afastamento; desabilitado a 55% de opacidade.
 - **Ghost:** transparente com borda `line` e texto `fg`; hover em `surface-2`.
-- **Site:** botões do site somam `.aperta` (escala 0,97 ao pressionar, 140ms em `--ease-saida`). O CTA da landing cresce para 1rem com 0,875rem × 1,25rem.
-- **Desabilitado neutro (landing):** o Responder da questão começa como "Escolha uma alternativa" em `surface-2`, borda `line` e texto `muted`, em opacidade cheia, e só vira primário ("Responder") quando há escolha. Rosa sem ação disponível seria ruído.
+- **Site:** botões do site somam `.aperta` (escala 0,97 ao pressionar, 140ms em `--ease-saida`). O CTA da landing ("Começar a estudar") cresce para 1rem com 0,875rem × 1,5rem; no fechamento, 1,125rem. Botões de cabeçalho têm no mínimo 44px de altura.
 
 ### Chips
 - **Style:** pílula em `surface-2` com borda `line`, 0,75rem em 500.
@@ -321,14 +309,11 @@ Marcador estabelecido dos itens de lista (Questões, Revisão, Simulados, Favori
 ### Faixa da semana (signature, Desempenho)
 Sete células em grade, 6 a 8px de gap, 36px de altura (24px na versão compacta das semanas passadas), raio 8px, número do dia em mono. Estudado: preenchido na marca. Hoje: contorno de 2px na marca por dentro (hoje e estudado: preenchido com anel externo afastado 2px). Sem estudo: `surface-2` e `muted`. Futuro: borda tracejada em `line`. A barra de meta embaixo tem 6px, em pílula, e enche uma vez ao aparecer (`.barra-enche`, 700ms, `cubic-bezier(0.23,1,0.32,1)`, via `@starting-style`).
 
-### Letreiro com a questão (signature, landing)
-A frase de abertura em escala de letreiro, com o player de questões do app num `.card .card-raised` de 1,25rem por cima: no desktop o cartão sobe `-1,2 × letreiro` sobre a primeira linha, fica acima do título (`z-index`) e reserva 36,75rem de altura para a questão mais longa, de modo que o chão de anos não pula ao trocar de questão. Em desktop baixo (até 820px de altura) o cartão vai a `zoom: 0.9` e a margem é dividida por 0,9 para manter a sobreposição. Dentro do cartão vale a gramática do app: faixa de área de 4 × 40px, matéria na cor da área, prova e número em mono sobre `surface-2`, alternativas de 12px de raio com a letra numa célula de 8px (escolhida: borda e letra na marca; corrigida: `success`/`danger` a 10%). Trocar de questão remonta o cartão com a `.troca`: entrada por `@starting-style` com opacidade 0, escala 0,985 e desfoque de 6px, em 260ms `--ease-saida` (sem escala e desfoque com movimento reduzido).
+### Caderno da hero (signature, landing)
+Um caderno de prova numa folha `.card .card-raised` de 1,25rem, com duas folhas neutras (`surface-2` e `surface`, borda `line`) giradas 3° e 1,4° atrás dele. A capa é a faixa da marca com "Caderno de prova" em mono a 0,75rem e "ENEM <ano>" em Bricolage 800, e uma pílula com o formato ("Prova única" ou "Dois dias"); a capa é rosa porque é o ano escolhido. Embaixo: o total de questões, cada dia com as suas áreas e a redação, as áreas em `.chip` com o ponto na cor da área ("Interdisciplinar" até 2008) e, depois de um traço tracejado, "Tema da redação" em mono na cor `red` e o tema regular do ano em Bricolage 700, tirado do catálogo do app (2008 diz que o caderno não tem frase-tema). As regras de formato espelham o importador (`src/landing/prova.ts`). Abaixo do caderno, os 28 anos em grade de 7 colunas, botões de 44px em mono; até 2008 o fundo é `surface-2`, o ano escolhido é preenchido na marca com `--shadow`. Trocar de ano remonta a folha com a `.troca` (opacidade 0, escala 0,985 e desfoque de 6px em 260ms `--ease-saida`; sem escala e desfoque com movimento reduzido).
 
-### Chão de anos (signature, landing)
-Faixa de largura total em `surface` com borda superior `line`, embaixo da hero: os 28 anos do ENEM (1998 a 2025) em mono tabular, numa grade de 28 colunas no desktop e rolagem horizontal no celular. Anos sem demonstração são texto `fg` a 70%; anos com demonstração são botões contornados (borda `fg` a 25%, fundo `surface`, hover com borda e texto na marca); o ano pressionado é preenchido na marca, com `brand-ink` e `--shadow`. À esquerda, uma frase curta (14rem no desktop) diz quais anos experimentar.
-
-### Janela do app (signature, landing)
-Capturas reais do app (com sidecar de procedência) numa janela de `surface` com borda de 1 px `line`, raio de 1,25rem e a sombra Janela. A barra tem 40px, `surface-2`, borda inferior e só o nome "OpENEM · <aba>" em mono `muted` a 0,75rem, sem botões de semáforo falsos. Captura de desktop a partir de 768px e de celular abaixo, nos dois lados do tema (`.tela-clara`/`.tela-escura`; o CSS mostra a do tema atual). As abas ficam numa coluna de até 19rem à esquerda (no celular, faixa rolável acima); a aba ativa é uma folha com `--shadow` e o traço de 2 × 20px na marca, como o item ativo do menu do app; as setas do teclado trocam de aba. As telas trocam pela `.camada` (opacidade + escala 0,985 + desfoque de 6px em 260ms `--ease-saida`; sem escala e desfoque com movimento reduzido).
+### Lousa e terminal (landing)
+Na seção "No papel", um esboço do caderno em PDF (linhas em `line`, duas colunas) ao lado da lousa do quadro da sala, com as cores fixas da lousa. Na seção de código aberto, um `.card` com a barra "terminal" em mono `muted` sobre `surface-2` (sem botões de janela) e os comandos de instalação, cada linha com `$` em `muted`.
 
 ### Wordmark
 "Op" em `fg` + "ENEM" no gradiente da marca (`.text-gradient`, 90° de `brand` a `brand-2`), Bricolage 800 a 1,25rem, `tracking-tight`. Ao lado do ícone `public/icon.svg`.
@@ -348,7 +333,7 @@ Capturas reais do app (com sidecar de procedência) numa janela de `surface` com
 ### Don't:
 - **Don't** usar cor de área como cor de ação ou de estado, nem `red` (Redação) como erro: erro é `danger`.
 - **Don't** escrever hex literal em componente do app; as exceções declaradas são as ligas e a lousa do quadro da sala (cores fixas, fora dos temas).
-- **Don't** pôr halo da marca em sombra de estrutura: a janela do app e os cartões têm sombra neutra, tingida do fundo.
+- **Don't** pôr halo da marca em sombra de estrutura: os cartões têm sombra neutra, tingida do fundo.
 - **Don't** mexer no tema `default` nem aceitar uma família que falhe o teste de contraste.
 - **Don't** aninhar um `.card` dentro de outro em superfície nova; divida com `divide-y`/`border-t` em `line`, como no Desempenho.
 - **Don't** escrever texto corrido em mono nem números em fonte proporcional.
