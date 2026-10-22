@@ -91,3 +91,11 @@ export const QUESTOES: QuestaoDemo[] = [
 export function proximaQuestao(atual: number, total = QUESTOES.length): number {
   return (atual + 1) % total;
 }
+
+/** Ano da prova de uma questão ("ENEM 2024" → 2024). */
+export function anoDaQuestao(q: Pick<QuestaoDemo, 'prova'>): number {
+  return Number(q.prova.match(/\d{4}/)?.[0]);
+}
+
+/** Todos os anos com ENEM, de 1998 a 2025, para a faixa da hero. */
+export const ANOS_DO_ENEM: number[] = Array.from({ length: 2025 - 1998 + 1 }, (_, i) => 1998 + i);

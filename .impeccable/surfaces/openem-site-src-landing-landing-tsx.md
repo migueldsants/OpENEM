@@ -7,22 +7,24 @@ related_targets: ["openem_site/index.html"]
 
 # Landing do OpENEM (`openem_site/`, rota `/`)
 
-Modo: Persuade. Público: só alunos (Mariana do PRD: escola pública, 16 a 18 anos, Android, 1 a 2 h por dia, chega pelo link do WhatsApp). Ação principal: começar a estudar no app (cadastro gratuito); a ação em forma real na página é responder uma questão oficial do ENEM. Prova disponível: provas oficiais de 1998 a 2025, 48 temas de redação, recursos reais do app e capturas de tela reais. Proibido inventar depoimentos, números de usuários, aprovação ou parcerias. Estética do app mantida (pedido do usuário).
+Modo: Persuade. Público: só alunos (Mariana do PRD: escola pública, 16 a 18 anos, chega pelo link do WhatsApp). Ação principal: começar a estudar no app (cadastro gratuito); a ação em forma real na página é responder uma questão oficial do ENEM. Prova disponível: provas oficiais de 1998 a 2025, 48 temas de redação, recursos reais do app e capturas de tela reais. Proibido inventar depoimentos, números de usuários, aprovação ou parcerias. Estética do app mantida (pedido do usuário).
 
-Momento memorável: o aluno responde a questão 137 do ENEM 2024 dentro do celular da página e vê o que o OpENEM faz com aquela resposta.
+Redesenho de 21/10/2026 (pedido do usuário): refazer a landing inteira pensando primeiro no desktop, com uma hero impressionante; a mensagem principal é "é o ENEM de verdade" e a questão respondível fica dentro da hero. Temas de cor ficam em segundo plano: nada de nomes de família, só "temas customizáveis".
+
+Momento memorável: o título da prova em letras de cartaz, cortado pela questão 137 do ENEM 2024, que o aluno responde ali mesmo; a faixa de anos de 1998 a 2025 embaixo troca a questão.
 
 Em aberto: contagem exata de questões do banco (conferir antes de publicar número); domínio público final.
 
 ## Direction contract
 
-THESIS: A landing é a primeira hora de estudo do aluno, não uma vitrine. O celular com o app de verdade fica no centro, a primeira tela já tem uma questão oficial respondível, e uma régua de 0 a 60 minutos avança com a rolagem. Recusa o padrão título-mais-mockup com três cartões de recursos embaixo.
+THESIS: A hero é um letreiro: a frase "A prova de verdade. De graça." em Bricolage 800 do tamanho da tela, cortada por uma questão oficial respondível, sobre um chão com todos os anos do ENEM. Recusa o título com mockup de celular ao lado e a fileira de três cartões de recurso.
 
-OWN-WORLD: o próprio app: fundo #f5f1f6 (escuro #15111c), superfícies brancas com borda #ece5ee e raio 16 px, sombra suave do app, rosa #d91748 (#fb5277 no escuro) só para ação, progresso e o marcador da régua, Bricolage Grotesque 800 nos títulos, Inter no texto, JetBrains Mono tabular nos minutos e anos, ícones Phosphor, as cinco cores de área marcando matérias, wordmark Op + ENEM em gradiente.
+OWN-WORLD: o próprio app, tema default: fundo #f5f1f6 (escuro #15111c), cartões brancos de borda #ece5ee e raio 16 a 20 px, sombra suave do app, rosa #d91748 só para ação, ano selecionado e progresso, Bricolage Grotesque 800 em escala de cartaz, Inter no texto, JetBrains Mono tabular em anos e números, cores de área marcando matéria, janelas do app desktop (capturas reais) com moldura de navegador mínima.
 
-STORY: A visitante entende em segundos que é o ENEM de verdade e de graça, responde a questão na página, vê o que acontece com o acerto ou o erro (revisão, recomendação), percorre a hora (revisão, questões recomendadas, flashcards, redação, desempenho), vê o simulado de fim de semana e o arquivo 1998 a 2025, e toca em Começar a estudar.
+STORY: Entende em um olhar que é o ENEM oficial e de graça, responde a questão na hero, troca de ano na faixa, vê numa janela do app o que acontece depois (revisão, questões recomendadas, flashcards, desempenho), vê o simulado de fim de semana e o arquivo de redações 1998 a 2025, lê que é aberto e sem anúncio e toca em Começar a estudar.
 
-FIRST VIEWPORT: celular 390x844 primeiro: barra de 56 px com wordmark e Entrar; régua 0 a 60 min com marcador rosa no 0; título de duas linhas "Uma hora por dia com a prova de verdade."; uma frase de apoio; Começar a estudar com "Grátis, sem anúncio" ao lado; o celular com a questão respondível começa logo abaixo, cortado pela borda. Desktop: régua vertical de minutos na margem esquerda, título e ação no alto da coluna de texto, celular grande fixo à direita, já com a questão.
+FIRST VIEWPORT: Desktop 1440x900: barra de 72 px (wordmark, Documentação, GitHub, Entrar). Título em duas linhas a ~10vw ocupando a largura. Cartão da questão de 520 px sobreposto ao canto direito da segunda linha, respondível. Abaixo do título, à esquerda, frase de apoio e Começar a estudar com "Sem anúncio, sem plano pago". Chão de 92 px com os 28 anos 1998 a 2025 em mono; 2018, 2023 e 2024 são botões que trocam a questão. Abaixo de 1100 px o cartão desce para o fluxo; no celular a faixa de anos rola de lado.
 
-FORM: "Uma hora no celular", posição 3 na lista ordenada; seed:ac6014ae8904ed29. Interação assinatura: rolagem amarrada à régua de minutos; o celular fixo troca de tela a cada etapa da hora; a questão do topo é respondível de verdade, com retorno.
+FORM: "Letreiro", posição 6 na lista ordenada; seed:088e81d686edaea5. Interação assinatura: escolher um ano no chão troca a questão do cartão com a troca por camada (opacidade, escala 0,985, desfoque); responder mostra gabarito, resolução e o que o app faria. Segunda interação: janela do app com abas que trocam capturas reais.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

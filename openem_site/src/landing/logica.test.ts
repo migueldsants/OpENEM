@@ -1,45 +1,28 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import temasDoArquivo from 'virtual:arquivo-redacoes';
 import { porAno } from './anos';
-import { ETAPAS, fracaoDaRegua, marcasDaRegua, minutoDaEtapa } from './hora';
-import { proximaQuestao, QUESTOES } from './questoes';
-import { FAMILIAS, ladoDaVitrine } from './temas';
+import { abaVizinha, TELAS } from './depois';
+import { ANOS_DO_ENEM, anoDaQuestao, proximaQuestao, QUESTOES } from './questoes';
 
-describe('régua da hora', () => {
-  it('começa em 0, marca o fim de cada etapa e fecha em 60', () => {
-    expect(minutoDaEtapa(-1)).toBe(0);
-    expect(ETAPAS.map((_, i) => minutoDaEtapa(i))).toEqual(ETAPAS.map((e) => e.fim));
-    expect(minutoDaEtapa(ETAPAS.length)).toBe(60);
-    expect(minutoDaEtapa(99)).toBe(60);
-  });
-
-  it('as etapas cobrem a hora inteira, sem buraco nem sobreposição', () => {
-    expect(ETAPAS[0].inicio).toBe(0);
-    for (let i = 1; i < ETAPAS.length; i++) expect(ETAPAS[i].inicio).toBe(ETAPAS[i - 1].fim);
-    expect(ETAPAS[ETAPAS.length - 1].fim).toBe(60);
-  });
-
-  it('converte minuto em fração da régua, presa entre 0 e 1', () => {
-    expect(fracaoDaRegua(0)).toBe(0);
-    expect(fracaoDaRegua(30)).toBe(0.5);
-    expect(fracaoDaRegua(-5)).toBe(0);
-    expect(fracaoDaRegua(90)).toBe(1);
-  });
-
-  it('cada etapa tem a captura do app nos dois temas', () => {
-    for (const e of ETAPAS) {
+describe('janela do app', () => {
+  it('cada tela tem a captura de desktop e a de celular nos dois temas', () => {
+    for (const t of TELAS) {
       for (const lado of ['clara', 'escura']) {
-        expect(existsSync(resolve(process.cwd(), `public/telas/${e.id}-${lado}.webp`)), `${e.id}-${lado}`).toBe(true);
+        for (const arquivo of [`${t.id}-desktop-${lado}.webp`, `${t.id}-${lado}.webp`]) {
+          const caminho = resolve(process.cwd(), 'public/telas', arquivo);
+          expect(existsSync(caminho), arquivo).toBe(true);
+          expect(existsSync(`${caminho}.json`), `${arquivo}.json`).toBe(true);
+        }
       }
     }
   });
 
-  it('tem marca a cada 5 minutos e rótulo a cada 10', () => {
-    const marcas = marcasDaRegua();
-    expect(marcas).toHaveLength(13);
-    expect(marcas.filter((m) => m.rotulo).map((m) => m.minuto)).toEqual([0, 10, 20, 30, 40, 50, 60]);
+  it('as setas dão a volta nas pontas', () => {
+    expect(abaVizinha(0, -1, 4)).toBe(3);
+    expect(abaVizinha(3, 1, 4)).toBe(0);
+    expect(abaVizinha(1, 1, 4)).toBe(2);
   });
 });
 
@@ -52,6 +35,15 @@ describe('questões da landing', () => {
     }
   });
 
+  it('a faixa de anos vai de 1998 a 2025 e cada questão cai num ano dela', () => {
+    expect(ANOS_DO_ENEM).toHaveLength(28);
+    expect(ANOS_DO_ENEM[0]).toBe(1998);
+    expect(ANOS_DO_ENEM[27]).toBe(2025);
+    const anos = QUESTOES.map(anoDaQuestao);
+    for (const ano of anos) expect(ANOS_DO_ENEM).toContain(ano);
+    expect(new Set(anos).size).toBe(anos.length);
+  });
+
   it('a roda de questões volta ao começo', () => {
     expect(proximaQuestao(0, 3)).toBe(1);
     expect(proximaQuestao(2, 3)).toBe(0);
@@ -60,7 +52,7 @@ describe('questões da landing', () => {
   it('nenhum texto da landing usa travessão', () => {
     const textos = [
       ...QUESTOES.flatMap((q) => [q.resolucao, q.comando, ...q.enunciado]),
-      ...ETAPAS.flatMap((e) => [e.titulo, e.texto, e.alt]),
+      ...TELAS.flatMap((t) => [t.titulo, t.texto, t.alt]),
     ];
     for (const t of textos) expect(t).not.toMatch(/[—–]/);
   });
@@ -83,22 +75,5 @@ describe('arquivo de redações', () => {
     ]);
     expect(anos.map((a) => a.ano)).toEqual([2019, 2020]);
     expect(anos[1].temas.map((t) => t.aplicacao)).toEqual(['regular', 'ppl']);
-  });
-});
-
-describe('faixa de temas', () => {
-  it('acompanha as famílias do app (src/theme.tsx)', () => {
-    const fonte = readFileSync(resolve(process.cwd(), '../openem_frontend/src/theme.tsx'), 'utf8');
-    const bloco = fonte.slice(fonte.indexOf('export const FAMILIES'));
-    const doApp = [...bloco.matchAll(/\{\s*key:\s*'([a-z]+)',\s*label:\s*'([^']+)'/g)].map((m) => ({
-      key: m[1],
-      label: m[2],
-    }));
-    expect(FAMILIAS).toEqual(doApp);
-  });
-
-  it('as famílias OLED aparecem no lado escuro', () => {
-    expect(ladoDaVitrine('oled')).toBe('dark');
-    expect(['light', 'dark']).toContain(ladoDaVitrine('default'));
   });
 });

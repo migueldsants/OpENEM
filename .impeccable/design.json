@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-21T16:26:20.919Z",
+  "generatedAt": "2026-10-22T11:28:40.380Z",
   "title": "Design System: OpENEM",
   "extensions": {
     "colorMeta": {
@@ -543,46 +543,20 @@
           "oklch(86% 0.036 219.8)",
           "oklch(95% 0.036 219.8)"
         ]
-      },
-      "aparelho": {
-        "role": "neutral",
-        "displayName": "Aparelho",
-        "canonical": "#16111c",
-        "tonalRamp": [
-          "oklch(15% 0.023 305.1)",
-          "oklch(27% 0.023 305.1)",
-          "oklch(39% 0.023 305.1)",
-          "oklch(51% 0.023 305.1)",
-          "oklch(63% 0.023 305.1)",
-          "oklch(75% 0.023 305.1)",
-          "oklch(86% 0.008 305.1)",
-          "oklch(95% 0.008 305.1)"
-        ]
-      },
-      "aparelho-dark": {
-        "role": "neutral",
-        "displayName": "Aparelho (escuro)",
-        "canonical": "#2e2638",
-        "tonalRamp": [
-          "oklch(15% 0.034 304.6)",
-          "oklch(27% 0.034 304.6)",
-          "oklch(39% 0.034 304.6)",
-          "oklch(51% 0.034 304.6)",
-          "oklch(63% 0.034 304.6)",
-          "oklch(75% 0.034 304.6)",
-          "oklch(86% 0.012 304.6)",
-          "oklch(95% 0.012 304.6)"
-        ]
       }
     },
     "typographyMeta": {
+      "letreiro": {
+        "displayName": "Letreiro",
+        "purpose": "Só a frase de abertura da landing, em escala de cartaz (clamp(3.1rem, 10.2vw, 11rem)); passa de propósito do teto usual de display."
+      },
       "display": {
         "displayName": "Display",
-        "purpose": "Título de abertura e de fechamento da landing (2,6rem a 3,75rem)."
+        "purpose": "Título de fechamento da landing (clamp(2.75rem, 7.4vw, 7rem))."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Títulos de seção do site (2rem a 3rem)."
+        "purpose": "Títulos de seção do site (2,25rem → 3rem → 4rem)."
       },
       "page-title": {
         "displayName": "Título de tela",
@@ -631,9 +605,14 @@
         "purpose": "Foco de campo, com a borda na marca."
       },
       {
-        "name": "aparelho",
-        "value": "0 1px 2px color-mix(in oklab, var(--fg) 14%, transparent), 0 24px 48px -16px color-mix(in oklab, var(--fg) 34%, transparent)",
-        "purpose": "Só a moldura de celular do site."
+        "name": "janela",
+        "value": "0 1px 2px color-mix(in oklab, var(--fg) 8%, transparent), 0 32px 64px -28px color-mix(in oklab, var(--fg) 30%, transparent)",
+        "purpose": "Só a janela do app na landing: neutra, deslocada para baixo."
+      },
+      {
+        "name": "janela-dark",
+        "value": "0 32px 64px -28px rgb(0 0 0 / 0.7)",
+        "purpose": "Janela do app nos temas escuros."
       },
       {
         "name": "glow",
@@ -645,12 +624,22 @@
       {
         "name": "ease-saida",
         "value": "cubic-bezier(0.23, 1, 0.32, 1)",
-        "purpose": "Entradas e respostas: .aperta (140ms), .camada (260ms), barra de meta (700ms), seta do FAQ (200ms)."
+        "purpose": "Entradas e respostas: .aperta (140ms), .camada e .troca (260ms), barra de meta (700ms), seta do FAQ (200ms)."
       },
       {
         "name": "ease-movimento",
         "value": "cubic-bezier(0.77, 0, 0.175, 1)",
-        "purpose": "Deslocamento do marcador da régua de minutos (420ms)."
+        "purpose": "Curva de deslocamento, definida no site; sem uso atual depois da saída da régua de minutos."
+      },
+      {
+        "name": "troca",
+        "value": "@starting-style { opacity: 0; transform: scale(0.985); filter: blur(6px) } → 260ms var(--ease-saida)",
+        "purpose": "Entrada do cartão da questão da hero quando a questão troca; com movimento reduzido, só opacidade."
+      },
+      {
+        "name": "camada",
+        "value": "opacity + scale(0.985) + blur(6px), 260ms var(--ease-saida)",
+        "purpose": "Crossfade das capturas na janela do app; com movimento reduzido, só opacidade."
       },
       {
         "name": "route-in",
@@ -692,7 +681,11 @@
       },
       {
         "name": "site-max",
-        "value": "1240px"
+        "value": "1760px"
+      },
+      {
+        "name": "desktop-baixo",
+        "value": "(min-width: 64rem) and (max-height: 820px)"
       }
     ]
   },
@@ -760,6 +753,30 @@
       "description": "Op + ENEM no gradiente da marca.",
       "html": "<span class=\"ds-wordmark\">Op<span>ENEM</span></span>",
       "css": ".ds-wordmark{font:800 1.25rem 'Bricolage Grotesque', Inter, ui-sans-serif, sans-serif;letter-spacing:-.025em;color:var(--fg,#211b26)}.ds-wordmark span{background-image:linear-gradient(90deg,var(--brand,#d91748),var(--brand-2,#ff5a7d));-webkit-background-clip:text;background-clip:text;color:transparent}"
+    },
+    {
+      "name": "Ano do chão",
+      "kind": "chip",
+      "refersTo": "ano-demo",
+      "description": "Chão de anos da hero: ano sem demonstração em texto, ano com demonstração contornado, ano pressionado preenchido na marca.",
+      "html": "<ul class=\"ds-anos\"><li><span class=\"ds-ano-t\">2008</span></li><li><button class=\"ds-ano\">2009</button></li><li><button class=\"ds-ano\" aria-pressed=\"true\">2015</button></li><li><span class=\"ds-ano-t\">2016</span></li></ul>",
+      "css": ".ds-anos{display:flex;gap:4px;list-style:none;margin:0;padding:12px 16px;background:var(--surface,#fff);border-top:1px solid var(--line,#ece5ee)}.ds-ano,.ds-ano-t{display:block;border-radius:var(--radius-lg,.5rem);padding:.625rem .5rem;font:500 .82rem 'JetBrains Mono', ui-monospace, monospace;font-variant-numeric:tabular-nums}.ds-ano-t{color:color-mix(in oklab,var(--fg,#211b26) 70%,transparent)}.ds-ano{cursor:pointer;border:1px solid color-mix(in oklab,var(--fg,#211b26) 25%,transparent);background:var(--surface,#fff);color:var(--fg,#211b26);transition:transform 140ms cubic-bezier(.23,1,.32,1),border-color .2s,color .2s}.ds-ano:hover{border-color:var(--brand,#d91748);color:var(--brand,#d91748)}.ds-ano:active{transform:scale(.97)}.ds-ano[aria-pressed=true]{background:var(--brand,#d91748);border-color:var(--brand,#d91748);color:var(--brand-ink,#fff);font-weight:600;box-shadow:var(--shadow,0 1px 2px rgba(40,14,22,.05),0 10px 28px rgba(40,14,22,.07))}.ds-ano:focus-visible{outline:2px solid var(--brand,#d91748);outline-offset:2px}"
+    },
+    {
+      "name": "Responder (neutro até escolher)",
+      "kind": "button",
+      "refersTo": "responder-desabilitado",
+      "description": "Botão da questão da landing: neutro e desabilitado sem escolha, primário depois.",
+      "html": "<button class=\"ds-responder\" disabled>Escolha uma alternativa</button> <button class=\"ds-responder ds-responder-on\">Responder</button>",
+      "css": ".ds-responder{display:inline-flex;justify-content:center;width:100%;max-width:320px;border-radius:var(--radius-xl,.75rem);padding:.75rem 1rem;font:600 1rem Inter, ui-sans-serif, system-ui, sans-serif;border:1px solid var(--line,#ece5ee);background:var(--surface-2,#faf6fa);color:var(--muted,#6b6473);cursor:default}.ds-responder-on{border-color:transparent;background:var(--brand,#d91748);color:var(--brand-ink,#fff);cursor:pointer;transition:transform 140ms cubic-bezier(.23,1,.32,1)}.ds-responder-on:hover{background:color-mix(in oklab,var(--brand,#d91748) 88%,black)}.ds-responder-on:active{transform:scale(.97)}.ds-responder-on:focus-visible{outline:2px solid var(--brand,#d91748);outline-offset:2px}"
+    },
+    {
+      "name": "Janela do app",
+      "kind": "card",
+      "refersTo": "janela",
+      "description": "Capturas reais do app na landing: borda fina, raio de 1,25rem, sombra neutra deslocada e barra só com o nome da tela.",
+      "html": "<div class=\"ds-janela\"><div class=\"ds-janela-barra\">OpENEM · Revisão</div><div class=\"ds-janela-tela\"></div></div>",
+      "css": ".ds-janela{max-width:480px;overflow:hidden;border:1px solid var(--line,#ece5ee);border-radius:1.25rem;background:var(--surface,#fff);box-shadow:0 1px 2px color-mix(in oklab,var(--fg,#211b26) 8%,transparent),0 32px 64px -28px color-mix(in oklab,var(--fg,#211b26) 30%,transparent)}.ds-janela-barra{display:flex;align-items:center;height:40px;padding:0 16px;background:var(--surface-2,#faf6fa);border-bottom:1px solid var(--line,#ece5ee);font:400 .75rem 'JetBrains Mono', ui-monospace, monospace;letter-spacing:-.02em;color:var(--muted,#6b6473)}.ds-janela-tela{aspect-ratio:16/10;background:var(--bg,#f5f1f6)}"
     }
   ],
   "narrative": {
@@ -769,13 +786,13 @@
       "Uma cor de ação (rosa da marca) e cinco cores de conteúdo (áreas); o resto é neutro.",
       "Cartão branco com borda de 1 px e raio de 16 px como unidade de tudo.",
       "Números sempre em JetBrains Mono tabular.",
-      "Todo token existe em claro e escuro; nenhum componente usa cor literal fora dos tokens (exceções declaradas: ligas, lousa do quadro da sala, corpo do aparelho no site).",
+      "Todo token existe em claro e escuro; nenhum componente usa cor literal fora dos tokens (exceções declaradas: ligas e lousa do quadro da sala).",
       "Movimento curto e só de transform/opacidade, desligado por `prefers-reduced-motion`."
     ],
     "rules": [
       {
         "name": "The Rose Means Act Rule",
-        "body": "O rosa da marca é reservado a ação, progresso e \"hoje\" (decisão do usuário, registrada nos contratos de direção do Desempenho e da landing). Um número, um título ou uma decoração nunca ficam rosa só para chamar atenção; o dado da landing em rosa (`font-data text-brand`) é sempre o minuto da régua ou o ano do arquivo, isto é, progresso.",
+        "body": "O rosa da marca é reservado a ação, progresso e \"hoje\" (decisão do usuário, registrada nos contratos de direção do Desempenho e da landing). Um número, um título ou uma decoração nunca ficam rosa só para chamar atenção; o dado da landing em rosa (`font-data text-brand`) é sempre o XP ganho na questão ou o ano escolhido no arquivo, isto é, progresso e seleção. O botão Responder só fica rosa depois que uma alternativa foi escolhida: antes disso não há ação a fazer.",
         "section": "colors"
       },
       {
@@ -791,6 +808,11 @@
       {
         "name": "The Mono Numbers Rule",
         "body": "Minuto, questão, porcentagem, data, ano e XP vão em `.font-data` com `tabular-nums`. Texto corrido nunca vai em mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Letreiro Rule",
+        "body": "A escala de letreiro aparece uma vez por página, na abertura da landing, e nada se sobrepõe a ela além do cartão da questão. Telas do app e da documentação ficam no teto de `page-title`.",
         "section": "typography"
       },
       {
@@ -810,17 +832,18 @@
       "**Do** marcar matéria com a cor de área: nome da área em `AREA_TEXT`, faixa de 4px em `AREA_DOT` nos itens de lista.",
       "**Do** pôr todo número em `.font-data` com `tabular-nums`.",
       "**Do** construir telas com `.card` (borda 1px, raio 16px) e reservar `.card-raised` ao cartão principal de cada bloco.",
-      "**Do** limitar o movimento a transform e opacidade, com curvas `--ease-saida` (`cubic-bezier(0.23,1,0.32,1)`) para entradas e respostas e `--ease-movimento` (`cubic-bezier(0.77,0,0.175,1)`) para deslocamentos, e deixar `prefers-reduced-motion` zerar tudo.",
+      "**Do** limitar o movimento a transform, opacidade e um desfoque curto de entrada, com `--ease-saida` (`cubic-bezier(0.23,1,0.32,1)`) para entradas e respostas e `--ease-movimento` (`cubic-bezier(0.77,0,0.175,1)`) para deslocamentos, e deixar `prefers-reduced-motion` zerar escala e desfoque.",
       "**Do** importar `openem_frontend/src/index.css` em qualquer superfície nova (o site já faz), sem paleta paralela.",
       "**Do** desligar decoração de tema (brilho neon, scanlines) com `html[data-fx='off']` e `prefers-contrast: more`."
     ],
     "donts": [
       "**Don't** usar cor de área como cor de ação ou de estado, nem `red` (Redação) como erro: erro é `danger`.",
-      "**Don't** escrever hex literal em componente do app; as exceções declaradas são as ligas, a lousa do quadro da sala (cores fixas, fora dos temas) e o corpo do aparelho no site.",
-      "**Don't** pôr halo da marca em sombra de estrutura: a moldura de celular e os cartões têm sombra neutra, tingida do fundo.",
+      "**Don't** escrever hex literal em componente do app; as exceções declaradas são as ligas e a lousa do quadro da sala (cores fixas, fora dos temas).",
+      "**Don't** pôr halo da marca em sombra de estrutura: a janela do app e os cartões têm sombra neutra, tingida do fundo.",
       "**Don't** mexer no tema `default` nem aceitar uma família que falhe o teste de contraste.",
       "**Don't** aninhar um `.card` dentro de outro em superfície nova; divida com `divide-y`/`border-t` em `line`, como no Desempenho.",
-      "**Don't** escrever texto corrido em mono nem números em fonte proporcional."
+      "**Don't** escrever texto corrido em mono nem números em fonte proporcional.",
+      "**Don't** desenhar moldura de aparelho nem botões de janela falsos em volta de captura do app: ela aparece numa janela de borda fina com o nome da tela."
     ]
   }
 }

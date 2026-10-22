@@ -41,50 +41,49 @@ html {
     transform: scale(0.97);
   }
 
-  /* Moldura do celular: a tela dentro é o app de verdade (componente ou
-     captura), a moldura é só o aparelho. */
-  .celular {
-    position: relative;
-    width: 100%;
-    max-width: 22.5rem;
-    border-radius: 2.75rem;
-    padding: 0.6rem;
-    /* Aparelho escuro no tema claro, como um celular de verdade. Sombra
-       neutra com deslocamento, tingida do fundo (sem halo da marca). */
-    background: #16111c;
-    box-shadow:
-      0 1px 2px color-mix(in oklab, var(--fg) 14%, transparent),
-      0 24px 48px -16px color-mix(in oklab, var(--fg) 34%, transparent);
-  }
-  /* No escuro o aparelho preto sumia no fundo: corpo mais claro e um aro. */
-  [data-theme$='-dark'] .celular {
-    background: #2e2638;
-    box-shadow:
-      inset 0 0 0 1px color-mix(in oklab, var(--fg) 14%, transparent),
-      0 24px 48px -16px rgb(0 0 0 / 0.65);
-  }
-  /* A proporção do aparelho é a da tela de dentro (390 x 844): com ela no
-     invólucro, o padding estreitava a tela e a captura era cortada dos lados. */
-  .celular-tela {
-    position: relative;
-    aspect-ratio: 390 / 844;
-    overflow: hidden;
-    border-radius: 2.2rem;
-    background: var(--bg);
-    isolation: isolate;
+  /* O letreiro da hero: a frase em escala de cartaz, do tamanho da tela. O
+     cartão da questão usa a mesma medida para começar na linha de base da
+     primeira linha. */
+  .letreiro {
+    --letreiro: clamp(3.1rem, 10.2vw, 11rem);
   }
 
-  /* Aparelho pequeno (etapas no celular): cantos proporcionais ao tamanho,
-     senão a barra de abas da captura cai dentro da curva da tela. */
-  .celular-pequeno {
-    border-radius: 1.75rem;
-    padding: 0.45rem;
+  .letreiro h1 {
+    font-size: var(--letreiro);
   }
-  .celular-pequeno .celular-tela {
-    border-radius: 1.3rem;
+  .letreiro-fim {
+    font-size: clamp(2.75rem, 7.4vw, 7rem);
   }
 
-  /* Camadas da tela do celular: troca com opacidade, leve escala e um blur
+  /* Troca de questão (o cartão remonta): entra com opacidade, leve escala e
+     um blur curto, a mesma linguagem das camadas. */
+  .troca {
+    transition:
+      opacity 260ms var(--ease-saida),
+      transform 260ms var(--ease-saida),
+      filter 260ms var(--ease-saida);
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.985);
+      filter: blur(6px);
+    }
+  }
+
+  /* Janela do app: sombra do aparelho, neutra e com deslocamento. */
+  .janela {
+    box-shadow:
+      0 1px 2px color-mix(in oklab, var(--fg) 8%, transparent),
+      0 32px 64px -28px color-mix(in oklab, var(--fg) 30%, transparent);
+  }
+  [data-theme$='-dark'] .janela {
+    box-shadow: 0 32px 64px -28px rgb(0 0 0 / 0.7);
+  }
+  .camada > picture {
+    display: block;
+    height: 100%;
+  }
+
+  /* Camadas da janela do app: troca com opacidade, leve escala e um blur
      curto, que funde as duas telas em vez de mostrar duas coisas sobrepostas. */
   .camada {
     position: absolute;
@@ -111,11 +110,6 @@ html {
     display: none;
   }
 
-  /* Marcador da régua de minutos: anda com a etapa da hora. */
-  .regua-marca {
-    transition: transform 420ms var(--ease-movimento);
-  }
-
   /* Perguntas frequentes: <details> nativo, com a seta girando. */
   .faq summary {
     list-style: none;
@@ -133,8 +127,46 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .camada {
+  .camada,
+  .troca {
     transform: none;
     filter: none;
+  }
+  .troca {
+    @starting-style {
+      transform: none;
+      filter: none;
+    }
+  }
+}
+
+/* O cartão da hero sobe sobre a parte de baixo da primeira linha do
+   letreiro (z-index acima do título) e reserva a altura da questão mais
+   longa, para a faixa de anos não pular ao trocar de ano. Fora das camadas,
+   para valer sobre o mt-10 do celular. */
+@media (min-width: 64rem) {
+  .cartao-hero {
+    /* Na linha de baixo da grade, puxado para cima: o título tem duas
+       linhas de 0,88 (1,76 letreiro) e o cartão começa a 0,56 do topo. */
+    margin-top: calc(var(--letreiro) * -1.2);
+    min-height: 36.75rem;
+  }
+}
+
+/* Desktop baixo (notebook de 800 px): letreiro, cartão e faixa mais justos,
+   para a faixa de anos caber na primeira tela. Fora das camadas, para valer
+   sobre os utilitários; o zoom encolhe o cartão inteiro por igual, reserva de
+   altura incluída. */
+@media (min-width: 64rem) and (max-height: 820px) {
+  .letreiro {
+    --letreiro: clamp(3.1rem, min(10.2vw, 15.5vh), 11rem);
+  }
+  .cartao-hero {
+    zoom: 0.9;
+    /* O zoom também encolhe a margem: dividir por 0,9 mantém a mordida. */
+    margin-top: calc(var(--letreiro) * -1.2 / 0.9);
+  }
+  .faixa-anos {
+    padding-block: 0.6rem;
   }
 }
