@@ -55,7 +55,9 @@ import {
   Highlighter,
   House,
   Image as ImageIcon,
+  IconBase,
   type Icon as PhosphorIcon,
+  type IconWeight,
   type IconProps,
   Lightning,
   LineSegment,
@@ -88,6 +90,7 @@ import {
   Warning,
   X,
 } from '@phosphor-icons/react';
+import { forwardRef, type ReactElement } from 'react';
 
 type ShimProps = Omit<IconProps, 'weight'> & {
   width?: number | string;
@@ -218,3 +221,30 @@ export const IconCalculator = shim(Calculator, 'duotone');
 export const IconFlask = shim(Flask, 'duotone');
 // Impressão dos cadernos em PDF.
 export const IconPrinter = shim(Printer, 'duotone');
+
+// Tabela periódica: o Phosphor não tem; é a silhueta da tabela (duas colunas
+// altas nas pontas, o miolo baixo e a faixa das séries f embaixo), desenhada
+// no grid de 256 dele e montada com o IconBase, como os ícones da biblioteca.
+const CONTORNO_TABELA =
+  'M224 48h-32a8 8 0 0 0-8 8v40H72V56a8 8 0 0 0-8-8H32a8 8 0 0 0-8 8v104a8 8 0 0 0 8 8h192a8 8 0 0 0 8-8V56a8 8 0 0 0-8-8ZM40 64h16v88H40Zm32 48h48v40H72Zm64 0h48v40h-48Zm80 40h-16V64h16Zm-16 24H56a8 8 0 0 0-8 8v32a8 8 0 0 0 8 8h144a8 8 0 0 0 8-8v-32a8 8 0 0 0-8-8Zm-8 32H64v-16h128Z';
+const PESOS_TABELA = new Map<IconWeight, ReactElement>([
+  ['regular', <path key="r" d={CONTORNO_TABELA} />],
+  ['bold', <path key="b" d={CONTORNO_TABELA} />],
+  ['light', <path key="l" d={CONTORNO_TABELA} />],
+  ['thin', <path key="t" d={CONTORNO_TABELA} />],
+  ['fill', <path key="f" d="M224 48h-32a8 8 0 0 0-8 8v40H72V56a8 8 0 0 0-8-8H32a8 8 0 0 0-8 8v104a8 8 0 0 0 8 8h192a8 8 0 0 0 8-8V56a8 8 0 0 0-8-8Zm-24 128H56a8 8 0 0 0-8 8v32a8 8 0 0 0 8 8h144a8 8 0 0 0 8-8v-32a8 8 0 0 0-8-8Z" />],
+  [
+    'duotone',
+    <>
+      <path opacity="0.2" d="M32 56h32v104H32Zm160 0h32v104h-32ZM64 104h128v56H64Zm-8 80h144v32H56Z" />
+      <path d={CONTORNO_TABELA} />
+    </>,
+  ],
+]);
+// Fica no arquivo para ser exportado pelo shim, como os outros ícones.
+// eslint-disable-next-line react-refresh/only-export-components
+const TabelaPeriodica = forwardRef<SVGSVGElement, IconProps>((props, ref) => (
+  <IconBase ref={ref} {...props} weights={PESOS_TABELA} />
+)) as PhosphorIcon;
+TabelaPeriodica.displayName = 'TabelaPeriodica';
+export const IconTabelaPeriodica = shim(TabelaPeriodica, 'duotone');

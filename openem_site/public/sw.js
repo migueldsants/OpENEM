@@ -36,6 +36,7 @@ const ENDERECOS_ANTIGOS = [
   '/favoritos',
   '/flashcards',
   '/formulas',
+  '/tabela-periodica',
   '/videos',
   '/quadro',
 ];

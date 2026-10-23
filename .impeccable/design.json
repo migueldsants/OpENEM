@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-22T11:28:40.380Z",
+  "generatedAt": "2026-10-23T14:44:52.249Z",
   "title": "Design System: OpENEM",
   "extensions": {
     "colorMeta": {
@@ -543,20 +543,350 @@
           "oklch(86% 0.036 219.8)",
           "oklch(95% 0.036 219.8)"
         ]
+      },
+      "tp-alcalino": {
+        "role": "tertiary",
+        "displayName": "Coral Alcalinos",
+        "canonical": "#e4573d",
+        "tonalRamp": [
+          "oklch(15% 0.181 32.5)",
+          "oklch(27% 0.181 32.5)",
+          "oklch(39% 0.181 32.5)",
+          "oklch(51% 0.181 32.5)",
+          "oklch(63% 0.181 32.5)",
+          "oklch(75% 0.181 32.5)",
+          "oklch(86% 0.063 32.5)",
+          "oklch(95% 0.063 32.5)"
+        ]
+      },
+      "tp-alcalino-terroso": {
+        "role": "tertiary",
+        "displayName": "Âmbar Alcalino-terrosos",
+        "canonical": "#e39a26",
+        "tonalRamp": [
+          "oklch(15% 0.148 72.6)",
+          "oklch(27% 0.148 72.6)",
+          "oklch(39% 0.148 72.6)",
+          "oklch(51% 0.148 72.6)",
+          "oklch(63% 0.148 72.6)",
+          "oklch(75% 0.148 72.6)",
+          "oklch(86% 0.052 72.6)",
+          "oklch(95% 0.052 72.6)"
+        ]
+      },
+      "tp-transicao": {
+        "role": "tertiary",
+        "displayName": "Azul Transição",
+        "canonical": "#5d82d6",
+        "tonalRamp": [
+          "oklch(15% 0.134 264.8)",
+          "oklch(27% 0.134 264.8)",
+          "oklch(39% 0.134 264.8)",
+          "oklch(51% 0.134 264.8)",
+          "oklch(63% 0.134 264.8)",
+          "oklch(75% 0.134 264.8)",
+          "oklch(86% 0.047 264.8)",
+          "oklch(95% 0.047 264.8)"
+        ]
+      },
+      "tp-pos-transicao": {
+        "role": "tertiary",
+        "displayName": "Cinza-azulado Representativos",
+        "canonical": "#7f93a8",
+        "tonalRamp": [
+          "oklch(15% 0.039 249.7)",
+          "oklch(27% 0.039 249.7)",
+          "oklch(39% 0.039 249.7)",
+          "oklch(51% 0.039 249.7)",
+          "oklch(63% 0.039 249.7)",
+          "oklch(75% 0.039 249.7)",
+          "oklch(86% 0.014 249.7)",
+          "oklch(95% 0.014 249.7)"
+        ]
+      },
+      "tp-semimetal": {
+        "role": "tertiary",
+        "displayName": "Verde-água Semimetais",
+        "canonical": "#2fa596",
+        "tonalRamp": [
+          "oklch(15% 0.104 182.7)",
+          "oklch(27% 0.104 182.7)",
+          "oklch(39% 0.104 182.7)",
+          "oklch(51% 0.104 182.7)",
+          "oklch(63% 0.104 182.7)",
+          "oklch(75% 0.104 182.7)",
+          "oklch(86% 0.036 182.7)",
+          "oklch(95% 0.036 182.7)"
+        ]
+      },
+      "tp-nao-metal": {
+        "role": "tertiary",
+        "displayName": "Verde Não metais",
+        "canonical": "#4aa84f",
+        "tonalRamp": [
+          "oklch(15% 0.155 144.5)",
+          "oklch(27% 0.155 144.5)",
+          "oklch(39% 0.155 144.5)",
+          "oklch(51% 0.155 144.5)",
+          "oklch(63% 0.155 144.5)",
+          "oklch(75% 0.155 144.5)",
+          "oklch(86% 0.054 144.5)",
+          "oklch(95% 0.054 144.5)"
+        ]
+      },
+      "tp-halogenio": {
+        "role": "tertiary",
+        "displayName": "Mostarda Halogênios",
+        "canonical": "#c7b21c",
+        "tonalRamp": [
+          "oklch(15% 0.152 100.4)",
+          "oklch(27% 0.152 100.4)",
+          "oklch(39% 0.152 100.4)",
+          "oklch(51% 0.152 100.4)",
+          "oklch(63% 0.152 100.4)",
+          "oklch(75% 0.152 100.4)",
+          "oklch(86% 0.053 100.4)",
+          "oklch(95% 0.053 100.4)"
+        ]
+      },
+      "tp-gas-nobre": {
+        "role": "tertiary",
+        "displayName": "Violeta Gases nobres",
+        "canonical": "#9a6fdc",
+        "tonalRamp": [
+          "oklch(15% 0.162 300.0)",
+          "oklch(27% 0.162 300.0)",
+          "oklch(39% 0.162 300.0)",
+          "oklch(51% 0.162 300.0)",
+          "oklch(63% 0.162 300.0)",
+          "oklch(75% 0.162 300.0)",
+          "oklch(86% 0.057 300.0)",
+          "oklch(95% 0.057 300.0)"
+        ]
+      },
+      "tp-lantanideo": {
+        "role": "tertiary",
+        "displayName": "Orquídea Lantanídeos",
+        "canonical": "#cf72c9",
+        "tonalRamp": [
+          "oklch(15% 0.159 329.5)",
+          "oklch(27% 0.159 329.5)",
+          "oklch(39% 0.159 329.5)",
+          "oklch(51% 0.159 329.5)",
+          "oklch(63% 0.159 329.5)",
+          "oklch(75% 0.159 329.5)",
+          "oklch(86% 0.056 329.5)",
+          "oklch(95% 0.056 329.5)"
+        ]
+      },
+      "tp-actinideo": {
+        "role": "tertiary",
+        "displayName": "Terracota Actinídeos",
+        "canonical": "#c07a4c",
+        "tonalRamp": [
+          "oklch(15% 0.107 53.0)",
+          "oklch(27% 0.107 53.0)",
+          "oklch(39% 0.107 53.0)",
+          "oklch(51% 0.107 53.0)",
+          "oklch(63% 0.107 53.0)",
+          "oklch(75% 0.107 53.0)",
+          "oklch(86% 0.037 53.0)",
+          "oklch(95% 0.037 53.0)"
+        ]
+      },
+      "tp-calor": {
+        "role": "tertiary",
+        "displayName": "Violeta do Mapa de calor",
+        "canonical": "#8c80ff",
+        "tonalRamp": [
+          "oklch(15% 0.182 284.6)",
+          "oklch(27% 0.182 284.6)",
+          "oklch(39% 0.182 284.6)",
+          "oklch(51% 0.182 284.6)",
+          "oklch(63% 0.182 284.6)",
+          "oklch(75% 0.182 284.6)",
+          "oklch(86% 0.064 284.6)",
+          "oklch(95% 0.064 284.6)"
+        ]
+      },
+      "tp-alcalino-dark": {
+        "role": "tertiary",
+        "displayName": "Coral Alcalinos (escuro)",
+        "canonical": "#ff7d63",
+        "tonalRamp": [
+          "oklch(15% 0.164 32.8)",
+          "oklch(27% 0.164 32.8)",
+          "oklch(39% 0.164 32.8)",
+          "oklch(51% 0.164 32.8)",
+          "oklch(63% 0.164 32.8)",
+          "oklch(75% 0.164 32.8)",
+          "oklch(86% 0.057 32.8)",
+          "oklch(95% 0.057 32.8)"
+        ]
+      },
+      "tp-alcalino-terroso-dark": {
+        "role": "tertiary",
+        "displayName": "Âmbar Alcalino-terrosos (escuro)",
+        "canonical": "#f4b34a",
+        "tonalRamp": [
+          "oklch(15% 0.140 76.1)",
+          "oklch(27% 0.140 76.1)",
+          "oklch(39% 0.140 76.1)",
+          "oklch(51% 0.140 76.1)",
+          "oklch(63% 0.140 76.1)",
+          "oklch(75% 0.140 76.1)",
+          "oklch(86% 0.049 76.1)",
+          "oklch(95% 0.049 76.1)"
+        ]
+      },
+      "tp-transicao-dark": {
+        "role": "tertiary",
+        "displayName": "Azul Transição (escuro)",
+        "canonical": "#7fa2f2",
+        "tonalRamp": [
+          "oklch(15% 0.124 265.4)",
+          "oklch(27% 0.124 265.4)",
+          "oklch(39% 0.124 265.4)",
+          "oklch(51% 0.124 265.4)",
+          "oklch(63% 0.124 265.4)",
+          "oklch(75% 0.124 265.4)",
+          "oklch(86% 0.043 265.4)",
+          "oklch(95% 0.043 265.4)"
+        ]
+      },
+      "tp-pos-transicao-dark": {
+        "role": "tertiary",
+        "displayName": "Cinza-azulado Representativos (escuro)",
+        "canonical": "#9aaec2",
+        "tonalRamp": [
+          "oklch(15% 0.037 248.3)",
+          "oklch(27% 0.037 248.3)",
+          "oklch(39% 0.037 248.3)",
+          "oklch(51% 0.037 248.3)",
+          "oklch(63% 0.037 248.3)",
+          "oklch(75% 0.037 248.3)",
+          "oklch(86% 0.013 248.3)",
+          "oklch(95% 0.013 248.3)"
+        ]
+      },
+      "tp-semimetal-dark": {
+        "role": "tertiary",
+        "displayName": "Verde-água Semimetais (escuro)",
+        "canonical": "#45c4b3",
+        "tonalRamp": [
+          "oklch(15% 0.113 182.6)",
+          "oklch(27% 0.113 182.6)",
+          "oklch(39% 0.113 182.6)",
+          "oklch(51% 0.113 182.6)",
+          "oklch(63% 0.113 182.6)",
+          "oklch(75% 0.113 182.6)",
+          "oklch(86% 0.040 182.6)",
+          "oklch(95% 0.040 182.6)"
+        ]
+      },
+      "tp-nao-metal-dark": {
+        "role": "tertiary",
+        "displayName": "Verde Não metais (escuro)",
+        "canonical": "#6cc871",
+        "tonalRamp": [
+          "oklch(15% 0.151 145.0)",
+          "oklch(27% 0.151 145.0)",
+          "oklch(39% 0.151 145.0)",
+          "oklch(51% 0.151 145.0)",
+          "oklch(63% 0.151 145.0)",
+          "oklch(75% 0.151 145.0)",
+          "oklch(86% 0.053 145.0)",
+          "oklch(95% 0.053 145.0)"
+        ]
+      },
+      "tp-halogenio-dark": {
+        "role": "tertiary",
+        "displayName": "Mostarda Halogênios (escuro)",
+        "canonical": "#e2cd3d",
+        "tonalRamp": [
+          "oklch(15% 0.157 100.7)",
+          "oklch(27% 0.157 100.7)",
+          "oklch(39% 0.157 100.7)",
+          "oklch(51% 0.157 100.7)",
+          "oklch(63% 0.157 100.7)",
+          "oklch(75% 0.157 100.7)",
+          "oklch(86% 0.055 100.7)",
+          "oklch(95% 0.055 100.7)"
+        ]
+      },
+      "tp-gas-nobre-dark": {
+        "role": "tertiary",
+        "displayName": "Violeta Gases nobres (escuro)",
+        "canonical": "#b892f5",
+        "tonalRamp": [
+          "oklch(15% 0.144 300.6)",
+          "oklch(27% 0.144 300.6)",
+          "oklch(39% 0.144 300.6)",
+          "oklch(51% 0.144 300.6)",
+          "oklch(63% 0.144 300.6)",
+          "oklch(75% 0.144 300.6)",
+          "oklch(86% 0.050 300.6)",
+          "oklch(95% 0.050 300.6)"
+        ]
+      },
+      "tp-lantanideo-dark": {
+        "role": "tertiary",
+        "displayName": "Orquídea Lantanídeos (escuro)",
+        "canonical": "#e892e2",
+        "tonalRamp": [
+          "oklch(15% 0.145 329.4)",
+          "oklch(27% 0.145 329.4)",
+          "oklch(39% 0.145 329.4)",
+          "oklch(51% 0.145 329.4)",
+          "oklch(63% 0.145 329.4)",
+          "oklch(75% 0.145 329.4)",
+          "oklch(86% 0.051 329.4)",
+          "oklch(95% 0.051 329.4)"
+        ]
+      },
+      "tp-actinideo-dark": {
+        "role": "tertiary",
+        "displayName": "Terracota Actinídeos (escuro)",
+        "canonical": "#dc9a6d",
+        "tonalRamp": [
+          "oklch(15% 0.100 54.8)",
+          "oklch(27% 0.100 54.8)",
+          "oklch(39% 0.100 54.8)",
+          "oklch(51% 0.100 54.8)",
+          "oklch(63% 0.100 54.8)",
+          "oklch(75% 0.100 54.8)",
+          "oklch(86% 0.035 54.8)",
+          "oklch(95% 0.035 54.8)"
+        ]
+      },
+      "tp-calor-dark": {
+        "role": "tertiary",
+        "displayName": "Violeta do Mapa de calor (escuro)",
+        "canonical": "#7c3aed",
+        "tonalRamp": [
+          "oklch(15% 0.247 293.0)",
+          "oklch(27% 0.247 293.0)",
+          "oklch(39% 0.247 293.0)",
+          "oklch(51% 0.247 293.0)",
+          "oklch(63% 0.247 293.0)",
+          "oklch(75% 0.247 293.0)",
+          "oklch(86% 0.086 293.0)",
+          "oklch(95% 0.086 293.0)"
+        ]
       }
     },
     "typographyMeta": {
-      "letreiro": {
-        "displayName": "Letreiro",
-        "purpose": "Só a frase de abertura da landing, em escala de cartaz (clamp(3.1rem, 10.2vw, 11rem)); passa de propósito do teto usual de display."
+      "hero": {
+        "displayName": "Hero",
+        "purpose": "Só o h1 da landing, na coluna da esquerda da hero (2,7rem → 3,75rem → 4,6rem)."
       },
       "display": {
         "displayName": "Display",
-        "purpose": "Título de fechamento da landing (clamp(2.75rem, 7.4vw, 7rem))."
+        "purpose": "Título de fechamento da landing, centralizado (2,5rem → 3,75rem → 4rem)."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Títulos de seção do site (2,25rem → 3rem → 4rem)."
+        "purpose": "Títulos de seção do site, sem eyebrow em cima (2,15rem → 3rem → 3,25rem)."
       },
       "page-title": {
         "displayName": "Título de tela",
@@ -564,7 +894,7 @@
       },
       "title": {
         "displayName": "Título de cartão",
-        "purpose": "Título de cartão e de seção dentro de tela."
+        "purpose": "Título de cartão e de seção dentro de tela; título de seção da ficha do elemento a 1rem."
       },
       "body": {
         "displayName": "Texto",
@@ -572,15 +902,15 @@
       },
       "body-long": {
         "displayName": "Texto longo",
-        "purpose": "Parágrafos do site, 40 a 72ch."
+        "purpose": "Parágrafos do site, 40 a 60ch; artigo da documentação em até 72ch."
       },
       "caption": {
         "displayName": "Legenda",
-        "purpose": "Rótulos, legendas e metadados."
+        "purpose": "Rótulos, legendas e metadados; rótulo da linha da ficha."
       },
       "data": {
         "displayName": "Dado",
-        "purpose": "Todo número contável: minutos, questões, porcentagem, datas, anos, XP."
+        "purpose": "Todo número contável: minutos, questões, porcentagem, datas, anos, XP, número atômico e massa."
       }
     },
     "shadows": [
@@ -605,41 +935,41 @@
         "purpose": "Foco de campo, com a borda na marca."
       },
       {
-        "name": "janela",
-        "value": "0 1px 2px color-mix(in oklab, var(--fg) 8%, transparent), 0 32px 64px -28px color-mix(in oklab, var(--fg) 30%, transparent)",
-        "purpose": "Só a janela do app na landing: neutra, deslocada para baixo."
+        "name": "casa-aberta",
+        "value": "inset 0 0 0 2px var(--brand)",
+        "purpose": "Casa da tabela periódica aberta ou com foco (seleção)."
       },
       {
-        "name": "janela-dark",
-        "value": "0 32px 64px -28px rgb(0 0 0 / 0.7)",
-        "purpose": "Janela do app nos temas escuros."
+        "name": "casa-hover",
+        "value": "inset 0 0 0 1px color-mix(in srgb, var(--fg) 45%, transparent)",
+        "purpose": "Hover da casa com ponteiro fino."
       },
       {
         "name": "glow",
         "value": "0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent), 0 14px 38px color-mix(in oklab, var(--brand) 22%, transparent)",
-        "purpose": "Definido nos temas, sem uso no código atual."
+        "purpose": "Definido nos temas e exposto como .card-glow, sem uso no código atual."
       }
     ],
     "motion": [
       {
         "name": "ease-saida",
         "value": "cubic-bezier(0.23, 1, 0.32, 1)",
-        "purpose": "Entradas e respostas: .aperta (140ms), .camada e .troca (260ms), barra de meta (700ms), seta do FAQ (200ms)."
+        "purpose": "Entradas e respostas: .aperta (140ms), .troca (260ms), barra de meta (700ms), pressão da casa da tabela (120ms)."
       },
       {
         "name": "ease-movimento",
         "value": "cubic-bezier(0.77, 0, 0.175, 1)",
-        "purpose": "Curva de deslocamento, definida no site; sem uso atual depois da saída da régua de minutos."
+        "purpose": "Curva de deslocamento, definida no site."
+      },
+      {
+        "name": "ease-gaveta",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Entrada da ficha do elemento (280ms); a saída é 180ms ease-in."
       },
       {
         "name": "troca",
         "value": "@starting-style { opacity: 0; transform: scale(0.985); filter: blur(6px) } → 260ms var(--ease-saida)",
-        "purpose": "Entrada do cartão da questão da hero quando a questão troca; com movimento reduzido, só opacidade."
-      },
-      {
-        "name": "camada",
-        "value": "opacity + scale(0.985) + blur(6px), 260ms var(--ease-saida)",
-        "purpose": "Crossfade das capturas na janela do app; com movimento reduzido, só opacidade."
+        "purpose": "Remontagem do caderno da hero ao trocar de ano; com movimento reduzido, só opacidade."
       },
       {
         "name": "route-in",
@@ -678,14 +1008,6 @@
       {
         "name": "xl",
         "value": "1280px"
-      },
-      {
-        "name": "site-max",
-        "value": "1760px"
-      },
-      {
-        "name": "desktop-baixo",
-        "value": "(min-width: 64rem) and (max-height: 820px)"
       }
     ]
   },
@@ -755,35 +1077,35 @@
       "css": ".ds-wordmark{font:800 1.25rem 'Bricolage Grotesque', Inter, ui-sans-serif, sans-serif;letter-spacing:-.025em;color:var(--fg,#211b26)}.ds-wordmark span{background-image:linear-gradient(90deg,var(--brand,#d91748),var(--brand-2,#ff5a7d));-webkit-background-clip:text;background-clip:text;color:transparent}"
     },
     {
-      "name": "Ano do chão",
+      "name": "Ano do caderno",
       "kind": "chip",
-      "refersTo": "ano-demo",
-      "description": "Chão de anos da hero: ano sem demonstração em texto, ano com demonstração contornado, ano pressionado preenchido na marca.",
-      "html": "<ul class=\"ds-anos\"><li><span class=\"ds-ano-t\">2008</span></li><li><button class=\"ds-ano\">2009</button></li><li><button class=\"ds-ano\" aria-pressed=\"true\">2015</button></li><li><span class=\"ds-ano-t\">2016</span></li></ul>",
-      "css": ".ds-anos{display:flex;gap:4px;list-style:none;margin:0;padding:12px 16px;background:var(--surface,#fff);border-top:1px solid var(--line,#ece5ee)}.ds-ano,.ds-ano-t{display:block;border-radius:var(--radius-lg,.5rem);padding:.625rem .5rem;font:500 .82rem 'JetBrains Mono', ui-monospace, monospace;font-variant-numeric:tabular-nums}.ds-ano-t{color:color-mix(in oklab,var(--fg,#211b26) 70%,transparent)}.ds-ano{cursor:pointer;border:1px solid color-mix(in oklab,var(--fg,#211b26) 25%,transparent);background:var(--surface,#fff);color:var(--fg,#211b26);transition:transform 140ms cubic-bezier(.23,1,.32,1),border-color .2s,color .2s}.ds-ano:hover{border-color:var(--brand,#d91748);color:var(--brand,#d91748)}.ds-ano:active{transform:scale(.97)}.ds-ano[aria-pressed=true]{background:var(--brand,#d91748);border-color:var(--brand,#d91748);color:var(--brand-ink,#fff);font-weight:600;box-shadow:var(--shadow,0 1px 2px rgba(40,14,22,.05),0 10px 28px rgba(40,14,22,.07))}.ds-ano:focus-visible{outline:2px solid var(--brand,#d91748);outline-offset:2px}"
+      "refersTo": "ano",
+      "description": "Grade de anos do caderno da hero: até 2008 em surface-2, o ano escolhido preenchido na marca.",
+      "html": "<div class=\"ds-anos\"><button class=\"ds-ano ds-ano-antigo\">2008</button><button class=\"ds-ano\">2009</button><button class=\"ds-ano\" aria-pressed=\"true\">2015</button><button class=\"ds-ano\">2016</button></div>",
+      "css": ".ds-anos{display:grid;grid-template-columns:repeat(4,64px);gap:6px}.ds-ano{height:44px;border-radius:var(--radius-lg,.5rem);border:1px solid var(--line,#ece5ee);background:var(--surface,#fff);color:var(--fg,#211b26);font:500 .82rem 'JetBrains Mono', ui-monospace, monospace;font-variant-numeric:tabular-nums;cursor:pointer;transition:transform 140ms cubic-bezier(.23,1,.32,1),border-color .2s,color .2s}.ds-ano-antigo{background:var(--surface-2,#faf6fa)}.ds-ano:hover{border-color:var(--brand,#d91748);color:var(--brand,#d91748)}.ds-ano:active{transform:scale(.97)}.ds-ano[aria-pressed=true]{background:var(--brand,#d91748);border-color:var(--brand,#d91748);color:var(--brand-ink,#fff);box-shadow:var(--shadow,0 1px 2px rgba(40,14,22,.05),0 10px 28px rgba(40,14,22,.07))}.ds-ano:focus-visible{outline:2px solid var(--brand,#d91748);outline-offset:2px}"
     },
     {
-      "name": "Responder (neutro até escolher)",
-      "kind": "button",
-      "refersTo": "responder-desabilitado",
-      "description": "Botão da questão da landing: neutro e desabilitado sem escolha, primário depois.",
-      "html": "<button class=\"ds-responder\" disabled>Escolha uma alternativa</button> <button class=\"ds-responder ds-responder-on\">Responder</button>",
-      "css": ".ds-responder{display:inline-flex;justify-content:center;width:100%;max-width:320px;border-radius:var(--radius-xl,.75rem);padding:.75rem 1rem;font:600 1rem Inter, ui-sans-serif, system-ui, sans-serif;border:1px solid var(--line,#ece5ee);background:var(--surface-2,#faf6fa);color:var(--muted,#6b6473);cursor:default}.ds-responder-on{border-color:transparent;background:var(--brand,#d91748);color:var(--brand-ink,#fff);cursor:pointer;transition:transform 140ms cubic-bezier(.23,1,.32,1)}.ds-responder-on:hover{background:color-mix(in oklab,var(--brand,#d91748) 88%,black)}.ds-responder-on:active{transform:scale(.97)}.ds-responder-on:focus-visible{outline:2px solid var(--brand,#d91748);outline-offset:2px}"
+      "name": "Casa da tabela periódica",
+      "kind": "custom",
+      "refersTo": "casa-tabela",
+      "description": "Folha tingida pelo tom da categoria com o traço de 3px no topo; desconhecido em hachura, estimado tracejado, aberta com anel de 2px na marca.",
+      "html": "<div class=\"ds-tp\" role=\"grid\"><div class=\"ds-casa\" style=\"--tom:var(--tp-alcalino,#e4573d)\" tabindex=\"0\"><span class=\"ds-z\">11</span><span class=\"ds-sim\">Na</span><span class=\"ds-nome\">Sódio</span><span class=\"ds-massa\">22,990</span></div><div class=\"ds-casa\" style=\"--tom:var(--tp-transicao,#5d82d6)\" data-aberta tabindex=\"0\"><span class=\"ds-z\">24</span><span class=\"ds-sim\">Cr</span><span class=\"ds-nome\">Cromo</span><span class=\"ds-massa\">51,996</span></div><div class=\"ds-casa\" style=\"--tom:var(--tp-gas-nobre,#9a6fdc)\" data-estimado tabindex=\"0\"><span class=\"ds-z\">118</span><span class=\"ds-sim\">Og</span><span class=\"ds-nome\">Oganessônio</span><span class=\"ds-massa\">[294]</span></div><div class=\"ds-casa\" data-desconhecido tabindex=\"0\"><span class=\"ds-z\">109</span><span class=\"ds-sim\">Mt</span><span class=\"ds-nome\">Meitnério</span><span class=\"ds-massa\">[278]</span></div></div>",
+      "css": ".ds-tp{display:grid;grid-template-columns:repeat(4,56px);gap:3px}.ds-casa{--tom:var(--line,#ece5ee);position:relative;display:grid;grid-template-rows:auto 1fr auto auto;height:64px;padding:.2rem .25rem .22rem;border-radius:var(--radius-lg,.5rem);background:color-mix(in srgb,var(--tom) var(--tp-mix,24%),var(--surface,#fff));color:var(--fg,#211b26);overflow:hidden;outline:none;cursor:pointer;transition:background-color 180ms ease,transform 120ms cubic-bezier(.23,1,.32,1)}.ds-casa::before{content:'';position:absolute;inset:0 0 auto;height:3px;background:var(--tom)}.ds-casa:hover{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg,#211b26) 45%,transparent)}.ds-casa:active{transform:scale(.96)}.ds-casa:focus-visible,.ds-casa[data-aberta]{box-shadow:inset 0 0 0 2px var(--brand,#d91748)}.ds-casa[data-desconhecido]{background-color:var(--surface-2,#faf6fa);background-image:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,var(--muted,#6b6473) 30%,transparent) 5px 6px)}.ds-casa[data-desconhecido]::before{background:transparent}.ds-casa[data-estimado]::after{content:'';position:absolute;inset:2px;border:1px dashed color-mix(in srgb,var(--fg,#211b26) 55%,transparent);border-radius:calc(var(--radius-lg,.5rem) - 2px);pointer-events:none}.ds-z{font:400 .625rem/1 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;padding-top:2px}.ds-sim{align-self:center;justify-self:center;font:700 1.25rem/1 'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.02em}.ds-nome,.ds-massa{text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}.ds-nome{font:500 8px Inter,ui-sans-serif,sans-serif}.ds-massa{font:400 .5625rem 'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;opacity:.92}"
     },
     {
-      "name": "Janela do app",
+      "name": "Linha da ficha do elemento",
       "kind": "card",
-      "refersTo": "janela",
-      "description": "Capturas reais do app na landing: borda fina, raio de 1,25rem, sombra neutra deslocada e barra só com o nome da tela.",
-      "html": "<div class=\"ds-janela\"><div class=\"ds-janela-barra\">OpENEM · Revisão</div><div class=\"ds-janela-tela\"></div></div>",
-      "css": ".ds-janela{max-width:480px;overflow:hidden;border:1px solid var(--line,#ece5ee);border-radius:1.25rem;background:var(--surface,#fff);box-shadow:0 1px 2px color-mix(in oklab,var(--fg,#211b26) 8%,transparent),0 32px 64px -28px color-mix(in oklab,var(--fg,#211b26) 30%,transparent)}.ds-janela-barra{display:flex;align-items:center;height:40px;padding:0 16px;background:var(--surface-2,#faf6fa);border-bottom:1px solid var(--line,#ece5ee);font:400 .75rem 'JetBrains Mono', ui-monospace, monospace;letter-spacing:-.02em;color:var(--muted,#6b6473)}.ds-janela-tela{aspect-ratio:16/10;background:var(--bg,#f5f1f6)}"
+      "refersTo": "ficha-elemento",
+      "description": "Ficha (painel de 28rem no desktop, folha de 88dvh no celular): linhas rótulo/valor/fonte, qualificador em pílula, expoente em <sup>.",
+      "html": "<div class=\"ds-ficha\"><h3 class=\"ds-ficha-t\">Massa atômica</h3><dl><div class=\"ds-dado\"><dt>Massa atômica padrão</dt><dd><span class=\"ds-num\">51,9961(6)</span><a class=\"ds-fonte\" href=\"#\">CIAAW 2024</a></dd></div><div class=\"ds-dado\"><dt>Configuração</dt><dd><span class=\"ds-num\">[Ar] 3d<sup class=\"ds-exp\">5</sup> 4s<sup class=\"ds-exp\">1</sup></span> <span class=\"ds-marca\">estimada</span><a class=\"ds-fonte\" href=\"#\">NIST</a></dd></div></dl></div>",
+      "css": ".ds-ficha{max-width:28rem;background:var(--surface,#fff);border:1px solid var(--line,#ece5ee);border-radius:var(--radius-2xl,1rem);padding:16px 20px;color:var(--fg,#211b26);font-family:Inter,ui-sans-serif,sans-serif;box-shadow:var(--shadow,0 1px 2px rgba(40,14,22,.05),0 10px 28px rgba(40,14,22,.07))}.ds-ficha-t{margin:0 0 4px;font:700 1rem 'Bricolage Grotesque',Inter,sans-serif}.ds-ficha dl{margin:0}.ds-dado{display:grid;grid-template-columns:minmax(7.5rem,38%) 1fr;gap:.15rem .75rem;padding:.55rem 0}.ds-dado+.ds-dado{border-top:1px solid var(--line,#ece5ee)}.ds-dado dt{font-size:.75rem;font-weight:500;color:var(--muted,#6b6473)}.ds-dado dd{margin:0;font-size:.875rem}.ds-num{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}.ds-exp{position:relative;top:-.45em;font-size:.68em;line-height:0;vertical-align:baseline}.ds-fonte{display:block;margin-top:2px;font-size:.6875rem;color:var(--muted,#6b6473);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--muted,#6b6473) 45%,transparent);text-underline-offset:2px}.ds-fonte:hover{color:var(--fg,#211b26)}.ds-fonte:focus-visible{outline:2px solid var(--brand,#d91748);outline-offset:2px}.ds-marca{display:inline-flex;border-radius:999px;padding:.05rem .45rem;font-size:.6875rem;font-weight:600;background:var(--surface-2,#faf6fa);border:1px solid var(--line,#ece5ee)}"
     }
   ],
   "narrative": {
     "northStar": "O caderno do aluno, aceso no celular",
-    "overview": "O OpENEM é um app de estudo, não uma vitrine. A superfície é calma e clara: fundo lilás muito pálido, cartões brancos de borda fina e cantos de 16 px, texto quase preto. Sobre essa calma, duas camadas de cor fazem todo o trabalho de sentido. O vermelho-rosado da marca diz \"aja aqui, isto avançou, isto é hoje\". As cinco cores de área do ENEM (Matemática, Natureza, Humanas, Linguagens, Redação) dizem \"de que matéria é isto\". Nada mais recebe cor.\n\nA densidade é a de um app de bolso: tipo base de 14 px, rótulos de 12 px, números em mono tabular, cartões com 16 a 20 px de respiro. Títulos em Bricolage Grotesque extra-negrito dão a voz; Inter carrega o texto; JetBrains Mono carrega tudo que é contagem, data, porcentagem e ano, como numa folha de prova. O site público (landing e documentação) importa o CSS do app sem paleta paralela: o que muda no app muda lá, por construção (decisão do usuário, 20/10/2026: manter a estética do app em toda superfície nova).\n\nO sistema é multitema. A família `default` (descrita aqui) é a marca; outras 17 famílias, cada uma com lado claro e escuro, redefinem as mesmas variáveis em `openem_frontend/src/themes.css`, e um teste (`theme-palettes.test.ts`) cobra o contraste de todas.",
+    "overview": "O OpENEM é um app de estudo, não uma vitrine. A superfície é calma e clara: fundo lilás muito pálido, cartões brancos de borda fina e cantos de 16 px, texto quase preto. Sobre essa calma, duas camadas de cor fazem todo o trabalho de sentido. O vermelho-rosado da marca diz \"aja aqui, isto avançou, isto é hoje\". As cinco cores de área do ENEM (Matemática, Natureza, Humanas, Linguagens, Redação) dizem \"de que matéria é isto\". Nada mais recebe cor, com uma exceção de escopo: a tela da tabela periódica tem a sua própria família de conteúdo (`tp-*`), que só vale dentro da tabela.\n\nA densidade é a de um app de bolso: tipo base de 14 px, rótulos de 12 px, números em mono tabular, cartões com 16 a 20 px de respiro. Títulos em Bricolage Grotesque extra-negrito dão a voz; Inter carrega o texto; JetBrains Mono carrega tudo que é contagem, data, porcentagem e ano, como numa folha de prova. O site público (landing e documentação) importa o CSS do app sem paleta paralela: o que muda no app muda lá, por construção (decisão do usuário, 20/10/2026: manter a estética do app em toda superfície nova).\n\nO sistema é multitema. A família `default` (descrita aqui) é a marca; outras 17 famílias, cada uma com lado claro e escuro, redefinem as mesmas variáveis em `openem_frontend/src/themes.css`, e um teste (`theme-palettes.test.ts`) cobra o contraste de todas.",
     "keyCharacteristics": [
-      "Uma cor de ação (rosa da marca) e cinco cores de conteúdo (áreas); o resto é neutro.",
+      "Uma cor de ação (rosa da marca) e cinco cores de conteúdo (áreas); o resto é neutro. A tabela periódica soma os tons das categorias, só dentro dela.",
       "Cartão branco com borda de 1 px e raio de 16 px como unidade de tudo.",
       "Números sempre em JetBrains Mono tabular.",
       "Todo token existe em claro e escuro; nenhum componente usa cor literal fora dos tokens (exceções declaradas: ligas e lousa do quadro da sala).",
@@ -792,12 +1114,17 @@
     "rules": [
       {
         "name": "The Rose Means Act Rule",
-        "body": "O rosa da marca é reservado a ação, progresso e \"hoje\" (decisão do usuário, registrada nos contratos de direção do Desempenho e da landing). Um número, um título ou uma decoração nunca ficam rosa só para chamar atenção; o dado da landing em rosa (`font-data text-brand`) é sempre o XP ganho na questão ou o ano escolhido no arquivo, isto é, progresso e seleção. O botão Responder só fica rosa depois que uma alternativa foi escolhida: antes disso não há ação a fazer.",
+        "body": "O rosa da marca é reservado a ação, progresso e \"hoje\" (decisão do usuário, registrada nos contratos de direção do Desempenho e da landing). Um número, um título ou uma decoração nunca ficam rosa só para chamar atenção: na landing, o título da hero, os números (\"R$ 0\" incluído) e as folhas atrás do caderno ficam neutros, e o rosa aparece só nos botões de ação e no ano escolhido (botão e capa do caderno), isto é, ação e seleção.",
         "section": "colors"
       },
       {
         "name": "The Area Is Content Rule",
         "body": "As cinco cores de área marcam matéria e só matéria. Uma área nunca vira cor de ação nem de estado; estado usa os aliases `success`/`warning`/`danger`.",
+        "section": "colors"
+      },
+      {
+        "name": "The Table Tone Rule",
+        "body": "Os tons `tp-*` pertencem à tabela periódica e a nada mais: não são cor de área, de ação nem de estado, e não saem da tela da tabela. Dentro da casa tingida, todo texto é `fg` (o `muted` não aguenta o tingimento) e a hierarquia vem de tamanho e peso; `tabela-periodica-tokens.test.ts` cobra ≥ 4,5:1 entre `fg` e cada fundo tingido (categorias e os sete degraus) em todos os temas.",
         "section": "colors"
       },
       {
@@ -811,8 +1138,13 @@
         "section": "typography"
       },
       {
-        "name": "The One Letreiro Rule",
-        "body": "A escala de letreiro aparece uma vez por página, na abertura da landing, e nada se sobrepõe a ela além do cartão da questão. Telas do app e da documentação ficam no teto de `page-title`.",
+        "name": "The Real Exponent Rule",
+        "body": "Quando o expoente é dado (configuração eletrônica, carga de íon), ele sai em `<sup>` real (`.tp-expoente`: 0,68em, subido 0,45em, sem mexer na altura da linha), nunca em caracteres sobrescritos do Unicode, que vêm de blocos diferentes e saem com tamanhos diferentes na mesma fonte. O componente `Expoentes` converte o texto do catálogo.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Hero Rule",
+        "body": "A escala de hero aparece uma vez por página, na abertura da landing, e nada se sobrepõe a ela. Telas do app e da documentação ficam no teto de `page-title`.",
         "section": "typography"
       },
       {
@@ -834,15 +1166,21 @@
       "**Do** construir telas com `.card` (borda 1px, raio 16px) e reservar `.card-raised` ao cartão principal de cada bloco.",
       "**Do** limitar o movimento a transform, opacidade e um desfoque curto de entrada, com `--ease-saida` (`cubic-bezier(0.23,1,0.32,1)`) para entradas e respostas e `--ease-movimento` (`cubic-bezier(0.77,0,0.175,1)`) para deslocamentos, e deixar `prefers-reduced-motion` zerar escala e desfoque.",
       "**Do** importar `openem_frontend/src/index.css` em qualquer superfície nova (o site já faz), sem paleta paralela.",
+      "**Do** tingir as casas da tabela periódica só com os tokens `tp-*` sobre `surface`, manter todo texto da casa em `fg` e passar no `tabela-periodica-tokens.test.ts` (The Table Tone Rule).",
+      "**Do** marcar valor desconhecido com hachura e valor estimado ou previsto com contorno tracejado, e citar a fonte em cada linha da ficha.",
+      "**Do** escrever expoente de dado em `<sup>` real (The Real Exponent Rule).",
       "**Do** desligar decoração de tema (brilho neon, scanlines) com `html[data-fx='off']` e `prefers-contrast: more`."
     ],
     "donts": [
       "**Don't** usar cor de área como cor de ação ou de estado, nem `red` (Redação) como erro: erro é `danger`.",
       "**Don't** escrever hex literal em componente do app; as exceções declaradas são as ligas e a lousa do quadro da sala (cores fixas, fora dos temas).",
-      "**Don't** pôr halo da marca em sombra de estrutura: a janela do app e os cartões têm sombra neutra, tingida do fundo.",
+      "**Don't** pôr halo da marca em sombra de estrutura: os cartões têm sombra neutra, tingida do fundo.",
       "**Don't** mexer no tema `default` nem aceitar uma família que falhe o teste de contraste.",
       "**Don't** aninhar um `.card` dentro de outro em superfície nova; divida com `divide-y`/`border-t` em `line`, como no Desempenho.",
       "**Don't** escrever texto corrido em mono nem números em fonte proporcional.",
+      "**Don't** usar um tom `tp-*` fora da tabela periódica, nem como cor de área, de ação ou de estado.",
+      "**Don't** pôr `muted` dentro de fundo tingido, nem representar valor desconhecido como um degrau da escala.",
+      "**Don't** usar os caracteres sobrescritos do Unicode (², ⁺…) em expoente que é dado.",
       "**Don't** desenhar moldura de aparelho nem botões de janela falsos em volta de captura do app: ela aparece numa janela de borda fina com o nome da tela."
     ]
   }

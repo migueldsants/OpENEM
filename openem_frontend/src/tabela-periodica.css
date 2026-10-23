@@ -1,0 +1,558 @@
+/* ----------------------------------------------------------------------------
+   Tabela periódica (/tabela-periodica). Os tons vêm dos tokens `--tp-*` de
+   index.css; aqui só a geometria da grade, as casas e a ficha.
+---------------------------------------------------------------------------- */
+
+.tp {
+  --tp-ease-saida: cubic-bezier(0.23, 1, 0.32, 1);
+  --tp-ease-gaveta: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* A grade mede a largura do cartão e divide em 18 colunas; abaixo de 46 px
+   por casa, para de encolher e o cartão rola na horizontal. */
+.tp-quadro {
+  container: tp-quadro / inline-size;
+}
+.tp-rolagem {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.tp-mesa {
+  --tp-rotulo: 1.5rem;
+  --tp-vao: 3px;
+  /* Margem das setas de tendência, descontada da largura das casas. */
+  --tp-setas: 0px;
+  --tp-celula: max(46px, calc((100cqi - var(--tp-setas) - var(--tp-rotulo) - 18 * var(--tp-vao)) / 18));
+  --tp-celula-h: calc(var(--tp-celula) * 1.14);
+  position: relative;
+  width: max-content;
+  margin-inline: auto;
+}
+.tp-mesa[data-zoom='mais'] {
+  --tp-celula: max(60px, calc((100cqi - var(--tp-setas) - var(--tp-rotulo) - 18 * var(--tp-vao)) / 18));
+}
+.tp-mesa[data-tendencia] {
+  --tp-setas: 1.75rem;
+  padding-top: 1.75rem;
+  padding-left: 1.75rem;
+}
+
+.tp-grade {
+  display: grid;
+  grid-template-columns: var(--tp-rotulo) repeat(18, var(--tp-celula));
+  grid-template-rows:
+    1.5rem repeat(7, var(--tp-celula-h)) 0.75rem
+    repeat(2, var(--tp-celula-h));
+  gap: var(--tp-vao);
+}
+/* As linhas do ARIA (role="row") não interferem na grade do CSS. */
+.tp-grade > [role='row'] {
+  display: contents;
+}
+
+.tp-cabeca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 1.1;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.tp-cabeca[data-eixo] {
+  color: var(--fg);
+  font-weight: 700;
+}
+.tp-cabeca-antigo {
+  font-size: 0.5625rem;
+  opacity: 0.85;
+}
+.tp-periodo {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.tp-periodo[data-eixo] {
+  color: var(--fg);
+  font-weight: 700;
+}
+.tp-serie-rotulo {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+}
+
+/* Casa da tabela: a folha tingida pelo tom, com um traço no tom cheio. O
+   traço é dado, não enfeite: a 24% os tons das categorias ficam próximos, e
+   o tom cheio é o que separa, por exemplo, transição de representativo. */
+.tp-casa {
+  --tom: var(--line);
+  --mix: 0%;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  min-width: 0;
+  padding: 0.2rem 0.25rem 0.22rem;
+  border-radius: var(--radius-lg, 0.5rem);
+  background: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+  color: var(--fg);
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  outline: none;
+  transition:
+    background-color 180ms ease,
+    opacity 150ms ease,
+    transform 120ms var(--tp-ease-saida);
+}
+.tp-casa::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--tom);
+}
+.tp-casa:active {
+  transform: scale(0.96);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tp-casa:hover {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 45%, transparent);
+  }
+}
+.tp-casa[data-eixo] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 22%, transparent);
+}
+.tp-casa:focus-visible,
+.tp-casa[data-aberta] {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+.tp-casa[data-apagada] {
+  opacity: 0.2;
+}
+/* Valor desconhecido: hachura, não uma cor da escala. */
+.tp-casa[data-desconhecido] {
+  background-color: var(--surface-2);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--muted) 30%, transparent) 5px 6px
+  );
+}
+/* Sem tom (desconhecido) e no mapa de calor, o traço some: lá ele não é dado. */
+.tp-casa[data-desconhecido]::before,
+.tp-mesa[data-calor] .tp-casa::before,
+[data-calor] .tp-mini::before {
+  background: transparent;
+}
+/* Valor estimado: borda tracejada. */
+.tp-casa[data-estimado]::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px dashed color-mix(in srgb, var(--fg) 55%, transparent);
+  border-radius: calc(var(--radius-lg, 0.5rem) - 2px);
+  pointer-events: none;
+}
+
+.tp-z {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 1;
+  padding-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.tp-simbolo {
+  align-self: center;
+  justify-self: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: calc(var(--tp-celula) * 0.36);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.tp-nome,
+.tp-massa {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+/* O corpo do nome vem da Grade (8 a 9 px, medido na largura da casa); nome
+   que não cabe a 8 px nem é desenhado. */
+.tp-nome {
+  font-weight: 500;
+}
+.tp-massa {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.92;
+}
+
+
+/* Marcador das séries f no grupo 3. */
+.tp-marcador {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  border-radius: var(--radius-lg, 0.5rem);
+  border: 1px dashed var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+.tp-marcador:hover,
+.tp-marcador[data-active='true'] {
+  background: var(--surface-2);
+}
+
+/* Painel no vão entre o H e o He, acima dos metais de transição: colunas
+   3 a 12, linhas 1 a 3. Fica fora do role="grid", posicionado pela mesma
+   geometria. */
+.tp-vao {
+  position: absolute;
+  left: calc(var(--tp-rotulo) + 3 * var(--tp-vao) + 2 * var(--tp-celula));
+  top: calc(1.5rem + var(--tp-vao));
+  width: calc(10 * var(--tp-celula) + 9 * var(--tp-vao));
+  height: calc(3 * var(--tp-celula-h) + 2 * var(--tp-vao));
+  display: grid;
+  grid-template-columns: calc(3 * var(--tp-celula) + 2 * var(--tp-vao)) 1fr;
+  gap: 0.75rem;
+  padding-right: 0.25rem;
+}
+.tp-mesa[data-tendencia] .tp-vao {
+  left: calc(1.75rem + var(--tp-rotulo) + 3 * var(--tp-vao) + 2 * var(--tp-celula));
+  top: calc(1.75rem + 1.5rem + var(--tp-vao));
+}
+
+.tp-foco {
+  --tom: var(--line);
+  --mix: 0%;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-xl, 0.75rem);
+  background: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.tp-foco-vazio {
+  grid-template-rows: none;
+  place-content: center;
+}
+.tp-foco-simbolo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(var(--tp-celula) * 1.05);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.tp-legenda-tom {
+  --tom: var(--line);
+  --mix: 0%;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+  box-shadow: inset 0 2px 0 var(--tom), inset 0 0 0 1px var(--line);
+}
+.tp-legenda-tom[data-desconhecido] {
+  background-color: var(--surface-2);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 3px,
+    color-mix(in srgb, var(--muted) 45%, transparent) 3px 4px
+  );
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.tp-legenda-tom[data-estimado] {
+  background: var(--surface);
+  box-shadow: none;
+  border: 1px dashed color-mix(in srgb, var(--fg) 55%, transparent);
+}
+.tp-escala {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.tp-escala > span {
+  height: 0.85rem;
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--tp-calor) var(--mix), var(--surface));
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Setas das tendências, na borda de cima e na da esquerda. */
+.tp-seta-h,
+.tp-seta-v {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+.tp-seta-h {
+  left: calc(1.75rem + var(--tp-rotulo) + var(--tp-vao));
+  right: 0;
+  top: 0.2rem;
+  height: 1.3rem;
+}
+.tp-seta-v {
+  top: calc(1.75rem + 1.5rem + var(--tp-vao));
+  left: 0.2rem;
+  width: 1.3rem;
+  height: calc(7 * var(--tp-celula-h) + 6 * var(--tp-vao));
+  flex-direction: column;
+}
+.tp-seta-v > span:not(.tp-haste) {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.tp-seta-h,
+.tp-seta-v {
+  gap: 0;
+}
+.tp-seta-h > span:not(.tp-haste) {
+  margin-inline: 0.3rem;
+}
+.tp-seta-v > span:not(.tp-haste) {
+  margin-block: 0.3rem;
+}
+/* A haste encosta na ponta: 1,5 px na cor do texto. */
+.tp-haste {
+  flex: 1;
+  background: currentColor;
+}
+.tp-seta-h .tp-haste {
+  height: 1.5px;
+}
+.tp-seta-v .tp-haste {
+  width: 1.5px;
+}
+/* A haste entra por baixo das abas da ponta até o vértice. */
+.tp-seta-h .tp-ponta + .tp-haste {
+  margin-left: -8px;
+}
+.tp-seta-h .tp-haste:has(+ .tp-ponta) {
+  margin-right: -8px;
+}
+.tp-seta-v .tp-ponta + .tp-haste {
+  margin-top: -8px;
+}
+.tp-seta-v .tp-haste:has(+ .tp-ponta) {
+  margin-bottom: -8px;
+}
+
+/* Ficha: painel lateral no desktop, folha que sobe no celular. */
+.tp-ficha-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(0 0 0 / 0.4);
+  transition: opacity 200ms ease;
+}
+.tp-ficha {
+  position: fixed;
+  z-index: 61;
+  inset: auto 0 0 0;
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-2xl, 1rem) var(--radius-2xl, 1rem) 0 0;
+  box-shadow: var(--shadow);
+  outline: none;
+  transition:
+    transform 280ms var(--tp-ease-gaveta),
+    opacity 200ms ease;
+}
+@media (min-width: 1024px) {
+  .tp-ficha {
+    inset: 0 0 0 auto;
+    width: min(28rem, 100vw);
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    border-radius: var(--radius-2xl, 1rem) 0 0 var(--radius-2xl, 1rem);
+  }
+}
+@starting-style {
+  .tp-ficha {
+    transform: translateY(100%);
+  }
+  .tp-ficha-fundo {
+    opacity: 0;
+  }
+}
+@media (min-width: 1024px) {
+  @starting-style {
+    .tp-ficha {
+      transform: translateX(100%);
+    }
+  }
+}
+.tp-ficha[data-saindo] {
+  transform: translateY(100%);
+  transition-duration: 180ms;
+  transition-timing-function: ease-in;
+}
+@media (min-width: 1024px) {
+  .tp-ficha[data-saindo] {
+    transform: translateX(100%);
+  }
+}
+.tp-ficha-fundo[data-saindo] {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-ficha,
+  .tp-ficha[data-saindo] {
+    transform: none;
+  }
+}
+
+.tp-ficha-tile {
+  --tom: var(--line);
+  --mix: 0%;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: 5.5rem;
+  height: 6.25rem;
+  flex-shrink: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-xl, 0.75rem);
+  background: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+/* Linha da ficha: rótulo, valor e a fonte. */
+.tp-dado {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 38%) 1fr;
+  gap: 0.15rem 0.75rem;
+  padding: 0.55rem 0;
+}
+.tp-dado + .tp-dado {
+  border-top: 1px solid var(--line);
+}
+.tp-fonte {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--muted) 45%, transparent);
+  text-underline-offset: 2px;
+}
+.tp-fonte:hover {
+  color: var(--fg);
+}
+.tp-marca {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.tp-barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.tp-barra > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--muted);
+  transform-origin: left;
+  transition: transform 260ms var(--tp-ease-saida);
+}
+
+/* Lista (celular): uma linha por elemento, a casa pequena à esquerda. */
+.tp-mini {
+  --tom: var(--line);
+  --mix: 0%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg, 0.5rem);
+  background: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.tp-mini::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--tom);
+}
+.tp-mini[data-desconhecido] {
+  background-color: var(--surface-2);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--muted) 30%, transparent) 4px 5px
+  );
+}
+
+.tp-expoente {
+  position: relative;
+  top: -0.45em;
+  font-size: 0.68em;
+  line-height: 0;
+  vertical-align: baseline;
+}
+
+/* Detalhes ("O debate sobre o grupo 3", "Fontes") com a seta do app. */
+.tp-resumo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.tp-resumo::-webkit-details-marker {
+  display: none;
+}
+.tp-resumo-seta {
+  color: var(--muted);
+  transition: transform 180ms var(--tp-ease-saida);
+}
+details[open] > .tp-resumo .tp-resumo-seta {
+  transform: rotate(90deg);
+}
+
+.tp-range {
+  accent-color: var(--brand);
+}

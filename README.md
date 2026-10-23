@@ -204,6 +204,31 @@ projeto tem, num botão **Estrela** que leva ao GitHub: é o jeito mais
 simples de apoiar. A contagem é buscada pelo servidor, com cache de uma hora.
 Para acrescentar um projeto, edite `openem_backend/src/tools/tools-catalog.ts`.
 
+### Tabela periódica
+
+A tela **Tabela periódica** traz os 118 elementos na posição da IUPAC, com os
+grupos nas duas numerações (1 a 18 e 1A a 8A) e uma ficha por elemento: massa
+atômica com incerteza (CIAAW, revisão de 2024), configuração eletrônica nas
+ordens energética e geométrica, elétrons por camada, exceções ao diagrama de
+Pauling, propriedades periódicas e físicas, isótopos e um texto sobre a química
+do elemento, com a fonte de cada dado. A grade se colore por categoria, bloco,
+estado físico numa temperatura escolhida ou por um mapa de calor de uma
+propriedade, com as setas das tendências periódicas, e embaixo ficam a
+distribuição eletrônica passo a passo (inclusive de íons), a calculadora de
+massa molar e a comparação de dois elementos. Funciona offline, no celular
+(grade rolável ou lista) e só no teclado.
+
+O catálogo (`openem_frontend/src/data/elementos.json`) é gerado por
+`tools/tabela-periodica/` a partir das fontes primárias (CIAAW, NIST, PubChem,
+IAEA) e conferido campo a campo contra uma segunda fonte. Para atualizar quando
+a CIAAW ou a IUPAC revisarem algo:
+
+```bash
+node tools/tabela-periodica/baixar.mjs
+node tools/tabela-periodica/montar.mjs
+node tools/tabela-periodica/verificar.mjs   # precisa fechar com 0 não explicadas
+```
+
 ### Testes
 
 ```bash
