@@ -196,12 +196,24 @@ export class RedisCacheStore implements CacheStore {
     }
   }
 
+  /**
+   * Fecha a conexão de vez. Com a conexão pronta, `quit` deixa os comandos em
+   * andamento terminarem (com prazo). Sem ela (Redis fora do ar), `quit` não
+   * cancela a próxima tentativa de reconexão, e o timer dela segura o processo
+   * vivo: no CI, o Jest nunca terminava. `disconnect` encerra e cancela.
+   */
   async close(): Promise<void> {
-    try {
-      await this.redis.quit();
-    } catch {
-      this.redis.disconnect();
+    if (this.redis.status === 'ready') {
+      try {
+        await Promise.race([
+          this.redis.quit(),
+          new Promise((r) => setTimeout(r, 1000).unref()),
+        ]);
+      } catch {
+        // cai no disconnect
+      }
     }
+    if (this.redis.status !== 'end') this.redis.disconnect();
   }
 }
 
