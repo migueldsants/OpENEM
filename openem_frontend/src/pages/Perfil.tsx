@@ -6,6 +6,7 @@ import { ThemePreview } from '../components/ThemePreview';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
+import { DOCS_URL, docsAlunos } from '../lib/site';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -280,6 +281,22 @@ export default function Perfil() {
             className="input w-32"
           />
         </label>
+      </div>
+
+      <div className="card p-4">
+        <p className="eyebrow">Ajuda</p>
+        <p className="mt-1 text-sm text-muted">
+          Como usar cada tela do app, o que acontece com os seus dados e as
+          perguntas mais comuns.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a href={DOCS_URL} className="btn btn-ghost">
+            Abrir a documentação
+          </a>
+          <a href={docsAlunos('perguntas-frequentes')} className="btn btn-ghost">
+            Perguntas frequentes
+          </a>
+        </div>
       </div>
     </div>
   );

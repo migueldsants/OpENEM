@@ -27,9 +27,12 @@ const modelos = new Map(
 for (const pagina of lista) {
   const modelo = modelos.get(pagina.modelo);
   if (!modelo.includes('<!--app-html-->')) throw new Error(`modelo sem marcador: ${pagina.modelo}`);
-  const { html, head } = await renderizar(pagina.url);
+  const { html, head, lang } = await renderizar(pagina.url);
   const saida = absolutizar(
-    modelo.replace('<!--app-html-->', html).replace('<!--app-head-->', head ?? ''),
+    modelo
+      .replace('<html lang="pt-BR">', `<html lang="${lang ?? 'pt-BR'}">`)
+      .replace('<!--app-html-->', html)
+      .replace('<!--app-head-->', head ?? ''),
     site,
     pagina.url,
   );

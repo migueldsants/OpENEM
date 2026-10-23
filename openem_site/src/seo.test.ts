@@ -50,6 +50,14 @@ describe('absolutizar', () => {
     expect(saida).toContain('<meta property="og:url" content="https://openem.exemplo/docs/" />');
   });
 
+  it('as versões em outro idioma (hreflang) também ficam absolutas', () => {
+    const comIdiomas =
+      '<head><link rel="alternate" hreflang="pt-BR" href="/docs/x/" /><link rel="alternate" hreflang="en" href="/docs/en/x/" /></head>';
+    const saida = absolutizar(comIdiomas, 'https://openem.exemplo', '/docs/x/');
+    expect(saida).toContain('hreflang="pt-BR" href="https://openem.exemplo/docs/x/"');
+    expect(saida).toContain('hreflang="en" href="https://openem.exemplo/docs/en/x/"');
+  });
+
   it('sem o domínio, nada muda', () => {
     expect(absolutizar(html, null, '/docs/')).toBe(html);
   });

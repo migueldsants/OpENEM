@@ -1,7 +1,8 @@
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useId, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { buscar, GRUPOS, PAGINAS } from './conteudo';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { buscar, gruposDo, paginasDo } from './conteudo';
+import { idiomaDaUrl, TEXTOS } from './i18n';
 
 /** Busca local nas páginas (sem serviço externo: a CSP só libera a própria origem). */
 export function Busca({ aoEscolher }: { aoEscolher?: () => void }) {
@@ -10,7 +11,10 @@ export function Busca({ aoEscolher }: { aoEscolher?: () => void }) {
   const navegar = useNavigate();
   const lista = useId();
   const campo = useRef<HTMLInputElement>(null);
-  const resultados = useMemo(() => buscar(PAGINAS, consulta), [consulta]);
+  // Busca só no idioma da página aberta.
+  const idioma = idiomaDaUrl(useLocation().pathname);
+  const t = TEXTOS[idioma];
+  const resultados = useMemo(() => buscar(paginasDo(idioma), consulta), [consulta, idioma]);
   const aberta = consulta.trim().length > 1;
 
   function ir(url: string) {
@@ -22,7 +26,7 @@ export function Busca({ aoEscolher }: { aoEscolher?: () => void }) {
   return (
     <div className="relative">
       <label htmlFor={`${lista}-campo`} className="sr-only">
-        Buscar na documentação
+        {t.buscarNa}
       </label>
       <MagnifyingGlass
         size={16}
@@ -33,7 +37,7 @@ export function Busca({ aoEscolher }: { aoEscolher?: () => void }) {
         id={`${lista}-campo`}
         type="search"
         autoComplete="off"
-        placeholder="Buscar"
+        placeholder={t.buscar}
         value={consulta}
         role="combobox"
         aria-expanded={aberta}
@@ -67,7 +71,7 @@ export function Busca({ aoEscolher }: { aoEscolher?: () => void }) {
           className="absolute inset-x-0 top-full z-30 mt-2 max-h-[min(26rem,70dvh)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow)]"
         >
           {resultados.length === 0 ? (
-            <li className="px-3 py-3 text-sm text-muted">Nada encontrado para “{consulta.trim()}”.</li>
+            <li className="px-3 py-3 text-sm text-muted">{t.nadaEncontrado(consulta.trim())}</li>
           ) : (
             resultados.map(({ pagina, trecho }, i) => (
               <li key={pagina.url} id={`${lista}-${i}`} role="option" aria-selected={i === foco}>
@@ -82,7 +86,7 @@ export function Busca({ aoEscolher }: { aoEscolher?: () => void }) {
                 >
                   <span className="block text-sm font-semibold">{pagina.titulo}</span>
                   <span className="block text-xs text-muted">
-                    {GRUPOS.find((g) => g.id === pagina.grupo)?.titulo}
+                    {gruposDo(idioma).find((g) => g.id === pagina.grupo)?.titulo}
                   </span>
                   <span className="mt-1 line-clamp-2 block text-xs leading-relaxed text-muted">{trecho}</span>
                 </Link>

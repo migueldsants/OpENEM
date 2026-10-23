@@ -14,6 +14,11 @@ export type NavItem = {
   mobile?: 'primary' | 'more';
   /** Grupo no menu (Estudar, Planejar…). Sem grupo = topo, sem título. */
   section?: string;
+  /**
+   * Endereço fora do app (ex.: a documentação em /docs/). Vira um link comum
+   * em vez de rota do router, que só conhece o que está sob /app/.
+   */
+  href?: string;
 };
 
 /** Agrupa mantendo a ordem em que cada seção aparece pela primeira vez. */
@@ -77,26 +82,40 @@ export function MoreSheet({
               <section key={secao ?? '_'}>
                 {secao && <h3 className="eyebrow mb-2 px-1">{secao}</h3>}
                 <div className="grid grid-cols-3 gap-2">
-                  {grupo.map(({ to, label, Icon, end }) => (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      end={end}
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        `flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs font-medium transition-colors ${
-                          isActive
-                            ? 'border-brand bg-brand/8 text-brand'
-                            : 'border-line bg-surface text-fg hover:bg-surface-2'
-                        }`
-                      }
-                    >
-                      <span className="grid size-11 place-items-center rounded-xl bg-brand/12 text-brand">
-                        <Icon width={24} height={24} weight="duotone" />
-                      </span>
-                      {label}
-                    </NavLink>
-                  ))}
+                  {grupo.map(({ to, label, Icon, end, href }) =>
+                    href ? (
+                      <a
+                        key={to}
+                        href={href}
+                        onClick={onClose}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-2 py-3 text-xs font-medium text-fg transition-colors hover:bg-surface-2"
+                      >
+                        <span className="grid size-11 place-items-center rounded-xl bg-brand/12 text-brand">
+                          <Icon width={24} height={24} weight="duotone" />
+                        </span>
+                        {label}
+                      </a>
+                    ) : (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        end={end}
+                        onClick={onClose}
+                        className={({ isActive }) =>
+                          `flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs font-medium transition-colors ${
+                            isActive
+                              ? 'border-brand bg-brand/8 text-brand'
+                              : 'border-line bg-surface text-fg hover:bg-surface-2'
+                          }`
+                        }
+                      >
+                        <span className="grid size-11 place-items-center rounded-xl bg-brand/12 text-brand">
+                          <Icon width={24} height={24} weight="duotone" />
+                        </span>
+                        {label}
+                      </NavLink>
+                    ),
+                  )}
                 </div>
               </section>
             ))}

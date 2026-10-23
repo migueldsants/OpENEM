@@ -3,7 +3,7 @@ titulo: Instalação
 descricao: Como subir uma cópia do OpENEM com Docker Compose, o que acontece na primeira subida e onde ficam os dados.
 ---
 
-O OpENEM roda em três containers, orquestrados pelo `docker-compose.yml` da raiz do repositório: o banco PostgreSQL, a API e o app web. Esta página vai do clone até a primeira conta criada.
+O OpENEM roda em quatro containers, orquestrados pelo `docker-compose.yml` da raiz do repositório: o banco PostgreSQL, o cache Redis (Valkey), a API e o nginx com o site e o app web. Esta página vai do clone até a primeira conta criada.
 
 ## Requisitos
 
@@ -56,10 +56,11 @@ docker compose logs -f backend
 | Serviço | O que é | Porta no host |
 | --- | --- | --- |
 | `db` | PostgreSQL 17 | `127.0.0.1:5432` (muda com `POSTGRES_PORT`) |
+| `redis` | Valkey 8, o cache da API (sem persistência em disco) | `127.0.0.1:6379` (muda com `REDIS_PORT`) |
 | `backend` | API NestJS | `127.0.0.1:3000` |
-| `frontend` | nginx com o app, repassando `/api/`, `/health` e `/media/` ao backend | `8080`, em todas as interfaces |
+| `frontend` | nginx com o site (`/`, `/docs/`) e o app (`/app/`), repassando `/api/`, `/health` e `/media/` ao backend | `8080`, em todas as interfaces |
 
-O banco e a API ficam publicados só em `127.0.0.1`. De outra máquina, o acesso é sempre pela porta 8080; o motivo está em [Produção](/docs/hospedar/producao/).
+O banco, o Redis e a API ficam publicados só em `127.0.0.1`. De outra máquina, o acesso é sempre pela porta 8080; o motivo está em [Produção](/docs/hospedar/producao/).
 
 ## O que acontece na primeira subida
 
@@ -109,7 +110,7 @@ Para conferir à mão:
 curl http://localhost:8080/health
 ```
 
-A resposta esperada é `{"status":"ok","database":"up"}`. A rota responde 200 mesmo com o banco fora do ar; nesse caso, o campo `database` vem `down`.
+A resposta esperada é `{"status":"ok","database":"up","redis":"up"}`. A rota responde 200 mesmo com o banco ou o Redis fora do ar; nesse caso, o campo correspondente vem `down`. Sem `REDIS_URL` (fora do Docker), `redis` vem `disabled`.
 
 ## Volumes
 

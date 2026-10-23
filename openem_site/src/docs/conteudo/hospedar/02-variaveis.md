@@ -56,6 +56,7 @@ O cache guarda o que é igual para todo aluno: matérias, provas, facetas da bus
 | `NODE_ENV` | nenhum (`production` na imagem Docker) | `production` desliga o Swagger em `/api` e exige um `JWT_SECRET` válido. Fixo no compose. |
 | `TRUST_PROXY` | nenhum (não confia em proxy) | Número de proxies à frente da API (`1`) ou lista de endereços e sub-redes (`loopback, 10.0.0.0/8`). `true` é recusado e impede a API de subir. Fixo em `1` no compose; veja [Produção](/docs/hospedar/producao/). |
 | `CORS_ORIGINS` | nenhum | Origens liberadas no CORS, separadas por vírgula. Sem valor, a API aceita requisições de qualquer origem. Fora do compose. |
+| `SITE_URL` | nenhum | Domínio público da instalação, como `https://openem.exemplo`. Entra no build da imagem do frontend: gera o `sitemap.xml` e deixa absolutas as URLs do Open Graph. Sem ela, o site sai sem sitemap e com URLs relativas. Trocar exige `docker compose up --build`. |
 
 ## Rate limiting
 
