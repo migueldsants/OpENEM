@@ -17,6 +17,7 @@
 
 import { parseArgs } from 'node:util';
 import { PrismaClient } from '@prisma/client';
+import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
 import {
   classifyByKeywords,
   HeuristicDecision,
@@ -209,6 +210,7 @@ async function main() {
     );
   }
   if (values['dry-run']) console.log('\n(dry-run: nada foi gravado)');
+  else await invalidateCatalogCache();
 }
 
 main()

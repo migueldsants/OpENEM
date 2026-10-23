@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { seedFormulas } from './seed-formulas-lib';
+import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
 
 const prisma = new PrismaClient();
 
@@ -714,6 +715,8 @@ async function main() {
   await seedFormulas(prisma);
 
   console.log(`Seed concluído. (${temasEnem.length} temas ENEM)`);
+  // Matérias, assuntos e questões de exemplo: o catálogo em cache fica velho.
+  await invalidateCatalogCache();
 }
 
 main()

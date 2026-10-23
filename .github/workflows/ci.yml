@@ -21,8 +21,9 @@ jobs:
     defaults:
       run:
         working-directory: openem_backend
-    # Postgres só para a suíte e2e (que cria o próprio schema `test_e2e`); os
-    # testes de unidade são puros e não abrem conexão.
+    # Postgres e Redis só para a suíte e2e (que cria o próprio schema
+    # `test_e2e`); os testes de unidade são puros e não abrem conexão. Com o
+    # Redis, o e2e passa pelo cache de verdade (issue #86).
     services:
       postgres:
         image: postgres:17-alpine
@@ -34,6 +35,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U openem -d openem"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -69,6 +79,8 @@ jobs:
 
       - name: Testes e2e
         run: npm run test:e2e
+        env:
+          REDIS_URL: redis://localhost:6379
 
       # Mutation testing (issue #47) NÃO roda no CI: um run full leva
       # 45-80 min por job. Use `npm run test:mutation` localmente

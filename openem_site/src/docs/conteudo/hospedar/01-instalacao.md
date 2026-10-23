@@ -22,14 +22,16 @@ cd OpENEM
 cp .env.example .env
 ```
 
-O `.env` da raiz é lido pelo Docker Compose. Duas variáveis são obrigatórias, e sem elas o compose para com erro antes de criar qualquer container:
+O `.env` da raiz é lido pelo Docker Compose. Três variáveis são obrigatórias, e sem elas o compose para com erro antes de criar qualquer container:
 
 ```env
 POSTGRES_PASSWORD=<gere com openssl rand -hex 24>
+REDIS_PASSWORD=<gere com openssl rand -hex 24>
 JWT_SECRET=<gere com openssl rand -hex 32>
 ```
 
 - `POSTGRES_PASSWORD` é a senha do banco. Use só letras e números: ela entra sem escape na `DATABASE_URL` que o compose monta para o backend. A saída do `openssl rand -hex` já tem esse formato.
+- `REDIS_PASSWORD` é a senha do Redis (Valkey), o cache da API. Também só letras e números, pelo mesmo motivo: ela entra na `REDIS_URL`. O cache não guarda nada em disco, então trocar a senha depois não causa problema.
 - `JWT_SECRET` assina os tokens de login. Com `NODE_ENV=production`, que é o caso da imagem Docker, a API se recusa a subir se o segredo faltar ou tiver menos de 16 caracteres.
 
 > **Atenção:** a imagem do PostgreSQL só lê `POSTGRES_PASSWORD` quando cria o volume `pg-data`. Trocar a senha no `.env` depois disso não muda a senha do banco, e o backend passa a falhar ao conectar.

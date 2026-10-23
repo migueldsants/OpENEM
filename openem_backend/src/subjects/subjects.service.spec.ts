@@ -1,3 +1,4 @@
+import { memoryCache } from '../cache/testing';
 import { SubjectsService } from './subjects.service';
 
 describe('SubjectsService', () => {
@@ -13,7 +14,7 @@ describe('SubjectsService', () => {
         ]),
       },
     } as any;
-    const service = new SubjectsService(prisma);
+    const service = new SubjectsService(prisma, memoryCache());
 
     const res = await service.list();
     expect(res[0]).toMatchObject({ id: 's1', name: 'Matemática' });

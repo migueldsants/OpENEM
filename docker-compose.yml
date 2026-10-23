@@ -1,7 +1,8 @@
 # OpENEM — orquestração (dev local e VPS).
-# PostgreSQL no mesmo compose, com volume nomeado (ver docs/PRD.md §12).
-# Rode `docker compose up --build` com POSTGRES_PASSWORD e JWT_SECRET no .env
-# da raiz. Para desenvolver só o backend: `docker compose up -d db` (ver README).
+# PostgreSQL e Redis (Valkey) no mesmo compose (ver docs/PRD.md §12).
+# Rode `docker compose up --build` com POSTGRES_PASSWORD, REDIS_PASSWORD e
+# JWT_SECRET no .env da raiz. Para desenvolver só o backend:
+# `docker compose up -d db` (o Redis é opcional em dev; ver README).
 
 services:
   db:
@@ -27,6 +28,33 @@ services:
       timeout: 5s
       retries: 10
 
+  # Cache compartilhado da API (issue #86). Valkey é o fork aberto (BSD) do
+  # Redis e fala o mesmo protocolo. É só cache: sem persistência em disco, e
+  # cheio ele descarta as chaves menos usadas. Se cair, a API lê do banco.
+  redis:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    environment:
+      # Obrigatória, como a do banco. Só letras e números (ela entra crua na
+      # REDIS_URL do backend). Ex.: openssl rand -hex 24
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?defina REDIS_PASSWORD no .env (openssl rand -hex 24)}
+    command:
+      - sh
+      - -c
+      - >-
+        exec valkey-server --requirepass "$$REDIS_PASSWORD"
+        --maxmemory ${REDIS_MAXMEMORY:-128mb} --maxmemory-policy allkeys-lru
+        --save '' --appendonly no
+    ports:
+      # Só na máquina local, como o banco: serve ao backend de dev fora do
+      # Docker. O backend do compose usa a rede interna (host `redis`).
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
+    healthcheck:
+      test: ['CMD-SHELL', 'valkey-cli -a "$${REDIS_PASSWORD}" --no-auth-warning ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: ./openem_backend
     # Volta sozinho se o processo cair (sem isso, uma queda deixava a API fora
@@ -35,8 +63,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-openem}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-openem}?schema=public
+      # Cache compartilhado entre as instâncias da API e os scripts de import.
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       # Imagens das questões oficiais do ENEM, gravadas por `db:import:enem`.
       # Ficam num volume próprio: são saída do import e precisam sobreviver ao
       # rebuild da imagem (que não as contém, ver .dockerignore).

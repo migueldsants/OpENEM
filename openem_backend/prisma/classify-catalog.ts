@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { PrismaClient } from '@prisma/client';
+import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
 import {
   CATALOG_SOURCE,
   CatalogEntry,
@@ -93,6 +94,7 @@ async function main() {
       console.log(`ignoradas (${motivo}): ${n}`);
     }
     if (values['dry-run']) console.log('\n(dry-run: nada foi gravado)');
+    else await invalidateCatalogCache();
   } finally {
     await prisma.$disconnect();
   }
