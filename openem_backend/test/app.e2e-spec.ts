@@ -18,6 +18,12 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
+  // Sem fechar, a conexão do Redis (aberta pelo CacheModule ao subir) segura
+  // o processo, e o Jest em band (como no CI) nunca termina.
+  afterEach(async () => {
+    await app.close();
+  });
+
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
