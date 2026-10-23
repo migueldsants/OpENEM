@@ -13,6 +13,9 @@ function brokenStore(): CacheStore {
     incr: boom,
     setIfAbsent: boom,
     delIfValue: boom,
+    incrWithTtl: boom,
+    pttl: boom,
+    rateHit: boom,
     ping: () => Promise.resolve(false),
     close: () => Promise.resolve(),
   };

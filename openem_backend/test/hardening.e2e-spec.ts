@@ -251,9 +251,10 @@ describe('Hardening (e2e)', () => {
   });
 
   it('POST /auth/login respeita rate limiting após muitas tentativas', async () => {
-    // Instância dedicada: o storage do throttler é in-memory por app, então
-    // este burst não vaza para as demais suítes/instâncias. O limite vem do
-    // @Throttle do controller (10 logins/min).
+    // Instância dedicada: cada app de teste tem os próprios contadores (ver
+    // rateKeyPrefix), então este burst não vaza para as demais suítes. O
+    // limite por IP vem do @Throttle do controller (30 logins/min); e-mails
+    // diferentes para não esbarrar antes no limite por conta.
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -268,10 +269,10 @@ describe('Hardening (e2e)', () => {
     await throttleApp.init();
     try {
       let saw429 = false;
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 32; i++) {
         const res = await request(throttleApp.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ email: 'nao-existe@exemplo.com', password: 'x' });
+          .send({ email: `nao-existe-${i}@exemplo.com`, password: 'x' });
         if (res.status === 429) {
           saw429 = true;
           break;
@@ -290,7 +291,7 @@ describe('Hardening (e2e)', () => {
   });
 
   describe('rate limiting atrás de proxy (TRUST_PROXY)', () => {
-    // Instância dedicada por teste: o storage do throttler é in-memory por app.
+    // Instância dedicada por teste: cada app tem os próprios contadores.
     async function appDedicada(trustProxy?: string) {
       const moduleFixture = await Test.createTestingModule({
         imports: [AppModule],
@@ -310,13 +311,19 @@ describe('Hardening (e2e)', () => {
       return dedicada;
     }
 
-    /** Esgota o limite de login (10/min) a partir de um IP. */
+    /**
+     * Esgota o limite de login por IP (30/min). Um e-mail por tentativa: o
+     * limite por conta (5 falhas) bloquearia antes.
+     */
     async function esgotaLogin(dedicada: NestExpressApplication, ip: string) {
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 30; i++) {
         await request(dedicada.getHttpServer())
           .post('/api/v1/auth/login')
           .set('X-Forwarded-For', ip)
-          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+          .send({
+            email: `nao-existe-${ip.replace(/\D/g, '')}-${i}@exemplo.com`,
+            password: 'x',
+          })
           .expect(401);
       }
     }

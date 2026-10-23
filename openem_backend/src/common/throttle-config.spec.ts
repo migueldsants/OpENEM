@@ -1,4 +1,9 @@
-import { THROTTLE_DEFAULTS, throttleConfigFromEnv } from './throttle-config';
+import {
+  BURST_DEFAULTS,
+  burstConfigFromEnv,
+  THROTTLE_DEFAULTS,
+  throttleConfigFromEnv,
+} from './throttle-config';
 
 describe('throttleConfigFromEnv', () => {
   it('sem variáveis, usa 100 requisições por minuto', () => {
@@ -22,5 +27,30 @@ describe('throttleConfigFromEnv', () => {
         throttleConfigFromEnv({ THROTTLE_TTL_MS: raw, THROTTLE_LIMIT: raw }),
       ).toEqual(THROTTLE_DEFAULTS);
     }
+  });
+});
+
+describe('burstConfigFromEnv', () => {
+  it('sem variáveis, 20 pedidos por segundo', () => {
+    expect(burstConfigFromEnv({})).toEqual(BURST_DEFAULTS);
+    expect(BURST_DEFAULTS).toEqual({ ttl: 1000, limit: 20 });
+  });
+
+  it('lê as variáveis próprias da rajada', () => {
+    expect(
+      burstConfigFromEnv({
+        THROTTLE_BURST_TTL_MS: '2000',
+        THROTTLE_BURST_LIMIT: '50',
+      }),
+    ).toEqual({ ttl: 2000, limit: 50 });
+  });
+
+  it('valor inválido cai no padrão da rajada, não no do minuto', () => {
+    expect(
+      burstConfigFromEnv({
+        THROTTLE_BURST_TTL_MS: 'abc',
+        THROTTLE_BURST_LIMIT: '0',
+      }),
+    ).toEqual(BURST_DEFAULTS);
   });
 });

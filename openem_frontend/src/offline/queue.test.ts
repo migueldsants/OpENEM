@@ -107,3 +107,92 @@ describe('fila offline (issue #42)', () => {
     expect(await countPending()).toBe(1);
   });
 });
+
+describe('fila offline com rate limiting (issue #87)', () => {
+  const r429 = (segundos: string) =>
+    new Response('{}', { status: 429, headers: { 'Retry-After': segundos } });
+
+  beforeEach(() => {
+    localStorage.setItem('openem.token', 'tok');
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    localStorage.removeItem('openem.token');
+    for (const a of await listPending()) await dequeue(a.key);
+  });
+
+  it('150 respostas sincronizam todas, esperando o Retry-After', async () => {
+    for (let i = 0; i < 150; i++) {
+      await enqueue({
+        kind: 'answer',
+        key: `answer:q${i}:1`,
+        questionId: `q${i}`,
+        chosenId: 'a1',
+      });
+    }
+    // O servidor aceita 20 seguidas e recusa a próxima, como a rajada.
+    let seguidas = 0;
+    const enviadas: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+      if (seguidas === 20) {
+        seguidas = 0;
+        return r429('1');
+      }
+      seguidas += 1;
+      enviadas.push(
+        JSON.parse((init as RequestInit).body as string).questionId,
+      );
+      return new Response('{}', { status: 201 });
+    });
+    const sleep = vi.fn(() => Promise.resolve());
+
+    const synced = await syncPending({ sleep });
+
+    expect(synced).toBe(150);
+    expect(await countPending()).toBe(0);
+    // Nenhuma perdida e nenhuma repetida.
+    expect(enviadas).toHaveLength(150);
+    expect(new Set(enviadas).size).toBe(150);
+    expect(sleep).toHaveBeenCalledWith(1000);
+    expect(sleep).toHaveBeenCalledTimes(7);
+  });
+
+  it('espera longa demais fica para a próxima sincronização', async () => {
+    await enqueue(ANSWER);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(r429('900'));
+    const sleep = vi.fn(() => Promise.resolve());
+
+    const synced = await syncPending({ sleep });
+
+    expect(synced).toBe(0);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(await countPending()).toBe(1);
+  });
+
+  it('desiste depois de muitos 429 seguidos, sem perder a ação', async () => {
+    await enqueue(ANSWER);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(r429('2')),
+    );
+    const sleep = vi.fn(() => Promise.resolve());
+
+    const synced = await syncPending({ sleep, maxRetries: 3 });
+
+    expect(synced).toBe(0);
+    expect(sleep).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledWith(2000);
+    expect(await countPending()).toBe(1);
+  });
+
+  it('429 sem Retry-After espera 1 s', async () => {
+    await enqueue(ANSWER);
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('{}', { status: 429 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 201 }));
+    const sleep = vi.fn(() => Promise.resolve());
+
+    await expect(syncPending({ sleep })).resolves.toBe(1);
+    expect(sleep).toHaveBeenCalledWith(1000);
+  });
+});

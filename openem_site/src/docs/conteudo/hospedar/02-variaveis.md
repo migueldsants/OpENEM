@@ -62,9 +62,12 @@ O cache guarda o que é igual para todo aluno: matérias, provas, facetas da bus
 | Variável | Padrão | O que faz |
 | --- | --- | --- |
 | `THROTTLE_TTL_MS` | `60000` | Janela do limite padrão, em milissegundos. Fora do compose. |
-| `THROTTLE_LIMIT` | `100` | Requisições permitidas por janela, contadas por rota e por IP. Fora do compose. |
+| `THROTTLE_LIMIT` | `100` | Requisições permitidas por janela, contadas por rota e por aluno (por IP sem login). Fora do compose. |
+| `THROTTLE_BURST_TTL_MS` | `1000` | Janela da rajada curta, em milissegundos. Fora do compose. |
+| `THROTTLE_BURST_LIMIT` | `20` | Requisições permitidas na rajada, por rota e por aluno. Fora do compose. |
+| `THROTTLE_KEY_PREFIX` | nenhum | Separa no Redis os contadores de duas instalações que usam o mesmo servidor. Instâncias da mesma instalação devem usar o mesmo valor. Fora do compose. |
 
-Esse é o limite padrão. As rotas caras (cadastro, login, PDF, IA, escrita no fórum e nos temas) têm limites próprios no código, que essas variáveis não mudam.
+Esses são os limites padrão. As rotas caras (cadastro, login, PDF, IA, escrita no fórum e nos temas) têm limites próprios no código, que essas variáveis não mudam; a tabela está em [Produção](/docs/hospedar/producao/). Os contadores ficam no Redis da `REDIS_URL`.
 
 ## IA
 

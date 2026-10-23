@@ -1,5 +1,6 @@
 // Cliente de API. Em dev, o Vite faz proxy de /api e /health para o backend.
 import { enqueue } from './offline/queue';
+import { parseRetryAfter, rateLimitMessage } from './lib/rate-limit';
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 const TOKEN_KEY = 'openem.token';
 
@@ -21,10 +22,21 @@ export class HttpError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /** No 429: segundos até poder tentar de novo (Retry-After), se vier. */
+    public readonly retryAfterSec: number | null = null,
   ) {
     super(message);
     this.name = 'HttpError';
   }
+}
+
+/**
+ * 429 do rate limiting: a espera vem do Retry-After e o texto é montado aqui,
+ * para o aluno ler "Tente de novo em 30 s" em vez de "Erro 429".
+ */
+function rateLimitError(res: Response): HttpError {
+  const espera = parseRetryAfter(res.headers.get('retry-after'));
+  return new HttpError(429, rateLimitMessage(espera), espera);
 }
 
 // Notificado quando uma chamada autenticada recebe 401 (token expirado/inválido),
@@ -69,6 +81,7 @@ async function request<T>(
       setToken(null);
       onUnauthorized?.();
     }
+    if (res.status === 429) throw rateLimitError(res);
     // 5xx chega como "Internal server error" (inglês, e sem nada a fazer):
     // melhor uma frase útil do que o texto cru do Nest.
     if (res.status >= 500) {
@@ -117,6 +130,7 @@ async function postPdf(
     );
   }
   if (!res.ok) {
+    if (res.status === 429) throw rateLimitError(res);
     const data = (await res.json().catch(() => ({}))) as {
       message?: string | string[];
     };
