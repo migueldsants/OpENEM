@@ -25,7 +25,8 @@ O planejamento completo da aplicação — frontend, backend, modelo de dados, i
 ## Estrutura do repositório
 
 *   `openem_backend/` — API NestJS + Prisma (todos os comandos `npm`/`nest` rodam aqui dentro).
-*   `openem_frontend/` — aplicação web React + Vite + Tailwind (PWA *mobile-first*).
+*   `openem_frontend/` — aplicação web React + Vite + Tailwind (PWA *mobile-first*), servida em `/app/`.
+*   `openem_site/` — site público: a página do projeto em `/` e a documentação em `/docs/`, em HTML estático.
 *   `docs/` — documentação de produto e arquitetura (ver [PRD](docs/PRD.md)).
 *   `.github/` — templates, espelhos em inglês da documentação e workflows de CI/CD.
 
@@ -42,7 +43,7 @@ docker compose up --build
 ```
 
 *   API: <http://localhost:3000> · Healthcheck: <http://localhost:3000/health> (o Swagger fica desligado no compose, que roda com `NODE_ENV=production`)
-*   Frontend: <http://localhost:8080>
+*   Site (landing e documentação): <http://localhost:8080> · App: <http://localhost:8080/app/>
 
 O compose sobe um **PostgreSQL 17** (serviço `db`, volume nomeado `pg-data`) e
 um **Valkey 8** (serviço `redis`, o cache da API, sem persistência), espera os
@@ -86,7 +87,7 @@ dev no schema `public` não são tocados. Os testes de unidade não usam banco.
 
 ```bash
 npm install
-npm run dev                 # http://localhost:5173 (faz proxy de /api para o backend)
+npm run dev                 # http://localhost:5173/app/ (faz proxy de /api para o backend)
 ```
 
 ### Questões oficiais do ENEM

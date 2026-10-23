@@ -125,8 +125,15 @@ services:
       # A primeira subida popula o banco antes de a API responder.
       start_period: 15m
 
+  # nginx com o site público na raiz (landing e /docs/) e o app em /app/
+  # (issue #88). O contexto é a raiz: o site usa o CSS e os dados do app.
   frontend:
-    build: ./openem_frontend
+    build:
+      context: .
+      dockerfile: openem_frontend/Dockerfile
+      args:
+        # Domínio da instalação, para o sitemap e o Open Graph (opcional).
+        - SITE_URL=${SITE_URL:-}
     restart: unless-stopped
     ports:
       - '8080:80'

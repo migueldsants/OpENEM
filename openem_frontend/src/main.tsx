@@ -11,7 +11,8 @@ import { ThemeProvider } from './theme.tsx';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <BrowserRouter>
+      {/* O app mora em /app/ (base do Vite); a raiz é do site público. */}
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <AuthProvider>
           <GamificationProvider>
             <App />

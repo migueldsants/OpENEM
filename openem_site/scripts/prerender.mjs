@@ -9,7 +9,13 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
 const ssr = join(raiz, 'dist-ssr');
 
-const { paginas, renderizar } = await import(pathToFileURL(join(ssr, 'entry-server.js')).href);
+const { paginas, renderizar, absolutizar, robotsTxt, siteUrl, sitemapXml } = await import(
+  pathToFileURL(join(ssr, 'entry-server.js')).href
+);
+
+// Domínio da instalação (ex.: https://openem.exemplo). Sem ele, as URLs ficam
+// relativas e o sitemap não é gerado: ele só aceita endereço completo.
+const site = siteUrl(process.env.SITE_URL);
 
 // Lê todos os modelos antes de gravar: /docs/ é gravado em docs/index.html,
 // que é o próprio modelo das outras páginas da documentação.
@@ -22,13 +28,23 @@ for (const pagina of lista) {
   const modelo = modelos.get(pagina.modelo);
   if (!modelo.includes('<!--app-html-->')) throw new Error(`modelo sem marcador: ${pagina.modelo}`);
   const { html, head } = await renderizar(pagina.url);
-  const saida = modelo
-    .replace('<!--app-html-->', html)
-    .replace('<!--app-head-->', head ?? '');
+  const saida = absolutizar(
+    modelo.replace('<!--app-html-->', html).replace('<!--app-head-->', head ?? ''),
+    site,
+    pagina.url,
+  );
   const destino = join(dist, pagina.url, 'index.html');
   mkdirSync(dirname(destino), { recursive: true });
   writeFileSync(destino, saida);
   console.log(`prerender ${pagina.url} -> ${destino.slice(raiz.length + 1)}`);
+}
+
+writeFileSync(join(dist, 'robots.txt'), robotsTxt(site));
+if (site) {
+  writeFileSync(join(dist, 'sitemap.xml'), sitemapXml(site, lista.map((p) => p.url)));
+  console.log(`sitemap com ${lista.length} páginas (${site})`);
+} else {
+  console.log('SITE_URL não definido: sem sitemap.xml, URLs relativas');
 }
 
 // O bundle de servidor só serve ao build.

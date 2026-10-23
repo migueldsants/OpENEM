@@ -60,7 +60,7 @@ npm install
 npm run dev
 ```
 
-O app abre em `http://localhost:5173` e repassa `/api`, `/health` e `/media` para `http://localhost:3000`. Para apontar para outra API, defina `VITE_PROXY_TARGET`.
+O app abre em `http://localhost:5173/app/` e repassa `/api`, `/health` e `/media` para `http://localhost:3000`. Para apontar para outra API, defina `VITE_PROXY_TARGET`.
 
 ## Site e documentação
 
@@ -71,7 +71,7 @@ npm install
 npm run dev
 ```
 
-O site abre em `http://localhost:5174`, com a documentação em `/docs/`. Os links para o app usam `VITE_APP_URL`, que o `.env.development` do site aponta para o app em `http://localhost:5173/`.
+O site abre em `http://localhost:5174`, com a documentação em `/docs/`. Os links para o app usam `VITE_APP_URL`, que o `.env.development` do site aponta para o app em `http://localhost:5173/app/`.
 
 ## Testes
 

@@ -51,6 +51,19 @@ export interface PropostaRedacao {
   semTema?: boolean;
 }
 
+/**
+ * Endereço de uma figura do catálogo. O JSON guarda o caminho a partir da
+ * pasta `public/` ("/redacoes/2025-regular-1.webp"), e o app mora em /app/:
+ * sem o prefixo, a imagem cairia no site público e daria 404.
+ */
+export function figura(
+  src: string,
+  base: string = import.meta.env.BASE_URL,
+): string {
+  if (!src.startsWith('/')) return src;
+  return base.replace(/\/$/, '') + src;
+}
+
 /** Filtro da lista: tudo, só a aplicação regular ou só as demais. */
 export type FiltroAplicacao = 'todas' | 'regular' | 'outras';
 

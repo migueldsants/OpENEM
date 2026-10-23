@@ -122,7 +122,7 @@ Os dois sobrevivem a `docker compose down` e ao rebuild das imagens. Já `docker
 
 ## Primeiro acesso
 
-Abra `http://localhost:8080` (ou o endereço do servidor na porta 8080) e crie uma conta na tela de entrada. Não existe usuário padrão nem conta de administrador: todas as contas são de aluno, criadas pelo próprio app.
+Abra `http://localhost:8080` (ou o endereço do servidor na porta 8080): a raiz é a página do projeto e a documentação fica em `/docs/`. O app mora em `/app/`; abra `http://localhost:8080/app/` e crie uma conta na tela de entrada. Os endereços antigos do app, de antes de ele ir para `/app/` (como `/questoes`), redirecionam para o novo. Não existe usuário padrão nem conta de administrador: todas as contas são de aluno, criadas pelo próprio app.
 
 O Swagger da API fica desligado na imagem Docker, porque ela roda com `NODE_ENV=production`. Ele só aparece no ambiente de desenvolvimento, descrito em [Desenvolvimento](/docs/contribuir/desenvolvimento/).
 

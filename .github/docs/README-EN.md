@@ -25,7 +25,8 @@ The full application plan — frontend, backend, data model, Dockerized CI/CD in
 ## Repository structure
 
 *   `openem_backend/` — NestJS API + Prisma (run all `npm`/`nest` commands from here).
-*   `openem_frontend/` — React + Vite + Tailwind web app (mobile-first PWA).
+*   `openem_frontend/` — React + Vite + Tailwind web app (mobile-first PWA), served at `/app/`.
+*   `openem_site/` — public site: the project page at `/` and the documentation at `/docs/`, as static HTML.
 *   `docs/` — product and architecture documentation (see the [PRD](../../docs/PRD.md)).
 *   `.github/` — templates, English doc mirrors and CI/CD workflows.
 
@@ -42,7 +43,7 @@ docker compose up --build
 ```
 
 *   API: <http://localhost:3000> · Healthcheck: <http://localhost:3000/health> (Swagger is off under Compose, which runs with `NODE_ENV=production`)
-*   Frontend: <http://localhost:8080>
+*   Site (landing and docs): <http://localhost:8080> · App: <http://localhost:8080/app/>
 
 Compose starts a **PostgreSQL 17** (service `db`, named volume `pg-data`) and
 a **Valkey 8** (service `redis`, the API cache, no persistence), waits for both
@@ -86,7 +87,7 @@ in the `public` schema is left untouched. Unit tests do not use a database.
 
 ```bash
 npm install
-npm run dev                 # http://localhost:5173 (proxies /api to the backend)
+npm run dev                 # http://localhost:5173/app/ (proxies /api to the backend)
 ```
 
 ### Official ENEM questions
