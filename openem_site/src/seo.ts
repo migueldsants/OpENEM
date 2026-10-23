@@ -46,6 +46,7 @@ export function absolutizar(html: string, site: string | null, url: string): str
   if (!site) return html;
   return html
     .replace(/(<link rel="canonical" href=")(\/[^"]*)"/, `$1${site}$2"`)
+    .replace(/(<link rel="alternate" hreflang="[^"]+" href=")(\/[^"]*)"/g, `$1${site}$2"`)
     .replace(/(<meta property="og:image" content=")(\/[^"]*)"/, `$1${site}$2"`)
     .replace('</head>', `  <meta property="og:url" content="${site}${url}" />\n  </head>`);
 }

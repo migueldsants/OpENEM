@@ -102,6 +102,22 @@ describe('Tabbar mobile — botão Mais (issue #21)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('Ajuda abre a documentação, fora do app (sidebar e sheet)', () => {
+    const { container } = renderApp('/');
+    const sidebar = container.querySelector('aside.sidebar') as HTMLElement;
+    expect(within(sidebar).getByText('Ajuda').closest('a')).toHaveAttribute(
+      'href',
+      '/docs/',
+    );
+    const tabbar = container.querySelector('nav.tabbar');
+    fireEvent.click(within(tabbar as HTMLElement).getByLabelText('Mais telas'));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Ajuda').closest('a')).toHaveAttribute(
+      'href',
+      '/docs/',
+    );
+  });
+
   it('o botão Mais fica destacado quando a rota atual é uma tela secundária', () => {
     const { container } = renderApp('/progresso');
     const tabbar = container.querySelector('nav.tabbar');

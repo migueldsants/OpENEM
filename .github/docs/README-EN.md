@@ -30,6 +30,10 @@ The full application plan — frontend, backend, data model, Dockerized CI/CD in
 *   `docs/` — product and architecture documentation (see the [PRD](../../docs/PRD.md)).
 *   `.github/` — templates, English doc mirrors and CI/CD workflows.
 
+## Documentation
+
+The full guide lives on the project site, at `/docs/` of any installation (locally at <http://localhost:8080/docs/en/>), with the source in [`openem_site/src/docs/conteudo/`](../../openem_site/src/docs/conteudo/): how to host (variables, AI, proxy, backups), how to contribute and the API reference, generated from the code. The hosting and contributing pages are in English at `/docs/en/`; the student guides are in Portuguese.
+
 ## Running it
 
 ### Option A — Docker Compose (everything at once)

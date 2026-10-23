@@ -30,6 +30,10 @@ O planejamento completo da aplicação — frontend, backend, modelo de dados, i
 *   `docs/` — documentação de produto e arquitetura (ver [PRD](docs/PRD.md)).
 *   `.github/` — templates, espelhos em inglês da documentação e workflows de CI/CD.
 
+## Documentação
+
+O guia completo está no site do projeto, em `/docs/` de qualquer instalação (no ar localmente em <http://localhost:8080/docs/>), com o código em [`openem_site/src/docs/conteudo/`](openem_site/src/docs/conteudo/): como usar cada tela do app, como hospedar (variáveis, IA, proxy, backup), como contribuir e a referência da API, gerada do código. As páginas de hospedagem e contribuição também estão em inglês, em `/docs/en/`.
+
 ## Como executar
 
 ### Opção A — Docker Compose (tudo de uma vez)

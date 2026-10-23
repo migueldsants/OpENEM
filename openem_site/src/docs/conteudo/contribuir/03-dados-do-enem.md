@@ -51,17 +51,19 @@ O gabarito dessas provas, e o das PPL de 2010 e 2011, sai dos microdados do INEP
 
 ## Classificação de assunto
 
-Revisão espaçada, recomendação e desempenho por assunto só alcançam questão com assunto. São duas etapas:
+Revisão espaçada, recomendação e desempenho por assunto só alcançam questão com assunto. São três etapas, nesta ordem:
 
 ```bash
 npm run db:classify:keywords -- --dry-run --sample=20
 npm run db:classify:keywords
+npm run db:classify:catalog
 npm run db:classify -- --limit=50 --dry-run
 npm run db:classify
 ```
 
 1. **Palavra-chave** (`prisma/classify-heuristic.ts`, com a lógica em `src/common/classification/heuristic.ts`): determinística e sem IA. Ela **se cala** quando dois assuntos empatam, porque assunto errado contamina revisão, recomendação e desempenho. Grava `classificationSource: 'keywords'` e só mexe em questão sem assunto.
-2. **IA** (`prisma/classify-questions.ts`): pega o que sobrou. Só grava decisões com confiança de pelo menos 0,6 (`--min-confidence`) e precisa de um provedor configurado; veja [Inteligência artificial](/docs/hospedar/ia/).
+2. **Catálogo de assuntos** (`prisma/classify-catalog.ts`, com a lógica em `src/common/classification/catalog.ts`): `prisma/classificacao-assuntos.json` é uma classificação feita uma vez com IA e versionada, por `externalId`, com o rótulo "Matéria / Assunto" e a confiança. Ela é **não oficial**. Só preenche questão sem assunto e ignora confiança abaixo de 0,6, assunto que saiu da taxonomia e assunto de outra área. Roda no bootstrap logo depois das palavras-chave, e com as duas o banco inteiro fica com assunto.
+3. **IA** (`prisma/classify-questions.ts`): pega o que sobrou, como as questões de uma prova importada depois. Só grava decisões com confiança de pelo menos 0,6 (`--min-confidence`) e precisa de um provedor configurado; veja [Inteligência artificial](/docs/hospedar/ia/).
 
 ## O conserto do dataset
 

@@ -51,6 +51,14 @@ npx prisma migrate dev --name <nome-da-mudanca>
 
 > **Atenção:** o import das provas nunca pode rodar dentro do `seed.ts`. A suíte e2e roda o seed a cada execução.
 
+Mudou uma rota, um DTO ou um `@ApiOperation`? Regere a [Referência da API](/docs/contribuir/api/) e faça commit do arquivo junto:
+
+```bash
+npm run openapi
+```
+
+O comando monta o documento OpenAPI sem subir o servidor nem abrir o banco e grava `openem_site/src/docs/api/openapi.json`. O CI roda `npm run openapi -- --check` e quebra se o arquivo ficar desatualizado.
+
 ## Frontend
 
 Em `openem_frontend/`:
@@ -126,8 +134,9 @@ No backend, o lint aplica as correções automáticas (`--fix`), e `npm run form
 
 O [workflow](https://github.com/migueldsants/OpENEM/blob/main/.github/workflows/ci.yml) roda em push para `main`, `feature/**` e `fix/**` e em todo pull request:
 
-- **backend:** lint, build, testes de unidade, cobertura e e2e contra um PostgreSQL 17;
+- **backend:** lint, build, OpenAPI em dia, testes de unidade, cobertura e e2e contra um PostgreSQL 17 e um Valkey (Redis);
 - **frontend:** lint, testes, cobertura e build;
+- **site:** lint, testes, build pré-renderizado e a conferência dos links internos do build (`npm run check:links`);
 - **docker:** build das imagens do backend e do frontend.
 
 ## Convenções
@@ -135,7 +144,7 @@ O [workflow](https://github.com/migueldsants/OpENEM/blob/main/.github/workflows/
 - Crie a branch a partir da `main`, com o nome `feature/<nome>` ou `fix/<nome>`. Nunca faça commit direto na `main`: a mudança entra por pull request.
 - Mensagens no padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br/): `feat:`, `fix:`, `docs:`, `test:`, `refactor:`.
 - Mudança de lógica vem com teste.
-- A documentação é escrita em português. Os espelhos em inglês ficam em `.github/docs/` (`README-EN.md`, `CONTRIBUTING-EN.md`, `SECURITY-EN.md`): ao editar um documento, atualize os dois.
+- A documentação é escrita em português. Os espelhos em inglês ficam em `.github/docs/` (`README-EN.md`, `CONTRIBUTING-EN.md`, `SECURITY-EN.md`) e, no site, em `openem_site/src/docs/conteudo/en/`: ao editar um documento ou uma página de hospedagem e contribuição, atualize os dois.
 - O projeto é licenciado sob a [AGPL-3.0](https://github.com/migueldsants/OpENEM/blob/main/LICENSE). Ao contribuir, você licencia sua contribuição nos mesmos termos.
 
 O fluxo completo, de fork a pull request, está no [CONTRIBUTING.md](https://github.com/migueldsants/OpENEM/blob/main/CONTRIBUTING.md).

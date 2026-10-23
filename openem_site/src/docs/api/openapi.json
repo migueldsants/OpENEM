@@ -1,0 +1,4337 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Verificação de saúde da API, do banco e do cache",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Cria uma conta e retorna um token de acesso",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Autentica e retorna um token de acesso",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "UsersController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retorna o usuário autenticado e seu perfil",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/profile": {
+      "get": {
+        "operationId": "UsersController_getPublicProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Perfil público de um usuário (sem PII)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/me/profile": {
+      "put": {
+        "operationId": "UsersController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atualiza o perfil de estudo do usuário",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/subjects": {
+      "get": {
+        "operationId": "SubjectsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista as áreas do conhecimento e seus assuntos",
+        "tags": [
+          "subjects"
+        ]
+      }
+    },
+    "/api/v1/questions": {
+      "get": {
+        "operationId": "QuestionsController_findMany",
+        "parameters": [
+          {
+            "name": "subjectAreaId",
+            "required": false,
+            "in": "query",
+            "description": "Filtra pela área do conhecimento (SubjectArea)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "required": false,
+            "in": "query",
+            "description": "Filtra pela matéria (Subject)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topicId",
+            "required": false,
+            "in": "query",
+            "description": "Filtra pelo assunto (Topic)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "difficulty",
+            "required": false,
+            "in": "query",
+            "description": "Nível 1..5",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Ano da prova oficial",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "examSlug",
+            "required": false,
+            "in": "query",
+            "description": "Prova específica: \"2023\", \"2023-reaplicacao\"",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "description": "Língua estrangeira do aluno. Traz as questões comuns mais as da língua escolhida — o banco guarda inglês e espanhol da mesma questão.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ingles",
+                "espanhol"
+              ]
+            }
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "description": "Busca pelo código da questão, por prefixo: \"ENEM-2023-136\", \"2023 136\", \"2023\".",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Busca questões por área, assunto, nível e ano (paginado)",
+        "tags": [
+          "questions"
+        ]
+      }
+    },
+    "/api/v1/questions/facets": {
+      "get": {
+        "operationId": "QuestionsController_facets",
+        "parameters": [
+          {
+            "name": "language",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Contagem de questões por área, assunto e prova (para o painel de filtros)",
+        "tags": [
+          "questions"
+        ]
+      }
+    },
+    "/api/v1/questions/exams": {
+      "get": {
+        "operationId": "QuestionsController_exams",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista as provas disponíveis, da mais recente para a mais antiga",
+        "tags": [
+          "questions"
+        ]
+      }
+    },
+    "/api/v1/questions/{id}": {
+      "get": {
+        "operationId": "QuestionsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalha uma questão comentada (com gabarito)",
+        "tags": [
+          "questions"
+        ]
+      }
+    },
+    "/api/v1/questions/{id}/explanation": {
+      "post": {
+        "operationId": "QuestionsController_explain",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Devolve o comentário da questão, gerando-o por IA na primeira vez (se houver provedor)",
+        "tags": [
+          "questions"
+        ]
+      }
+    },
+    "/api/v1/question-notes": {
+      "put": {
+        "operationId": "QuestionNotesController_upsert",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertQuestionNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cria ou atualiza uma anotação pessoal em uma questão",
+        "tags": [
+          "question-notes"
+        ]
+      },
+      "get": {
+        "operationId": "QuestionNotesController_list",
+        "parameters": [
+          {
+            "name": "questionIds",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista as anotações do usuário (todas, ou filtradas por questionIds)",
+        "tags": [
+          "question-notes"
+        ]
+      }
+    },
+    "/api/v1/question-notes/{questionId}": {
+      "get": {
+        "operationId": "QuestionNotesController_get",
+        "parameters": [
+          {
+            "name": "questionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retorna a anotação do usuário para uma questão",
+        "tags": [
+          "question-notes"
+        ]
+      },
+      "delete": {
+        "operationId": "QuestionNotesController_remove",
+        "parameters": [
+          {
+            "name": "questionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a anotação do usuário de uma questão",
+        "tags": [
+          "question-notes"
+        ]
+      }
+    },
+    "/api/v1/answers": {
+      "post": {
+        "operationId": "AnswersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registra uma tentativa e retorna a correção comentada",
+        "tags": [
+          "answers"
+        ]
+      }
+    },
+    "/api/v1/review/queue": {
+      "get": {
+        "operationId": "ReviewController_queue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fila de revisão (assuntos com revisão vencida)",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/next": {
+      "get": {
+        "operationId": "ReviewController_next",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Próxima revisão agendada (dueAt > agora)",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/{id}": {
+      "post": {
+        "operationId": "ReviewController_grade",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradeReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reagenda um item de revisão pela lembrança (0..5)",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/gamification/me": {
+      "get": {
+        "operationId": "GamificationController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resumo de gamificação (pontos, sequência, conquistas)",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v1/gamification/achievements": {
+      "get": {
+        "operationId": "GamificationController_achievements",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Catálogo de conquistas com status de desbloqueio",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v1/gamification/leaderboard": {
+      "get": {
+        "operationId": "GamificationController_leaderboard",
+        "parameters": [
+          {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ranking de XP (global ou por liga do solicitante)",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v1/gamification/history": {
+      "get": {
+        "operationId": "GamificationController_history",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Histórico de XP ganho (logs + agregado por dia)",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v1/gamification/daily-challenge": {
+      "get": {
+        "operationId": "GamificationController_dailyChallenge",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Desafio diário do dia (meta, progresso, recompensa)",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v1/gamification/daily-challenge/claim": {
+      "post": {
+        "operationId": "GamificationController_claimDailyChallenge",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resgata a recompensa do desafio diário concluído",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v1/simulations/templates": {
+      "get": {
+        "operationId": "SimulationsController_templates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista os simulados disponíveis e os que o aluno salvou",
+        "tags": [
+          "simulations"
+        ]
+      },
+      "post": {
+        "operationId": "SimulationsController_createTemplate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Salva um simulado personalizado (por tema)",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/templates/{id}": {
+      "delete": {
+        "operationId": "SimulationsController_deleteTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove um simulado personalizado do aluno",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/preview": {
+      "post": {
+        "operationId": "SimulationsController_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationFiltersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Quantas questões existem para um recorte, antes de iniciar",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/pdf-themes": {
+      "get": {
+        "operationId": "SimulationsController_pdfThemes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Temas de cor disponíveis para o caderno em PDF",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations": {
+      "post": {
+        "operationId": "SimulationsController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartSimulationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Inicia um simulado (de um template ou por filtros)",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/pdf": {
+      "post": {
+        "operationId": "SimulationsController_pdf",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationPdfDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Gera o caderno de prova em PDF no padrão ENEM, com a capa do OpENEM",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/{id}": {
+      "get": {
+        "operationId": "SimulationsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Estado de um simulado",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/{id}/pdf": {
+      "post": {
+        "operationId": "SimulationsController_simulationPdf",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationPdfDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Gera o PDF de um simulado que o aluno já fez",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/simulations/{id}/finish": {
+      "post": {
+        "operationId": "SimulationsController_finish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishSimulationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Finaliza e corrige um simulado",
+        "tags": [
+          "simulations"
+        ]
+      }
+    },
+    "/api/v1/performance": {
+      "get": {
+        "operationId": "PerformanceController_overview",
+        "parameters": [
+          {
+            "name": "period",
+            "required": false,
+            "in": "query",
+            "description": "Janela de tempo das estatísticas (7d/30d/all)",
+            "schema": {
+              "default": "30d",
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "all"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Desempenho do usuário por área, por assunto e tendência recente (filtro 7d/30d/all)",
+        "tags": [
+          "performance"
+        ]
+      }
+    },
+    "/api/v1/performance/weeks": {
+      "get": {
+        "operationId": "PerformanceController_weeks",
+        "parameters": [
+          {
+            "name": "weeks",
+            "required": false,
+            "in": "query",
+            "description": "Quantas semanas devolver, contando a atual (segunda a domingo, horário de Brasília)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 12,
+              "default": 8,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Semana a semana: a semana atual e as anteriores (acerto, minutos de foco, dias estudados, áreas) e as prioridades do último mês",
+        "tags": [
+          "performance"
+        ]
+      }
+    },
+    "/api/v1/performance/heatmap": {
+      "get": {
+        "operationId": "PerformanceController_heatmap",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mapa de calor da taxonomia canônica: todos os tópicos por área → matéria com o desempenho do usuário (issue #43)",
+        "tags": [
+          "performance"
+        ]
+      }
+    },
+    "/api/v1/favorites": {
+      "post": {
+        "operationId": "FavoritesController_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFavoriteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Favorita uma questão",
+        "tags": [
+          "favorites"
+        ]
+      },
+      "get": {
+        "operationId": "FavoritesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista as questões favoritadas do usuário",
+        "tags": [
+          "favorites"
+        ]
+      }
+    },
+    "/api/v1/favorites/{questionId}": {
+      "delete": {
+        "operationId": "FavoritesController_remove",
+        "parameters": [
+          {
+            "name": "questionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove uma questão dos favoritos",
+        "tags": [
+          "favorites"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks": {
+      "post": {
+        "operationId": "FlashcardsController_createDeck",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cria um deck de flashcards",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks/mine": {
+      "get": {
+        "operationId": "FlashcardsController_myDecks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decks do usuário logado",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks/public": {
+      "get": {
+        "operationId": "FlashcardsController_publicDecks",
+        "parameters": [
+          {
+            "name": "subject",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decks públicos votados (opcionalmente por matéria)",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks/progress": {
+      "get": {
+        "operationId": "FlashcardsController_deckProgress",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Progresso por deck para a árvore (novos, vistos, revistos)",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks/{deckId}": {
+      "get": {
+        "operationId": "FlashcardsController_getDeck",
+        "parameters": [
+          {
+            "name": "deckId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalhe de um deck (com flashcards)",
+        "tags": [
+          "flashcards"
+        ]
+      },
+      "patch": {
+        "operationId": "FlashcardsController_updateDeck",
+        "parameters": [
+          {
+            "name": "deckId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atualiza um deck (apenas o dono)",
+        "tags": [
+          "flashcards"
+        ]
+      },
+      "delete": {
+        "operationId": "FlashcardsController_removeDeck",
+        "parameters": [
+          {
+            "name": "deckId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove um deck com seus cards (apenas o dono)",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks/{deckId}/vote": {
+      "post": {
+        "operationId": "FlashcardsController_voteDeck",
+        "parameters": [
+          {
+            "name": "deckId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteDeckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Vota (up/down) em um deck público — um voto por aluno",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/decks/{deckId}/flashcards": {
+      "post": {
+        "operationId": "FlashcardsController_addFlashcard",
+        "parameters": [
+          {
+            "name": "deckId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlashcardDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adiciona um flashcard ao deck",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/flashcards/{flashcardId}": {
+      "delete": {
+        "operationId": "FlashcardsController_removeFlashcard",
+        "parameters": [
+          {
+            "name": "flashcardId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove um flashcard",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/study/queue": {
+      "get": {
+        "operationId": "FlashcardsController_studyQueue",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subject",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topic",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subtheme",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "deckId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fila otimizada de estudo (SM-2 + Pareto) — filtros por escopo",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/flashcards/{flashcardId}/review": {
+      "post": {
+        "operationId": "FlashcardsController_review",
+        "parameters": [
+          {
+            "name": "flashcardId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewFlashcardDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registra uma revisão SM-2 (qualidade 0-5)",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/stats": {
+      "get": {
+        "operationId": "FlashcardsController_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dashboard de revisão espaçada do usuário",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/flashcards/{flashcardId}/preview": {
+      "get": {
+        "operationId": "FlashcardsController_previewReview",
+        "parameters": [
+          {
+            "name": "flashcardId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Preview do próximo agendamento SM-2 sem salvar (antes de avaliar)",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/flashcards/forecast": {
+      "get": {
+        "operationId": "FlashcardsController_dueForecast",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Previsão de carga de revisão dos próximos dias",
+        "tags": [
+          "flashcards"
+        ]
+      }
+    },
+    "/api/v1/study-plan": {
+      "get": {
+        "operationId": "StudyPlanController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retorna o cronograma atual com as sessões por dia",
+        "tags": [
+          "study-plan"
+        ]
+      },
+      "delete": {
+        "operationId": "StudyPlanController_clear",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Recomeça o cronograma vazio, com a semana a partir de hoje",
+        "tags": [
+          "study-plan"
+        ]
+      }
+    },
+    "/api/v1/study-plan/sessions": {
+      "post": {
+        "operationId": "StudyPlanController_createSession",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adiciona um bloco livre em um dia do calendário (issue #46)",
+        "tags": [
+          "study-plan"
+        ]
+      }
+    },
+    "/api/v1/study-plan/sessions/{id}": {
+      "patch": {
+        "operationId": "StudyPlanController_updateSession",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edita nome, duração, dia ou conclusão de um bloco",
+        "tags": [
+          "study-plan"
+        ]
+      },
+      "delete": {
+        "operationId": "StudyPlanController_removeSession",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove um bloco do calendário",
+        "tags": [
+          "study-plan"
+        ]
+      }
+    },
+    "/api/v1/essays/prompts": {
+      "get": {
+        "operationId": "EssaysController_listPrompts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista os temas de redação disponíveis",
+        "tags": [
+          "essays"
+        ]
+      }
+    },
+    "/api/v1/essays/prompts/{id}": {
+      "get": {
+        "operationId": "EssaysController_getPrompt",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalha um tema de redação",
+        "tags": [
+          "essays"
+        ]
+      }
+    },
+    "/api/v1/essays/submissions": {
+      "post": {
+        "operationId": "EssaysController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubmissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Envia uma redação para um tema",
+        "tags": [
+          "essays"
+        ]
+      },
+      "get": {
+        "operationId": "EssaysController_listSubmissions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista as redações enviadas pelo usuário",
+        "tags": [
+          "essays"
+        ]
+      }
+    },
+    "/api/v1/essays/submissions/{id}": {
+      "get": {
+        "operationId": "EssaysController_getSubmission",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalha uma redação (com a avaliação, se houver)",
+        "tags": [
+          "essays"
+        ]
+      }
+    },
+    "/api/v1/essays/submissions/{id}/evaluation": {
+      "post": {
+        "operationId": "EssaysController_evaluate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateEssayDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Corrige a redação por competência (rubrica manual)",
+        "tags": [
+          "essays"
+        ]
+      }
+    },
+    "/api/v1/recommendation/next": {
+      "get": {
+        "operationId": "RecommendationController_next",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Questões recomendadas a partir dos assuntos com mais erros",
+        "tags": [
+          "recommendation"
+        ]
+      }
+    },
+    "/api/v1/community/threads": {
+      "get": {
+        "operationId": "CommunityController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista os tópicos do fórum (mais recentes primeiro)",
+        "tags": [
+          "community"
+        ]
+      },
+      "post": {
+        "operationId": "CommunityController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cria um tópico no fórum",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/community/threads/{id}": {
+      "get": {
+        "operationId": "CommunityController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalha um tópico com a primeira página de respostas",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/community/threads/{id}/posts": {
+      "post": {
+        "operationId": "CommunityController_reply",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Responde a um tópico",
+        "tags": [
+          "community"
+        ]
+      },
+      "get": {
+        "operationId": "CommunityController_listPosts",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Valor de `nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Próxima página de respostas de um tópico (cursor)",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/community/threads/{id}/posts/{postId}/like": {
+      "post": {
+        "operationId": "CommunityController_toggleLike",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Curtir/descurtir uma resposta do fórum (toggle)",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/weekly-goals": {
+      "get": {
+        "operationId": "WeeklyGoalsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Metas da semana corrente com o progresso calculado (issue #44)",
+        "tags": [
+          "weekly-goals"
+        ]
+      },
+      "post": {
+        "operationId": "WeeklyGoalsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWeeklyGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cria uma meta para a semana corrente",
+        "tags": [
+          "weekly-goals"
+        ]
+      }
+    },
+    "/api/v1/weekly-goals/{id}": {
+      "patch": {
+        "operationId": "WeeklyGoalsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWeeklyGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atualiza os alvos de uma meta própria",
+        "tags": [
+          "weekly-goals"
+        ]
+      },
+      "delete": {
+        "operationId": "WeeklyGoalsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove uma meta própria",
+        "tags": [
+          "weekly-goals"
+        ]
+      }
+    },
+    "/api/v1/formulas": {
+      "get": {
+        "operationId": "FormulasController_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Busca por texto (título/descrição/LaTeX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "required": false,
+            "in": "query",
+            "description": "Filtra por matéria",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topicId",
+            "required": false,
+            "in": "query",
+            "description": "Filtra por assunto (tópico)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyFavorites",
+            "required": false,
+            "in": "query",
+            "description": "Apenas favoritas do usuário",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cheat sheet de fórmulas com busca por texto, filtro por matéria/assunto e favoritas (issue #38)",
+        "tags": [
+          "formulas"
+        ]
+      },
+      "post": {
+        "operationId": "FormulasController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFormulaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cria uma fórmula personalizada",
+        "tags": [
+          "formulas"
+        ]
+      }
+    },
+    "/api/v1/formulas/pdf": {
+      "post": {
+        "operationId": "FormulasController_pdf",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormulasPdfDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Caderno de fórmulas em PDF: capa, sumário, fórmulas desenhadas do LaTeX e legenda",
+        "tags": [
+          "formulas"
+        ]
+      }
+    },
+    "/api/v1/formulas/{id}": {
+      "get": {
+        "operationId": "FormulasController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalhe de uma fórmula com estado de favorito",
+        "tags": [
+          "formulas"
+        ]
+      }
+    },
+    "/api/v1/formulas/{id}/favorite": {
+      "post": {
+        "operationId": "FormulasController_toggleFavorite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Favorita/desfavorita uma fórmula (toggle)",
+        "tags": [
+          "formulas"
+        ]
+      }
+    },
+    "/api/v1/pomodoro/sessions": {
+      "post": {
+        "operationId": "PomodoroController_complete",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteFocusSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registra uma sessão de foco concluída com XP proporcional (issue #41)",
+        "tags": [
+          "pomodoro"
+        ]
+      }
+    },
+    "/api/v1/pomodoro/history": {
+      "get": {
+        "operationId": "PomodoroController_history",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Histórico de sessões dos últimos N dias",
+        "tags": [
+          "pomodoro"
+        ]
+      }
+    },
+    "/api/v1/pomodoro/by-subject": {
+      "get": {
+        "operationId": "PomodoroController_bySubject",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Minutos de foco por matéria nos últimos N dias",
+        "tags": [
+          "pomodoro"
+        ]
+      }
+    },
+    "/api/v1/pomodoro/today": {
+      "get": {
+        "operationId": "PomodoroController_today",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Minutos de foco de hoje (widget do Pomodoro)",
+        "tags": [
+          "pomodoro"
+        ]
+      }
+    },
+    "/api/v1/videos": {
+      "get": {
+        "operationId": "VideosController_list",
+        "parameters": [
+          {
+            "name": "subjectId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Biblioteca de vídeos do usuário (issue #37)",
+        "tags": [
+          "videos"
+        ]
+      },
+      "post": {
+        "operationId": "VideosController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Salva um vídeo por link do YouTube (metadados via oEmbed)",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/{id}": {
+      "patch": {
+        "operationId": "VideosController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVideoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Re-classifica a matéria (ou limpa com null)",
+        "tags": [
+          "videos"
+        ]
+      },
+      "delete": {
+        "operationId": "VideosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove o vídeo e suas notas",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/{id}/watched": {
+      "post": {
+        "operationId": "VideosController_toggleWatched",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Marca/desmarca como assistido (toggle)",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/{id}/notes": {
+      "get": {
+        "operationId": "VideosController_listNotes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Notas do vídeo com timestamp",
+        "tags": [
+          "videos"
+        ]
+      },
+      "post": {
+        "operationId": "VideosController_addNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddVideoNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adiciona uma nota com timestamp",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/notes/{noteId}": {
+      "delete": {
+        "operationId": "VideosController_removeNote",
+        "parameters": [
+          {
+            "name": "noteId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove uma nota própria",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/themes/mine": {
+      "get": {
+        "operationId": "ThemesController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Temas de cores criados pelo aluno",
+        "tags": [
+          "themes"
+        ]
+      }
+    },
+    "/api/v1/themes/community": {
+      "get": {
+        "operationId": "ThemesController_community",
+        "parameters": [
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "popular",
+              "type": "string",
+              "enum": [
+                "popular",
+                "recent"
+              ]
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 30,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Temas publicados pela comunidade (populares ou recentes)",
+        "tags": [
+          "themes"
+        ]
+      }
+    },
+    "/api/v1/themes": {
+      "post": {
+        "operationId": "ThemesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThemeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cria um tema (nasce privado se isPublic não vier)",
+        "tags": [
+          "themes"
+        ]
+      }
+    },
+    "/api/v1/themes/{id}": {
+      "patch": {
+        "operationId": "ThemesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateThemeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edita, publica ou despublica um tema próprio",
+        "tags": [
+          "themes"
+        ]
+      },
+      "delete": {
+        "operationId": "ThemesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Apaga um tema próprio",
+        "tags": [
+          "themes"
+        ]
+      }
+    },
+    "/api/v1/themes/{id}/like": {
+      "post": {
+        "operationId": "ThemesController_toggleLike",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Curtir/descurtir um tema publicado (toggle)",
+        "tags": [
+          "themes"
+        ]
+      }
+    },
+    "/api/v1/tools": {
+      "get": {
+        "operationId": "ToolsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ferramentas abertas no GitHub, com a contagem de estrelas (cache de 1 hora)",
+        "tags": [
+          "tools"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "OpENEM - API de Estudos",
+    "description": "Documentação da API da plataforma OpENEM, abrangendo ferramentas de estudo, gestão de conteúdos, simulados, métricas de desempenho, etc.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "estudante@exemplo.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "senhaForte123",
+            "minLength": 8
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Maria"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "estudante@exemplo.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "senhaForte123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "goal": {
+            "type": "string",
+            "enum": [
+              "SISU",
+              "PROUNI",
+              "TREINEIRO"
+            ]
+          },
+          "minutesPerDay": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 1440,
+            "description": "Minutos disponíveis para estudo por dia"
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "focusMode": {
+            "type": "boolean",
+            "description": "Modo sem distrações (interface minimalista)"
+          },
+          "gamificationEnabled": {
+            "type": "boolean",
+            "description": "Ativa pontos, sequência e conquistas (Fase 3)"
+          },
+          "onboarded": {
+            "type": "boolean",
+            "description": "Marcado como true ao concluir o onboarding inicial"
+          },
+          "foreignLanguage": {
+            "type": "string",
+            "enum": [
+              "ingles",
+              "espanhol"
+            ],
+            "description": "Língua estrangeira da prova: define qual versão das questões 1–5 (ou 91–95) aparece nas questões e nos simulados oficiais"
+          }
+        }
+      },
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertQuestionNoteDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "description": "Questão associada à nota"
+          },
+          "content": {
+            "type": "string",
+            "description": "Conteúdo da nota (Markdown)"
+          }
+        },
+        "required": [
+          "questionId",
+          "content"
+        ]
+      },
+      "CreateAnswerDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "chosenId": {
+            "type": "string",
+            "description": "Alternativa escolhida (ausente = em branco)"
+          },
+          "timeSpentSec": {
+            "type": "number",
+            "description": "Tempo gasto na questão, em segundos"
+          },
+          "simulationId": {
+            "type": "string",
+            "description": "Vincula a tentativa a um simulado"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "GradeReviewDto": {
+        "type": "object",
+        "properties": {
+          "quality": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Qualidade da lembrança (0 = esqueceu, 5 = perfeito)"
+          }
+        },
+        "required": [
+          "quality"
+        ]
+      },
+      "CreateTemplateDto": {
+        "type": "object",
+        "properties": {
+          "subjectAreaIds": {
+            "description": "Áreas do conhecimento. É o filtro que alcança as questões oficiais ainda não classificadas em matéria.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectIds": {
+            "description": "Matérias",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topicIds": {
+            "description": "Assuntos (temas)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "examSlugs": {
+            "description": "Provas: \"2023\", \"2023-reaplicacao\"",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectAreaId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "subjectId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "topicId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "yearFrom": {
+            "type": "number",
+            "description": "Ano mínimo da prova"
+          },
+          "yearTo": {
+            "type": "number",
+            "description": "Ano máximo da prova"
+          },
+          "difficulty": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ingles",
+              "espanhol"
+            ],
+            "description": "Idioma da língua estrangeira. Omitido, usa o do perfil do aluno."
+          },
+          "questionCount": {
+            "type": "number",
+            "minimum": 3,
+            "maximum": 180
+          },
+          "timeLimitMin": {
+            "type": "number",
+            "description": "Tempo do simulado, em minutos"
+          },
+          "pareto": {
+            "type": "boolean",
+            "description": "Sorteio ponderado pela incidência no ENEM (Pareto)"
+          },
+          "unseenOnly": {
+            "type": "boolean",
+            "description": "Só questões nunca respondidas"
+          },
+          "onlyFavorites": {
+            "type": "boolean",
+            "description": "Só questões favoritadas"
+          },
+          "wrongOnly": {
+            "type": "boolean",
+            "description": "Só questões que o aluno errou antes"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "SimulationFiltersDto": {
+        "type": "object",
+        "properties": {
+          "subjectAreaIds": {
+            "description": "Áreas do conhecimento. É o filtro que alcança as questões oficiais ainda não classificadas em matéria.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectIds": {
+            "description": "Matérias",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topicIds": {
+            "description": "Assuntos (temas)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "examSlugs": {
+            "description": "Provas: \"2023\", \"2023-reaplicacao\"",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectAreaId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "subjectId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "topicId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "yearFrom": {
+            "type": "number",
+            "description": "Ano mínimo da prova"
+          },
+          "yearTo": {
+            "type": "number",
+            "description": "Ano máximo da prova"
+          },
+          "difficulty": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ingles",
+              "espanhol"
+            ],
+            "description": "Idioma da língua estrangeira. Omitido, usa o do perfil do aluno."
+          },
+          "questionCount": {
+            "type": "number",
+            "minimum": 3,
+            "maximum": 180
+          },
+          "timeLimitMin": {
+            "type": "number",
+            "description": "Tempo do simulado, em minutos"
+          },
+          "pareto": {
+            "type": "boolean",
+            "description": "Sorteio ponderado pela incidência no ENEM (Pareto)"
+          },
+          "unseenOnly": {
+            "type": "boolean",
+            "description": "Só questões nunca respondidas"
+          },
+          "onlyFavorites": {
+            "type": "boolean",
+            "description": "Só questões favoritadas"
+          },
+          "wrongOnly": {
+            "type": "boolean",
+            "description": "Só questões que o aluno errou antes"
+          }
+        }
+      },
+      "StartSimulationDto": {
+        "type": "object",
+        "properties": {
+          "subjectAreaIds": {
+            "description": "Áreas do conhecimento. É o filtro que alcança as questões oficiais ainda não classificadas em matéria.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectIds": {
+            "description": "Matérias",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topicIds": {
+            "description": "Assuntos (temas)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "examSlugs": {
+            "description": "Provas: \"2023\", \"2023-reaplicacao\"",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectAreaId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "subjectId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "topicId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "yearFrom": {
+            "type": "number",
+            "description": "Ano mínimo da prova"
+          },
+          "yearTo": {
+            "type": "number",
+            "description": "Ano máximo da prova"
+          },
+          "difficulty": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ingles",
+              "espanhol"
+            ],
+            "description": "Idioma da língua estrangeira. Omitido, usa o do perfil do aluno."
+          },
+          "questionCount": {
+            "type": "number",
+            "minimum": 3,
+            "maximum": 180
+          },
+          "timeLimitMin": {
+            "type": "number",
+            "description": "Tempo do simulado, em minutos"
+          },
+          "pareto": {
+            "type": "boolean",
+            "description": "Sorteio ponderado pela incidência no ENEM (Pareto)"
+          },
+          "unseenOnly": {
+            "type": "boolean",
+            "description": "Só questões nunca respondidas"
+          },
+          "onlyFavorites": {
+            "type": "boolean",
+            "description": "Só questões favoritadas"
+          },
+          "wrongOnly": {
+            "type": "boolean",
+            "description": "Só questões que o aluno errou antes"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "Template do simulado (prova oficial, por área ou personalizado salvo). Sem ele, o simulado é montado só com os filtros."
+          },
+          "saveAs": {
+            "type": "string",
+            "description": "Salva este recorte como um simulado personalizado com o nome dado"
+          }
+        }
+      },
+      "SimulationPdfDto": {
+        "type": "object",
+        "properties": {
+          "subjectAreaIds": {
+            "description": "Áreas do conhecimento. É o filtro que alcança as questões oficiais ainda não classificadas em matéria.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectIds": {
+            "description": "Matérias",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topicIds": {
+            "description": "Assuntos (temas)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "examSlugs": {
+            "description": "Provas: \"2023\", \"2023-reaplicacao\"",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectAreaId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "subjectId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "topicId": {
+            "type": "string",
+            "deprecated": true
+          },
+          "yearFrom": {
+            "type": "number",
+            "description": "Ano mínimo da prova"
+          },
+          "yearTo": {
+            "type": "number",
+            "description": "Ano máximo da prova"
+          },
+          "difficulty": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ingles",
+              "espanhol"
+            ],
+            "description": "Idioma da língua estrangeira. Omitido, usa o do perfil do aluno."
+          },
+          "questionCount": {
+            "type": "number",
+            "minimum": 3,
+            "maximum": 180
+          },
+          "timeLimitMin": {
+            "type": "number",
+            "description": "Tempo do simulado, em minutos"
+          },
+          "pareto": {
+            "type": "boolean",
+            "description": "Sorteio ponderado pela incidência no ENEM (Pareto)"
+          },
+          "unseenOnly": {
+            "type": "boolean",
+            "description": "Só questões nunca respondidas"
+          },
+          "onlyFavorites": {
+            "type": "boolean",
+            "description": "Só questões favoritadas"
+          },
+          "wrongOnly": {
+            "type": "boolean",
+            "description": "Só questões que o aluno errou antes"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "Gera o PDF de um template (prova oficial ou salvo)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título impresso na capa"
+          },
+          "studentName": {
+            "type": "string",
+            "description": "Nome do aluno na capa"
+          },
+          "theme": {
+            "type": "string",
+            "description": "Tema de cor do caderno (mesmos temas do app)"
+          },
+          "brandColor": {
+            "type": "string",
+            "description": "Cor da marca em hexadecimal, para o tema personalizado",
+            "example": "#2563eb"
+          },
+          "cover": {
+            "type": "boolean",
+            "default": true
+          },
+          "answerSheet": {
+            "type": "boolean",
+            "default": true
+          },
+          "answerKey": {
+            "type": "boolean",
+            "default": true
+          },
+          "explanations": {
+            "type": "boolean",
+            "default": false,
+            "description": "Inclui os comentários das questões que têm resolução"
+          },
+          "twoColumns": {
+            "type": "boolean",
+            "default": true,
+            "description": "Duas colunas, como o caderno oficial"
+          }
+        }
+      },
+      "SimulationAnswerDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "chosenId": {
+            "type": "string",
+            "description": "Alternativa escolhida (ausente = em branco)"
+          },
+          "timeSpentSec": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "FinishSimulationDto": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulationAnswerDto"
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "CreateFavoriteDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "description": "Questão a favoritar"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "CreateDeckDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título do deck"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição do deck"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Matéria/área do knowledge (ex: \"Matemática e suas Tecnologias\")"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Tópico dentro da matéria (opcional)"
+          },
+          "subtheme": {
+            "type": "string",
+            "description": "Subtema dentro do tópico (opcional)"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Nome do ícone do deck (chave semântica, não emoji)",
+            "default": "books"
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "Deck público (visível para todos)",
+            "default": false
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "subject",
+          "isPublic"
+        ]
+      },
+      "VoteDeckDto": {
+        "type": "object",
+        "properties": {
+          "vote": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "description": "Voto: up ou down"
+          }
+        },
+        "required": [
+          "vote"
+        ]
+      },
+      "UpdateDeckDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título do deck"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição do deck"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Matéria/área do knowledge"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Tópico dentro da matéria"
+          },
+          "subtheme": {
+            "type": "string",
+            "description": "Subtema dentro do tópico"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Ícone do deck (emoji)"
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "Deck público"
+          }
+        }
+      },
+      "CreateFlashcardDto": {
+        "type": "object",
+        "properties": {
+          "front": {
+            "type": "string",
+            "description": "Frente do card (Markdown — pergunta)"
+          },
+          "back": {
+            "type": "string",
+            "description": "Verso do card (Markdown — resposta)"
+          }
+        },
+        "required": [
+          "front",
+          "back"
+        ]
+      },
+      "ReviewFlashcardDto": {
+        "type": "object",
+        "properties": {
+          "quality": {
+            "type": "number",
+            "description": "Qualidade da lembrança (0-5)",
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "quality"
+        ]
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Nome do bloco — \"Matemática\", \"Inglês\", \"Revisar simulado\""
+          },
+          "dayIndex": {
+            "type": "number",
+            "description": "Dia do plano (0 = primeiro dia)"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "Duração em minutos (padrão 45)"
+          }
+        },
+        "required": [
+          "label",
+          "dayIndex"
+        ]
+      },
+      "UpdateSessionDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Nome livre do bloco"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "Duração do bloco em minutos"
+          },
+          "dayIndex": {
+            "type": "number",
+            "description": "Dia do plano (0 = primeiro dia)"
+          },
+          "done": {
+            "type": "boolean",
+            "description": "Marca a sessão como concluída ou não"
+          }
+        }
+      },
+      "CreateSubmissionDto": {
+        "type": "object",
+        "properties": {
+          "promptId": {
+            "type": "string",
+            "description": "Tema (EssayPrompt) escolhido"
+          },
+          "content": {
+            "type": "string",
+            "description": "Texto da redação",
+            "maxLength": 8000
+          }
+        },
+        "required": [
+          "promptId",
+          "content"
+        ]
+      },
+      "EvaluateEssayDto": {
+        "type": "object",
+        "properties": {
+          "c1": {
+            "type": "number",
+            "enum": [
+              0,
+              40,
+              80,
+              120,
+              160,
+              200
+            ],
+            "description": "Competência 1 (0..200, múltiplos de 40)"
+          },
+          "c2": {
+            "type": "number",
+            "enum": [
+              0,
+              40,
+              80,
+              120,
+              160,
+              200
+            ],
+            "description": "Competência 2 (0..200, múltiplos de 40)"
+          },
+          "c3": {
+            "type": "number",
+            "enum": [
+              0,
+              40,
+              80,
+              120,
+              160,
+              200
+            ],
+            "description": "Competência 3 (0..200, múltiplos de 40)"
+          },
+          "c4": {
+            "type": "number",
+            "enum": [
+              0,
+              40,
+              80,
+              120,
+              160,
+              200
+            ],
+            "description": "Competência 4 (0..200, múltiplos de 40)"
+          },
+          "c5": {
+            "type": "number",
+            "enum": [
+              0,
+              40,
+              80,
+              120,
+              160,
+              200
+            ],
+            "description": "Competência 5 (0..200, múltiplos de 40)"
+          },
+          "feedback": {
+            "type": "string",
+            "description": "Comentário geral do corretor"
+          }
+        },
+        "required": [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5"
+        ]
+      },
+      "CreateThreadDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 140
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "questionId": {
+            "type": "string",
+            "description": "Questão relacionada (opcional)"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ]
+      },
+      "CreatePostDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "CreateWeeklyGoalDto": {
+        "type": "object",
+        "properties": {
+          "subjectAreaId": {
+            "type": "string",
+            "description": "Escopo: área do conhecimento"
+          },
+          "subjectId": {
+            "type": "string",
+            "description": "Escopo: matéria"
+          },
+          "topicId": {
+            "type": "string",
+            "description": "Escopo: assunto (tópico)"
+          },
+          "targetMinutes": {
+            "type": "number",
+            "description": "Meta de tempo na semana, em minutos (0 = sem meta de tempo)",
+            "minimum": 0
+          },
+          "targetQuestions": {
+            "type": "number",
+            "description": "Meta de questões na semana (0 = sem meta de questões)",
+            "minimum": 0
+          }
+        }
+      },
+      "UpdateWeeklyGoalDto": {
+        "type": "object",
+        "properties": {
+          "targetMinutes": {
+            "type": "number",
+            "description": "Nova meta de tempo na semana, em minutos",
+            "minimum": 0
+          },
+          "targetQuestions": {
+            "type": "number",
+            "description": "Nova meta de questões na semana",
+            "minimum": 0
+          }
+        }
+      },
+      "FormulasPdfDto": {
+        "type": "object",
+        "properties": {
+          "formulaIds": {
+            "description": "Fórmulas escolhidas",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjectIds": {
+            "description": "Matérias",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topicIds": {
+            "description": "Assuntos",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "onlyFavorites": {
+            "type": "boolean",
+            "description": "Só as fórmulas favoritas do aluno"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título na capa e no cabeçalho"
+          },
+          "studentName": {
+            "type": "string",
+            "description": "Nome do aluno na capa"
+          },
+          "theme": {
+            "type": "string",
+            "description": "Tema de cor (mesmos temas do app)"
+          },
+          "brandColor": {
+            "type": "string",
+            "example": "#2563eb"
+          },
+          "cover": {
+            "type": "boolean",
+            "default": true
+          },
+          "toc": {
+            "type": "boolean",
+            "default": true,
+            "description": "Sumário por assunto"
+          },
+          "legend": {
+            "type": "boolean",
+            "default": true,
+            "description": "Legenda dos símbolos"
+          },
+          "descriptions": {
+            "type": "boolean",
+            "default": true,
+            "description": "Explicação curta"
+          },
+          "twoColumns": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "CreateFormulaDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Nome da fórmula"
+          },
+          "latex": {
+            "type": "string",
+            "description": "Expressão em LaTeX"
+          },
+          "description": {
+            "type": "string",
+            "description": "Contexto/observação"
+          },
+          "subjectId": {
+            "type": "string",
+            "description": "Matéria da fórmula"
+          },
+          "topicId": {
+            "type": "string",
+            "description": "Assunto (tópico) relacionado"
+          }
+        },
+        "required": [
+          "title",
+          "latex",
+          "subjectId"
+        ]
+      },
+      "CompleteFocusSessionDto": {
+        "type": "object",
+        "properties": {
+          "durationSec": {
+            "type": "number",
+            "description": "Duração da sessão em segundos (30s a 4h)",
+            "minimum": 30,
+            "maximum": 14400
+          },
+          "startedAt": {
+            "type": "string",
+            "description": "Momento em que a sessão começou (ISO 8601)"
+          },
+          "subjectId": {
+            "type": "string",
+            "description": "Matéria estudada na sessão"
+          }
+        },
+        "required": [
+          "durationSec",
+          "startedAt"
+        ]
+      },
+      "CreateVideoDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Link do YouTube (ou ID do vídeo)"
+          },
+          "subjectId": {
+            "type": "string",
+            "description": "Matéria do vídeo"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "UpdateVideoDto": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "object",
+            "description": "Nova matéria (null para limpar)"
+          }
+        }
+      },
+      "AddVideoNoteDto": {
+        "type": "object",
+        "properties": {
+          "timestampSec": {
+            "type": "number",
+            "description": "Instante da nota, em segundos",
+            "minimum": 0
+          },
+          "content": {
+            "type": "string",
+            "description": "Conteúdo da nota"
+          }
+        },
+        "required": [
+          "timestampSec",
+          "content"
+        ]
+      },
+      "CreateThemeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do tema (único por aluno)",
+            "example": "Mar"
+          },
+          "light": {
+            "type": "object",
+            "description": "Lado claro: as 10 cores em #rrggbb",
+            "example": {
+              "bg": "#d91748",
+              "sidebar": "#d91748",
+              "surface": "#d91748",
+              "surface-2": "#d91748",
+              "fg": "#d91748",
+              "muted": "#d91748",
+              "line": "#d91748",
+              "brand": "#d91748",
+              "brand-2": "#d91748",
+              "brand-ink": "#d91748"
+            }
+          },
+          "dark": {
+            "type": "object",
+            "description": "Lado escuro: as 10 cores em #rrggbb",
+            "example": {
+              "bg": "#d91748",
+              "sidebar": "#d91748",
+              "surface": "#d91748",
+              "surface-2": "#d91748",
+              "fg": "#d91748",
+              "muted": "#d91748",
+              "line": "#d91748",
+              "brand": "#d91748",
+              "brand-2": "#d91748",
+              "brand-ink": "#d91748"
+            }
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "Publica na aba Comunidade (nasce privado)",
+            "default": false
+          }
+        },
+        "required": [
+          "name",
+          "light",
+          "dark"
+        ]
+      },
+      "UpdateThemeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do tema (único por aluno)",
+            "example": "Mar"
+          },
+          "light": {
+            "type": "object",
+            "description": "Lado claro: as 10 cores em #rrggbb",
+            "example": {
+              "bg": "#d91748",
+              "sidebar": "#d91748",
+              "surface": "#d91748",
+              "surface-2": "#d91748",
+              "fg": "#d91748",
+              "muted": "#d91748",
+              "line": "#d91748",
+              "brand": "#d91748",
+              "brand-2": "#d91748",
+              "brand-ink": "#d91748"
+            }
+          },
+          "dark": {
+            "type": "object",
+            "description": "Lado escuro: as 10 cores em #rrggbb",
+            "example": {
+              "bg": "#d91748",
+              "sidebar": "#d91748",
+              "surface": "#d91748",
+              "surface-2": "#d91748",
+              "fg": "#d91748",
+              "muted": "#d91748",
+              "line": "#d91748",
+              "brand": "#d91748",
+              "brand-2": "#d91748",
+              "brand-ink": "#d91748"
+            }
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "Publica na aba Comunidade (nasce privado)",
+            "default": false
+          }
+        }
+      }
+    }
+  }
+}

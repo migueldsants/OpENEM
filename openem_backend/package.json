@@ -29,7 +29,8 @@
     "db:import:enem": "ts-node prisma/import-enem.ts",
     "db:classify": "ts-node prisma/classify-questions.ts",
     "db:classify:keywords": "ts-node prisma/classify-heuristic.ts",
-    "db:classify:catalog": "ts-node prisma/classify-catalog.ts"
+    "db:classify:catalog": "ts-node prisma/classify-catalog.ts",
+    "openapi": "ts-node --transpile-only scripts/gerar-openapi.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

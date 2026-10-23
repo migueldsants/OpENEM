@@ -5,7 +5,7 @@ descricao: HTTPS na frente do OpENEM, TRUST_PROXY, cabeçalhos de segurança, ra
 
 ## Caminho de uma requisição
 
-O aluno acessa o nginx do container `frontend` (porta 8080). Ele serve o app e repassa `/api/`, `/health` e `/media/` para a API na porta 3000, acrescentando o IP do aluno ao cabeçalho `X-Forwarded-For`. A API fala com o PostgreSQL pela rede interna do compose.
+O aluno acessa o nginx do container `frontend` (porta 8080). Ele serve o site na raiz (a página do projeto e a documentação em `/docs/`) e o app em `/app/`, e repassa `/api/`, `/health` e `/media/` para a API na porta 3000, acrescentando o IP do aluno ao cabeçalho `X-Forwarded-For`. A API fala com o PostgreSQL e com o Redis pela rede interna do compose.
 
 ## HTTPS na frente
 
@@ -44,7 +44,7 @@ Com `TRUST_PROXY` ligado, quem chegasse na API sem passar pelo nginx poderia esc
 
 ## Cabeçalhos de segurança
 
-O app recebe os cabeçalhos do `location /` do [nginx.conf](https://github.com/migueldsants/OpENEM/blob/main/openem_frontend/nginx.conf): uma Content-Security-Policy que só aceita script da própria origem, sem `'unsafe-inline'`, mais `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` e `Permissions-Policy`. As exceções da CSP são o que o app usa de fora: Google Fonts, o player do YouTube sem cookies e imagens `https` nos flashcards. A API recebe os cabeçalhos do helmet.
+O app recebe os cabeçalhos do `location /app/` do [nginx.conf](https://github.com/migueldsants/OpENEM/blob/main/openem_frontend/nginx.conf): uma Content-Security-Policy que só aceita script da própria origem, sem `'unsafe-inline'`, mais `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` e `Permissions-Policy`. As exceções da CSP são o que o app usa de fora: Google Fonts, o player do YouTube sem cookies e imagens `https` nos flashcards. O site (`location /`) tem uma CSP mais fechada, sem nenhuma origem de fora. A API recebe os cabeçalhos do helmet. O HTML sai com `Cache-Control: no-cache`, para o navegador nunca reabrir uma página que aponta para arquivos que um deploy já trocou.
 
 Se o seu proxy HTTPS reescrever cabeçalhos, preserve esses. Quem mudar o app para usar uma origem externa nova precisa liberá-la no `nginx.conf`; o teste `src/nginx-csp.test.ts` do frontend quebra quando os dois se desencontram.
 

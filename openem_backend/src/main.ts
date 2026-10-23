@@ -1,11 +1,12 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { RequestMethod, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { API_PREFIX, API_PREFIX_EXCLUDE, openApiConfig } from './openapi';
 import { parseTrustProxy } from './common/trust-proxy';
 
 async function bootstrap() {
@@ -77,26 +78,12 @@ async function bootstrap() {
   );
 
   // Endpoints de domínio sob /api/v1; raiz e /health ficam fora do prefixo.
-  app.setGlobalPrefix('api/v1', {
-    exclude: [
-      { path: '', method: RequestMethod.GET },
-      { path: 'health', method: RequestMethod.GET },
-    ],
-  });
+  app.setGlobalPrefix(API_PREFIX, { exclude: API_PREFIX_EXCLUDE });
 
   // Swagger apenas fora de produção (issue #49).
   if (process.env.NODE_ENV !== 'production') {
-    const config = new DocumentBuilder()
-      .setTitle('OpENEM - API de Estudos')
-      .setDescription(
-        'Documentação da API da plataforma OpENEM, abrangendo ferramentas de estudo, ' +
-          'gestão de conteúdos, simulados, métricas de desempenho, etc.',
-      )
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build();
-
-    const documentFactory = () => SwaggerModule.createDocument(app, config);
+    const documentFactory = () =>
+      SwaggerModule.createDocument(app, openApiConfig());
     SwaggerModule.setup('api', app, documentFactory);
   }
 

@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   ancora,
   buscar,
+  espelhoEmIngles,
   lerCabecalho,
   lerCaminho,
   montarPaginas,
   PAGINAS,
+  PAGINAS_EN,
   titulosDaPagina,
 } from './conteudo';
 
@@ -39,9 +41,16 @@ describe('cabeçalho e caminho', () => {
 
   it('extrai grupo, ordem e slug do caminho', () => {
     expect(lerCaminho('./conteudo/alunos/03-simulados.md')).toEqual({
+      idioma: 'pt',
       grupo: 'alunos',
       ordem: 3,
       slug: 'simulados',
+    });
+    expect(lerCaminho('./conteudo/en/hospedar/01-instalacao.md')).toEqual({
+      idioma: 'en',
+      grupo: 'hospedar',
+      ordem: 1,
+      slug: 'instalacao',
     });
     expect(lerCaminho('./conteudo/outro/01-x.md')).toBeNull();
   });
@@ -89,9 +98,46 @@ describe('busca', () => {
   });
 });
 
+describe('espelho em inglês', () => {
+  const pt = montarPaginas({
+    './conteudo/hospedar/01-a.md': '---\ntitulo: A\ndescricao: a\n---\nTexto A.',
+    './conteudo/hospedar/02-b.md': '---\ntitulo: B\ndescricao: b\n---\nTexto B.',
+  });
+  const en = montarPaginas({
+    './conteudo/en/hospedar/01-a.md': '---\ntitulo: A (en)\ndescricao: a\n---\nText A.',
+  });
+  const espelho = espelhoEmIngles(pt, en);
+
+  it('a página traduzida vem do arquivo em inglês, em /docs/en/', () => {
+    expect(espelho[0]).toMatchObject({
+      idioma: 'en',
+      traduzida: true,
+      titulo: 'A (en)',
+      url: '/docs/en/hospedar/a/',
+      arquivo: 'openem_site/src/docs/conteudo/en/hospedar/01-a.md',
+    });
+  });
+
+  it('a sem tradução repete o português no endereço inglês, marcada', () => {
+    expect(espelho[1]).toMatchObject({
+      idioma: 'en',
+      traduzida: false,
+      titulo: 'B',
+      corpo: 'Texto B.',
+      url: '/docs/en/hospedar/b/',
+    });
+  });
+
+  it('as duas listas têm as mesmas páginas, na mesma ordem', () => {
+    expect(PAGINAS_EN.map((p) => `${p.grupo}/${p.slug}`)).toEqual(
+      PAGINAS.map((p) => `${p.grupo}/${p.slug}`),
+    );
+  });
+});
+
 describe('conteúdo publicado', () => {
   it('toda página tem título, descrição e nenhum travessão', () => {
-    for (const p of PAGINAS) {
+    for (const p of [...PAGINAS, ...PAGINAS_EN]) {
       expect(p.titulo, p.arquivo).not.toBe('');
       expect(p.descricao, p.arquivo).not.toBe('');
       expect(p.corpo, p.arquivo).not.toMatch(/[—–]/);
@@ -99,9 +145,23 @@ describe('conteúdo publicado', () => {
     }
   });
 
+  it('hospedar e contribuir estão traduzidas para o inglês', () => {
+    for (const p of PAGINAS_EN.filter((x) => x.grupo !== 'alunos' && x.slug !== 'api')) {
+      expect(p.traduzida, p.url).toBe(true);
+    }
+  });
+
+  it('a página traduzida só aponta para a documentação em inglês', () => {
+    for (const p of PAGINAS_EN.filter((x) => x.traduzida)) {
+      for (const m of p.corpo.matchAll(/\]\((\/docs\/[^)#\s]*)/g)) {
+        expect(m[1].startsWith('/docs/en/'), `${p.arquivo} -> ${m[1]}`).toBe(true);
+      }
+    }
+  });
+
   it('links internos apontam para páginas que existem', () => {
-    const urls = new Set(['/docs/', ...PAGINAS.map((p) => p.url)]);
-    for (const p of PAGINAS) {
+    const urls = new Set(['/docs/', '/docs/en/', ...PAGINAS.map((p) => p.url), ...PAGINAS_EN.map((p) => p.url)]);
+    for (const p of [...PAGINAS, ...PAGINAS_EN.filter((x) => x.traduzida)]) {
       for (const m of p.corpo.matchAll(/\]\((\/docs\/[^)#\s]*)/g)) {
         const alvo = m[1].endsWith('/') ? m[1] : `${m[1]}/`;
         expect(urls.has(alvo), `${p.arquivo} -> ${m[1]}`).toBe(true);

@@ -14,7 +14,7 @@ descricao: Como o repositório do OpENEM é organizado: a API NestJS, o app Reac
 | `docs/` | O PRD, com as decisões de produto e arquitetura. |
 | `.github/` | CI, modelos de issue e PR e os espelhos em inglês da documentação. |
 
-Cada projeto tem o próprio `package.json`: os comandos `npm` rodam de dentro da pasta dele. O `docker-compose.yml` da raiz junta banco, backend e frontend.
+Cada projeto tem o próprio `package.json`: os comandos `npm` rodam de dentro da pasta dele. O `docker-compose.yml` da raiz junta banco, Redis, backend e frontend. Numa instalação, o site fica na raiz (`/` e `/docs/`) e o app em `/app/`, servidos pelo mesmo nginx.
 
 ## Backend
 
@@ -31,7 +31,7 @@ Cada projeto tem o próprio `package.json`: os comandos `npm` rodam de dentro da
 - **Estudo:** `answers`, `simulations` (simulados, por prova ou por tema, e o caderno em PDF), `review` (revisão espaçada SM-2), `recommendation`, `performance`, `study-plan`, `weekly-goals` e `pomodoro`.
 - **Materiais:** `flashcards`, `formulas` (com o caderno de fórmulas em PDF), `videos` e `tools` (a lista da tela Ferramentas, com as estrelas do GitHub).
 - **Progresso e comunidade:** `gamification` (XP, nível, liga, sequência, conquistas, desafio diário), `community` (fórum) e `themes` (temas de cor dos alunos).
-- **Infraestrutura:** `prisma`, `health` e `ai-usage` (cotas das chamadas pagas de IA).
+- **Infraestrutura:** `prisma`, `health`, `ai-usage` (cotas das chamadas pagas de IA), `cache` (o `CacheService`, sobre o Redis ou a memória) e `rate-limit` (contadores do rate limiting no Redis e o limite de senhas erradas por conta).
 - **`essays`:** envio de redação e correção por rubrica. Continua na API, mas o app não tem tela para ele.
 
 ### Lógica pura em src/common
@@ -75,5 +75,7 @@ O `openem_site/` é um projeto React + Vite separado do app, com a landing em `/
 - **Mesma aparência do app.** O CSS do site importa o `index.css` do app (tokens, temas e componentes), e o build reaproveita `theme-boot.js` e `icon.svg` de `openem_frontend/public/`. Um tema novo no app chega ao site sem cópia de arquivo.
 - **Dados do app.** A landing lê, no build, o catálogo de redações do app para listar os temas por ano.
 - **Páginas da documentação.** São arquivos Markdown em `src/docs/conteudo/<grupo>/NN-slug.md`, com cabeçalho `titulo` e `descricao`; o número só ordena, e a URL é `/docs/<grupo>/<slug>/`. O teste `src/docs/conteudo.test.ts` exige título e descrição, proíbe título de nível 1 e travessão no corpo e confere se os links internos apontam para páginas que existem.
+- **Inglês.** A tradução de uma página fica em `src/docs/conteudo/en/<grupo>/`, com o mesmo nome de arquivo, e sai em `/docs/en/<grupo>/<slug>/`. Página sem tradução aparece em português no endereço inglês, com um aviso. Os grupos de hospedagem e contribuição estão traduzidos; os guias de estudante ficam em português, a língua do ENEM.
+- **Referência da API.** A página [Referência da API](/docs/contribuir/api/) é montada de `src/docs/api/openapi.json`, que o backend gera dos próprios controllers com `npm run openapi` (sem subir servidor nem banco). O CI quebra se o arquivo ficar desatualizado.
 
 Para rodar o site e o resto do projeto na sua máquina, veja [Desenvolvimento](/docs/contribuir/desenvolvimento/).
