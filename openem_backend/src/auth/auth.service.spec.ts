@@ -1,20 +1,28 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { MemoryCacheStore } from '../cache/cache-store';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  LoginAttemptsService,
+  TooManyAttemptsException,
+} from '../rate-limit/login-attempts.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: { user: { findUnique: jest.Mock; create: jest.Mock } };
   let jwt: { signAsync: jest.Mock };
+  let attempts: LoginAttemptsService;
 
   beforeEach(() => {
     prisma = { user: { findUnique: jest.fn(), create: jest.fn() } };
     jwt = { signAsync: jest.fn().mockResolvedValue('signed-token') };
+    attempts = new LoginAttemptsService(new MemoryCacheStore(), 'rl');
     service = new AuthService(
       prisma as unknown as PrismaService,
       jwt as unknown as JwtService,
+      attempts,
     );
   });
 
@@ -78,6 +86,59 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'a@b.com', password: 'senha-errada' }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('a quinta senha errada bloqueia a conta, mesmo com a senha certa depois', async () => {
+      const passwordHash = await argon2.hash('senha-correta');
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        passwordHash,
+      });
+      for (let i = 0; i < 4; i++) {
+        await expect(
+          service.login({ email: 'a@b.com', password: 'errada' }),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+      await expect(
+        service.login({ email: 'a@b.com', password: 'errada' }),
+      ).rejects.toBeInstanceOf(TooManyAttemptsException);
+      await expect(
+        service.login({ email: 'A@B.com ', password: 'senha-correta' }),
+      ).rejects.toBeInstanceOf(TooManyAttemptsException);
+    });
+
+    it('e-mail sem conta bloqueia igual (sem revelar quais existem)', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      for (let i = 0; i < 4; i++) {
+        await expect(
+          service.login({ email: 'x@y.com', password: 'whatever1' }),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+      await expect(
+        service.login({ email: 'x@y.com', password: 'whatever1' }),
+      ).rejects.toBeInstanceOf(TooManyAttemptsException);
+    });
+
+    it('login certo zera as falhas', async () => {
+      const passwordHash = await argon2.hash('senha-correta');
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        passwordHash,
+      });
+      for (let i = 0; i < 4; i++) {
+        await service
+          .login({ email: 'a@b.com', password: 'errada' })
+          .catch(() => undefined);
+      }
+      await service.login({ email: 'a@b.com', password: 'senha-correta' });
+      // Mais quatro erros cabem de novo antes do bloqueio.
+      for (let i = 0; i < 4; i++) {
+        await expect(
+          service.login({ email: 'a@b.com', password: 'errada' }),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
     });
   });
 });

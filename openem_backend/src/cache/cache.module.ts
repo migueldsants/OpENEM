@@ -41,6 +41,6 @@ import { CACHE_STORE, CacheService } from './cache.service';
     },
     CacheService,
   ],
-  exports: [CacheService],
+  exports: [CACHE_STORE, CacheService],
 })
 export class CacheModule {}

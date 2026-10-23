@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { api, HttpError } from '../api';
 import { useAuth } from '../auth';
 import { ErrorBanner } from '../components/ErrorBanner';
 import ThemeToggle from '../components/ThemeToggle';
 import { AREAS, AREA_DOT } from '../lib/areas';
+import { countdown } from '../lib/rate-limit';
 
 type Mode = 'login' | 'register';
 
@@ -38,6 +39,25 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // 429 (muitas tentativas): até quando o botão fica parado, com a contagem.
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const restante =
+    blockedUntil === null ? 0 : Math.ceil((blockedUntil - now) / 1000);
+  const bloqueado = restante > 0;
+
+  useEffect(() => {
+    if (blockedUntil === null) return;
+    const id = window.setInterval(() => {
+      const agora = Date.now();
+      setNow(agora);
+      if (agora >= blockedUntil) {
+        setBlockedUntil(null);
+        setMessage(null);
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [blockedUntil]);
 
   useEffect(() => {
     api
@@ -60,6 +80,11 @@ export default function Login() {
       navigate('/', { replace: true });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Algo deu errado.');
+      if (err instanceof HttpError && err.status === 429) {
+        const agora = Date.now();
+        setNow(agora);
+        setBlockedUntil(agora + (err.retryAfterSec ?? 30) * 1000);
+      }
     } finally {
       setLoading(false);
     }
@@ -164,19 +189,23 @@ export default function Login() {
               </label>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || bloqueado}
                 className="btn btn-primary w-full"
               >
-                {loading
-                  ? 'Um instante…'
-                  : mode === 'login'
-                    ? 'Entrar'
-                    : 'Criar conta'}
+                {bloqueado
+                  ? `Aguarde ${countdown(restante)}`
+                  : loading
+                    ? 'Um instante…'
+                    : mode === 'login'
+                      ? 'Entrar'
+                      : 'Criar conta'}
               </button>
             </form>
 
             {message && (
               <div className="mt-4">
+                {/* A mensagem fica parada: num role="alert", a contagem
+                    seria lida de novo a cada segundo. Ela vai no botão. */}
                 <ErrorBanner message={message} />
               </div>
             )}

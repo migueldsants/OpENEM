@@ -15,7 +15,7 @@ O `nginx.conf` do app não envia `Strict-Transport-Security`. Se quiser HSTS, co
 
 ## TRUST_PROXY
 
-O rate limiting conta por IP. Atrás de um proxy, a API só enxerga o IP do aluno se souber quantos proxies há na frente dela, e é isso que `TRUST_PROXY` informa:
+Sem login (cadastro, login), o rate limiting conta por IP. Atrás de um proxy, a API só enxerga o IP do aluno se souber quantos proxies há na frente dela, e é isso que `TRUST_PROXY` informa:
 
 - **Sem valor:** a API não confia em proxy nenhum. Atrás de um, todo aluno aparece com o IP do proxy e o rate limiting vira um contador único para o site: dez senhas erradas de uma pessoa bloqueiam o login de todos.
 - **Um número N:** a API confia nos N últimos saltos. Com `1`, ela usa o último endereço do `X-Forwarded-For`, o que o nginx acrescentou, e ignora o que o cliente escreveu antes dele.
@@ -50,10 +50,32 @@ Se o seu proxy HTTPS reescrever cabeçalhos, preserve esses. Quem mudar o app pa
 
 ## Rate limiting
 
-- Limite padrão: 100 requisições por minuto, contadas por rota e por IP (`THROTTLE_TTL_MS` e `THROTTLE_LIMIT`).
-- Limites próprios, por minuto e por IP: cadastro 5, login 10, PDF 10, comentário por IA 10, criar tópico ou responder no fórum 10, criar tema 20 e editar tema 30.
-- Quem passa do limite recebe HTTP 429.
-- Os contadores ficam na memória do processo da API: reiniciar o backend zera todos, e com mais de uma instância cada uma conta por conta própria.
+Cada limite é contado por rota. Com login, conta por aluno: uma turma atrás do mesmo IP (escola, cursinho, a rede da operadora) não divide o limite. Sem login, conta por IP.
+
+| Rota | Limite | Por quê |
+| --- | --- | --- |
+| Qualquer rota | 20 por segundo e 100 por minuto | Rajada curta e o limite padrão (`THROTTLE_BURST_*`, `THROTTLE_TTL_MS`, `THROTTLE_LIMIT`). Cobre `POST /answers` e o envio do simulado. |
+| Login | 30 por minuto por IP, e 5 senhas erradas em 15 min por conta | Por IP, folgado para a sala de aula. Por conta, venha de onde vier: a quinta senha errada bloqueia a conta por 15 min, e cada novo bloqueio no mesmo dia dobra o anterior, até 24 h. O login certo zera as falhas. E-mail sem conta bloqueia igual, para o bloqueio não revelar quais existem. |
+| Cadastro | 20 por minuto por IP | Cada cadastro calcula um hash argon2. |
+| PDF (simulado e fórmulas) | 10 por minuto | O desenho é CPU pesada e passa por uma fila. |
+| Comentário por IA | 10 por minuto | Cada pedido novo é uma chamada paga; a cota diária vale à parte. |
+| Fórum (tópico e resposta) | 10 por minuto | Spam. |
+| Temas (criar e editar) | 20 e 30 por minuto | Spam. |
+
+`/health` e `/media/` só contam no limite padrão. Quem passa do limite recebe HTTP 429 com `Retry-After` e a mensagem "Muitas tentativas. Tente de novo em N s.", e o app mostra o tempo de espera.
+
+Os contadores ficam no Redis: valem para todas as instâncias da API e sobrevivem a um deploy. Com o Redis fora do ar, cada instância conta na própria memória até ele voltar; os limites nunca deixam de valer. `THROTTLE_KEY_PREFIX` separa os contadores de duas instalações que usam o mesmo Redis.
+
+### Na borda
+
+O nginx do frontend limita `/api/` a 50 requisições por segundo por IP, com folga de 200, antes de chegar ao Node. É proteção contra inundação, não regra de negócio: fica bem acima do que uma sala inteira abrindo o app gera.
+
+Com outro proxy ou CDN na frente desse nginx, ele enxerga o IP do proxy e passaria a limitar todo mundo junto. Nesse caso, além de subir o `TRUST_PROXY`, ensine o nginx a ler o IP real, num arquivo montado em `/etc/nginx/conf.d/`:
+
+```nginx
+set_real_ip_from 172.16.0.0/12;  # a rede do seu proxy
+real_ip_header X-Forwarded-For;
+```
 
 ## Backups
 

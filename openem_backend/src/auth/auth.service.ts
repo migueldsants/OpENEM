@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { LoginAttemptsService } from '../rate-limit/login-attempts.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -28,6 +29,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly attempts: LoginAttemptsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResult> {
@@ -53,6 +55,9 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
+    // Conta bloqueada por senhas erradas: recusa antes de olhar a senha, com
+    // a mesma resposta para e-mail com e sem conta.
+    await this.attempts.assertAllowed(dto.email);
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -62,14 +67,19 @@ export class AuthService {
       // Sem conta, verifica a senha contra um hash falso: o tempo da resposta
       // não deixa ver quais e-mails já existem (com argon2, ~5 ms contra ~70 ms).
       await argon2.verify(await dummyHash(), dto.password);
+      // Conta como falha também: senão o bloqueio diria quais e-mails existem.
+      await this.attempts.recordFailure(dto.email);
       throw invalid;
     }
 
     const valid = await argon2.verify(user.passwordHash, dto.password);
     if (!valid) {
+      // A quinta falha lança o 429 em vez do 401.
+      await this.attempts.recordFailure(dto.email);
       throw invalid;
     }
 
+    await this.attempts.recordSuccess(dto.email);
     return this.buildResult(user.id, user.email);
   }
 

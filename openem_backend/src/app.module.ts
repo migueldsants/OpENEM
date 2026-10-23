@@ -1,14 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { JwtService } from '@nestjs/jwt';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AnswersModule } from './answers/answers.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CacheModule } from './cache/cache.module';
-import { throttleConfigFromEnv } from './common/throttle-config';
+import { resolveJwtSecret } from './common/jwt-secret';
+import { rateLimitMessage } from './common/rate-limit';
+import {
+  burstConfigFromEnv,
+  throttleConfigFromEnv,
+} from './common/throttle-config';
 import { CommunityModule } from './community/community.module';
 import { EssaysModule } from './essays/essays.module';
 import { FavoritesModule } from './favorites/favorites.module';
@@ -31,27 +36,53 @@ import { PomodoroModule } from './pomodoro/pomodoro.module';
 import { VideosModule } from './videos/videos.module';
 import { ThemesModule } from './themes/themes.module';
 import { ToolsModule } from './tools/tools.module';
+import { AppThrottlerGuard } from './rate-limit/app-throttler.guard';
+import { RateLimitModule } from './rate-limit/rate-limit.module';
+import { RateThrottlerStorage } from './rate-limit/rate-throttler.storage';
+import { makeTracker } from './rate-limit/tracker';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Rate limiting (issue #49): 100 req/min por IP por padrão, contados em
-    // cada rota separadamente (a chave do throttler é rota + IP), e guardados
-    // na memória do processo. Rotas caras (auth, PDF, IA) têm limites
-    // próprios via @Throttle.
-    ThrottlerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        throttlers: [
-          throttleConfigFromEnv({
-            THROTTLE_TTL_MS: config.get<string>('THROTTLE_TTL_MS'),
-            THROTTLE_LIMIT: config.get<string>('THROTTLE_LIMIT'),
-          }),
-        ],
-      }),
-    }),
     PrismaModule,
     CacheModule,
+    RateLimitModule,
+    // Rate limiting (issues #49 e #87), contado em cada rota separadamente e
+    // por aluno quando o pedido traz um JWT válido (por IP quando não traz):
+    // - `burst`: rajada curta, 20 pedidos por segundo;
+    // - `default`: 100 por minuto (THROTTLE_TTL_MS/THROTTLE_LIMIT).
+    // Os contadores ficam no Redis (RateThrottlerStorage), valendo para todas
+    // as instâncias. Rotas caras (login, cadastro, PDF, IA, fórum, temas) têm
+    // limites próprios via @Throttle; a tabela está no CLAUDE.md.
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService, RateThrottlerStorage],
+      useFactory: (config: ConfigService, storage: RateThrottlerStorage) => ({
+        throttlers: [
+          {
+            name: 'burst',
+            ...burstConfigFromEnv({
+              THROTTLE_BURST_TTL_MS: config.get<string>(
+                'THROTTLE_BURST_TTL_MS',
+              ),
+              THROTTLE_BURST_LIMIT: config.get<string>('THROTTLE_BURST_LIMIT'),
+            }),
+          },
+          {
+            name: 'default',
+            ...throttleConfigFromEnv({
+              THROTTLE_TTL_MS: config.get<string>('THROTTLE_TTL_MS'),
+              THROTTLE_LIMIT: config.get<string>('THROTTLE_LIMIT'),
+            }),
+          },
+        ],
+        storage,
+        getTracker: makeTracker(
+          new JwtService({ secret: resolveJwtSecret(config) }),
+        ),
+        // O AppThrottlerGuard troca pela mensagem com a espera.
+        errorMessage: rateLimitMessage(60),
+      }),
+    }),
     HealthModule,
     AuthModule,
     UsersModule,
@@ -80,7 +111,7 @@ import { ToolsModule } from './tools/tools.module';
   providers: [
     AppService,
     // Guard global de rate limiting — todos os endpoints contam no limite.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: AppThrottlerGuard },
   ],
 })
 export class AppModule {}
