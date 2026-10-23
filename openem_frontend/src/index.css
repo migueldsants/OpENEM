@@ -48,6 +48,59 @@
   --gold: #e0a83c;
   --plat: #3fa7c4;
 }
+/* ----------------------------------------------------------------------------
+   Tabela periódica: um tom por categoria e o tom do mapa de calor. São cores de
+   conteúdo da tela da tabela, fora das áreas (que marcam matéria). A casa é a
+   folha (`--surface`) tingida com `--tp-mix` do tom, e todo texto da casa fica
+   em `--fg` (o `--muted` não aguenta o tingimento); o mapa de calor tinge em
+   sete degraus (`--tp-calor-0` … `-6`).
+   `tabela-periodica-tokens.test.ts` cobra ≥ 4,5:1 entre o texto da casa e o
+   fundo tingido em todos os temas.
+---------------------------------------------------------------------------- */
+:root,
+[data-theme$='-light'] {
+  --tp-alcalino: #e4573d;
+  --tp-alcalino-terroso: #e39a26;
+  --tp-transicao: #5d82d6;
+  --tp-pos-transicao: #7f93a8;
+  --tp-semimetal: #2fa596;
+  --tp-nao-metal: #4aa84f;
+  --tp-halogenio: #c7b21c;
+  --tp-gas-nobre: #9a6fdc;
+  --tp-lantanideo: #cf72c9;
+  --tp-actinideo: #c07a4c;
+  --tp-calor: #8c80ff;
+  --tp-mix: 24%;
+  --tp-calor-0: 6%;
+  --tp-calor-1: 18%;
+  --tp-calor-2: 30%;
+  --tp-calor-3: 42%;
+  --tp-calor-4: 54%;
+  --tp-calor-5: 66%;
+  --tp-calor-6: 78%;
+}
+[data-theme$='-dark'] {
+  --tp-alcalino: #ff7d63;
+  --tp-alcalino-terroso: #f4b34a;
+  --tp-transicao: #7fa2f2;
+  --tp-pos-transicao: #9aaec2;
+  --tp-semimetal: #45c4b3;
+  --tp-nao-metal: #6cc871;
+  --tp-halogenio: #e2cd3d;
+  --tp-gas-nobre: #b892f5;
+  --tp-lantanideo: #e892e2;
+  --tp-actinideo: #dc9a6d;
+  --tp-calor: #7c3aed;
+  --tp-mix: 26%;
+  --tp-calor-0: 8%;
+  --tp-calor-1: 22%;
+  --tp-calor-2: 36%;
+  --tp-calor-3: 50%;
+  --tp-calor-4: 64%;
+  --tp-calor-5: 78%;
+  --tp-calor-6: 90%;
+}
+
 /* Também em [data-theme]: a prévia de um tema dentro da galeria resolve o
    var() no próprio elemento, não herda o valor já resolvido do <html>. */
 :root,

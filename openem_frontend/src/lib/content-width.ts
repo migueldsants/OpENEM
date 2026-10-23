@@ -4,7 +4,8 @@
  * - Leitura (padrão): enunciado e formulários pedem linha curta.
  * - Painel: telas de cartões e gráficos aproveitam monitor largo e se dividem
  *   em duas colunas a partir do `xl` (cada uma decide onde).
- * - Grade: o cronograma é uma grade de 7 dias, e 768px espremem as colunas.
+ * - Grade: o cronograma é uma grade de 7 dias, e 768px espremem as colunas; a
+ *   tabela periódica tem 18 colunas.
  */
 export type ContentWidth = 'leitura' | 'painel' | 'grade';
 
@@ -17,7 +18,7 @@ const PAINEL = new Set([
 ]);
 
 export function contentWidth(pathname: string): ContentWidth {
-  if (pathname === '/cronograma') return 'grade';
+  if (pathname === '/cronograma' || pathname === '/tabela-periodica') return 'grade';
   if (PAINEL.has(pathname)) return 'painel';
   return 'leitura';
 }

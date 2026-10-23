@@ -88,6 +88,9 @@ reports/
 # Cache de páginas renderizadas pela tools/enem-fix (render.mjs)
 /tools/pages/
 
+# Fontes da tabela periódica baixadas por tools/tabela-periodica/baixar.mjs
+/tools/tabela-periodica/fontes/
+
 # Scripts de banco compilados para a imagem Docker (npm run build:scripts)
 openem_backend/dist-scripts/
 

@@ -15,6 +15,7 @@ import {
   IconChevronRight,
   IconClock,
   IconFormula,
+  IconTabelaPeriodica,
   IconToolbox,
   IconStack,
   IconRepeat,
@@ -92,6 +93,7 @@ export default function Home() {
     { to: '/flashcards', titulo: 'Flashcards', Icon: IconBook },
     { to: '/cronograma', titulo: 'Cronograma', Icon: IconCalendar },
     { to: '/formulas', titulo: 'Fórmulas', Icon: IconFormula },
+    { to: '/tabela-periodica', titulo: 'Tabela periódica', Icon: IconTabelaPeriodica },
     { to: '/pomodoro', titulo: 'Pomodoro', Icon: IconClock },
     { to: '/painel', titulo: 'Painel', Icon: IconClipboard },
   ];
@@ -115,8 +117,10 @@ export default function Home() {
 
           <nav aria-label="Atalhos">
             <h2 className="eyebrow mb-3">Atalhos</h2>
-            {/* Ao lado da coluna "Hoje", nove numa linha não cabem: 3x3. */}
-            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-9 xl:grid-cols-3">
+            {/* Dez atalhos: duas linhas de cinco a partir do sm (inclusive ao
+                lado da coluna "Hoje"); no celular, três por linha e o último
+                ocupa a linha inteira. */}
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5 [&>li:last-child]:col-span-3 sm:[&>li:last-child]:col-span-1">
               {atalhos.map(({ to, titulo, Icon, selo }) => (
                 <li key={to}>
                   <NavLink

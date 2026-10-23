@@ -27,6 +27,7 @@ import {
   IconPalette,
   IconPen,
   IconQuestion,
+  IconTabelaPeriodica,
 } from './components/icons';
 import { AchievementToastHost } from './components/AchievementToast';
 import { MoreSheet, porSecao, type NavItem } from './components/MoreSheet';
@@ -64,6 +65,7 @@ import Questoes from './pages/Questoes';
 import Quadro from './pages/Quadro';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
+import TabelaPeriodica from './pages/TabelaPeriodica';
 import Videos from './pages/Videos';
 
 // Editor do Quadro é lazy: mantém mathlive+katex num chunk separado (issue #32).
@@ -89,6 +91,7 @@ const NAV: NavItem[] = [
   { to: '/pomodoro', label: 'Pomodoro', Icon: IconClock, mobile: 'more', section: 'Planejar' },
   { to: '/cronometros', label: 'Cronômetros', Icon: IconHourglass, mobile: 'more', section: 'Planejar' },
   { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more', section: 'Planejar' },
+  { to: '/tabela-periodica', label: 'Tabela periódica', Icon: IconTabelaPeriodica, mobile: 'more', section: 'Planejar' },
   { to: '/videos', label: 'Vídeos', Icon: IconPlay, mobile: 'more', section: 'Planejar' },
   { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more', section: 'Planejar' },
 
@@ -356,6 +359,7 @@ export default function App() {
       <Route path="/favoritos" element={<Favoritos />} />
       <Route path="/flashcards" element={<Flashcards />} />
       <Route path="/formulas" element={<Formulas />} />
+      <Route path="/tabela-periodica" element={<TabelaPeriodica />} />
       <Route path="/videos" element={<Videos />} />
       <Route
         path="/quadro"
