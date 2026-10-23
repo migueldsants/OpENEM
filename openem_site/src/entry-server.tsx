@@ -5,6 +5,9 @@ import { Docs } from './docs/Docs';
 import { PAGINAS, paginaPorUrl, TITULO_BASE } from './docs/conteudo';
 import { Landing } from './landing/Landing';
 
+// O prerender (scripts/prerender.mjs) é JavaScript puro e usa o SEO daqui.
+export { absolutizar, robotsTxt, siteUrl, sitemapXml } from './seo';
+
 /** Cada página que o build grava em HTML, com o modelo de onde ela parte. */
 export function paginas(): { url: string; modelo: string }[] {
   return [
@@ -33,6 +36,9 @@ export function renderizar(url: string): { html: string; head: string } {
     `<link rel="canonical" href="${url}" />`,
     `<meta property="og:title" content="${escapar(titulo)}" />`,
     `<meta property="og:description" content="${escapar(descricao)}" />`,
+    '<meta property="og:type" content="article" />',
+    '<meta property="og:image" content="/og.png" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
   ].join('\n    ');
   const html = renderToString(
     <StrictMode>

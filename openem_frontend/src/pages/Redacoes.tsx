@@ -14,6 +14,7 @@ import {
 import {
   agruparPorAno,
   contarFiguras,
+  figura,
   filtrarPropostas,
   FILTROS,
   tituloDaProposta,
@@ -68,7 +69,7 @@ function Bloco({ b }: { b: BlocoRedacao }) {
       // branco, e ficariam ilegíveis sobre a superfície dos temas escuros.
       return (
         <img
-          src={b.src}
+          src={figura(b.src)}
           alt={b.alt}
           width={b.w}
           height={b.h}
@@ -176,13 +177,13 @@ function Proposta({
             // Fundo branco fixo: a página é o papel do caderno, em qualquer tema.
             <a
               key={pg.src}
-              href={pg.src}
+              href={figura(pg.src)}
               target="_blank"
               rel="noreferrer"
               className="block cursor-zoom-in overflow-hidden rounded-lg border border-line bg-white"
             >
               <img
-                src={pg.src}
+                src={figura(pg.src)}
                 width={pg.w}
                 height={pg.h}
                 alt={`Página ${n + 1} da proposta de redação do ENEM ${p.ano}, como impressa no caderno. O conteúdo está transcrito nesta tela.`}

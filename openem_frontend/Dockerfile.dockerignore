@@ -1,0 +1,14 @@
+# Contexto do build da imagem do frontend: a raiz do repositório (ver o
+# Dockerfile). Só o app e o site entram; o resto fica de fora.
+*
+!openem_frontend/
+!openem_site/
+**/node_modules
+**/dist
+**/dist-ssr
+**/coverage
+**/reports
+**/*.log
+**/.env
+**/.env.*
+**/.stryker-tmp

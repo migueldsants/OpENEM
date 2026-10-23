@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// O app mora em /app/: a raiz do domínio é do site público (openem_site), e
+// /docs/ da documentação. Em dev, o Vite também serve em /app/.
+const BASE = '/app/';
+
 // https://vite.dev/config/
 export default defineConfig({
+  base: BASE,
   plugins: [
     react(),
     tailwindcss(),
@@ -18,7 +23,12 @@ export default defineConfig({
         theme_color: '#15111c',
         background_color: '#15111c',
         display: 'standalone',
-        start_url: '/',
+        start_url: BASE,
+        // O service worker e o PWA instalado ficam só em /app/: a landing e a
+        // documentação, na mesma origem, não são servidas por ele.
+        scope: BASE,
+        id: BASE,
+        lang: 'pt-BR',
         icons: [
           {
             src: 'icon.svg',
@@ -76,7 +86,9 @@ export default defineConfig({
             // abre o tema, e se renovam se o recorte for refeito.
             urlPattern: ({ url, request }) =>
               request.destination === 'image' &&
-              url.pathname.startsWith('/redacoes/'),
+              // Literal, não BASE: o Workbox copia esta função para dentro do
+              // service worker, onde as variáveis deste arquivo não existem.
+              url.pathname.startsWith('/app/redacoes/'),
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'redacoes-figuras',

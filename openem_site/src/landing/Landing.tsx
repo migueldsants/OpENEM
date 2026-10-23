@@ -9,6 +9,7 @@ import {
   Timer,
   type Icon,
 } from '@phosphor-icons/react';
+import { useSyncExternalStore } from 'react';
 import temas from 'virtual:arquivo-redacoes';
 import { Wordmark } from '../components/Wordmark';
 import { APP_URL, DOCS_URL, GITHUB_URL } from '../config';
@@ -18,10 +19,31 @@ import { ANOS_DO_ENEM } from './prova';
 /** Questões oficiais no banco (1998 a 2025, todas as aplicações). */
 const QUESTOES_OFICIAIS = '7.781';
 
+function lerSessao(): boolean {
+  try {
+    return !!localStorage.getItem('openem.token');
+  } catch {
+    // localStorage bloqueado (modo privado, cookies de terceiros): sem sessão.
+    return false;
+  }
+}
+
+const semAssinatura = () => () => {};
+
+/**
+ * Se quem visita já entrou no app (o token fica no localStorage, que é da
+ * mesma origem). No servidor é sempre false, como no HTML pré-renderizado:
+ * sem JavaScript, o botão continua "Começar a estudar".
+ */
+function useTemSessao(): boolean {
+  return useSyncExternalStore(semAssinatura, lerSessao, () => false);
+}
+
 function BotaoEstudar({ className = '' }: { className?: string }) {
+  const temSessao = useTemSessao();
   return (
     <a href={APP_URL} className={`btn btn-primary aperta px-6 py-3.5 text-base ${className}`}>
-      Começar a estudar
+      {temSessao ? 'Continuar estudando' : 'Começar a estudar'}
       <ArrowRight size={18} weight="bold" />
     </a>
   );
@@ -425,6 +447,9 @@ export function Landing() {
           <nav aria-label="Rodapé" className="flex flex-wrap items-start gap-x-6 gap-y-2 text-[0.95rem]">
             <a href={DOCS_URL} className="text-muted hover:text-fg">
               Documentação
+            </a>
+            <a href={`${DOCS_URL}alunos/perguntas-frequentes/`} className="text-muted hover:text-fg">
+              Perguntas frequentes
             </a>
             <a href={GITHUB_URL} className="text-muted hover:text-fg">
               GitHub

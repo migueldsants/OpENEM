@@ -120,18 +120,59 @@ jobs:
       - name: Build
         run: npm run build
 
+  site:
+    name: Site (lint, test, build, links)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openem_site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            openem_site/package-lock.json
+            openem_frontend/package-lock.json
+
+      # O site importa o CSS do app (que importa o tailwindcss das
+      # dependências do app), então as duas instalações são necessárias.
+      - name: Instalar dependências do app
+        working-directory: openem_frontend
+        run: npm ci
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes
+        run: npm test
+
+      - name: Build (pré-renderizado)
+        run: npm run build
+        env:
+          SITE_URL: https://openem.exemplo
+
+      - name: Links internos do build
+        run: npm run check:links
+
   docker:
     name: Build de imagens Docker
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, site]
     steps:
       - uses: actions/checkout@v4
 
       - name: Build da imagem do backend
         run: docker build -t openem-backend:ci ./openem_backend
 
+      # Contexto na raiz: a imagem leva o site (raiz) e o app (/app/).
       - name: Build da imagem do frontend
-        run: docker build -t openem-frontend:ci ./openem_frontend
+        run: docker build -f openem_frontend/Dockerfile -t openem-frontend:ci .
 
       # Publicação no registry fica desativada até haver hospedagem/VPS.
       # Ver docs/PRD.md §12.

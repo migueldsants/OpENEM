@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   agruparPorAno,
   contarFiguras,
+  figura,
   filtrarPropostas,
   FILTROS,
   semAcento,
@@ -149,5 +150,23 @@ describe('lib/redacoes — FILTROS', () => {
   it('oferece os três recortes, começando por "Todas"', () => {
     expect(FILTROS.map((f) => f.key)).toEqual(['todas', 'regular', 'outras']);
     expect(FILTROS.every((f) => f.label.length > 0)).toBe(true);
+  });
+});
+
+describe('lib/redacoes — figura', () => {
+  it('prefixa o caminho com a base do app', () => {
+    expect(figura('/redacoes/2025-regular-1.webp', '/app/')).toBe(
+      '/app/redacoes/2025-regular-1.webp',
+    );
+  });
+
+  it('na raiz, o caminho fica igual', () => {
+    expect(figura('/redacoes/a.webp', '/')).toBe('/redacoes/a.webp');
+  });
+
+  it('endereço completo não é mexido', () => {
+    expect(figura('https://exemplo.com/a.webp', '/app/')).toBe(
+      'https://exemplo.com/a.webp',
+    );
   });
 });
