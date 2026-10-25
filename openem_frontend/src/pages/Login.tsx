@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api, HttpError } from '../api';
+import { Link, useNavigate } from 'react-router-dom';
+import { api, GOOGLE_LOGIN_URL, HttpError, type AuthOptions } from '../api';
 import { useAuth } from '../auth';
+import { GoogleLogo } from '../components/AuthLayout';
 import { ErrorBanner } from '../components/ErrorBanner';
 import ThemeToggle from '../components/ThemeToggle';
 import { AREAS, AREA_DOT } from '../lib/areas';
@@ -34,6 +35,11 @@ export default function Login() {
   const { login, register, authenticated } = useAuth();
   const navigate = useNavigate();
   const [health, setHealth] = useState<'…' | 'online' | 'offline'>('…');
+  // O que o servidor oferece além de e-mail e senha (SMTP, Google).
+  const [options, setOptions] = useState<AuthOptions>({
+    passwordReset: false,
+    google: false,
+  });
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,6 +70,13 @@ export default function Login() {
       .health()
       .then((h) => setHealth(h.status === 'ok' ? 'online' : 'offline'))
       .catch(() => setHealth('offline'));
+  }, []);
+
+  useEffect(() => {
+    api
+      .authOptions()
+      .then(setOptions)
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -187,6 +200,16 @@ export default function Login() {
                   placeholder="mínimo 8 caracteres"
                 />
               </label>
+              {mode === 'login' && options.passwordReset && (
+                <p className="-mt-2 text-right">
+                  <Link
+                    to="/esqueci-senha"
+                    className="text-xs font-semibold text-brand hover:underline"
+                  >
+                    Esqueci minha senha
+                  </Link>
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={loading || bloqueado}
@@ -201,6 +224,22 @@ export default function Login() {
                       : 'Criar conta'}
               </button>
             </form>
+
+            {options.google && (
+              <>
+                <div className="my-4 flex items-center gap-3 text-xs text-muted">
+                  <span className="h-px flex-1 bg-line" />
+                  ou
+                  <span className="h-px flex-1 bg-line" />
+                </div>
+                {/* Navegação de página inteira: a API leva ao Google e volta
+                    em /entrar/google. */}
+                <a href={GOOGLE_LOGIN_URL} className="btn btn-ghost w-full">
+                  <GoogleLogo />
+                  Entrar com Google
+                </a>
+              </>
+            )}
 
             {message && (
               <div className="mt-4">

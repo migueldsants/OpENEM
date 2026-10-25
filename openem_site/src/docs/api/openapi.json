@@ -80,6 +80,174 @@
         ]
       }
     },
+    "/api/v1/auth/options": {
+      "get": {
+        "operationId": "AuthController_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Formas de entrar ligadas neste servidor (recuperação de senha por e-mail, Google)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Pedido aceito"
+          },
+          "503": {
+            "description": "SMTP não configurado"
+          }
+        },
+        "summary": "Manda um link de redefinição de senha, se o e-mail tiver conta (a resposta é sempre a mesma)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Cria a senha nova com o token do e-mail, encerra as outras sessões e retorna um token de acesso",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_logoutAll",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sai de todos os dispositivos: nenhum token emitido até agora vale mais",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/google": {
+      "get": {
+        "operationId": "AuthController_googleStart",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Tela de login do Google"
+          },
+          "404": {
+            "description": "Login com Google desligado"
+          }
+        },
+        "summary": "Começa o login com Google (redireciona para o Google)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleCallback",
+        "parameters": [
+          {
+            "name": "error",
+            "required": false,
+            "in": "query",
+            "description": "Ex.: access_denied",
+            "schema": {}
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "description": "Deve bater com o cookie da ida",
+            "schema": {}
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "description": "Código do Google",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Tela /app/entrar/google"
+          }
+        },
+        "summary": "Volta do Google: redireciona ao app com um código de uso único (#code=) ou o motivo da recusa (#erro=)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/google/exchange": {
+      "post": {
+        "operationId": "AuthController_googleExchange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleExchangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Troca o código de uso único da volta do Google por um token de acesso",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/users/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -154,6 +322,36 @@
           }
         ],
         "summary": "Atualiza o perfil de estudo do usuário",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/me/password": {
+      "put": {
+        "operationId": "UsersController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Troca a senha (pede a atual), encerra as outras sessões e retorna um token novo para este aparelho",
         "tags": [
           "users"
         ]
@@ -3166,6 +3364,48 @@
           "password"
         ]
       },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "estudante@exemplo.com"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token do link enviado por e-mail"
+          },
+          "password": {
+            "type": "string",
+            "example": "senhaNova456",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ]
+      },
+      "GoogleExchangeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código de uso único da volta do Google"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
       "UpdateProfileDto": {
         "type": "object",
         "properties": {
@@ -3208,6 +3448,24 @@
             "description": "Língua estrangeira da prova: define qual versão das questões 1–5 (ou 91–95) aparece nas questões e nos simulados oficiais"
           }
         }
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "example": "senhaAntiga123"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "senhaNova456",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
       },
       "Object": {
         "type": "object",

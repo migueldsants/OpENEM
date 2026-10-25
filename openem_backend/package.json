@@ -54,6 +54,7 @@
     "inter-ui": "^3.19.3",
     "ioredis": "^5.11.1",
     "mathjax-full": "^3.2.2",
+    "nodemailer": "^10.0.16",
     "openai": "^6.44.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

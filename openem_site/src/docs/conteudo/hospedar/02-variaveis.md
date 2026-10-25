@@ -45,8 +45,21 @@ O cache guarda o que é igual para todo aluno: matérias, provas, facetas da bus
 
 | Variável | Padrão | O que faz |
 | --- | --- | --- |
-| `JWT_SECRET` | nenhum | Obrigatória no compose. Assina os tokens de login. Com `NODE_ENV` igual a `production` ou `test`, a API não sobe se ela faltar ou tiver menos de 16 caracteres; fora disso, a API usa um segredo fixo de desenvolvimento. |
+| `JWT_SECRET` | nenhum | Obrigatória no compose. Assina os tokens de login e cifra o cookie da ida e volta do login com Google. Com `NODE_ENV` igual a `production` ou `test`, a API não sobe se ela faltar ou tiver menos de 16 caracteres; fora disso, a API usa um segredo fixo de desenvolvimento. Trocá-la encerra a sessão de todos os alunos. |
 | `JWT_EXPIRES_IN` | `7d` | Validade do token de login, como `7d` ou `12h`. |
+
+O token traz a versão de sessão da conta, conferida a cada pedido. Trocar a senha, redefini-la pelo e-mail ou tocar em **Sair de todos os dispositivos** no Perfil invalida na hora todos os tokens já emitidos para aquela conta, sem esperar o `JWT_EXPIRES_IN`.
+
+## E-mail e login com Google
+
+| Variável | Padrão | O que faz |
+| --- | --- | --- |
+| `SMTP_URL` | nenhum | Servidor de e-mail da recuperação de senha, como `smtps://usuario:senha@smtp.exemplo.com:465` (TLS direto) ou `smtp://usuario:senha@smtp.exemplo.com:587` (STARTTLS). Sem ela, `POST /auth/forgot-password` responde 503 e a tela de entrada esconde o **Esqueci minha senha**. |
+| `MAIL_FROM` | nenhum | Remetente do e-mail, como `OpENEM <nao-responda@openem.exemplo>`. Vale só junto com `SMTP_URL`. |
+| `GOOGLE_CLIENT_ID` | nenhum | ID do cliente OAuth do Google. Com `GOOGLE_CLIENT_SECRET`, liga o botão **Entrar com Google**. |
+| `GOOGLE_CLIENT_SECRET` | nenhum | Segredo do cliente OAuth do Google. |
+
+Os dois recursos são opcionais e precisam da `SITE_URL`: o link do e-mail e o endereço de volta do Google saem dela. Variável definida pela metade desliga o recurso e deixa um aviso no log da API ao subir. O passo a passo, com a tela de consentimento do Google, está em [E-mail e login com Google](/docs/hospedar/email-e-google/).
 
 ## Servidor e proxy
 
@@ -56,7 +69,7 @@ O cache guarda o que é igual para todo aluno: matérias, provas, facetas da bus
 | `NODE_ENV` | nenhum (`production` na imagem Docker) | `production` desliga o Swagger em `/api` e exige um `JWT_SECRET` válido. Fixo no compose. |
 | `TRUST_PROXY` | nenhum (não confia em proxy) | Número de proxies à frente da API (`1`) ou lista de endereços e sub-redes (`loopback, 10.0.0.0/8`). `true` é recusado e impede a API de subir. Fixo em `1` no compose; veja [Produção](/docs/hospedar/producao/). |
 | `CORS_ORIGINS` | nenhum | Origens liberadas no CORS, separadas por vírgula. Sem valor, a API aceita requisições de qualquer origem. Fora do compose. |
-| `SITE_URL` | nenhum | Domínio público da instalação, como `https://openem.exemplo`. Entra no build da imagem do frontend: gera o `sitemap.xml` e deixa absolutas as URLs do Open Graph. Sem ela, o site sai sem sitemap e com URLs relativas. Trocar exige `docker compose up --build`. |
+| `SITE_URL` | nenhum | Domínio público da instalação, como `https://openem.exemplo`. Entra no build da imagem do frontend, onde gera o `sitemap.xml` e deixa absolutas as URLs do Open Graph, e o backend monta com ela o link do e-mail de redefinição de senha e o endereço de volta do login com Google. Sem ela, o site sai sem sitemap e com URLs relativas, e esses dois recursos ficam desligados (fora de produção, o backend usa `http://localhost:5173`). Trocar exige `docker compose up --build`. |
 
 ## Rate limiting
 

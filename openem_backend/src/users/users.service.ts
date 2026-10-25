@@ -19,6 +19,8 @@ export class UsersService {
         id: true,
         email: true,
         createdAt: true,
+        passwordHash: true,
+        googleSub: true,
         profile: {
           select: {
             goal: true,
@@ -35,7 +37,13 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
-    return user;
+    // O hash e o id do Google nunca saem: o app só precisa saber se existem.
+    const { passwordHash, googleSub, ...rest } = user;
+    return {
+      ...rest,
+      hasPassword: passwordHash !== null,
+      googleLinked: googleSub !== null,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

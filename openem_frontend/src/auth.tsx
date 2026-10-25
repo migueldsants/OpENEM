@@ -21,6 +21,8 @@ interface AuthState {
   authenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  /** Entra com um token já emitido (senha redefinida, Google, troca de senha). */
+  signIn: (accessToken: string) => Promise<void>;
   logout: () => void;
   refreshMe: () => Promise<void>;
 }
@@ -85,6 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persist, refreshMe],
   );
 
+  const signIn = useCallback(
+    async (accessToken: string) => {
+      persist(accessToken);
+      await refreshMe();
+    },
+    [persist, refreshMe],
+  );
+
   const logout = useCallback(() => {
     setToken(null);
     setTokenState(null);
@@ -99,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authenticated: !!token,
         login,
         register,
+        signIn,
         logout,
         refreshMe,
       }}

@@ -4,6 +4,7 @@ import { useAuth } from '../auth';
 import { NavLink } from 'react-router-dom';
 import { ThemePreview } from '../components/ThemePreview';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { SegurancaConta } from '../components/SegurancaConta';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
 import { DOCS_URL, docsAlunos } from '../lib/site';
@@ -282,6 +283,8 @@ export default function Perfil() {
           />
         </label>
       </div>
+
+      <SegurancaConta />
 
       <div className="card p-4">
         <p className="eyebrow">Ajuda</p>

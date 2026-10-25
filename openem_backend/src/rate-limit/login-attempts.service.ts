@@ -70,4 +70,15 @@ export class LoginAttemptsService {
   async recordSuccess(email: string): Promise<void> {
     await this.store.del(loginKeys(this.prefix, email).failures);
   }
+
+  /**
+   * Senha redefinida pelo link do e-mail: o dono provou quem é, então as
+   * falhas e o bloqueio em curso saem. O histórico de bloqueios fica, para o
+   * próximo ainda dobrar.
+   */
+  async clear(email: string): Promise<void> {
+    const k = loginKeys(this.prefix, email);
+    await this.store.del(k.failures);
+    await this.store.del(k.block);
+  }
 }

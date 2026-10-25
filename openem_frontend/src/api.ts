@@ -151,6 +151,17 @@ export interface AuthResponse {
   accessToken: string;
   user: { id: string; email: string };
 }
+/** Formas de entrar que este servidor oferece (variáveis de quem hospeda). */
+export interface AuthOptions {
+  /** Há SMTP: o "Esqueci minha senha" manda um link por e-mail. */
+  passwordReset: boolean;
+  /** Há cliente OAuth do Google: aparece o "Entrar com Google". */
+  google: boolean;
+}
+export interface GoogleAuthResponse extends AuthResponse {
+  /** A senha antiga, nunca confirmada, foi desativada no vínculo. */
+  passwordDisabled: boolean;
+}
 export interface TopicRef {
   id: string;
   name: string;
@@ -885,7 +896,17 @@ export interface Me {
   email: string;
   createdAt: string;
   profile: Profile | null;
+  /** A conta tem senha (a criada pelo Google pode não ter). */
+  hasPassword?: boolean;
+  /** Há uma conta Google vinculada. */
+  googleLinked?: boolean;
 }
+
+/**
+ * Começo do login com Google. É uma navegação de página inteira (a API
+ * redireciona para o Google), não um fetch.
+ */
+export const GOOGLE_LOGIN_URL = `${API_BASE}/auth/google`;
 
 export const api = {
   health: () =>
@@ -902,6 +923,32 @@ export const api = {
       method: 'POST',
       body: { email, password },
     }),
+  authOptions: () => request<AuthOptions>('/auth/options'),
+  /** Sempre a mesma resposta, tenha o e-mail conta ou não. */
+  forgotPassword: (email: string) =>
+    request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    }),
+  resetPassword: (token: string, password: string) =>
+    request<AuthResponse>('/auth/reset-password', {
+      method: 'POST',
+      body: { token, password },
+    }),
+  /** Troca o código de uso único da volta do Google pelo login. */
+  googleExchange: (code: string) =>
+    request<GoogleAuthResponse>('/auth/google/exchange', {
+      method: 'POST',
+      body: { code },
+    }),
+  /** Encerra as outras sessões e devolve um token novo para este aparelho. */
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<AuthResponse>('/users/me/password', {
+      method: 'PUT',
+      body: { currentPassword, newPassword },
+    }),
+  /** Sai de todos os aparelhos, inclusive deste. */
+  logoutAll: () => request<void>('/auth/logout-all', { method: 'POST' }),
 
   me: () => request<Me>('/users/me'),
   updateProfile: (
