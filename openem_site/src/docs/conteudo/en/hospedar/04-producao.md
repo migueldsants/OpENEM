@@ -59,8 +59,10 @@ Each limit is counted per route. With login, it counts per student: a class behi
 | Sign-up | 20 per minute per IP | Each sign-up computes an argon2 hash. |
 | PDF (simulation and formulas) | 10 per minute | Drawing is heavy CPU work and goes through a queue. |
 | AI explanation | 10 per minute | Each new request is a paid call; the daily quota applies on top. |
-| Forum (thread and reply) | 10 per minute | Spam. |
+| Forum (thread, reply and report) | 10 per minute | Spam. |
 | Themes (create and edit) | 20 and 30 per minute | Spam. |
+| Download my data (`GET /users/me/export`) | 5 every 10 minutes | Reads all of the student's tables at once. |
+| Delete account (`DELETE /users/me`) | 5 per minute, and wrong passwords count toward the login's per-account limit | Someone holding only the token cannot test passwords through this route. |
 
 `/health` and `/media/` only count in the default limit. Going over a limit returns HTTP 429 with `Retry-After` and the message "Muitas tentativas. Tente de novo em N s." ("Too many attempts. Try again in N s."), and the app shows the waiting time.
 
@@ -106,6 +108,46 @@ docker compose exec -T backend tar xzf - -C /data < enem-media.tgz
 ```
 
 The questions in the database point to these images, so keep both backups from the same moment. The `/data/enem-dataset` folder needs no backup: the import downloads the dataset again.
+
+## Privacy and the LGPD
+
+Whoever runs an installation is the controller of the students' data, and many of them are teenagers. OpENEM ships a [Privacy Policy](/en/privacidade/) and [Terms of Use](/en/termos/), but only you know who the controller is, what the contact is and how long your logs are kept.
+
+### Fill in the documents
+
+The texts live in `openem_site/src/legal/conteudo/` (`privacidade.md` and `termos.md`, with the translation in `en/`). Replace each `[PLACEHOLDER: ...]` with the real information and rebuild the image:
+
+- identity of the controller (name or company name, CPF or CNPJ, address) and of the data protection officer;
+- contact email, which is the channel for requests from students and their parents or guardians;
+- configured AI provider (or "none") and hosting company;
+- retention period of the nginx access logs and of the backups;
+- how you announce relevant changes, and the legal venue.
+
+The documents are a starting point, not legal advice: review them with someone who knows the LGPD and the Digital Statute of Children and Adolescents (Law 15,211/2025) before opening the installation to students.
+
+### Terms version
+
+Sign-up requires acceptance and stores, on each account, the accepted date and version (`termsAcceptedAt` and `termsVersion`). The version is `TERMS_VERSION`, in `openem_backend/src/common/terms.ts`, and it must equal the `atualizado` header of the four pages; the site test fails otherwise. When you change the text, change both dates together.
+
+### Logs and retention
+
+The frontend image's nginx writes the access log (IP, date, address, browser) to the container output, and Docker is what keeps it. Limit its size and age in Docker's log driver (for example, `max-size` and `max-file` of `json-file`) and write that period in the policy. If the controller is a for-profit legal entity, the Brazilian Internet Civil Framework (art. 15) requires access records to be kept for 6 months.
+
+The rate limit counters in Redis expire on their own (from 1 second to 10 minutes; the login lockout lasts up to 24 h, with the email hashed). The Compose Redis runs without persistence.
+
+### Deletion and backups
+
+`DELETE /users/me` deletes the account and, in cascade, everything that belongs to the student. Whatever already went into a backup stays there: restoring an old dump brings deleted accounts back. Set a retention period for backups, write it in the policy and, when you restore, remember that students who deleted their accounts after that dump must be deleted again.
+
+### Forum reports
+
+There is no moderation screen yet. Reports live in the `ForumReport` table, with the reason, the reporter and the thread or reply:
+
+```bash
+docker compose exec db psql -U openem -d openem -c 'SELECT r."createdAt", r.reason, t.title, p.body FROM "ForumReport" r JOIN "ForumThread" t ON t.id = r."threadId" LEFT JOIN "ForumPost" p ON p.id = r."postId" ORDER BY r."createdAt" DESC LIMIT 50;'
+```
+
+To remove reported content, delete the row in `ForumThread` or `ForumPost`; its replies and reports go with it in cascade. Content that violates the rights of children and adolescents, besides being removed, may have to be reported to the authorities.
 
 ## Update
 

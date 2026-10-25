@@ -49,6 +49,7 @@ async function registrar(app: INestApplication<App>, prefixo: string) {
     .send({
       email: `${prefixo}_${Date.now()}@exemplo.com`,
       password: 'senhaForte123',
+      acceptTerms: true,
     })
     .expect(201);
   return { Authorization: `Bearer ${reg.body.accessToken as string}` };

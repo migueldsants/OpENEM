@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ForumPost, ForumThread } from '../api';
-import { mapPost, openThread, withPage, withReply } from './forum-thread';
+import {
+  mapPost,
+  openThread,
+  withoutPost,
+  withPage,
+  withReply,
+} from './forum-thread';
 
 const post = (id: string): ForumPost => ({
   id,
@@ -85,5 +91,20 @@ describe('forum-thread', () => {
     expect(mapPost(s, 'a', like).posts[0].liked).toBe(true);
     expect(mapPost(s, 'n', like).sent[0].liked).toBe(true);
     expect(mapPost(s, 'n', like).posts[0].liked).toBe(false);
+  });
+
+  it('withoutPost tira a resposta apagada das duas listas e do total', () => {
+    const s = withReply(
+      openThread(thread({ replies: 3, posts: [post('a'), post('b')], nextCursor: 'c1' })),
+      post('n'),
+    );
+    const semB = withoutPost(s, 'b');
+    expect(ids(semB.posts)).toEqual(['a']);
+    expect(semB.replies).toBe(3);
+    const semN = withoutPost(semB, 'n');
+    expect(semN.sent).toEqual([]);
+    expect(semN.replies).toBe(2);
+    // Id que não está na tela não mexe no total.
+    expect(withoutPost(semN, 'x').replies).toBe(2);
   });
 });

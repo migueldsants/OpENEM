@@ -59,8 +59,10 @@ Cada limite é contado por rota. Com login, conta por aluno: uma turma atrás do
 | Cadastro | 20 por minuto por IP | Cada cadastro calcula um hash argon2. |
 | PDF (simulado e fórmulas) | 10 por minuto | O desenho é CPU pesada e passa por uma fila. |
 | Comentário por IA | 10 por minuto | Cada pedido novo é uma chamada paga; a cota diária vale à parte. |
-| Fórum (tópico e resposta) | 10 por minuto | Spam. |
+| Fórum (tópico, resposta e denúncia) | 10 por minuto | Spam. |
 | Temas (criar e editar) | 20 e 30 por minuto | Spam. |
+| Baixar meus dados (`GET /users/me/export`) | 5 a cada 10 minutos | Lê todas as tabelas do aluno de uma vez. |
+| Excluir conta (`DELETE /users/me`) | 5 por minuto, e as senhas erradas contam no limite por conta do login | Quem tem só o token na mão não testa senhas por esta rota. |
 
 `/health` e `/media/` só contam no limite padrão. Quem passa do limite recebe HTTP 429 com `Retry-After` e a mensagem "Muitas tentativas. Tente de novo em N s.", e o app mostra o tempo de espera.
 
@@ -106,6 +108,46 @@ docker compose exec -T backend tar xzf - -C /data < enem-media.tgz
 ```
 
 As questões no banco apontam para essas imagens, então guarde os dois backups do mesmo momento. A pasta `/data/enem-dataset` não precisa de backup: o import baixa o dataset de novo.
+
+## Privacidade e LGPD
+
+Quem opera uma instalação é o controlador dos dados dos alunos, e boa parte deles é adolescente. O OpENEM traz a [Política de Privacidade](/privacidade/) e os [Termos de Uso](/termos/), mas só você sabe quem é o controlador, qual é o contato e quanto tempo os seus logs ficam guardados.
+
+### Preencha os documentos
+
+Os textos ficam em `openem_site/src/legal/conteudo/` (`privacidade.md` e `termos.md`, com a tradução em `en/`). Troque cada `[PLACEHOLDER: ...]` pelo dado real e gere a imagem de novo:
+
+- identidade do controlador (nome ou razão social, CPF ou CNPJ, endereço) e do encarregado;
+- e-mail de contato, que é o canal dos pedidos dos alunos e dos responsáveis;
+- provedor de IA configurado (ou "nenhum") e empresa de hospedagem;
+- prazo de retenção dos logs de acesso do nginx e dos backups;
+- como você avisa mudanças relevantes e o foro.
+
+Os documentos são um ponto de partida, não um parecer jurídico: revise com quem entende de LGPD e do Estatuto Digital da Criança e do Adolescente (Lei 15.211/2025) antes de abrir para alunos.
+
+### Versão dos termos
+
+O cadastro exige o aceite e grava, em cada conta, a data e a versão aceitas (`termsAcceptedAt` e `termsVersion`). A versão é `TERMS_VERSION`, em `openem_backend/src/common/terms.ts`, e tem de ser igual ao cabeçalho `atualizado` das quatro páginas; o teste do site quebra se não for. Mudou o texto, mude as duas datas juntas.
+
+### Logs e retenção
+
+O nginx da imagem do frontend escreve o log de acesso (IP, data, endereço, navegador) na saída do container, e quem guarda é o Docker. Limite o tamanho e o prazo no driver de log do Docker (por exemplo, `max-size` e `max-file` do `json-file`) e escreva esse prazo na política. Se o controlador é pessoa jurídica com fins econômicos, o Marco Civil da Internet (art. 15) pede que os registros de acesso fiquem guardados por 6 meses.
+
+Os contadores do rate limiting no Redis expiram sozinhos (de 1 segundo a 10 minutos; o bloqueio de login dura até 24 h, com o e-mail em hash). O Redis do Compose roda sem persistência.
+
+### Exclusão e backups
+
+`DELETE /users/me` apaga a conta e, em cascata, tudo o que é do aluno. O que já foi para um backup continua lá: um dump antigo restaurado traz de volta contas excluídas. Defina um prazo para os backups, escreva-o na política e, ao restaurar, lembre que os alunos que se excluíram depois daquele dump precisam ser excluídos de novo.
+
+### Denúncias do fórum
+
+Ainda não há tela de moderação. As denúncias ficam na tabela `ForumReport`, com o motivo, quem denunciou e o tópico ou a resposta:
+
+```bash
+docker compose exec db psql -U openem -d openem -c 'SELECT r."createdAt", r.reason, t.title, p.body FROM "ForumReport" r JOIN "ForumThread" t ON t.id = r."threadId" LEFT JOIN "ForumPost" p ON p.id = r."postId" ORDER BY r."createdAt" DESC LIMIT 50;'
+```
+
+Para remover um conteúdo denunciado, apague a linha em `ForumThread` ou `ForumPost`; as respostas e as denúncias dele saem em cascata. Conteúdo que viole direitos de crianças e adolescentes, além de removido, pode ter de ser comunicado às autoridades.
 
 ## Atualizar
 

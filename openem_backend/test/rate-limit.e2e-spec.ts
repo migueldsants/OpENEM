@@ -51,7 +51,7 @@ async function registrar(
   const res = await request(app.getHttpServer())
     .post('/api/v1/auth/register')
     .set('X-Forwarded-For', ip)
-    .send({ email, password: 'senhaForte123' })
+    .send({ email, password: 'senhaForte123', acceptTerms: true })
     .expect(201);
   return { email, token: res.body.accessToken as string };
 }

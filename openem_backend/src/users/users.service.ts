@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import * as argon2 from 'argon2';
 import {
   levelFromXp,
   leagueForLevel,
@@ -6,11 +11,16 @@ import {
   visibleAchievements,
 } from '../common/gamification';
 import { PrismaService } from '../prisma/prisma.service';
+import { LoginAttemptsService } from '../rate-limit/login-attempts.service';
+import { buildExport, EXPORT_SELECT } from './data-export';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attempts: LoginAttemptsService,
+  ) {}
 
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -45,6 +55,64 @@ export class UsersService {
       create: { userId, ...dto },
     });
     return this.getMe(userId);
+  }
+
+  /** Todos os dados do aluno, num JSON só (LGPD art. 18, II e V). */
+  async exportData(userId: string, now = new Date()) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: EXPORT_SELECT,
+    });
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    return buildExport(user, now);
+  }
+
+  /**
+   * Exclui a conta (LGPD art. 18, VI) depois de conferir a senha atual. O
+   * cascade do schema leva tudo o que é do aluno, inclusive tópicos do fórum
+   * com as respostas dos outros e decks e temas publicados.
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, passwordHash: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    // O mesmo limite por conta do login: quem tem só o token na mão não
+    // consegue testar senhas à vontade por esta rota.
+    await this.attempts.assertAllowed(user.email);
+    if (!(await argon2.verify(user.passwordHash, password))) {
+      await this.attempts.recordFailure(user.email);
+      // 403, não 401: o token vale, a senha é que está errada (e o app trata
+      // 401 como sessão expirada e desloga).
+      throw new ForbiddenException('Senha incorreta');
+    }
+    await this.prisma.$transaction([
+      // Curtidas e votos do aluno saem dos totais dos temas e decks dos
+      // outros, que não são recontados a partir das linhas.
+      this.prisma.userTheme.updateMany({
+        where: { likeRows: { some: { userId } }, likes: { gt: 0 } },
+        data: { likes: { decrement: 1 } },
+      }),
+      this.prisma.flashcardDeck.updateMany({
+        where: { votes: { some: { userId, vote: 'up' } }, upvotes: { gt: 0 } },
+        data: { upvotes: { decrement: 1 } },
+      }),
+      this.prisma.flashcardDeck.updateMany({
+        where: {
+          votes: { some: { userId, vote: 'down' } },
+          downvotes: { gt: 0 },
+        },
+        data: { downvotes: { decrement: 1 } },
+      }),
+      this.prisma.user.delete({ where: { id: userId } }),
+    ]);
+    // Um cadastro novo com o mesmo e-mail não herda as falhas desta conta.
+    await this.attempts.recordSuccess(user.email);
   }
 
   /**

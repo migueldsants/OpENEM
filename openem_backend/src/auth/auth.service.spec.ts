@@ -2,6 +2,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { MemoryCacheStore } from '../cache/cache-store';
+import { TERMS_VERSION } from '../common/terms';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   LoginAttemptsService,
@@ -34,21 +35,33 @@ describe('AuthService', () => {
       const res = await service.register({
         email: 'a@b.com',
         password: 'password123',
+        acceptTerms: true,
       });
 
       expect(res.accessToken).toBe('signed-token');
       expect(res.user).toEqual({ id: 'u1', email: 'a@b.com' });
       const createArg = prisma.user.create.mock.calls[0][0] as {
-        data: { passwordHash: string };
+        data: {
+          passwordHash: string;
+          termsAcceptedAt: Date;
+          termsVersion: string;
+        };
       };
       expect(createArg.data.passwordHash).not.toBe('password123');
       expect(createArg.data.passwordHash).toMatch(/^\$argon2/);
+      // O aceite fica gravado com a data e a versão dos documentos.
+      expect(createArg.data.termsAcceptedAt).toBeInstanceOf(Date);
+      expect(createArg.data.termsVersion).toBe(TERMS_VERSION);
     });
 
     it('rejeita e-mail já cadastrado', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'u1' });
       await expect(
-        service.register({ email: 'a@b.com', password: 'password123' }),
+        service.register({
+          email: 'a@b.com',
+          password: 'password123',
+          acceptTerms: true,
+        }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
   });

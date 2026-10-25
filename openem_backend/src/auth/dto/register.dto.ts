@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  Equals,
   IsEmail,
   IsOptional,
   IsString,
@@ -23,4 +24,16 @@ export class RegisterDto {
   @IsString()
   @MaxLength(80)
   displayName?: string;
+
+  // Sem aceite não há conta: o cadastro grava quando e qual versão foi aceita.
+  @ApiProperty({
+    example: true,
+    description:
+      'Aceite dos Termos de Uso e da Política de Privacidade (menores de 18 anos usam com ciência do responsável). Tem de ser true.',
+  })
+  @Equals(true, {
+    message:
+      'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade',
+  })
+  acceptTerms!: boolean;
 }

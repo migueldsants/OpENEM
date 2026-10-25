@@ -50,6 +50,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
       .send({
         email: `p3soc_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;
@@ -69,6 +70,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
       .send({
         email: `p3soc_other_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     otherToken = otherReg.body.accessToken;

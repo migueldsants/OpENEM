@@ -5,18 +5,68 @@ import {
   type ForumPost,
   type ForumThreadSummary,
 } from '../api';
+import { useAuth } from '../auth';
+import { DenunciarDialog } from '../components/DenunciarDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { PageHeader } from '../components/PageHeader';
-import { IconChat, IconHeart, IconQuestion } from '../components/icons';
+import {
+  IconChat,
+  IconFlag,
+  IconHeart,
+  IconQuestion,
+  IconTrash,
+} from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import {
   mapPost,
   openThread,
   type ThreadState,
+  withoutPost,
   withPage,
   withReply,
 } from '../lib/forum-thread';
+
+const ACAO =
+  'flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-50';
+
+/** Apagar o que é seu; denunciar o que é dos outros. */
+function AcaoDoAutor({
+  minha,
+  rotulo,
+  ocupado,
+  onApagar,
+  onDenunciar,
+}: {
+  minha: boolean;
+  rotulo: string;
+  ocupado: boolean;
+  onApagar: () => void;
+  onDenunciar: () => void;
+}) {
+  return minha ? (
+    <button
+      type="button"
+      onClick={onApagar}
+      disabled={ocupado}
+      aria-label={`Apagar ${rotulo}`}
+      className={`${ACAO} hover:text-danger`}
+    >
+      <IconTrash width={16} height={16} />
+      Apagar
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={onDenunciar}
+      aria-label={`Denunciar ${rotulo}`}
+      className={ACAO}
+    >
+      <IconFlag width={16} height={16} />
+      Denunciar
+    </button>
+  );
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -53,11 +103,20 @@ function renderBody(body: string) {
 function ThreadView({
   id,
   onBack,
+  onDeleted,
 }: {
   id: string;
   onBack: () => void;
+  /** O próprio autor apagou o tópico. */
+  onDeleted: () => void;
 }) {
+  const { me } = useAuth();
   const [thread, setThread] = useState<ThreadState | null>(null);
+  // Alvo da denúncia aberta: o tópico (postId nulo) ou uma resposta.
+  const [denunciar, setDenunciar] = useState<{ postId: string | null } | null>(
+    null,
+  );
+  const [apagando, setApagando] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [reply, setReply] = useState('');
@@ -139,6 +198,40 @@ function ThreadView({
     }
   }
 
+  async function apagarTopico() {
+    if (apagando) return;
+    if (
+      !window.confirm(
+        'Apagar este tópico? As respostas dele também somem. Não dá para desfazer.',
+      )
+    )
+      return;
+    setApagando(id);
+    setError(null);
+    try {
+      await api.deleteThread(id);
+      onDeleted();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível apagar.');
+      setApagando(null);
+    }
+  }
+
+  async function apagarResposta(postId: string) {
+    if (apagando) return;
+    if (!window.confirm('Apagar esta resposta? Não dá para desfazer.')) return;
+    setApagando(postId);
+    setError(null);
+    try {
+      await api.deletePost(id, postId);
+      setThread((prev) => (prev ? withoutPost(prev, postId) : prev));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível apagar.');
+    } finally {
+      setApagando(null);
+    }
+  }
+
   function renderPost(p: ForumPost) {
     return (
       <li key={p.id} className="card p-4">
@@ -168,6 +261,13 @@ function ThreadView({
             <IconHeart width={16} height={16} filled={p.liked} />
             {p.likes}
           </button>
+          <AcaoDoAutor
+            minha={p.author.id === me?.id}
+            rotulo="resposta"
+            ocupado={apagando === p.id}
+            onApagar={() => void apagarResposta(p.id)}
+            onDenunciar={() => setDenunciar({ postId: p.id })}
+          />
         </div>
         <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed">
           {renderBody(p.body)}
@@ -206,15 +306,24 @@ function ThreadView({
         <h1 className="font-display text-xl font-extrabold tracking-tight">
           {thread.title}
         </h1>
-        <p className="mt-1 text-xs text-muted">
-          <Link
-            to={`/usuarios/${thread.author.id}`}
-            className="font-medium text-brand hover:underline"
-          >
-            {thread.author.name}
-          </Link>{' '}
-          · {timeAgo(thread.createdAt)}
-        </p>
+        <div className="mt-1 flex items-center gap-2">
+          <p className="min-w-0 flex-1 text-xs text-muted">
+            <Link
+              to={`/usuarios/${thread.author.id}`}
+              className="font-medium text-brand hover:underline"
+            >
+              {thread.author.name}
+            </Link>{' '}
+            · {timeAgo(thread.createdAt)}
+          </p>
+          <AcaoDoAutor
+            minha={thread.author.id === me?.id}
+            rotulo="tópico"
+            ocupado={apagando === id}
+            onApagar={() => void apagarTopico()}
+            onDenunciar={() => setDenunciar({ postId: null })}
+          />
+        </div>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
           {renderBody(thread.body)}
         </p>
@@ -271,6 +380,14 @@ function ThreadView({
           </button>
         </div>
       </div>
+
+      {denunciar && (
+        <DenunciarDialog
+          threadId={id}
+          postId={denunciar.postId}
+          onClose={() => setDenunciar(null)}
+        />
+      )}
     </div>
   );
 }
@@ -379,7 +496,16 @@ export default function Comunidade() {
     );
   }
   if (typeof view === 'object') {
-    return <ThreadView id={view.id} onBack={() => setView('list')} />;
+    return (
+      <ThreadView
+        id={view.id}
+        onBack={() => setView('list')}
+        onDeleted={() => {
+          setView('list');
+          void load();
+        }}
+      />
+    );
   }
 
   return (

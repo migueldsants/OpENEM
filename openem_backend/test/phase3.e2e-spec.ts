@@ -43,6 +43,7 @@ describe('Fase 3 — gamificação (e2e)', () => {
       .send({
         email: `p3_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;

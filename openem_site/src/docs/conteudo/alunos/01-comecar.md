@@ -7,7 +7,8 @@ descricao: Crie sua conta, responda as duas perguntas iniciais e aprenda a se mo
 
 1. Abra o OpENEM e toque em **Criar conta**.
 2. Digite seu e-mail e uma senha com pelo menos 8 caracteres.
-3. Toque em **Criar conta** de novo para confirmar.
+3. Leia os [Termos de Uso](/termos/) e a [Política de Privacidade](/privacidade/) e marque **Li e aceito os Termos de Uso e a Política de Privacidade**. Se você tem menos de 18 anos, use o OpENEM com a ciência do seu responsável.
+4. Toque em **Criar conta** de novo para confirmar.
 
 Se você já tem conta, use a aba **Entrar** com o mesmo e-mail e senha. Se aparecer o aviso **Servidor fora do ar**, o problema está no servidor, não na sua senha: tente de novo mais tarde.
 

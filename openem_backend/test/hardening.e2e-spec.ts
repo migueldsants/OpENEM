@@ -57,11 +57,11 @@ describe('Hardening (e2e)', () => {
     emailB = `hard_b_${Date.now()}@exemplo.com`;
     const regA = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email: emailA, password: 'senhaForte123' })
+      .send({ email: emailA, password: 'senhaForte123', acceptTerms: true })
       .expect(201);
     const regB = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email: emailB, password: 'senhaForte123' })
+      .send({ email: emailB, password: 'senhaForte123', acceptTerms: true })
       .expect(201);
     tokenA = regA.body.accessToken;
     tokenB = regB.body.accessToken;

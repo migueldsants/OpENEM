@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
+import { ReportDto } from './dto/report.dto';
 import {
   afterCursor,
   clampPageSize,
@@ -135,6 +136,89 @@ export class CommunityService {
       likes: 0,
       liked: false,
     };
+  }
+
+  /**
+   * Apaga um tópico do próprio aluno, com as respostas de todos. Tópico de
+   * outro aluno responde 404, igual ao que não existe.
+   */
+  async deleteThread(userId: string, id: string) {
+    const { count } = await this.prisma.forumThread.deleteMany({
+      where: { id, userId },
+    });
+    if (count === 0) {
+      throw new NotFoundException('Tópico não encontrado');
+    }
+    return { removed: true };
+  }
+
+  /** Apaga uma resposta do próprio aluno; a de outro aluno responde 404. */
+  async deletePost(userId: string, threadId: string, postId: string) {
+    const { count } = await this.prisma.forumPost.deleteMany({
+      where: { id: postId, threadId, userId },
+    });
+    if (count === 0) {
+      throw new NotFoundException('Resposta não encontrada');
+    }
+    return { removed: true };
+  }
+
+  /**
+   * Denuncia um tópico (`postId` nulo) ou uma resposta. Fica gravada em
+   * ForumReport para quem modera a instalação; denunciar de novo o mesmo alvo
+   * só troca o motivo. O próprio autor não denuncia: ele pode apagar.
+   */
+  async report(
+    userId: string,
+    threadId: string,
+    postId: string | null,
+    dto: ReportDto,
+  ) {
+    const authorId = postId
+      ? await this.postAuthor(threadId, postId)
+      : await this.threadAuthor(threadId);
+    if (authorId === userId) {
+      throw new BadRequestException(
+        'Não dá para denunciar o que você mesmo escreveu',
+      );
+    }
+    const existing = await this.prisma.forumReport.findFirst({
+      where: { reporterId: userId, threadId, postId },
+      select: { id: true },
+    });
+    if (existing) {
+      await this.prisma.forumReport.update({
+        where: { id: existing.id },
+        data: { reason: dto.reason },
+      });
+    } else {
+      await this.prisma.forumReport.create({
+        data: { reporterId: userId, threadId, postId, reason: dto.reason },
+      });
+    }
+    return { reported: true };
+  }
+
+  private async threadAuthor(threadId: string): Promise<string> {
+    const thread = await this.prisma.forumThread.findUnique({
+      where: { id: threadId },
+      select: { userId: true },
+    });
+    if (!thread) {
+      throw new NotFoundException('Tópico não encontrado');
+    }
+    return thread.userId;
+  }
+
+  private async postAuthor(threadId: string, postId: string): Promise<string> {
+    const post = await this.prisma.forumPost.findUnique({
+      where: { id: postId },
+      select: { threadId: true, userId: true },
+    });
+    if (!post || post.threadId !== threadId) {
+      throw new NotFoundException('Resposta não encontrada');
+    }
+    return post.userId;
   }
 
   private async ensureThread(id: string) {

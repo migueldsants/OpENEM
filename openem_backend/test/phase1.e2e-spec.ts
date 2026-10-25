@@ -43,6 +43,7 @@ describe('Fase 1 — fluxo MVP (e2e)', () => {
       .send({
         email: `p1_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;

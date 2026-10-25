@@ -58,3 +58,5 @@ Enquanto houver ações guardadas, a faixa mostra quantas estão pendentes. Quan
 Sua conta guarda respostas, desempenho, revisão, favoritos, anotações das questões, simulados salvos, cronograma, flashcards e temas salvos em **Meus temas**. Isso aparece em qualquer aparelho em que você entrar.
 
 Ficam só no aparelho: o tema em uso, os quadros da tela **Quadro**, os cronômetros e timers, o quadro da sala e o simulado em andamento. Se trocar de celular ou limpar os dados do navegador, isso se perde.
+
+Sair da conta apaga só o login deste aparelho; a cópia das telas que você abriu continua guardada. Num computador compartilhado, prefira uma janela anônima. Excluir a conta, em **Perfil**, apaga também essa cópia, as respostas que esperavam internet e os quadros.

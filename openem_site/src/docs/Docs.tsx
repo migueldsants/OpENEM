@@ -54,6 +54,23 @@ function Navegacao({ aoEscolher }: { aoEscolher?: () => void }) {
   );
 }
 
+/** Política de Privacidade e Termos de Uso, no idioma da página. */
+function LinksLegais({ className = '' }: { className?: string }) {
+  const idioma = useIdioma();
+  const t = TEXTOS[idioma];
+  const prefixo = idioma === 'en' ? '/en' : '';
+  return (
+    <nav aria-label={t.legais} className={`flex gap-4 text-xs text-muted ${className}`}>
+      <a href={`${prefixo}/privacidade/`} className="hover:text-fg">
+        {t.privacidade}
+      </a>
+      <a href={`${prefixo}/termos/`} className="hover:text-fg">
+        {t.termos}
+      </a>
+    </nav>
+  );
+}
+
 /** Link para o mesmo endereço no outro idioma. */
 function TrocaDeIdioma({ aoEscolher, className = '' }: { aoEscolher?: () => void; className?: string }) {
   const { pathname } = useLocation();
@@ -287,6 +304,7 @@ export function Docs() {
                 <GithubLogo size={20} />
               </a>
             </div>
+            <LinksLegais className="mt-3" />
           </div>
         </div>
       </aside>
@@ -319,6 +337,7 @@ export function Docs() {
               {t.abrirApp}
             </a>
             <TrocaDeIdioma aoEscolher={() => setMenu(false)} className="mt-3" />
+            <LinksLegais className="mt-4 px-2" />
           </div>
         )}
       </header>

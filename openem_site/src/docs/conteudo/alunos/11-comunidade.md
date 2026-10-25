@@ -24,7 +24,15 @@ A tela **Comunidade** é um fórum de dúvidas entre estudantes. A lista mostra 
 
 O coração ao lado de cada resposta serve para curtir ou descurtir. Use para mostrar qual resposta ajudou.
 
-> **Atenção:** hoje não dá para editar nem apagar um tópico ou uma resposta depois de publicar. Releia antes de enviar.
+## Apagar o que você escreveu
+
+No seu tópico e nas suas respostas aparece o botão **Apagar**. Ele pede confirmação e não dá para desfazer.
+
+> **Atenção:** apagar um tópico apaga também todas as respostas dele, inclusive as dos outros alunos. Ainda não dá para editar um tópico ou uma resposta: para corrigir, apague e publique de novo.
+
+## Denunciar
+
+Viu ofensa, assédio, spam ou alguém expondo dados pessoais? Toque em **Denunciar** no tópico ou na resposta, escolha um dos motivos prontos ou escreva o seu, e toque em **Enviar denúncia**. A denúncia vai para quem cuida desta instalação do OpENEM, e a pessoa denunciada não fica sabendo quem denunciou. O que não é permitido está nos [Termos de Uso](/termos/).
 
 ## O nome que os outros veem
 

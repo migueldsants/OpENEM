@@ -98,6 +98,54 @@
         "tags": [
           "users"
         ]
+      },
+      "delete": {
+        "operationId": "UsersController_deleteMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Exclui a conta e todos os dados do aluno, confirmando a senha atual (LGPD, art. 18)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/me/export": {
+      "get": {
+        "operationId": "UsersController_exportData",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Baixa todos os dados do aluno em JSON (LGPD, art. 18)",
+        "tags": [
+          "users"
+        ]
       }
     },
     "/api/v1/users/{id}/profile": {
@@ -2122,6 +2170,33 @@
         "tags": [
           "community"
         ]
+      },
+      "delete": {
+        "operationId": "CommunityController_removeThread",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Apaga um tópico próprio, com as respostas (o de outro aluno é 404)",
+        "tags": [
+          "community"
+        ]
       }
     },
     "/api/v1/community/threads/{id}/posts": {
@@ -2242,6 +2317,129 @@
           }
         ],
         "summary": "Curtir/descurtir uma resposta do fórum (toggle)",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/community/threads/{id}/posts/{postId}": {
+      "delete": {
+        "operationId": "CommunityController_removePost",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Apaga uma resposta própria (a de outro aluno é 404)",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/community/threads/{id}/report": {
+      "post": {
+        "operationId": "CommunityController_reportThread",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Denuncia um tópico do fórum",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/community/threads/{id}/posts/{postId}/report": {
+      "post": {
+        "operationId": "CommunityController_reportPost",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Denuncia uma resposta do fórum",
         "tags": [
           "community"
         ]
@@ -3142,11 +3340,17 @@
           "displayName": {
             "type": "string",
             "example": "Maria"
+          },
+          "acceptTerms": {
+            "type": "boolean",
+            "example": true,
+            "description": "Aceite dos Termos de Uso e da Política de Privacidade (menores de 18 anos usam com ciência do responsável). Tem de ser true."
           }
         },
         "required": [
           "email",
-          "password"
+          "password",
+          "acceptTerms"
         ]
       },
       "LoginDto": {
@@ -3163,6 +3367,19 @@
         },
         "required": [
           "email",
+          "password"
+        ]
+      },
+      "DeleteAccountDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "example": "senhaForte123",
+            "description": "Senha atual, para confirmar a exclusão"
+          }
+        },
+        "required": [
           "password"
         ]
       },
@@ -4024,6 +4241,21 @@
         },
         "required": [
           "body"
+        ]
+      },
+      "ReportDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "example": "Ofensa a outro aluno",
+            "description": "Motivo da denúncia, lido por quem modera a instalação"
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "CreateWeeklyGoalDto": {

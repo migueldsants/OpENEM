@@ -43,6 +43,7 @@ describe('Fase 2 — pós-MVP (e2e)', () => {
       .send({
         email: `p2_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;

@@ -42,6 +42,7 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
       .send({
         email: `xp17_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;
