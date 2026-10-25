@@ -27,12 +27,37 @@ export interface SyncOptions {
 const dormir = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export type PendingAction =
+/**
+ * `owner` é o aluno que fez a ação offline (o `sub` do JWT). A fila fica no
+ * aparelho, não na conta: sem o dono, a resposta de um aluno era enviada com o
+ * token de quem entrasse depois no mesmo celular. Ação gravada antes do campo
+ * existir vem sem `owner` e segue com o token atual.
+ */
+export type PendingAction = (
   | { kind: 'answer'; key: string; questionId: string; chosenId?: string; timeSpentSec?: number }
-  | { kind: 'review'; key: string; reviewItemId: string; quality: number };
+  | { kind: 'review'; key: string; reviewItemId: string; quality: number }
+) & { owner?: string | null };
 
 const DB_NAME = 'openem';
 const STORE = 'pending-actions';
+const TOKEN_KEY = 'openem.token';
+
+/** O aluno da sessão atual: o `sub` do JWT salvo, ou null. */
+export function currentOwner(): string | null {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const sub = (JSON.parse(atob(payload)) as { sub?: unknown }).sub;
+    return typeof sub === 'string' ? sub : null;
+  } catch {
+    return null;
+  }
+}
+
+function isMine(action: PendingAction): boolean {
+  return action.owner === undefined || action.owner === currentOwner();
+}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -48,19 +73,20 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-/** Enfileira (ou substitui) uma ação pendente. */
+/** Enfileira (ou substitui) uma ação pendente, marcada com o aluno atual. */
 export async function enqueue(action: PendingAction): Promise<void> {
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(action); // mesmo key = substitui (dedupe)
+    // mesmo key = substitui (dedupe)
+    tx.objectStore(STORE).put({ ...action, owner: action.owner ?? currentOwner() });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
   db.close();
 }
 
-/** Lista as ações pendentes (ordem de inserção lógica: FIFO por tipo). */
+/** Lista as ações pendentes de qualquer aluno (ordem lógica: FIFO por tipo). */
 export async function listPending(): Promise<PendingAction[]> {
   const db = await openDb();
   const all = await new Promise<PendingAction[]>((resolve, reject) => {
@@ -73,9 +99,26 @@ export async function listPending(): Promise<PendingAction[]> {
   return all;
 }
 
+/** Ações pendentes do aluno da sessão atual. */
+async function listMine(): Promise<PendingAction[]> {
+  return (await listPending()).filter(isMine);
+}
+
 export async function countPending(): Promise<number> {
-  const pending = await listPending();
+  const pending = await listMine();
   return pending.length;
+}
+
+/** Esvazia a fila inteira (logout: o aparelho pode ser de outra pessoa). */
+export async function clearPending(): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
 }
 
 /** Remove da fila após o envio com sucesso. */
@@ -102,7 +145,8 @@ export async function dequeue(key: string): Promise<void> {
  */
 export async function syncPending(options: SyncOptions = {}): Promise<number> {
   const { sleep = dormir, maxWaitSec = 60, maxRetries = 5 } = options;
-  const pending = await listPending();
+  // Só as do aluno logado: a de outro aluno espera ele entrar de novo.
+  const pending = await listMine();
   let synced = 0;
   for (const action of pending) {
     let tentativas = 0;
@@ -145,9 +189,9 @@ async function sendAnswer(action: Extract<PendingAction, { kind: 'answer' }>) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(localStorage.getItem('openem.token')
+      ...(localStorage.getItem(TOKEN_KEY)
         ? {
-            Authorization: `Bearer ${localStorage.getItem('openem.token')}`,
+            Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
           }
         : {}),
     },
@@ -165,9 +209,9 @@ async function sendReview(action: Extract<PendingAction, { kind: 'review' }>) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(localStorage.getItem('openem.token')
+      ...(localStorage.getItem(TOKEN_KEY)
         ? {
-            Authorization: `Bearer ${localStorage.getItem('openem.token')}`,
+            Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
           }
         : {}),
     },

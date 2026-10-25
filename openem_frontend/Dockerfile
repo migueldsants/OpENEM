@@ -17,7 +17,10 @@ RUN cd openem_site && npm ci
 COPY openem_frontend/ openem_frontend/
 COPY openem_site/ openem_site/
 
-RUN cd openem_frontend && npm run build
+# Código-fonte que o app mostra no Login e no Perfil (AGPL-3.0, §13). Quem
+# hospeda uma versão modificada aponta para o próprio fork. Vazio: o oficial.
+ARG SOURCE_URL=
+RUN cd openem_frontend && VITE_SOURCE_URL="$SOURCE_URL" npm run build
 
 # Domínio da instalação (ex.: https://openem.exemplo), para o sitemap e as URLs
 # absolutas do Open Graph. Vazio: sem sitemap, URLs relativas.

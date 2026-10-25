@@ -55,8 +55,9 @@ The cache holds what is the same for every student: subjects, exams, search face
 | `PORT` | `3000` | API port. Fixed in Compose. |
 | `NODE_ENV` | none (`production` in the Docker image) | `production` turns off the Swagger at `/api` and requires a valid `JWT_SECRET`. Fixed in Compose. |
 | `TRUST_PROXY` | none (trusts no proxy) | Number of proxies in front of the API (`1`) or a list of addresses and subnets (`loopback, 10.0.0.0/8`). `true` is rejected and keeps the API from starting. Fixed to `1` in Compose; see [Production](/docs/en/hospedar/producao/). |
-| `CORS_ORIGINS` | none | Origins allowed by CORS, comma separated. Without a value, the API accepts requests from any origin. Outside Compose. |
+| `CORS_ORIGINS` | none | Origins allowed by CORS, comma separated. Without a value, the API leaves CORS off in production (the app reaches it from the same origin through nginx) and accepts any origin outside production. `*` is rejected and stops the API from starting. Outside Compose. |
 | `SITE_URL` | none | Public domain of the installation, such as `https://openem.example`. It goes into the frontend image build: it generates `sitemap.xml` and makes the Open Graph URLs absolute. Without it, the site ships without a sitemap and with relative URLs. Changing it requires `docker compose up --build`. |
+| `SOURCE_URL` | the official repository | Source code address the app shows on Login and Profile. The AGPL-3.0 requires that people using the app over the network can get the code running on it: if you modified OpENEM, point it at your fork. It goes into the frontend image build; changing it requires `docker compose up --build`. |
 
 ## Rate limiting
 

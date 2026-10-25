@@ -75,6 +75,7 @@ describe('UsersService', () => {
       const res = await service.getPublicProfile('u1');
       expect(res).not.toHaveProperty('email');
       expect(res.displayName).toBe('Ana');
+      if (!res.gamificationEnabled) throw new Error('gamificação ligada');
       expect(res.level).toBe(5); // 25*(5-1)^2 = 400
       expect(res.league.key).toBe('PRATA');
       expect(res.achievementsUnlocked).toBe(1);
@@ -94,8 +95,63 @@ describe('UsersService', () => {
 
       const res = await service.getPublicProfile('u2');
       expect(res.displayName).toBe('Estudante');
+      if (!res.gamificationEnabled) throw new Error('gamificação ligada');
       expect(res.xp).toBe(0);
       expect(res.achievementsUnlocked).toBe(0);
+    });
+
+    it('esconde XP, nível, sequência e conquistas de quem desligou a gamificação', async () => {
+      const prisma = makePrisma() as any;
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u3',
+        createdAt: new Date('2026-01-01'),
+        profile: {
+          displayName: 'Bia',
+          goal: 'PROUNI',
+          gamificationEnabled: false,
+        },
+        gamification: {
+          points: 900,
+          currentStreak: 7,
+          lastActivityOn: new Date(),
+        },
+        achievements: [{ code: 'FIRST_ANSWER', unlockedAt: new Date() }],
+      });
+      const service = new UsersService(prisma);
+
+      const res = await service.getPublicProfile('u3');
+      expect(res).toEqual({
+        id: 'u3',
+        displayName: 'Bia',
+        goal: 'PROUNI',
+        createdAt: new Date('2026-01-01'),
+        gamificationEnabled: false,
+      });
+    });
+
+    it('sequência que já quebrou aparece como 0', async () => {
+      const prisma = makePrisma() as any;
+      const anteontem = new Date(Date.now() - 3 * 86_400_000);
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u4',
+        createdAt: new Date('2026-01-01'),
+        profile: {
+          displayName: 'Caio',
+          goal: 'SISU',
+          gamificationEnabled: true,
+        },
+        gamification: {
+          points: 10,
+          currentStreak: 12,
+          lastActivityOn: anteontem,
+        },
+        achievements: [],
+      });
+      const service = new UsersService(prisma);
+
+      const res = await service.getPublicProfile('u4');
+      if (!res.gamificationEnabled) throw new Error('gamificação ligada');
+      expect(res.currentStreak).toBe(0);
     });
 
     it('retorna 404 para usuário inexistente', async () => {
