@@ -144,6 +144,8 @@ services:
       args:
         # Domínio da instalação, para o sitemap e o Open Graph (opcional).
         - SITE_URL=${SITE_URL:-}
+        # Código-fonte que o app mostra (AGPL-3.0): o do seu fork, se modificou.
+        - SOURCE_URL=${SOURCE_URL:-}
     restart: unless-stopped
     ports:
       - '8080:80'

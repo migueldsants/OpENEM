@@ -394,11 +394,18 @@ export interface ThemeInput {
   isPublic?: boolean;
 }
 export type CommunityThemeSort = 'popular' | 'recent';
-export interface PublicProfile {
+interface PublicProfileBase {
   id: string;
   displayName: string;
   goal: string;
   createdAt: string;
+}
+/** Quem desligou a gamificação aparece sem XP, nível, sequência e conquistas. */
+export type PublicProfile =
+  | (PublicProfileBase & { gamificationEnabled: false })
+  | PublicProfileGamified;
+export interface PublicProfileGamified extends PublicProfileBase {
+  gamificationEnabled: true;
   xp: number;
   level: number;
   league: { key: string; name: string };

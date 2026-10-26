@@ -22,8 +22,12 @@ describe('carregamento do script de tema', () => {
   it('vem do próprio arquivo, síncrono e antes do CSS', () => {
     const tag = /<script id="theme-boot"[^>]*>/.exec(head)?.[0];
     expect(tag).toBe('<script id="theme-boot" src="/theme-boot.js">');
-    // Sem async/defer/module: tem de rodar antes da primeira pintura.
-    expect(head.indexOf(tag!)).toBeLessThan(head.indexOf('rel="stylesheet"'));
+    // Sem async/defer/module: tem de rodar antes da primeira pintura. O CSS
+    // (fontes inclusive) vem do bundle, que o Vite injeta no fim do <head>;
+    // folha escrita à mão no index.html também tem de vir depois.
+    const css = head.indexOf('rel="stylesheet"');
+    if (css >= 0) expect(head.indexOf(tag!)).toBeLessThan(css);
+    expect(head.indexOf(tag!)).toBeGreaterThanOrEqual(0);
   });
 
   it('o index.html não tem script inline (a CSP do nginx só aceita arquivo)', () => {

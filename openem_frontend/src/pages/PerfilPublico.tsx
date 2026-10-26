@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, type PublicProfile } from '../api';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconBolt, IconCheck, IconFlame, IconTrophy } from '../components/icons';
+import { IconBolt, IconCheck, IconFlame, IconLock, IconTrophy } from '../components/icons';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import { leagueStyle } from '../lib/gamification';
 import { PageHeader } from '../components/PageHeader';
@@ -53,15 +53,35 @@ export default function PerfilPublico() {
     );
   }
 
+  const header = (
+    <PageHeader
+      eyebrow="Perfil público"
+      title={profile.displayName}
+      subtitle={<>Estudante desde {new Date(profile.createdAt).toLocaleDateString('pt-BR')}{' '} ({timeSince(profile.createdAt)}) · Objetivo: {profile.goal}</>}
+    />
+  );
+
+  if (!profile.gamificationEnabled) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <section className="card flex items-center gap-3 p-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted">
+            <IconLock width={18} height={18} />
+          </span>
+          <p className="text-sm text-muted">
+            Este estudante desligou pontos, sequência e conquistas.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
   const league = leagueStyle(profile.league.key);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Perfil público"
-        title={profile.displayName}
-        subtitle={<>Estudante desde {new Date(profile.createdAt).toLocaleDateString('pt-BR')}{' '} ({timeSince(profile.createdAt)}) · Objetivo: {profile.goal}</>}
-      />
+      {header}
 
       <section
         className={`card card-raised overflow-hidden p-5 ring-1 ${league.ring}`}

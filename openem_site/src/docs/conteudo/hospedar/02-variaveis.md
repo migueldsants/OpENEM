@@ -68,8 +68,9 @@ Os dois recursos são opcionais e precisam da `SITE_URL`: o link do e-mail e o e
 | `PORT` | `3000` | Porta da API. Fixo no compose. |
 | `NODE_ENV` | nenhum (`production` na imagem Docker) | `production` desliga o Swagger em `/api` e exige um `JWT_SECRET` válido. Fixo no compose. |
 | `TRUST_PROXY` | nenhum (não confia em proxy) | Número de proxies à frente da API (`1`) ou lista de endereços e sub-redes (`loopback, 10.0.0.0/8`). `true` é recusado e impede a API de subir. Fixo em `1` no compose; veja [Produção](/docs/hospedar/producao/). |
-| `CORS_ORIGINS` | nenhum | Origens liberadas no CORS, separadas por vírgula. Sem valor, a API aceita requisições de qualquer origem. Fora do compose. |
+| `CORS_ORIGINS` | nenhum | Origens liberadas no CORS, separadas por vírgula. Sem valor, a API em produção não liga o CORS (o app usa a mesma origem pelo nginx) e, fora de produção, aceita qualquer origem. `*` é recusado e impede a API de subir. Fora do compose. |
 | `SITE_URL` | nenhum | Domínio público da instalação, como `https://openem.exemplo`. Entra no build da imagem do frontend, onde gera o `sitemap.xml` e deixa absolutas as URLs do Open Graph, e o backend monta com ela o link do e-mail de redefinição de senha e o endereço de volta do login com Google. Sem ela, o site sai sem sitemap e com URLs relativas, e esses dois recursos ficam desligados (fora de produção, o backend usa `http://localhost:5173`). Trocar exige `docker compose up --build`. |
+| `SOURCE_URL` | o repositório oficial | Endereço do código-fonte que o app mostra no Login e no Perfil. A AGPL-3.0 pede que quem usa o app pela rede possa obter o código que roda nele: se você modificou o OpENEM, aponte para o seu fork. Entra no build da imagem do frontend; trocar exige `docker compose up --build`. |
 
 ## Rate limiting
 

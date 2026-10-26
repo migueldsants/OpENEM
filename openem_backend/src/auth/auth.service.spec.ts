@@ -19,12 +19,20 @@ import { SessionsService } from './sessions.service';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: { user: { findUnique: jest.Mock; create: jest.Mock } };
+  let prisma: {
+    user: { findUnique: jest.Mock; findFirst: jest.Mock; create: jest.Mock };
+  };
   let jwt: { signAsync: jest.Mock };
   let attempts: LoginAttemptsService;
 
   beforeEach(() => {
-    prisma = { user: { findUnique: jest.fn(), create: jest.fn() } };
+    prisma = {
+      user: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+      },
+    };
     jwt = { signAsync: jest.fn().mockResolvedValue('signed-token') };
     attempts = new LoginAttemptsService(new MemoryCacheStore(), 'rl');
     service = new AuthService(
@@ -63,6 +71,33 @@ describe('AuthService', () => {
         service.register({ email: 'a@b.com', password: 'password123' }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
+
+    it('grava o e-mail em minúsculas e sem espaços', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'u1', email: 'ana@b.com' });
+
+      await service.register({ email: ' Ana@B.com ', password: 'password123' });
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'ana@b.com' },
+      });
+      const createArg = prisma.user.create.mock.calls[0][0] as {
+        data: { email: string };
+      };
+      expect(createArg.data.email).toBe('ana@b.com');
+    });
+
+    it('recusa o mesmo e-mail com outra caixa numa conta antiga', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue({ id: 'antiga' });
+      await expect(
+        service.register({ email: 'ana@b.com', password: 'password123' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: { email: { equals: 'ana@b.com', mode: 'insensitive' } },
+        orderBy: { createdAt: 'asc' },
+      });
+    });
   });
 
   describe('login', () => {
@@ -79,6 +114,38 @@ describe('AuthService', () => {
         password: 'password123',
       });
       expect(res.accessToken).toBe('signed-token');
+    });
+
+    it('entra com o e-mail digitado em outra caixa', async () => {
+      const passwordHash = await argon2.hash('password123');
+      prisma.user.findUnique.mockImplementation(
+        ({ where }: { where: { email: string } }) =>
+          Promise.resolve(
+            where.email === 'ana@b.com'
+              ? { id: 'u1', email: 'ana@b.com', passwordHash }
+              : null,
+          ),
+      );
+      const res = await service.login({
+        email: 'Ana@B.com',
+        password: 'password123',
+      });
+      expect(res.user.email).toBe('ana@b.com');
+    });
+
+    it('acha conta antiga gravada com maiúsculas', async () => {
+      const passwordHash = await argon2.hash('password123');
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue({
+        id: 'u1',
+        email: 'Ana@B.com',
+        passwordHash,
+      });
+      const res = await service.login({
+        email: 'ana@b.com',
+        password: 'password123',
+      });
+      expect(res.user.id).toBe('u1');
     });
 
     it('rejeita e-mail inexistente com 401 genérico', async () => {

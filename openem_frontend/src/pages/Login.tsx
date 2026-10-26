@@ -7,6 +7,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import ThemeToggle from '../components/ThemeToggle';
 import { AREAS, AREA_DOT } from '../lib/areas';
 import { countdown } from '../lib/rate-limit';
+import { SOURCE_URL } from '../lib/site';
 
 type Mode = 'login' | 'register';
 
@@ -250,7 +251,15 @@ export default function Login() {
             )}
           </div>
           <p className="mt-4 text-center text-xs text-muted">
-            100% gratuito e open-source · AGPL-3.0
+            100% gratuito e open-source ·{' '}
+            <a
+              href={SOURCE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-fg"
+            >
+              código-fonte (AGPL-3.0)
+            </a>
           </p>
         </section>
       </div>

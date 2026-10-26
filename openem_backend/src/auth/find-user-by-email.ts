@@ -1,3 +1,4 @@
+import { normalizeEmail } from '../common/rate-limit';
 import type { PrismaService } from '../prisma/prisma.service';
 
 export interface EmailLookupUser {
@@ -23,16 +24,17 @@ const select = {
 } as const;
 
 /**
- * Conta de um e-mail digitado ou vindo do Google. O e-mail do banco guarda a
- * caixa que o aluno digitou no cadastro (`Ana@...` e `ana@...` podem ser duas
- * contas), então vale primeiro o igual exato e, sem ele, o igual sem
- * diferenciar maiúsculas, desde que seja uma conta só.
+ * Conta de um e-mail digitado ou vindo do Google. O e-mail é gravado
+ * normalizado (minúsculas, sem espaços; migração `email_minusculas`), então
+ * vale primeiro o igual exato ao normalizado. Sem ele, o igual sem diferenciar
+ * maiúsculas cobre as contas antigas que colidiam e ficaram como estavam,
+ * desde que seja uma conta só.
  */
 export async function findUserByEmail(
   prisma: Pick<PrismaService, 'user'>,
   email: string,
 ): Promise<EmailLookup> {
-  const limpo = email.trim();
+  const limpo = normalizeEmail(email);
   const exato = await prisma.user.findUnique({
     where: { email: limpo },
     select,

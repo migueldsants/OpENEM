@@ -14,6 +14,7 @@ import {
   setUnauthorizedHandler,
   type Me,
 } from './api';
+import { clearApiCache, clearSessionData } from './offline/session';
 
 interface AuthState {
   token: string | null;
@@ -64,7 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setUnauthorizedHandler(null);
   }, []);
 
-  const persist = useCallback((accessToken: string) => {
+  // Antes de entrar, apaga o cache da API: pode ser de outro aluno que usou o
+  // aparelho e saiu por token vencido (401), sem passar pelo logout.
+  const persist = useCallback(async (accessToken: string) => {
+    await clearApiCache();
     setToken(accessToken);
     setTokenState(accessToken);
   }, []);
@@ -72,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const res = await api.login(email, password);
-      persist(res.accessToken);
+      await persist(res.accessToken);
       await refreshMe();
     },
     [persist, refreshMe],
@@ -81,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (email: string, password: string) => {
       const res = await api.register(email, password);
-      persist(res.accessToken);
+      await persist(res.accessToken);
       await refreshMe();
     },
     [persist, refreshMe],
@@ -89,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (accessToken: string) => {
-      persist(accessToken);
+      await persist(accessToken);
       await refreshMe();
     },
     [persist, refreshMe],
@@ -99,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setTokenState(null);
     setMe(null);
+    // O aparelho pode ser de outra pessoa: nada do aluno fica para trás.
+    void clearSessionData();
   }, []);
 
   return (

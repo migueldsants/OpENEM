@@ -7,7 +7,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { SegurancaConta } from '../components/SegurancaConta';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
-import { DOCS_URL, docsAlunos } from '../lib/site';
+import { DOCS_URL, docsAlunos, SOURCE_URL } from '../lib/site';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -298,6 +298,24 @@ export default function Perfil() {
           </a>
           <a href={docsAlunos('perguntas-frequentes')} className="btn btn-ghost">
             Perguntas frequentes
+          </a>
+        </div>
+      </div>
+
+      <div className="card p-4">
+        <p className="eyebrow">Código aberto</p>
+        <p className="mt-1 text-sm text-muted">
+          O OpENEM é software livre (AGPL-3.0): o código que roda aqui está
+          disponível para qualquer pessoa ler, estudar e melhorar.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href={SOURCE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost"
+          >
+            Ver o código-fonte
           </a>
         </div>
       </div>

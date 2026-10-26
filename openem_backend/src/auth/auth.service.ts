@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
+import { normalizeEmail } from '../common/rate-limit';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginAttemptsService } from '../rate-limit/login-attempts.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -32,10 +33,27 @@ export class AuthService {
     private readonly attempts: LoginAttemptsService,
   ) {}
 
+  /**
+   * Conta do e-mail, sem diferenciar maiúsculas. O e-mail é gravado
+   * normalizado; a busca sem diferenciar cobre as contas antigas que a
+   * migração `email_minusculas` não pôde normalizar por colidirem entre si
+   * (fica a mais antiga).
+   */
+  private async findByEmail(email: string) {
+    return (
+      (await this.prisma.user.findUnique({ where: { email } })) ??
+      (await this.prisma.user.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' } },
+        orderBy: { createdAt: 'asc' },
+      }))
+    );
+  }
+
   async register(dto: RegisterDto): Promise<AuthResult> {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    // "Ana@x.com" e "ana@x.com" são a mesma pessoa: o teclado do celular põe
+    // a primeira letra em maiúscula e o aluno não volta a digitar igual.
+    const email = normalizeEmail(dto.email);
+    const existing = await this.findByEmail(email);
     if (existing) {
       throw new ConflictException('E-mail já cadastrado');
     }
@@ -43,7 +61,7 @@ export class AuthService {
     const passwordHash = await argon2.hash(dto.password);
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         passwordHash,
         profile: {
           create: { displayName: dto.displayName },
@@ -58,9 +76,7 @@ export class AuthService {
     // Conta bloqueada por senhas erradas: recusa antes de olhar a senha, com
     // a mesma resposta para e-mail com e sem conta.
     await this.attempts.assertAllowed(dto.email);
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    const user = await this.findByEmail(normalizeEmail(dto.email));
     // Mensagem genérica: não revela se o e-mail existe.
     const invalid = new UnauthorizedException('Credenciais inválidas');
     if (!user?.passwordHash) {

@@ -32,6 +32,16 @@ describe('findUserByEmail', () => {
     });
   });
 
+  it('e-mail digitado com maiúsculas acha a conta gravada normalizada', async () => {
+    const prisma = fakeAuthPrisma();
+    await prisma.user.create({ data: { email: 'ana@x.com' } });
+    await prisma.user.create({ data: { email: 'ANA@X.COM' } });
+    expect(await findUserByEmail(prisma, ' Ana@X.com ')).toMatchObject({
+      kind: 'found',
+      user: { email: 'ana@x.com' },
+    });
+  });
+
   it('nenhuma conta', async () => {
     expect(await findUserByEmail(fakeAuthPrisma(), 'x@y.z')).toEqual({
       kind: 'none',

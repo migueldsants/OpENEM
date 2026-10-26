@@ -4,6 +4,12 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthProvider, useAuth } from './auth';
 import { api, HttpError, setToken, getToken } from './api';
+import { clearApiCache, clearSessionData } from './offline/session';
+
+vi.mock('./offline/session', () => ({
+  clearApiCache: vi.fn().mockResolvedValue(undefined),
+  clearSessionData: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('./api', async () => {
   const actual = await vi.importActual<typeof import('./api')>('./api');
@@ -125,6 +131,25 @@ describe('AuthProvider (issue #47)', () => {
     act(() => result.current.logout());
     expect(result.current.authenticated).toBe(false);
     expect(getToken()).toBeNull();
+    // Cache da API e fila offline saem junto (aparelho compartilhado).
+    expect(clearSessionData).toHaveBeenCalledTimes(1);
+  });
+
+  it('login apaga o cache da API antes de gravar o token novo', async () => {
+    mockedApi.login.mockResolvedValue({
+      accessToken: 'tok-novo',
+      user: { id: 'u2', email: 'b@c.com' },
+    });
+    mockedApi.me.mockResolvedValue({ id: 'u2', email: 'b@c.com' } as never);
+    vi.mocked(clearApiCache).mockImplementation(async () => {
+      // Ainda sem o token novo: o cache sai antes de qualquer GET do aluno.
+      expect(getToken()).toBeNull();
+    });
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(() => result.current.login('b@c.com', 'segredo123'));
+    expect(clearApiCache).toHaveBeenCalledTimes(1);
+    expect(getToken()).toBe('tok-novo');
   });
 
   it('useAuth fora do provider lança erro claro', () => {
