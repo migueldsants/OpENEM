@@ -15,12 +15,18 @@ const redirecionadas =
     .exec(nginx)?.[1]
     .split('|') ?? [];
 
+/**
+ * Rotas criadas depois da mudança para /app/: nunca existiram na raiz, então
+ * não há endereço antigo a redirecionar (nem a renovar no sw.js do site).
+ */
+const NASCERAM_EM_APP = ['esqueci-senha', 'redefinir-senha', 'entrar'];
+
 /** Primeiro segmento de cada rota do app ("/usuarios/:id" → "usuarios"). */
 const rotasDoApp = [
   ...new Set(
     [...app.matchAll(/path="\/([a-z-]+)/g)].map(([, segmento]) => segmento),
   ),
-];
+].filter((rota) => !NASCERAM_EM_APP.includes(rota));
 
 describe('nginx — endereços antigos do app', () => {
   it('a regra de 301 existe', () => {

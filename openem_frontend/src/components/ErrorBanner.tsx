@@ -7,9 +7,12 @@ import { IconAlert } from './icons';
 export function ErrorBanner({
   message,
   onRetry,
+  wrap = false,
 }: {
   message?: string | null;
   onRetry?: () => void;
+  /** Quebra a mensagem em linhas em vez de cortar com reticências. */
+  wrap?: boolean;
 }) {
   if (!message) return null;
   return (
@@ -19,7 +22,7 @@ export function ErrorBanner({
     >
       <span className="flex min-w-0 items-center gap-2">
         <IconAlert width={16} height={16} className="shrink-0" aria-hidden />
-        <span className="truncate">{message}</span>
+        <span className={wrap ? 'min-w-0' : 'truncate'}>{message}</span>
       </span>
       {onRetry && (
         <button

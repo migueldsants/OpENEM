@@ -26,6 +26,34 @@ describe('UsersService', () => {
       );
     });
 
+    it('diz se a conta tem senha e Google, sem devolver o hash nem o sub', async () => {
+      const prisma = makePrisma() as any;
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        passwordHash: '$argon2id$...',
+        googleSub: null,
+        profile: null,
+      });
+      const service = new UsersService(prisma);
+      const res = await service.getMe('u1');
+      expect(res).toMatchObject({ hasPassword: true, googleLinked: false });
+      expect(res).not.toHaveProperty('passwordHash');
+      expect(res).not.toHaveProperty('googleSub');
+
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        passwordHash: null,
+        googleSub: '123',
+        profile: null,
+      });
+      expect(await service.getMe('u1')).toMatchObject({
+        hasPassword: false,
+        googleLinked: true,
+      });
+    });
+
     it('retorna 404 para usuário inexistente', async () => {
       const prisma = makePrisma() as any;
       prisma.user.findUnique.mockResolvedValue(null);

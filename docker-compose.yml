@@ -85,6 +85,16 @@ services:
       # Gere um segredo forte (ex.: `openssl rand -hex 32`) e exporte antes do up.
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no .env (openssl rand -hex 32)}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      # Endereço público: o link do e-mail de redefinição de senha e a volta do
+      # login com Google saem dele, nunca do cabeçalho Host do pedido.
+      - SITE_URL=${SITE_URL:-}
+      # Recuperação de senha por e-mail e login com Google, os dois opcionais
+      # (ver /docs/hospedar/email-e-google/). Sem eles, o app fica só com
+      # e-mail e senha.
+      - SMTP_URL=${SMTP_URL:-}
+      - MAIL_FROM=${MAIL_FROM:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       # O nginx do frontend é o único proxy à frente da API. Sem isso o rate
       # limiting vê só o IP do container e trata o site inteiro como um cliente
       # (10 senhas erradas bloqueariam o login de todos).

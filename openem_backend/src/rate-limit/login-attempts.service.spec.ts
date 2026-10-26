@@ -83,6 +83,18 @@ describe('LoginAttemptsService', () => {
     ).resolves.toBeNull();
   });
 
+  it('clear (senha redefinida) solta o bloqueio, mas o próximo ainda dobra', async () => {
+    const { service } = setup();
+    await erra(service, 'a@b.com', 5);
+    await service.clear('A@b.com');
+    await expect(service.assertAllowed('a@b.com')).resolves.toBeUndefined();
+    await erra(service, 'a@b.com', 4);
+    const err: unknown = await service
+      .recordFailure('a@b.com')
+      .catch((e: unknown) => e);
+    expect((err as TooManyAttemptsException).retryAfterSec).toBe(30 * 60);
+  });
+
   it('cada conta tem as próprias falhas', async () => {
     const { service } = setup();
     await erra(service, 'a@b.com', 5);

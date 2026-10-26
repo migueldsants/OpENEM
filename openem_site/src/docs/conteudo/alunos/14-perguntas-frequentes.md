@@ -25,7 +25,27 @@ Em **Perfil**, na opção **Língua estrangeira**, escolha **Inglês** ou **Espa
 
 ## Esqueci minha senha. E agora?
 
-Hoje o app não tem uma tela de recuperação de senha. Por isso, guarde a sua num lugar seguro. A senha precisa ter pelo menos 8 caracteres.
+Na tela de entrada, toque em **Esqueci minha senha** e digite o e-mail da conta. Se ele estiver cadastrado, chega um link para criar uma senha nova. O link vale por 30 minutos e uma vez só, e pedir outro desativa o anterior. Não chegou? Confira a caixa de spam e se o e-mail está certo.
+
+Ao criar a senha nova, você entra direto e sai da conta em todos os outros aparelhos.
+
+Se a tela de entrada não mostra **Esqueci minha senha**, o servidor que você usa não está configurado para mandar e-mail. Nesse caso, fale com quem cuida do OpENEM da sua escola ou cursinho.
+
+## Posso entrar com a minha conta Google?
+
+Se a tela de entrada mostra **Entrar com Google**, sim. Na primeira vez, se já existe uma conta no OpENEM com o mesmo e-mail, as duas passam a ser a mesma conta. Se não existe, o app cria uma, sem senha; para entrar também com senha, use **Esqueci minha senha**.
+
+Quando a sua conta antiga foi criada com senha e o e-mail dela nunca foi confirmado, entrar pelo Google desativa essa senha, por segurança, e o app avisa. Você continua entrando pelo Google e pode criar uma senha nova pelo **Esqueci minha senha**.
+
+O OpENEM recebe do Google só o seu e-mail: o nome e a foto da conta Google não chegam aqui.
+
+## Como troco a minha senha?
+
+Em **Perfil**, no cartão **Segurança**, toque em **Trocar senha**, digite a senha atual e a nova duas vezes. Os outros aparelhos saem da sua conta; este continua logado. A senha precisa ter pelo menos 8 caracteres.
+
+## Entrei num computador emprestado e esqueci de sair
+
+Em **Perfil**, no cartão **Segurança**, toque em **Sair de todos os dispositivos**. Todos os aparelhos saem da conta na hora, inclusive o que você está usando, e é preciso entrar de novo. Faça isso também se achar que outra pessoa sabe a sua senha, e troque a senha depois.
 
 ## Posso usar no celular e no computador com a mesma conta?
 
