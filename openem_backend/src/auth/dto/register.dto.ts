@@ -6,9 +6,11 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { NormalizeEmail } from './email.transform';
 
 export class RegisterDto {
   @ApiProperty({ example: 'estudante@exemplo.com' })
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

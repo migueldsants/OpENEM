@@ -77,19 +77,12 @@ describe('CSP do nginx', () => {
     expect(diretiva('frame-src')).toContain(origem);
   });
 
-  it('libera as fontes externas que o index.html carrega', () => {
-    const origens = [...html.matchAll(/href="(https:\/\/[^"]+)"/g)].map(
-      (m) => new URL(m[1]).origin,
-    );
-    expect(origens.length).toBeGreaterThan(0);
-    for (const origem of origens) {
-      const permitido = [
-        ...diretiva('style-src'),
-        ...diretiva('font-src'),
-      ].includes(origem);
-      expect(permitido, origem).toBe(true);
-      // O service worker também busca essas origens (cache das fontes).
-      expect(diretiva('connect-src'), origem).toContain(origem);
-    }
+  it('serve as fontes da própria origem, sem Google Fonts', () => {
+    // O IP do aluno não vai para terceiros só por abrir o app.
+    expect(html).not.toMatch(/href="https:\/\//);
+    expect(csp).not.toContain('fonts.g');
+    expect(diretiva('font-src')).toEqual(["'self'", 'data:']);
+    expect(diretiva('style-src')).toEqual(["'self'", "'unsafe-inline'"]);
+    expect(diretiva('connect-src')).toEqual(["'self'"]);
   });
 });

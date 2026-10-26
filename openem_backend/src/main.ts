@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { API_PREFIX, API_PREFIX_EXCLUDE, openApiConfig } from './openapi';
+import { corsOptions } from './common/cors-config';
 import { parseTrustProxy } from './common/trust-proxy';
 
 async function bootstrap() {
@@ -57,16 +58,11 @@ async function bootstrap() {
     fallthrough: false,
   });
 
-  // CORS explícito (issue #49): credenciais off; em dev o Vite proxy encaminha
-  // mesmas origens, então basta liberar a origem do preview/build de produção.
-  const corsOrigins = process.env.CORS_ORIGINS;
-  if (corsOrigins) {
-    app.enableCors({
-      origin: corsOrigins.split(',').map((o) => o.trim()),
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    });
-  } else {
-    app.enableCors();
+  // CORS explícito (issue #49): credenciais off; em produção, sem
+  // CORS_ORIGINS, fica desligado (o app usa a mesma origem pelo nginx).
+  const cors = corsOptions(process.env.CORS_ORIGINS, process.env.NODE_ENV);
+  if (cors) {
+    app.enableCors(cors);
   }
 
   app.useGlobalPipes(
