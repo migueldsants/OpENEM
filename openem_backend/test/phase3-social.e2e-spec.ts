@@ -315,6 +315,15 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
       expect(after.body.entries.some((e: any) => e.userId === otherId)).toBe(
         false,
       );
+
+      // O perfil público também deixa de mostrar XP, nível e sequência.
+      const perfil = await request(app.getHttpServer())
+        .get(`/api/v1/users/${otherId}/profile`)
+        .set(auth())
+        .expect(200);
+      expect(perfil.body.gamificationEnabled).toBe(false);
+      expect(perfil.body).not.toHaveProperty('xp');
+      expect(perfil.body).not.toHaveProperty('currentStreak');
     } finally {
       await prisma.gamificationStat.update({
         where: { userId: otherId },

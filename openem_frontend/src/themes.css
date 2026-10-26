@@ -654,7 +654,7 @@
 /* Cantos retos e títulos em mono: Cyberpunk e Terminal. */
 [data-theme^='cyberpunk-'],
 [data-theme^='terminal-'] {
-  --font-display: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --font-display: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
   --radius-md: 0.125rem;
   --radius-lg: 0.25rem;
   --radius-xl: 0.3rem;

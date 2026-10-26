@@ -1,10 +1,13 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import { SessionsService } from '../auth/sessions.service';
 import {
+  activeStreak,
   levelFromXp,
   leagueForLevel,
   ACHIEVEMENTS,
@@ -20,6 +23,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly attempts: LoginAttemptsService,
+    private readonly sessions: SessionsService,
   ) {}
 
   async getMe(userId: string) {
@@ -29,6 +33,8 @@ export class UsersService {
         id: true,
         email: true,
         createdAt: true,
+        passwordHash: true,
+        googleSub: true,
         profile: {
           select: {
             goal: true,
@@ -45,7 +51,13 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
-    return user;
+    // O hash e o id do Google nunca saem: o app só precisa saber se existem.
+    const { passwordHash, googleSub, ...rest } = user;
+    return {
+      ...rest,
+      hasPassword: passwordHash !== null,
+      googleLinked: googleSub !== null,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -84,6 +96,13 @@ export class UsersService {
     }
     // O mesmo limite por conta do login: quem tem só o token na mão não
     // consegue testar senhas à vontade por esta rota.
+    // Conta só do Google não tem senha para confirmar: o aluno cria uma pelo
+    // "Esqueci minha senha", como na troca de senha.
+    if (!user.passwordHash) {
+      throw new BadRequestException(
+        'Esta conta entra pelo Google e ainda não tem senha. Para excluí-la, crie uma senha com "Esqueci minha senha" na tela de entrada.',
+      );
+    }
     await this.attempts.assertAllowed(user.email);
     if (!(await argon2.verify(user.passwordHash, password))) {
       await this.attempts.recordFailure(user.email);
@@ -111,6 +130,8 @@ export class UsersService {
       }),
       this.prisma.user.delete({ where: { id: userId } }),
     ]);
+    // Derruba na hora os tokens dos outros aparelhos (a versão fica em cache).
+    await this.sessions.forget(userId);
     // Um cadastro novo com o mesmo e-mail não herda as falhas desta conta.
     await this.attempts.recordSuccess(user.email);
   }
@@ -119,6 +140,10 @@ export class UsersService {
    * Perfil público de um usuário (issue #19). Expõe apenas dados não-sensíveis:
    * nome de exibição, objetivo, nível, liga, XP total e conquistas em destaque.
    * Nunca expõe e-mail ou outros PII. Se o usuário não existe, 404.
+   *
+   * Quem desligou a gamificação (`gamificationEnabled`) já some do ranking dos
+   * outros; aqui também: o perfil sai só com nome, objetivo e data, sem XP,
+   * nível, sequência nem conquistas.
    */
   async getPublicProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -126,13 +151,28 @@ export class UsersService {
       select: {
         id: true,
         createdAt: true,
-        profile: { select: { displayName: true, goal: true } },
-        gamification: { select: { points: true, currentStreak: true } },
+        profile: {
+          select: { displayName: true, goal: true, gamificationEnabled: true },
+        },
+        gamification: {
+          select: { points: true, currentStreak: true, lastActivityOn: true },
+        },
         achievements: { select: { code: true, unlockedAt: true } },
       },
     });
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const base = {
+      id: user.id,
+      displayName: user.profile?.displayName ?? 'Estudante',
+      goal: user.profile?.goal ?? 'SISU',
+      createdAt: user.createdAt,
+    };
+    // Sem perfil vale o padrão do schema (gamificação ligada).
+    if (user.profile?.gamificationEnabled === false) {
+      return { ...base, gamificationEnabled: false as const };
     }
 
     const xp = user.gamification?.points ?? 0;
@@ -145,14 +185,13 @@ export class UsersService {
       .map((a) => ({ code: a.code, name: a.name, description: a.description }));
 
     return {
-      id: user.id,
-      displayName: user.profile?.displayName ?? 'Estudante',
-      goal: user.profile?.goal ?? 'SISU',
-      createdAt: user.createdAt,
+      ...base,
+      gamificationEnabled: true as const,
       xp,
       level: levelInfo.level,
       league: { key: league.key, name: league.name },
-      currentStreak: user.gamification?.currentStreak ?? 0,
+      // Sequência gravada que já quebrou (última atividade antes de ontem) é 0.
+      currentStreak: user.gamification ? activeStreak(user.gamification) : 0,
       achievementsUnlocked: unlockedCodes.size,
       achievementsTotal: visibleAchievements(unlockedCodes).length,
       featuredAchievements: featured,

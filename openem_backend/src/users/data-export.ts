@@ -17,7 +17,9 @@ const QUESTION_CODE = { select: { code: true } } as const;
  * Cada relação de `User`, com os filhos que só existem por causa dela (as
  * sessões do cronograma, os cards de um deck, as notas de um vídeo...). O
  * teste compara esta lista com o schema: tabela nova ligada ao aluno quebra o
- * teste até entrar aqui. `passwordHash` nunca entra.
+ * teste até entrar aqui. `passwordHash` nunca entra, nem os hashes dos links
+ * de redefinição de senha e dos códigos de login do Google: deles saem só as
+ * datas.
  */
 export const EXPORT_SELECT = {
   id: true,
@@ -25,6 +27,17 @@ export const EXPORT_SELECT = {
   createdAt: true,
   termsAcceptedAt: true,
   termsVersion: true,
+  emailVerifiedAt: true,
+  googleSub: true,
+  tokenVersion: true,
+  passwordResetTokens: {
+    orderBy: { createdAt: 'asc' },
+    select: { createdAt: true, expiresAt: true, usedAt: true },
+  },
+  loginCodes: {
+    orderBy: { createdAt: 'asc' },
+    select: { createdAt: true, expiresAt: true, passwordDisabled: true },
+  },
   profile: true,
   answers: {
     orderBy: { createdAt: 'asc' },
@@ -79,7 +92,7 @@ export const EXPORT_SELECT = {
 } satisfies Prisma.UserSelect;
 
 /** Campos que nunca saem no arquivo, em nível nenhum. */
-const SECRET_KEYS = new Set(['passwordHash']);
+const SECRET_KEYS = new Set(['passwordHash', 'tokenHash', 'codeHash']);
 
 /**
  * Cópia sem os campos secretos. O select já não os pede: isto é a segunda
@@ -102,13 +115,31 @@ export function buildExport(
   user: Record<string, unknown>,
   now: Date,
 ): Record<string, unknown> {
-  const { id, email, createdAt, termsAcceptedAt, termsVersion, ...rest } =
-    stripSecrets(user);
+  const {
+    id,
+    email,
+    createdAt,
+    termsAcceptedAt,
+    termsVersion,
+    emailVerifiedAt,
+    googleSub,
+    tokenVersion,
+    ...rest
+  } = stripSecrets(user);
   return {
     format: EXPORT_FORMAT,
     version: EXPORT_FORMAT_VERSION,
     exportedAt: now.toISOString(),
-    account: { id, email, createdAt, termsAcceptedAt, termsVersion },
+    account: {
+      id,
+      email,
+      createdAt,
+      termsAcceptedAt,
+      termsVersion,
+      emailVerifiedAt,
+      googleSub,
+      tokenVersion,
+    },
     ...rest,
   };
 }

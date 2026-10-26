@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { API_CACHE } from './src/offline/api-cache';
 
 // O app mora em /app/: a raiz do domínio é do site público (openem_site), e
 // /docs/ da documentação. Em dev, o Vite também serve em /app/.
@@ -55,7 +56,7 @@ export default defineConfig({
                 url.pathname.startsWith('/health')),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
+              cacheName: API_CACHE,
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 300,
@@ -100,18 +101,18 @@ export default defineConfig({
             },
           },
           {
-            // Fontes do Google: a folha de estilo muda (novas versões), os
-            // arquivos .woff2 não. Sem isto o app offline cai na fonte do
-            // sistema e muda de cara.
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts-css' },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            // Fontes do próprio app (fontsource, em /app/assets/ com hash no
+            // nome). Fora do precache: são dezenas de recortes por alfabeto e
+            // o navegador só baixa o que a página usa; o que baixou fica para
+            // o uso offline. Sem isto o app offline cai na fonte do sistema.
+            urlPattern: ({ url, request, sameOrigin }) =>
+              request.destination === 'font' &&
+              sameOrigin &&
+              // Literal, não BASE (ver a regra das figuras de redação).
+              url.pathname.startsWith('/app/assets/'),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts',
+              cacheName: 'fontes',
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },

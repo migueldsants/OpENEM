@@ -86,7 +86,8 @@ export class CommunityController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: 'Apaga um tópico próprio, com as respostas (o de outro aluno é 404)',
+    summary:
+      'Apaga um tópico próprio, com as respostas (o de outro aluno é 404)',
   })
   removeThread(
     @CurrentUser() user: AuthenticatedUser,

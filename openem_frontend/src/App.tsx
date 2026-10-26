@@ -54,6 +54,9 @@ import Formulas from './pages/Formulas';
 import Home from './pages/Home';
 import Painel from './pages/Painel';
 import Login from './pages/Login';
+import EntrarGoogle from './pages/EntrarGoogle';
+import EsqueciSenha from './pages/EsqueciSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
 import Onboarding from './pages/Onboarding';
 import Perfil from './pages/Perfil';
 import Pomodoro from './pages/Pomodoro';
@@ -323,6 +326,9 @@ export default function App() {
   if (!authenticated) {
     return (
       <Routes>
+        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/entrar/google" element={<EntrarGoogle />} />
         <Route path="*" element={<Login />} />
       </Routes>
     );
@@ -389,6 +395,8 @@ export default function App() {
           </Suspense>
         }
       />
+      {/* O link do e-mail aberto num aparelho já logado. */}
+      <Route path="/redefinir-senha" element={<RedefinirSenha />} />
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />

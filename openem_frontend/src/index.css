@@ -8,12 +8,16 @@
    do conteúdo (Matemática, Natureza, Humanas, Linguagens, Redação).
 ---------------------------------------------------------------------------- */
 
+/* Os nomes "… Variable" são os que o fontsource registra (importado no
+   main.tsx do app e no styles.css do site); o nome curto fica de reserva. */
 @theme {
   --font-display:
-    'Bricolage Grotesque', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Inter Variable',
+    'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono:
-    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono',
+    'Cascadia Code', monospace;
 }
 
 /* ----------------------------------------------------------------------------

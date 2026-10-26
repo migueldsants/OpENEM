@@ -3,6 +3,14 @@
 // VITE_DOCS_URL aponta para lá.
 export const DOCS_URL: string = import.meta.env.VITE_DOCS_URL ?? '/docs/';
 
+/**
+ * Código-fonte desta instalação. A AGPL-3.0 (§13) pede que quem usa o app pela
+ * rede possa obter o código que roda nele: quem hospeda uma versão modificada
+ * aponta VITE_SOURCE_URL (build arg SOURCE_URL da imagem) para o próprio fork.
+ */
+export const SOURCE_URL: string =
+  import.meta.env.VITE_SOURCE_URL || 'https://github.com/migueldsants/OpENEM';
+
 /** Raiz do site: a documentação mora em <raiz>docs/. */
 export const SITE_URL: string = DOCS_URL.replace(/docs\/?$/, '');
 

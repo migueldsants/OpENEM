@@ -234,9 +234,11 @@ describe('LGPD: aceite, exportação, exclusão e fórum (e2e)', () => {
     });
 
     it('com a senha certa, apaga tudo e responde 204', async () => {
-      const curtidasAntes = (await prisma.userTheme.findUniqueOrThrow({
-        where: { id: temaDoOutro },
-      }))!.likes;
+      const curtidasAntes = (
+        await prisma.userTheme.findUniqueOrThrow({
+          where: { id: temaDoOutro },
+        })
+      ).likes;
 
       await http()
         .delete('/api/v1/users/me')

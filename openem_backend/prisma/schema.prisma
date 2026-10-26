@@ -15,7 +15,18 @@ generator client {
 model User {
   id                  String               @id @default(cuid())
   email               String               @unique
-  passwordHash        String
+  /// Nulo na conta criada pelo Google, que entra sem senha.
+  passwordHash        String?
+  /// Vai no JWT (`ver`) e é conferido a cada pedido: incrementar encerra
+  /// todas as sessões (troca e redefinição de senha, sair de todos os
+  /// dispositivos).
+  tokenVersion        Int                  @default(0)
+  /// `sub` da conta Google vinculada (OIDC). Não muda se o e-mail mudar lá.
+  googleSub           String?              @unique
+  /// Quando o dono provou que o e-mail é dele (Google ou link de
+  /// redefinição). Nulo na conta criada só com senha: o cadastro não confirma
+  /// o e-mail.
+  emailVerifiedAt     DateTime?
   createdAt           DateTime             @default(now())
   /// Quando o aluno aceitou os Termos de Uso e a Política de Privacidade, e
   /// qual versão (common/terms.ts). Nulos nas contas criadas antes do aceite.
@@ -50,6 +61,8 @@ model User {
   themes              UserTheme[]
   themeLikes          UserThemeLike[]
   aiUsages            AiUsage[]
+  passwordResetTokens PasswordResetToken[]
+  loginCodes          LoginCode[]
 }
 
 model Profile {
@@ -779,4 +792,37 @@ model AiUsage {
 
   @@index([userId, feature, createdAt])
   @@index([createdAt])
+}
+
+/// Link de "esqueci minha senha". Só o hash SHA-256 do token fica no banco (o
+/// token vai no e-mail); vale 30 minutos e uma vez só. Pedir outro link apaga
+/// os anteriores do aluno.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Código de uso único do login com Google: o callback grava o hash e manda o
+/// código ao app, que o troca pelo token por POST (o JWT nunca vai na URL).
+model LoginCode {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash         String   @unique
+  /// A senha da conta, nunca confirmada, foi desativada ao vincular o Google:
+  /// o app avisa o aluno.
+  passwordDisabled Boolean  @default(false)
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }

@@ -6,8 +6,17 @@ import {
   listPending,
   dequeue,
   syncPending,
+  clearPending,
+  currentOwner,
   type PendingAction,
 } from './queue';
+
+/** JWT só com o payload que a fila lê (assinatura não é conferida aqui). */
+function jwtDe(sub: string): string {
+  const b64url = (o: object) =>
+    btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${b64url({ alg: 'HS256' })}.${b64url({ sub })}.assinatura`;
+}
 
 const ANSWER: PendingAction = {
   kind: 'answer',
@@ -194,5 +203,74 @@ describe('fila offline com rate limiting (issue #87)', () => {
 
     await expect(syncPending({ sleep })).resolves.toBe(1);
     expect(sleep).toHaveBeenCalledWith(1000);
+  });
+});
+
+describe('fila offline por aluno (aparelho compartilhado)', () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 201 }),
+    );
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    localStorage.removeItem('openem.token');
+    await clearPending();
+  });
+
+  it('currentOwner lê o sub do JWT e devolve null sem token ou com token inválido', () => {
+    expect(currentOwner()).toBeNull();
+    localStorage.setItem('openem.token', jwtDe('aluno-a'));
+    expect(currentOwner()).toBe('aluno-a');
+    localStorage.setItem('openem.token', 'nao-e-jwt');
+    expect(currentOwner()).toBeNull();
+  });
+
+  it('marca a ação com o aluno logado', async () => {
+    localStorage.setItem('openem.token', jwtDe('aluno-a'));
+    await enqueue(ANSWER);
+    expect((await listPending())[0].owner).toBe('aluno-a');
+  });
+
+  it('não envia a resposta de um aluno com o token de outro', async () => {
+    localStorage.setItem('openem.token', jwtDe('aluno-a'));
+    await enqueue(ANSWER);
+
+    localStorage.setItem('openem.token', jwtDe('aluno-b'));
+    expect(await countPending()).toBe(0);
+    expect(await syncPending()).toBe(0);
+    expect(fetch).not.toHaveBeenCalled();
+    // Continua guardada para quando o aluno A voltar.
+    expect(await listPending()).toHaveLength(1);
+
+    localStorage.setItem('openem.token', jwtDe('aluno-a'));
+    expect(await syncPending()).toBe(1);
+  });
+
+  it('ação antiga, sem owner, segue com o token atual', async () => {
+    localStorage.setItem('openem.token', jwtDe('aluno-b'));
+    // enqueue sempre marca: grava direto, como antes do campo existir.
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('openem', 2);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction('pending-actions', 'readwrite');
+      tx.objectStore('pending-actions').put(ANSWER);
+      tx.oncomplete = () => resolve();
+    });
+    db.close();
+    expect(await syncPending()).toBe(1);
+  });
+
+  it('clearPending esvazia a fila de todos os alunos', async () => {
+    localStorage.setItem('openem.token', jwtDe('aluno-a'));
+    await enqueue(ANSWER);
+    localStorage.setItem('openem.token', jwtDe('aluno-b'));
+    await enqueue({ ...ANSWER, key: 'answer:q2:1', questionId: 'q2' });
+    await clearPending();
+    expect(await listPending()).toHaveLength(0);
   });
 });

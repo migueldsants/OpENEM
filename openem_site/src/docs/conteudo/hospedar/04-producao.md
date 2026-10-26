@@ -44,7 +44,7 @@ Com `TRUST_PROXY` ligado, quem chegasse na API sem passar pelo nginx poderia esc
 
 ## Cabeçalhos de segurança
 
-O app recebe os cabeçalhos do `location /app/` do [nginx.conf](https://github.com/migueldsants/OpENEM/blob/main/openem_frontend/nginx.conf): uma Content-Security-Policy que só aceita script da própria origem, sem `'unsafe-inline'`, mais `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` e `Permissions-Policy`. As exceções da CSP são o que o app usa de fora: Google Fonts, o player do YouTube sem cookies e imagens `https` nos flashcards. O site (`location /`) tem uma CSP mais fechada, sem nenhuma origem de fora. A API recebe os cabeçalhos do helmet. O HTML sai com `Cache-Control: no-cache`, para o navegador nunca reabrir uma página que aponta para arquivos que um deploy já trocou.
+O app recebe os cabeçalhos do `location /app/` do [nginx.conf](https://github.com/migueldsants/OpENEM/blob/main/openem_frontend/nginx.conf): uma Content-Security-Policy que só aceita script da própria origem, sem `'unsafe-inline'`, mais `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` e `Permissions-Policy`. As exceções da CSP são o que o app usa de fora: o player do YouTube sem cookies e imagens `https` nos flashcards. As fontes são servidas pelo próprio app, sem Google Fonts. O site (`location /`) tem uma CSP mais fechada, sem nenhuma origem de fora. A API recebe os cabeçalhos do helmet. O HTML sai com `Cache-Control: no-cache`, para o navegador nunca reabrir uma página que aponta para arquivos que um deploy já trocou.
 
 Se o seu proxy HTTPS reescrever cabeçalhos, preserve esses. Quem mudar o app para usar uma origem externa nova precisa liberá-la no `nginx.conf`; o teste `src/nginx-csp.test.ts` do frontend quebra quando os dois se desencontram.
 
@@ -57,6 +57,9 @@ Cada limite é contado por rota. Com login, conta por aluno: uma turma atrás do
 | Qualquer rota | 20 por segundo e 100 por minuto | Rajada curta e o limite padrão (`THROTTLE_BURST_*`, `THROTTLE_TTL_MS`, `THROTTLE_LIMIT`). Cobre `POST /answers` e o envio do simulado. |
 | Login | 30 por minuto por IP, e 5 senhas erradas em 15 min por conta | Por IP, folgado para a sala de aula. Por conta, venha de onde vier: a quinta senha errada bloqueia a conta por 15 min, e cada novo bloqueio no mesmo dia dobra o anterior, até 24 h. O login certo zera as falhas. E-mail sem conta bloqueia igual, para o bloqueio não revelar quais existem. |
 | Cadastro | 20 por minuto por IP | Cada cadastro calcula um hash argon2. |
+| Esqueci minha senha | 10 a cada 15 min por IP, e 3 por hora por e-mail | Cada pedido pode mandar um e-mail. O limite por e-mail vale com ou sem conta, para não revelar quais existem. |
+| Redefinir a senha e login com Google | 10 e 20 por minuto por IP | Os tokens têm 256 bits: o limite é contra abuso, não contra adivinhação. |
+| Trocar a senha | 5 por minuto por aluno | Quem tem só um token roubado não fica testando senhas. |
 | PDF (simulado e fórmulas) | 10 por minuto | O desenho é CPU pesada e passa por uma fila. |
 | Comentário por IA | 10 por minuto | Cada pedido novo é uma chamada paga; a cota diária vale à parte. |
 | Fórum (tópico, resposta e denúncia) | 10 por minuto | Spam. |

@@ -1,5 +1,10 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import * as argon2 from 'argon2';
+import type { SessionsService } from '../auth/sessions.service';
 import { MemoryCacheStore } from '../cache/cache-store';
 import {
   LoginAttemptsService,
@@ -28,8 +33,20 @@ function makeAttempts() {
   return new LoginAttemptsService(new MemoryCacheStore(), 'rl');
 }
 
-function makeService(prisma: any, attempts = makeAttempts()) {
-  return new UsersService(prisma, attempts);
+function makeSessions() {
+  return { forget: jest.fn().mockResolvedValue(undefined) };
+}
+
+function makeService(
+  prisma: any,
+  attempts = makeAttempts(),
+  sessions = makeSessions(),
+) {
+  return new UsersService(
+    prisma,
+    attempts,
+    sessions as unknown as SessionsService,
+  );
 }
 
 describe('UsersService', () => {
@@ -48,6 +65,34 @@ describe('UsersService', () => {
       expect(prisma.user.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'u1' } }),
       );
+    });
+
+    it('diz se a conta tem senha e Google, sem devolver o hash nem o sub', async () => {
+      const prisma = makePrisma() as any;
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        passwordHash: '$argon2id$...',
+        googleSub: null,
+        profile: null,
+      });
+      const service = makeService(prisma);
+      const res = await service.getMe('u1');
+      expect(res).toMatchObject({ hasPassword: true, googleLinked: false });
+      expect(res).not.toHaveProperty('passwordHash');
+      expect(res).not.toHaveProperty('googleSub');
+
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        passwordHash: null,
+        googleSub: '123',
+        profile: null,
+      });
+      expect(await service.getMe('u1')).toMatchObject({
+        hasPassword: false,
+        googleLinked: true,
+      });
     });
 
     it('retorna 404 para usuário inexistente', async () => {
@@ -99,6 +144,7 @@ describe('UsersService', () => {
       const res = await service.getPublicProfile('u1');
       expect(res).not.toHaveProperty('email');
       expect(res.displayName).toBe('Ana');
+      if (!res.gamificationEnabled) throw new Error('gamificação ligada');
       expect(res.level).toBe(5); // 25*(5-1)^2 = 400
       expect(res.league.key).toBe('PRATA');
       expect(res.achievementsUnlocked).toBe(1);
@@ -118,8 +164,63 @@ describe('UsersService', () => {
 
       const res = await service.getPublicProfile('u2');
       expect(res.displayName).toBe('Estudante');
+      if (!res.gamificationEnabled) throw new Error('gamificação ligada');
       expect(res.xp).toBe(0);
       expect(res.achievementsUnlocked).toBe(0);
+    });
+
+    it('esconde XP, nível, sequência e conquistas de quem desligou a gamificação', async () => {
+      const prisma = makePrisma() as any;
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u3',
+        createdAt: new Date('2026-01-01'),
+        profile: {
+          displayName: 'Bia',
+          goal: 'PROUNI',
+          gamificationEnabled: false,
+        },
+        gamification: {
+          points: 900,
+          currentStreak: 7,
+          lastActivityOn: new Date(),
+        },
+        achievements: [{ code: 'FIRST_ANSWER', unlockedAt: new Date() }],
+      });
+      const service = makeService(prisma);
+
+      const res = await service.getPublicProfile('u3');
+      expect(res).toEqual({
+        id: 'u3',
+        displayName: 'Bia',
+        goal: 'PROUNI',
+        createdAt: new Date('2026-01-01'),
+        gamificationEnabled: false,
+      });
+    });
+
+    it('sequência que já quebrou aparece como 0', async () => {
+      const prisma = makePrisma() as any;
+      const anteontem = new Date(Date.now() - 3 * 86_400_000);
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u4',
+        createdAt: new Date('2026-01-01'),
+        profile: {
+          displayName: 'Caio',
+          goal: 'SISU',
+          gamificationEnabled: true,
+        },
+        gamification: {
+          points: 10,
+          currentStreak: 12,
+          lastActivityOn: anteontem,
+        },
+        achievements: [],
+      });
+      const service = makeService(prisma);
+
+      const res = await service.getPublicProfile('u4');
+      if (!res.gamificationEnabled) throw new Error('gamificação ligada');
+      expect(res.currentStreak).toBe(0);
     });
 
     it('retorna 404 para usuário inexistente', async () => {
@@ -237,9 +338,9 @@ describe('UsersService', () => {
           service.deleteAccount('u1', 'errada'),
         ).rejects.toBeInstanceOf(ForbiddenException);
       }
-      await expect(service.deleteAccount('u1', 'errada')).rejects.toBeInstanceOf(
-        TooManyAttemptsException,
-      );
+      await expect(
+        service.deleteAccount('u1', 'errada'),
+      ).rejects.toBeInstanceOf(TooManyAttemptsException);
       // Bloqueada, nem a senha certa passa, e o login vê o mesmo bloqueio.
       await expect(
         service.deleteAccount('u1', 'senhaForte123'),
@@ -268,6 +369,32 @@ describe('UsersService', () => {
       await expect(
         makeService(prisma).deleteAccount('nao-existe', 'x'),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('esquece a versão da sessão em cache depois de apagar', async () => {
+      const prisma = makePrisma() as any;
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'a@b.com',
+        passwordHash,
+      });
+      const sessions = makeSessions();
+      await makeService(prisma, makeAttempts(), sessions).deleteAccount(
+        'u1',
+        'senhaForte123',
+      );
+      expect(sessions.forget).toHaveBeenCalledWith('u1');
+    });
+
+    it('conta só do Google (sem senha) recebe 400 e não apaga nada', async () => {
+      const prisma = makePrisma() as any;
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'a@b.com',
+        passwordHash: null,
+      });
+      await expect(
+        makeService(prisma).deleteAccount('u1', 'qualquer'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 });

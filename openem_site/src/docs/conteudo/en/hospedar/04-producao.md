@@ -44,7 +44,7 @@ With `TRUST_PROXY` on, anyone reaching the API without going through nginx could
 
 ## Security headers
 
-The app gets the headers of the `location /app/` block in [nginx.conf](https://github.com/migueldsants/OpENEM/blob/main/openem_frontend/nginx.conf): a Content-Security-Policy that only accepts scripts from its own origin, without `'unsafe-inline'`, plus `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy`. The CSP exceptions are what the app uses from outside: Google Fonts, the cookieless YouTube player and `https` images in flashcards. The site (`location /`) has a stricter CSP, with no outside origin at all. The API gets helmet's headers. HTML is sent with `Cache-Control: no-cache`, so the browser never reopens a page that points to files a deploy has already replaced.
+The app gets the headers of the `location /app/` block in [nginx.conf](https://github.com/migueldsants/OpENEM/blob/main/openem_frontend/nginx.conf): a Content-Security-Policy that only accepts scripts from its own origin, without `'unsafe-inline'`, plus `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy`. The CSP exceptions are what the app uses from outside: the cookieless YouTube player and `https` images in flashcards. Fonts are served by the app itself, without Google Fonts. The site (`location /`) has a stricter CSP, with no outside origin at all. The API gets helmet's headers. HTML is sent with `Cache-Control: no-cache`, so the browser never reopens a page that points to files a deploy has already replaced.
 
 If your HTTPS proxy rewrites headers, keep these. Whoever changes the app to use a new outside origin has to allow it in `nginx.conf`; the frontend test `src/nginx-csp.test.ts` breaks when the two get out of sync.
 
@@ -57,6 +57,9 @@ Each limit is counted per route. With login, it counts per student: a class behi
 | Any route | 20 per second and 100 per minute | Short burst and the default limit (`THROTTLE_BURST_*`, `THROTTLE_TTL_MS`, `THROTTLE_LIMIT`). Covers `POST /answers` and submitting a simulation. |
 | Login | 30 per minute per IP, and 5 wrong passwords in 15 min per account | Per IP, loose enough for a classroom. Per account, wherever the attempts come from: the fifth wrong password locks the account for 15 min, and each new lock on the same day doubles the previous one, up to 24 h. A correct login clears the failures. An email with no account locks the same way, so the lock does not reveal which ones exist. |
 | Sign-up | 20 per minute per IP | Each sign-up computes an argon2 hash. |
+| Forgot password | 10 every 15 min per IP, and 3 per hour per e-mail | Each request may send an e-mail. The per e-mail limit applies with or without an account, so it does not reveal which ones exist. |
+| Password reset and Google sign-in | 10 and 20 per minute per IP | The tokens have 256 bits: the limit is against abuse, not guessing. |
+| Password change | 5 per minute per student | Someone holding only a stolen token cannot keep trying passwords. |
 | PDF (simulation and formulas) | 10 per minute | Drawing is heavy CPU work and goes through a queue. |
 | AI explanation | 10 per minute | Each new request is a paid call; the daily quota applies on top. |
 | Forum (thread, reply and report) | 10 per minute | Spam. |

@@ -12,7 +12,7 @@ descricao: Crie sua conta, responda as duas perguntas iniciais e aprenda a se mo
 
 Se você já tem conta, use a aba **Entrar** com o mesmo e-mail e senha. Se aparecer o aviso **Servidor fora do ar**, o problema está no servidor, não na sua senha: tente de novo mais tarde.
 
-> **Atenção:** hoje o app não tem uma tela para recuperar a senha. Guarde a sua num lugar seguro.
+Dependendo do servidor, a tela de entrada também mostra **Entrar com Google**, que cria a conta ou entra nela com a sua conta Google, e **Esqueci minha senha**, que manda um link para criar uma senha nova. Os detalhes estão nas [perguntas frequentes](/docs/alunos/perguntas-frequentes/).
 
 ## Responder as duas perguntas iniciais
 

@@ -53,7 +53,10 @@ function makePrismaMock() {
     string,
     { id: string; postId: string; userId: string }
   >();
-  const reports = new Map<string, ReportWhere & { id: string; reason: string }>();
+  const reports = new Map<
+    string,
+    ReportWhere & { id: string; reason: string }
+  >();
   let idCounter = 0;
   // Ids com zeros à esquerda: a ordem de texto é a de criação.
   const nextId = () => `id-${String(++idCounter).padStart(5, '0')}`;
@@ -218,11 +221,13 @@ function makePrismaMock() {
           ) ?? null,
         ),
       ),
-      create: jest.fn(({ data }: { data: ReportWhere & { reason: string } }) => {
-        const report = { id: nextId(), ...data };
-        reports.set(report.id, report);
-        return Promise.resolve(report);
-      }),
+      create: jest.fn(
+        ({ data }: { data: ReportWhere & { reason: string } }) => {
+          const report = { id: nextId(), ...data };
+          reports.set(report.id, report);
+          return Promise.resolve(report);
+        },
+      ),
       update: jest.fn(
         ({
           where,
