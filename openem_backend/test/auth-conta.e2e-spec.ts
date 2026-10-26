@@ -117,7 +117,7 @@ describe('Conta: senha, sessões e Google (e2e)', () => {
   async function cadastrar(email: string, password: string): Promise<string> {
     const res = await http()
       .post('/api/v1/auth/register')
-      .send({ email, password })
+      .send({ email, password, acceptTerms: true })
       .expect(201);
     return res.body.accessToken as string;
   }
@@ -357,14 +357,12 @@ describe('Conta: senha, sessões e Google (e2e)', () => {
       state: string,
       cookie: string | null,
     ): Promise<{ code?: string; erro?: string; setCookie: string[] }> {
-      const req = http()
-        .get('/api/v1/auth/google/callback')
-        .query({
-          code: 'codigo-do-google',
-          state,
-          scope: 'openid email',
-          authuser: '0',
-        });
+      const req = http().get('/api/v1/auth/google/callback').query({
+        code: 'codigo-do-google',
+        state,
+        scope: 'openid email',
+        authuser: '0',
+      });
       if (cookie) req.set('Cookie', cookie.split(';')[0]);
       const res = await req.expect(302);
       const url = new URL(res.headers.location);

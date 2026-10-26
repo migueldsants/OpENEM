@@ -45,10 +45,13 @@ export default defineConfig({
         // Cache das respostas da API (issue #42): network-first com fallback
         // ao cache — dados atualizados quando há rede, última versão quando
         // não há. Só GETs de leitura; mutações passam pela fila offline.
+        // A exportação dos dados (LGPD) fica de fora: é tudo do aluno num
+        // arquivo só, e o cache o guardaria por 7 dias no aparelho.
         runtimeCaching: [
           {
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
+              url.pathname !== '/api/v1/users/me/export' &&
               (url.pathname.startsWith('/api/') ||
                 url.pathname.startsWith('/health')),
             handler: 'NetworkFirst',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, GOOGLE_LOGIN_URL, HttpError, type AuthOptions } from '../api';
 import { useAuth } from '../auth';
 import { GoogleLogo } from '../components/AuthLayout';
@@ -7,7 +7,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import ThemeToggle from '../components/ThemeToggle';
 import { AREAS, AREA_DOT } from '../lib/areas';
 import { countdown } from '../lib/rate-limit';
-import { SOURCE_URL } from '../lib/site';
+import { PRIVACIDADE_URL, SOURCE_URL, TERMOS_URL } from '../lib/site';
 
 type Mode = 'login' | 'register';
 
@@ -35,6 +35,10 @@ function AnswerRow({ correct }: { correct: number }) {
 export default function Login() {
   const { login, register, authenticated } = useAuth();
   const navigate = useNavigate();
+  // Vindo da exclusão da conta (Perfil): confirma que deu certo.
+  const contaExcluida =
+    (useLocation().state as { contaExcluida?: boolean } | null)?.contaExcluida ===
+    true;
   const [health, setHealth] = useState<'…' | 'online' | 'offline'>('…');
   // O que o servidor oferece além de e-mail e senha (SMTP, Google).
   const [options, setOptions] = useState<AuthOptions>({
@@ -44,6 +48,8 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Aceite dos Termos e da Política: sem ele o backend não cria a conta.
+  const [aceite, setAceite] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // 429 (muitas tentativas): até quando o botão fica parado, com a contagem.
@@ -86,11 +92,17 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === 'register' && !aceite) {
+      setMessage(
+        'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.',
+      );
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
       if (mode === 'login') await login(email, password);
-      else await register(email, password);
+      else await register(email, password, aceite);
       navigate('/', { replace: true });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Algo deu errado.');
@@ -211,6 +223,39 @@ export default function Login() {
                   </Link>
                 </p>
               )}
+              {mode === 'register' && (
+                <label className="flex items-start gap-2.5 text-xs leading-relaxed text-muted">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={aceite}
+                    onChange={(e) => setAceite(e.target.checked)}
+                    className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"
+                  />
+                  <span>
+                    Li e aceito os{' '}
+                    <a
+                      href={TERMOS_URL}
+                      target="_blank"
+                      rel="noopener"
+                      className="font-semibold text-brand hover:underline"
+                    >
+                      Termos de Uso
+                    </a>{' '}
+                    e a{' '}
+                    <a
+                      href={PRIVACIDADE_URL}
+                      target="_blank"
+                      rel="noopener"
+                      className="font-semibold text-brand hover:underline"
+                    >
+                      Política de Privacidade
+                    </a>
+                    . Se tenho menos de 18 anos, uso o OpENEM com a ciência do
+                    meu responsável.
+                  </span>
+                </label>
+              )}
               <button
                 type="submit"
                 disabled={loading || bloqueado}
@@ -241,6 +286,14 @@ export default function Login() {
                 </a>
               </>
             )}
+            {contaExcluida && !message && (
+              <p
+                role="status"
+                className="mt-4 rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted"
+              >
+                Sua conta e os seus dados foram excluídos.
+              </p>
+            )}
 
             {message && (
               <div className="mt-4">
@@ -259,6 +312,15 @@ export default function Login() {
               className="underline underline-offset-2 hover:text-fg"
             >
               código-fonte (AGPL-3.0)
+            </a>
+          </p>
+          <p className="mt-1.5 text-center text-xs text-muted">
+            <a href={PRIVACIDADE_URL} className="hover:text-fg hover:underline">
+              Privacidade
+            </a>
+            {' · '}
+            <a href={TERMOS_URL} className="hover:text-fg hover:underline">
+              Termos de uso
             </a>
           </p>
         </section>

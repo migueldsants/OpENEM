@@ -920,10 +920,10 @@ export const api = {
     fetch('/health').then(
       (r) => r.json() as Promise<{ status: string; database: string }>,
     ),
-  register: (email: string, password: string) =>
+  register: (email: string, password: string, acceptTerms: boolean) =>
     request<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: { email, password },
+      body: { email, password, acceptTerms },
     }),
   login: (email: string, password: string) =>
     request<AuthResponse>('/auth/login', {
@@ -972,6 +972,11 @@ export const api = {
       >
     >,
   ) => request<Me>('/users/me/profile', { method: 'PUT', body: patch }),
+  /** Todos os dados do aluno (LGPD, art. 18). Fora do cache do service worker. */
+  exportMyData: () => request<Record<string, unknown>>('/users/me/export'),
+  /** Exclui a conta; a senha errada volta 403 (não 401: a sessão continua). */
+  deleteAccount: (password: string) =>
+    request<void>('/users/me', { method: 'DELETE', body: { password } }),
 
   subjects: () => request<Subject[]>('/subjects'),
   questions: (
@@ -1367,6 +1372,24 @@ export const api = {
     request<ToggleLikeResult>(
       `/community/threads/${threadId}/posts/${postId}/like`,
       { method: 'POST' },
+    ),
+  /** Só o autor apaga; o tópico leva as respostas junto. */
+  deleteThread: (id: string) =>
+    request<{ removed: true }>(`/community/threads/${id}`, {
+      method: 'DELETE',
+    }),
+  deletePost: (threadId: string, postId: string) =>
+    request<{ removed: true }>(
+      `/community/threads/${threadId}/posts/${postId}`,
+      { method: 'DELETE' },
+    ),
+  /** Denuncia o tópico (sem `postId`) ou uma resposta dele. */
+  reportForum: (threadId: string, postId: string | null, reason: string) =>
+    request<{ reported: true }>(
+      postId
+        ? `/community/threads/${threadId}/posts/${postId}/report`
+        : `/community/threads/${threadId}/report`,
+      { method: 'POST', body: { reason } },
     ),
 
   myThemes: () => request<SavedTheme[]>('/themes/mine'),

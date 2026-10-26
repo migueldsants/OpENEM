@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -16,6 +17,7 @@ import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
+import { ReportDto } from './dto/report.dto';
 
 @ApiTags('community')
 @ApiBearerAuth()
@@ -80,5 +82,54 @@ export class CommunityController {
     @Param('postId') postId: string,
   ) {
     return this.community.toggleLike(user.userId, id, postId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary:
+      'Apaga um tópico próprio, com as respostas (o de outro aluno é 404)',
+  })
+  removeThread(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.community.deleteThread(user.userId, id);
+  }
+
+  @Delete(':id/posts/:postId')
+  @ApiOperation({
+    summary: 'Apaga uma resposta própria (a de outro aluno é 404)',
+  })
+  removePost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('postId') postId: string,
+  ) {
+    return this.community.deletePost(user.userId, id, postId);
+  }
+
+  // Denúncia: o mesmo ritmo da escrita no fórum, para ninguém soterrar a
+  // moderação de denúncias.
+  @Post(':id/report')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({ summary: 'Denuncia um tópico do fórum' })
+  reportThread(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: ReportDto,
+  ) {
+    return this.community.report(user.userId, id, null, dto);
+  }
+
+  @Post(':id/posts/:postId/report')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({ summary: 'Denuncia uma resposta do fórum' })
+  reportPost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('postId') postId: string,
+    @Body() dto: ReportDto,
+  ) {
+    return this.community.report(user.userId, id, postId, dto);
   }
 }

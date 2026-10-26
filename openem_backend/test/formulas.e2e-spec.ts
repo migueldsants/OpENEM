@@ -42,6 +42,7 @@ describe('Fórmulas / cheat sheet (issue #38, e2e)', () => {
       .send({
         email: `formulas_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;
@@ -165,6 +166,7 @@ describe('Fórmulas / cheat sheet (issue #38, e2e)', () => {
         .send({
           email: `formulas_outro_${Date.now()}@exemplo.com`,
           password: 'senhaForte123',
+          acceptTerms: true,
         })
         .expect(201);
       outro = reg.body.accessToken;

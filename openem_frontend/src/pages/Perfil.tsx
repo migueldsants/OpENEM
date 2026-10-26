@@ -5,6 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { ThemePreview } from '../components/ThemePreview';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { SegurancaConta } from '../components/SegurancaConta';
+import { MeusDados } from '../components/MeusDados';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
 import { DOCS_URL, docsAlunos, SOURCE_URL } from '../lib/site';
@@ -301,6 +302,8 @@ export default function Perfil() {
           </a>
         </div>
       </div>
+
+      <MeusDados />
 
       <div className="card p-4">
         <p className="eyebrow">Código aberto</p>

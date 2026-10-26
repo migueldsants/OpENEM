@@ -460,6 +460,12 @@ export function Landing() {
             <a href={`${GITHUB_URL}/blob/main/SECURITY.md`} className="text-muted hover:text-fg">
               Segurança
             </a>
+            <a href="/privacidade/" className="text-muted hover:text-fg">
+              Privacidade
+            </a>
+            <a href="/termos/" className="text-muted hover:text-fg">
+              Termos de uso
+            </a>
           </nav>
         </div>
       </footer>

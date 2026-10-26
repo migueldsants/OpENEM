@@ -66,8 +66,9 @@ function arquivoDeRedacoes(): Plugin {
   };
 }
 
-// No dev, /docs/qualquer-pagina cai no docs/index.html (no build, o
-// prerender grava um HTML por página).
+// No dev, /docs/qualquer-pagina cai no docs/index.html, e as páginas legais
+// (/privacidade/, /en/termos/...) no legal/index.html. No build, o prerender
+// grava um HTML por página.
 function fallbackDaDocs(): Plugin {
   return {
     name: 'openem-fallback-docs',
@@ -75,6 +76,7 @@ function fallbackDaDocs(): Plugin {
       server.middlewares.use((req, _res, next) => {
         const url = req.url ?? '';
         if (/^\/docs(\/[^.?]*)?(\?.*)?$/.test(url)) req.url = '/docs/index.html';
+        else if (/^\/(en\/)?(privacidade|termos)\/?(\?.*)?$/.test(url)) req.url = '/legal/index.html';
         next();
       });
     },
@@ -94,6 +96,8 @@ export default defineConfig({
       input: {
         landing: fileURLToPath(new URL('./index.html', import.meta.url)),
         docs: fileURLToPath(new URL('./docs/index.html', import.meta.url)),
+        // Só modelo do prerender: o build não deixa /legal/ no ar.
+        legal: fileURLToPath(new URL('./legal/index.html', import.meta.url)),
       },
     },
   },

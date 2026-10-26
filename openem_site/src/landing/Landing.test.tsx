@@ -1,7 +1,16 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Landing } from './Landing';
+
+describe('Landing: rodapé', () => {
+  it('aponta para a Política de Privacidade e os Termos de Uso', () => {
+    render(<Landing />);
+    const rodape = screen.getByRole('navigation', { name: 'Rodapé' });
+    expect(within(rodape).getByRole('link', { name: 'Privacidade' })).toHaveAttribute('href', '/privacidade/');
+    expect(within(rodape).getByRole('link', { name: 'Termos de uso' })).toHaveAttribute('href', '/termos/');
+  });
+});
 
 describe('Landing: botão do app', () => {
   afterEach(() => localStorage.clear());

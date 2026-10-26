@@ -51,7 +51,7 @@ describe('Auth & Health (e2e)', () => {
   it('POST /api/v1/auth/register → cria conta e retorna token', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email, password, displayName: 'E2E' })
+      .send({ email, password, displayName: 'E2E', acceptTerms: true })
       .expect(201);
     expect(res.body.accessToken).toBeDefined();
     expect(res.body.user.email).toBe(email);
@@ -60,14 +60,14 @@ describe('Auth & Health (e2e)', () => {
   it('POST /api/v1/auth/register duplicado → 409', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email, password })
+      .send({ email, password, acceptTerms: true })
       .expect(409);
   });
 
   it('POST /api/v1/auth/register inválido → 400', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email: 'nao-eh-email', password: '123' })
+      .send({ email: 'nao-eh-email', password: '123', acceptTerms: true })
       .expect(400);
   });
 

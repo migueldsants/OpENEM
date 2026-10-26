@@ -41,6 +41,7 @@ describe('Videoteca (issue #37, e2e)', () => {
       .send({
         email: `videos_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;
@@ -159,6 +160,7 @@ describe('Videoteca (issue #37, e2e)', () => {
       .send({
         email: `other_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
 

@@ -8,6 +8,7 @@ import {
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
 import { normalizeEmail } from '../common/rate-limit';
+import { TERMS_VERSION } from '../common/terms';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginAttemptsService } from '../rate-limit/login-attempts.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -63,6 +64,8 @@ export class AuthService {
       data: {
         email,
         passwordHash,
+        termsAcceptedAt: new Date(),
+        termsVersion: TERMS_VERSION,
         profile: {
           create: { displayName: dto.displayName },
         },

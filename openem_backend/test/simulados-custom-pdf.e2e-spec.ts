@@ -47,6 +47,7 @@ describe('Simulados personalizados e PDF (e2e)', () => {
       .send({
         email: `sim_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;
@@ -162,6 +163,7 @@ describe('Simulados personalizados e PDF (e2e)', () => {
       .send({
         email: `sim_outro_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
 

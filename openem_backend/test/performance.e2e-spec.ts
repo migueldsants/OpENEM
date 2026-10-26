@@ -43,6 +43,7 @@ describe('Performance — filtro de período (issue #20, e2e)', () => {
       .send({
         email: `perf20_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;

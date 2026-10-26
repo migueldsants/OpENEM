@@ -33,6 +33,7 @@ describe('Temas: meus temas, comunidade e curtidas (e2e)', () => {
       .send({
         email: `${prefix}_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     return reg.body.accessToken as string;

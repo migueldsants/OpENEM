@@ -26,7 +26,7 @@ Each project has its own `package.json`: `npm` commands run from inside its fold
 
 ### Modules
 
-- **Account:** `auth` (sign-up and login with JWT) and `users` (study profile and public profile).
+- **Account:** `auth` (sign-up with acceptance of the terms, and login with JWT) and `users` (study profile, public profile and the data subject rights of the LGPD: `GET /users/me/export` and `DELETE /users/me`).
 - **Question bank:** `subjects` (areas, subjects and topics), `questions` (includes the on-demand AI explanation), `question-notes` and `favorites`.
 - **Study:** `answers`, `simulations` (mock exams, by exam or by theme, and the PDF booklet), `review` (SM-2 spaced review), `recommendation`, `performance`, `study-plan`, `weekly-goals` and `pomodoro`.
 - **Materials:** `flashcards`, `formulas` (with the formula booklet in PDF), `videos` and `tools` (the list on the Tools screen, with GitHub stars).
@@ -50,6 +50,7 @@ Jest's `rootDir` is `src/`. That is why testable logic does not live in `prisma/
 - Avoid raw SQL. Text search uses `mode: 'insensitive'`, because Postgres `contains` is case sensitive.
 - Always select alternatives through `src/questions/question.select.ts`, which guarantees the order by `position`.
 - An official question may have null `topicId` and `explanation`: every piece of code that reads questions has to accept both.
+- Every relation to `User` uses `onDelete: Cascade`, which is what makes account deletion remove everything. A new table linked to the student also goes into the export, in `src/users/data-export.ts`: its test compares the list with the schema and fails until the table is added.
 
 ## Frontend
 
@@ -76,6 +77,7 @@ The PWA uses `vite-plugin-pwa`. The service worker keeps the API reads (network 
 - **App data.** At build time, the landing page reads the app's essay catalog to list the prompts by year.
 - **Documentation pages.** They are Markdown files in `src/docs/conteudo/<group>/NN-slug.md`, with a `titulo` and `descricao` header; the number only sets the order, and the URL is `/docs/<group>/<slug>/`. The test `src/docs/conteudo.test.ts` requires a title and description, forbids level 1 headings and dashes in the body and checks that internal links point to pages that exist.
 - **English.** A page's translation lives in `src/docs/conteudo/en/<group>/`, with the same file name, and is published at `/docs/en/<group>/<slug>/`. A page without a translation shows up in Portuguese at the English address, with a notice. The hosting and contributing groups are translated; the student guides stay in Portuguese, the language of the ENEM.
+- **Legal pages.** The Privacy Policy and the Terms of Use are Markdown files in `src/legal/conteudo/` (translation in `en/`) and are published at `/privacidade/` and `/termos/` (and `/en/privacidade/`, `/en/termos/`). The `atualizado` header must equal the backend's `TERMS_VERSION`, the version that sign-up stores; `src/legal/documentos.test.ts` checks that and the sections of the policy.
 - **API reference.** The [API reference](/docs/en/contribuir/api/) page is built from `src/docs/api/openapi.json`, which the backend generates from its own controllers with `npm run openapi` (without starting the server or the database). CI fails if the file gets out of date.
 
 To run the site and the rest of the project on your machine, see [Development](/docs/en/contribuir/desenvolvimento/).

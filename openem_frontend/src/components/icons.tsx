@@ -2,6 +2,7 @@
 // nomes usados na base. O shim traduz a API antiga (width/height/filled) para a
 // do Phosphor (size/weight), então os call sites seguem funcionando.
 import {
+  Flag,
   ArrowClockwise,
   ArrowCounterClockwise,
   ArrowsClockwise,
@@ -197,6 +198,8 @@ export const IconZoomOut = shim(MagnifyingGlassMinus, 'bold');
 export const IconFit = shim(BoundingBox, 'bold');
 // Banner de erro (issue #49).
 export const IconAlert = shim(Warning, 'fill');
+// Denunciar tópico ou resposta no fórum.
+export const IconFlag = shim(Flag, 'duotone');
 // Modo Foco / Pomodoro (issue #41).
 export const IconPlay = shim(Play, 'fill');
 export const IconPause = shim(Pause, 'fill');

@@ -62,3 +62,12 @@ Dá. Em **Perfil**, desligue a chave **Gamificação**. Você deixa de ganhar XP
 ## Quem vê meu e-mail?
 
 Os outros alunos não veem. No fórum, no ranking e no perfil público aparece o nome do campo **Como quer ser chamado**, em **Perfil**, ou **Estudante** se ele estiver vazio. Mais em [Comunidade](/docs/alunos/comunidade/).
+
+## Como baixo meus dados ou excluo minha conta?
+
+Em **Perfil**, no cartão **Privacidade e dados**:
+
+- **Baixar meus dados** gera um arquivo JSON com tudo o que está ligado à sua conta: perfil, respostas, simulados, revisões, flashcards, cronograma, metas, Pomodoro, vídeos, temas, fórum, conquistas e XP.
+- **Excluir conta** pede a sua senha e apaga a conta e todos esses dados na hora. Também apaga, deste aparelho, a cópia das telas, as respostas que esperavam internet e os quadros. Não dá para desfazer: baixe os dados antes, se quiser uma cópia.
+
+O que o OpENEM guarda, para quê e por quanto tempo está na [Política de Privacidade](/privacidade/).

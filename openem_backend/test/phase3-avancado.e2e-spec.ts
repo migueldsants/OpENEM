@@ -43,6 +43,7 @@ describe('Fase 3 — avançado (desafio, recomendação, comunidade) (e2e)', () 
       .send({
         email: `p3adv_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;

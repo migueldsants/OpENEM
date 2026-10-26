@@ -12,8 +12,15 @@ vi.mock('../api', () => ({
     replyThread: vi.fn(),
     togglePostLike: vi.fn(),
     createThread: vi.fn(),
+    deleteThread: vi.fn(),
+    deletePost: vi.fn(),
+    reportForum: vi.fn(),
   },
 }));
+
+// Quem está logado: por padrão a Ana (u-1), autora do tópico.
+let meId = 'u-1';
+vi.mock('../auth', () => ({ useAuth: () => ({ me: { id: meId } }) }));
 
 const post = (n: number): ForumPost => ({
   id: `p${n}`,
@@ -137,5 +144,86 @@ describe('Comunidade — respostas paginadas', () => {
     expect(await screen.findByText('3 respostas')).toBeInTheDocument();
     expect(shownBodies()).toEqual(['resposta 1', 'resposta 2', 'resposta 3']);
     expect(api.forumThread).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Comunidade — apagar e denunciar', () => {
+  beforeEach(() => {
+    meId = 'u-1';
+    vi.mocked(api.forumThreads).mockReset().mockResolvedValue([
+      {
+        id: 't-1',
+        title: 'Dúvida sobre funções',
+        createdAt: new Date().toISOString(),
+        questionId: null,
+        author: { id: 'u-1', name: 'Ana' },
+        replies: 2,
+      },
+    ]);
+    vi.mocked(api.forumThread)
+      .mockReset()
+      .mockResolvedValue(thread({ replies: 2, posts: range(1, 2), nextCursor: null }));
+    vi.mocked(api.deleteThread).mockReset().mockResolvedValue({ removed: true });
+    vi.mocked(api.deletePost).mockReset().mockResolvedValue({ removed: true });
+    vi.mocked(api.reportForum).mockReset().mockResolvedValue({ reported: true });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  });
+
+  it('a autora apaga o tópico e volta para a lista', async () => {
+    await openThread();
+    // Nas respostas dos outros, só dá para denunciar.
+    expect(screen.queryByRole('button', { name: 'Apagar resposta' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Denunciar resposta' })).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apagar tópico' }));
+    expect(window.confirm).toHaveBeenCalled();
+    await screen.findByRole('button', { name: 'Novo tópico' });
+    expect(api.deleteThread).toHaveBeenCalledWith('t-1');
+    expect(api.forumThreads).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancelar a confirmação não apaga', async () => {
+    vi.mocked(window.confirm).mockReturnValue(false);
+    await openThread();
+    fireEvent.click(screen.getByRole('button', { name: 'Apagar tópico' }));
+    expect(api.deleteThread).not.toHaveBeenCalled();
+  });
+
+  it('quem respondeu apaga a própria resposta e denuncia o tópico dos outros', async () => {
+    meId = 'u-2';
+    await openThread();
+    expect(screen.queryByRole('button', { name: 'Apagar tópico' })).toBeNull();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Apagar resposta' })[0]);
+    expect(await screen.findByText('1 resposta')).toBeInTheDocument();
+    expect(api.deletePost).toHaveBeenCalledWith('t-1', 'p1');
+    expect(shownBodies()).toEqual(['resposta 2']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Denunciar tópico' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Denunciar tópico' });
+    const enviar = within(dialogo).getByRole('button', { name: 'Enviar denúncia' });
+    expect(enviar).toBeDisabled();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Spam ou propaganda' }));
+    fireEvent.click(enviar);
+    expect(await within(dialogo).findByRole('status')).toHaveTextContent(
+      'Denúncia enviada',
+    );
+    expect(api.reportForum).toHaveBeenCalledWith('t-1', null, 'Spam ou propaganda');
+  });
+
+  it('denuncia uma resposta com motivo escrito', async () => {
+    await openThread();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Denunciar resposta' })[1]);
+    const dialogo = screen.getByRole('dialog', { name: 'Denunciar resposta' });
+    fireEvent.change(within(dialogo).getByLabelText('Motivo'), {
+      target: { value: 'Expôs o telefone de alguém' },
+    });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Enviar denúncia' }));
+    await within(dialogo).findByRole('status');
+    expect(api.reportForum).toHaveBeenCalledWith(
+      't-1',
+      'p2',
+      'Expôs o telefone de alguém',
+    );
   });
 });

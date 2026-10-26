@@ -41,6 +41,7 @@ describe('Metas semanais (issue #44, e2e)', () => {
       .send({
         email: `goals_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;
@@ -118,6 +119,7 @@ describe('Metas semanais (issue #44, e2e)', () => {
       .send({
         email: `other_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     const goal = await request(app.getHttpServer())
@@ -165,6 +167,7 @@ describe('Metas semanais (issue #44, e2e)', () => {
       .send({
         email: `wg_minutos_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     const mine = { Authorization: `Bearer ${reg.body.accessToken}` };

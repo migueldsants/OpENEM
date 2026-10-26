@@ -34,7 +34,12 @@ function openDB(): Promise<IDBDatabase> {
         db.createObjectStore(STORE, { keyPath: 'id' });
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // Exclusão da conta apaga o banco (lib/conta.ts): a conexão aberta
+      // fecha em vez de travar o deleteDatabase.
+      req.result.onversionchange = () => req.result.close();
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error);
   });
 }

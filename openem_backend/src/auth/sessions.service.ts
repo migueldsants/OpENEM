@@ -84,4 +84,13 @@ export class SessionsService {
     );
     return user;
   }
+
+  /**
+   * Esquece a versão em cache depois que a conta é excluída: o próximo pedido
+   * relê o banco, não acha a conta e recusa o token. Sem isso, o token do
+   * outro aparelho valeria até o cache vencer.
+   */
+  async forget(userId: string): Promise<void> {
+    await this.cache.del(versionKey(userId));
+  }
 }

@@ -38,6 +38,15 @@ export function withPage(state: ThreadState, page: ForumPostPage): ThreadState {
   return { ...state, posts: [...posts, ...sent], sent: [], nextCursor: null };
 }
 
+/** Tira a resposta que o próprio aluno apagou, onde quer que ela esteja. */
+export function withoutPost(state: ThreadState, postId: string): ThreadState {
+  const posts = state.posts.filter((p) => p.id !== postId);
+  const sent = state.sent.filter((p) => p.id !== postId);
+  const removed =
+    state.posts.length + state.sent.length - posts.length - sent.length;
+  return { ...state, posts, sent, replies: Math.max(0, state.replies - removed) };
+}
+
 /** Aplica `fn` à resposta `postId`, onde quer que ela esteja. */
 export function mapPost(
   state: ThreadState,

@@ -41,6 +41,7 @@ describe('Modo Foco / Pomodoro (issue #41, e2e)', () => {
       .send({
         email: `focus_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
+        acceptTerms: true,
       })
       .expect(201);
     token = reg.body.accessToken;

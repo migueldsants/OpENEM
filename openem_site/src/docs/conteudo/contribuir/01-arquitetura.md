@@ -26,7 +26,7 @@ Cada projeto tem o próprio `package.json`: os comandos `npm` rodam de dentro da
 
 ### Módulos
 
-- **Conta:** `auth` (cadastro e login com JWT) e `users` (perfil de estudo e perfil público).
+- **Conta:** `auth` (cadastro com aceite dos termos e login com JWT) e `users` (perfil de estudo, perfil público e os direitos do titular da LGPD: `GET /users/me/export` e `DELETE /users/me`).
 - **Banco de questões:** `subjects` (áreas, matérias e assuntos), `questions` (inclui o comentário sob demanda por IA), `question-notes` e `favorites`.
 - **Estudo:** `answers`, `simulations` (simulados, por prova ou por tema, e o caderno em PDF), `review` (revisão espaçada SM-2), `recommendation`, `performance`, `study-plan`, `weekly-goals` e `pomodoro`.
 - **Materiais:** `flashcards`, `formulas` (com o caderno de fórmulas em PDF), `videos` e `tools` (a lista da tela Ferramentas, com as estrelas do GitHub).
@@ -50,6 +50,7 @@ O `rootDir` do Jest é `src/`. Por isso lógica testável não mora em `prisma/`
 - Evite SQL cru. Busca de texto usa `mode: 'insensitive'`, porque o `contains` do Postgres diferencia maiúsculas.
 - Selecione alternativas sempre por `src/questions/question.select.ts`, que garante a ordem por `position`.
 - Questão oficial pode ter `topicId` e `explanation` nulos: todo código que lê questão precisa aceitar os dois.
+- Toda relação com `User` usa `onDelete: Cascade`, e é isso que faz a exclusão da conta apagar tudo. Tabela nova ligada ao aluno também entra na exportação, em `src/users/data-export.ts`: o teste dele compara a lista com o schema e quebra até ela entrar.
 
 ## Frontend
 
@@ -76,6 +77,7 @@ O `openem_site/` é um projeto React + Vite separado do app, com a landing em `/
 - **Dados do app.** A landing lê, no build, o catálogo de redações do app para listar os temas por ano.
 - **Páginas da documentação.** São arquivos Markdown em `src/docs/conteudo/<grupo>/NN-slug.md`, com cabeçalho `titulo` e `descricao`; o número só ordena, e a URL é `/docs/<grupo>/<slug>/`. O teste `src/docs/conteudo.test.ts` exige título e descrição, proíbe título de nível 1 e travessão no corpo e confere se os links internos apontam para páginas que existem.
 - **Inglês.** A tradução de uma página fica em `src/docs/conteudo/en/<grupo>/`, com o mesmo nome de arquivo, e sai em `/docs/en/<grupo>/<slug>/`. Página sem tradução aparece em português no endereço inglês, com um aviso. Os grupos de hospedagem e contribuição estão traduzidos; os guias de estudante ficam em português, a língua do ENEM.
+- **Páginas legais.** A Política de Privacidade e os Termos de Uso são Markdown em `src/legal/conteudo/` (tradução em `en/`) e saem em `/privacidade/` e `/termos/` (e `/en/privacidade/`, `/en/termos/`). O cabeçalho `atualizado` tem de ser igual ao `TERMS_VERSION` do backend, a versão que o cadastro grava; `src/legal/documentos.test.ts` confere isso e as seções da política.
 - **Referência da API.** A página [Referência da API](/docs/contribuir/api/) é montada de `src/docs/api/openapi.json`, que o backend gera dos próprios controllers com `npm run openapi` (sem subir servidor nem banco). O CI quebra se o arquivo ficar desatualizado.
 
 Para rodar o site e o resto do projeto na sua máquina, veja [Desenvolvimento](/docs/contribuir/desenvolvimento/).

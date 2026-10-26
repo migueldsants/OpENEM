@@ -20,6 +20,11 @@ type PostRow = {
   createdAt: Date;
   user: Author;
 };
+type ReportWhere = {
+  reporterId: string;
+  threadId: string;
+  postId: string | null;
+};
 // Formato do `where` que o serviço monta para a página (ver posts-page.ts).
 type PostWhere = {
   threadId: string;
@@ -48,6 +53,10 @@ function makePrismaMock() {
     string,
     { id: string; postId: string; userId: string }
   >();
+  const reports = new Map<
+    string,
+    ReportWhere & { id: string; reason: string }
+  >();
   let idCounter = 0;
   // Ids com zeros à esquerda: a ordem de texto é a de criação.
   const nextId = () => `id-${String(++idCounter).padStart(5, '0')}`;
@@ -73,6 +82,7 @@ function makePrismaMock() {
     threads,
     posts,
     likes,
+    reports,
     seedPost,
     question: {
       findUnique: jest.fn(({ where }: { where: { id: string } }) =>
@@ -103,9 +113,27 @@ function makePrismaMock() {
       findUnique: jest.fn(({ where }: { where: { id: string } }) => {
         const t = threads.get(where.id);
         return Promise.resolve(
-          t ? { ...t, _count: { posts: postsOf(t.id).length } } : null,
+          t
+            ? {
+                ...t,
+                userId: t.user.id,
+                _count: { posts: postsOf(t.id).length },
+              }
+            : null,
         );
       }),
+      // Cascata como no banco: o tópico leva as respostas.
+      deleteMany: jest.fn(
+        ({ where }: { where: { id: string; userId: string } }) => {
+          const t = threads.get(where.id);
+          if (!t || t.user.id !== where.userId) {
+            return Promise.resolve({ count: 0 });
+          }
+          threads.delete(t.id);
+          for (const p of postsOf(t.id)) posts.delete(p.id);
+          return Promise.resolve({ count: 1 });
+        },
+      ),
     },
     forumPost: {
       create: jest.fn(({ data }: { data: any }) => {
@@ -159,8 +187,59 @@ function makePrismaMock() {
               })),
           ),
       ),
-      findUnique: jest.fn(({ where }: { where: { id: string } }) =>
-        Promise.resolve(posts.get(where.id) ?? null),
+      findUnique: jest.fn(({ where }: { where: { id: string } }) => {
+        const p = posts.get(where.id);
+        return Promise.resolve(p ? { ...p, userId: p.user.id } : null);
+      }),
+      deleteMany: jest.fn(
+        ({
+          where,
+        }: {
+          where: { id: string; threadId: string; userId: string };
+        }) => {
+          const p = posts.get(where.id);
+          if (
+            !p ||
+            p.threadId !== where.threadId ||
+            p.user.id !== where.userId
+          ) {
+            return Promise.resolve({ count: 0 });
+          }
+          posts.delete(p.id);
+          return Promise.resolve({ count: 1 });
+        },
+      ),
+    },
+    forumReport: {
+      findFirst: jest.fn(({ where }: { where: ReportWhere }) =>
+        Promise.resolve(
+          Array.from(reports.values()).find(
+            (r) =>
+              r.reporterId === where.reporterId &&
+              r.threadId === where.threadId &&
+              r.postId === where.postId,
+          ) ?? null,
+        ),
+      ),
+      create: jest.fn(
+        ({ data }: { data: ReportWhere & { reason: string } }) => {
+          const report = { id: nextId(), ...data };
+          reports.set(report.id, report);
+          return Promise.resolve(report);
+        },
+      ),
+      update: jest.fn(
+        ({
+          where,
+          data,
+        }: {
+          where: { id: string };
+          data: { reason: string };
+        }) => {
+          const report = reports.get(where.id)!;
+          report.reason = data.reason;
+          return Promise.resolve(report);
+        },
       ),
     },
     forumPostLike: {
@@ -419,5 +498,123 @@ describe('CommunityService', () => {
     await expect(
       service.toggleLike('u-3', 'outro-thread', postId),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  describe('apagar', () => {
+    it('o autor apaga o próprio tópico, com as respostas de todos', async () => {
+      const { service, prisma } = makeService();
+      const t = await service.createThread('u-1', { title: 'Meu', body: 'b' });
+      await service.addPost('u-2', t.id, { body: 'resposta' });
+
+      expect(await service.deleteThread('u-1', t.id)).toEqual({
+        removed: true,
+      });
+      expect(prisma.threads.has(t.id)).toBe(false);
+      expect(prisma.posts.size).toBe(0);
+    });
+
+    it('tópico de outro aluno é 404 e continua lá', async () => {
+      const { service, prisma } = makeService();
+      const t = await service.createThread('u-1', { title: 'Meu', body: 'b' });
+      await expect(service.deleteThread('u-2', t.id)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      await expect(
+        service.deleteThread('u-1', 'inexistente'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.threads.has(t.id)).toBe(true);
+    });
+
+    it('o autor apaga a própria resposta; a de outro aluno é 404', async () => {
+      const { service, prisma } = makeService();
+      const t = await service.createThread('u-1', { title: 'T', body: 'b' });
+      const minha = await service.addPost('u-2', t.id, { body: 'minha' });
+      const dele = await service.addPost('u-3', t.id, { body: 'dele' });
+
+      expect(await service.deletePost('u-2', t.id, minha.id)).toEqual({
+        removed: true,
+      });
+      expect(prisma.posts.has(minha.id)).toBe(false);
+
+      await expect(
+        service.deletePost('u-2', t.id, dele.id),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      // O dono do tópico também não apaga a resposta dos outros.
+      await expect(
+        service.deletePost('u-1', t.id, dele.id),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      // A resposta certa pelo tópico errado também não.
+      await expect(
+        service.deletePost('u-3', 'outro', dele.id),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.posts.has(dele.id)).toBe(true);
+    });
+  });
+
+  describe('denunciar', () => {
+    it('grava a denúncia do tópico e da resposta com o motivo', async () => {
+      const { service, prisma } = makeService();
+      const t = await service.createThread('u-1', { title: 'T', body: 'b' });
+      const p = await service.addPost('u-2', t.id, { body: 'ofensa' });
+
+      expect(
+        await service.report('u-3', t.id, null, { reason: 'Spam' }),
+      ).toEqual({ reported: true });
+      await service.report('u-3', t.id, p.id, { reason: 'Ofensa' });
+
+      expect(Array.from(prisma.reports.values())).toEqual([
+        expect.objectContaining({
+          reporterId: 'u-3',
+          threadId: t.id,
+          postId: null,
+          reason: 'Spam',
+        }),
+        expect.objectContaining({
+          reporterId: 'u-3',
+          threadId: t.id,
+          postId: p.id,
+          reason: 'Ofensa',
+        }),
+      ]);
+    });
+
+    it('denunciar de novo o mesmo alvo só troca o motivo', async () => {
+      const { service, prisma } = makeService();
+      const t = await service.createThread('u-1', { title: 'T', body: 'b' });
+      await service.report('u-3', t.id, null, { reason: 'Spam' });
+      await service.report('u-3', t.id, null, { reason: 'Spam repetido' });
+      expect(prisma.reports.size).toBe(1);
+      expect(Array.from(prisma.reports.values())[0].reason).toBe(
+        'Spam repetido',
+      );
+    });
+
+    it('o autor não denuncia o que ele mesmo escreveu', async () => {
+      const { service, prisma } = makeService();
+      const t = await service.createThread('u-1', { title: 'T', body: 'b' });
+      const p = await service.addPost('u-2', t.id, { body: 'r' });
+      await expect(
+        service.report('u-1', t.id, null, { reason: 'x' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.report('u-2', t.id, p.id, { reason: 'x' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.reports.size).toBe(0);
+    });
+
+    it('alvo inexistente ou de outro tópico é 404', async () => {
+      const { service } = makeService();
+      const t = await service.createThread('u-1', { title: 'T', body: 'b' });
+      const p = await service.addPost('u-2', t.id, { body: 'r' });
+      await expect(
+        service.report('u-3', 'inexistente', null, { reason: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.report('u-3', t.id, 'inexistente', { reason: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.report('u-3', 'outro', p.id, { reason: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
   });
 });

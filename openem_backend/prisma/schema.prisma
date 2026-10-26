@@ -28,6 +28,10 @@ model User {
   /// o e-mail.
   emailVerifiedAt     DateTime?
   createdAt           DateTime             @default(now())
+  /// Quando o aluno aceitou os Termos de Uso e a Política de Privacidade, e
+  /// qual versão (common/terms.ts). Nulos nas contas criadas antes do aceite.
+  termsAcceptedAt     DateTime?
+  termsVersion        String?
   profile             Profile?
   answers             Answer[]
   simulations         Simulation[]
@@ -42,6 +46,7 @@ model User {
   forumThreads        ForumThread[]
   forumPosts          ForumPost[]
   postLikes           ForumPostLike[]
+  forumReports        ForumReport[]
   questionNotes       QuestionNote[]
   flashcardDecks      FlashcardDeck[]
   flashcardReviews    FlashcardReview[]
@@ -603,15 +608,16 @@ model DailyChallengeLog {
 
 // Comunidade/fórum: tópicos e respostas (Fase 3).
 model ForumThread {
-  id         String      @id @default(cuid())
+  id         String        @id @default(cuid())
   userId     String
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   title      String
   body       String
   questionId String? // tópico opcionalmente ligado a uma questão
-  question   Question?   @relation(fields: [questionId], references: [id], onDelete: SetNull)
-  createdAt  DateTime    @default(now())
+  question   Question?     @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
   posts      ForumPost[]
+  reports    ForumReport[]
 
   @@index([createdAt])
 }
@@ -625,6 +631,7 @@ model ForumPost {
   body      String
   createdAt DateTime        @default(now())
   likes     ForumPostLike[]
+  reports   ForumReport[]
 
   @@index([threadId, createdAt])
 }
@@ -641,6 +648,26 @@ model ForumPostLike {
 
   @@unique([postId, userId])
   @@index([postId])
+}
+
+// Denúncia de um tópico ou de uma resposta do fórum. Ainda não há tela de
+// moderação: quem hospeda lê esta tabela (ver docs, hospedar/produção). Um
+// aluno tem no máximo uma denúncia por alvo (a segunda troca o motivo), e o
+// alvo apagado leva a denúncia junto. `postId` nulo = denúncia do tópico.
+model ForumReport {
+  id         String      @id @default(cuid())
+  reporterId String
+  reporter   User        @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  threadId   String
+  thread     ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  postId     String?
+  post       ForumPost?  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reason     String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([reporterId, threadId, postId])
+  @@index([createdAt])
 }
 
 // ---- Fase 3 (avançado) — Flashcards (issue #36) ----
