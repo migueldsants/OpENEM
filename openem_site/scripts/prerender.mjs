@@ -9,9 +9,8 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
 const ssr = join(raiz, 'dist-ssr');
 
-const { paginas, renderizar, absolutizar, robotsTxt, siteUrl, sitemapXml } = await import(
-  pathToFileURL(join(ssr, 'entry-server.js')).href
-);
+const { paginas, renderizar, absolutizar, arquivosLlms, robotsTxt, siteUrl, sitemapXml } =
+  await import(pathToFileURL(join(ssr, 'entry-server.js')).href);
 
 // Domínio da instalação (ex.: https://openem.exemplo). Sem ele, as URLs ficam
 // relativas e o sitemap não é gerado: ele só aceita endereço completo.
@@ -27,7 +26,7 @@ const modelos = new Map(
 for (const pagina of lista) {
   const modelo = modelos.get(pagina.modelo);
   if (!modelo.includes('<!--app-html-->')) throw new Error(`modelo sem marcador: ${pagina.modelo}`);
-  const { html, head, lang } = await renderizar(pagina.url);
+  const { html, head, lang } = await renderizar(pagina.url, site);
   const saida = absolutizar(
     modelo
       .replace('<html lang="pt-BR">', `<html lang="${lang ?? 'pt-BR'}">`)
@@ -57,11 +56,19 @@ for (const modelo of modelos.keys()) {
 
 writeFileSync(join(dist, 'robots.txt'), robotsTxt(site));
 if (site) {
-  writeFileSync(join(dist, 'sitemap.xml'), sitemapXml(site, lista.map((p) => p.url)));
-  console.log(`sitemap com ${lista.length} páginas (${site})`);
+  // O endereço inglês de página sem tradução repete o português: fica fora.
+  const indexadas = lista.filter((p) => p.indexar).map((p) => p.url);
+  writeFileSync(join(dist, 'sitemap.xml'), sitemapXml(site, indexadas));
+  console.log(`sitemap com ${indexadas.length} páginas (${site})`);
 } else {
   console.log('SITE_URL não definido: sem sitemap.xml, URLs relativas');
 }
+
+// Índice para assistentes de IA (https://llmstxt.org) e o texto completo.
+const { indice, completo } = arquivosLlms(site);
+writeFileSync(join(dist, 'llms.txt'), indice);
+writeFileSync(join(dist, 'llms-full.txt'), completo);
+console.log(`llms.txt e llms-full.txt (${Math.round(completo.length / 1024)} KB)`);
 
 // O bundle de servidor só serve ao build.
 rmSync(ssr, { recursive: true, force: true });

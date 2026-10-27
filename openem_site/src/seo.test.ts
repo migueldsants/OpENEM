@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { absolutizar, robotsTxt, siteUrl, sitemapXml } from './seo';
+import { absolutizar, jsonLd, robotsTxt, siteUrl, sitemapXml } from './seo';
 
 describe('siteUrl', () => {
   it.each([
@@ -60,5 +60,69 @@ describe('absolutizar', () => {
 
   it('sem o domínio, nada muda', () => {
     expect(absolutizar(html, null, '/docs/')).toBe(html);
+  });
+
+  it('o og:url é o canonical, não o endereço da página (espelho sem tradução)', () => {
+    const espelho = '<head><link rel="canonical" href="/docs/alunos/x/" /></head>';
+    const saida = absolutizar(espelho, 'https://openem.exemplo', '/docs/en/alunos/x/');
+    expect(saida).toContain('<meta property="og:url" content="https://openem.exemplo/docs/alunos/x/" />');
+  });
+});
+
+describe('jsonLd', () => {
+  const dados = {
+    tipo: 'TechArticle' as const,
+    titulo: 'Simulados <novos>',
+    descricao: 'Provas no tempo do ENEM.',
+    url: '/docs/alunos/simulados/',
+    lang: 'pt-BR',
+    trilha: [
+      { nome: 'Documentação do OpENEM', url: '/docs/' },
+      { nome: 'Simulados', url: '/docs/alunos/simulados/' },
+    ],
+  };
+
+  function grafo(script: string): Record<string, unknown>[] {
+    const m = /^<script type="application\/ld\+json">(.*)<\/script>$/.exec(script);
+    expect(m).not.toBeNull();
+    const json = JSON.parse(m![1]) as { '@context': string; '@graph': Record<string, unknown>[] };
+    expect(json['@context']).toBe('https://schema.org');
+    return json['@graph'];
+  }
+
+  it('com o domínio: a página com url completa e a trilha (BreadcrumbList)', () => {
+    const [pagina, trilha] = grafo(jsonLd('https://openem.exemplo', dados));
+    expect(pagina).toMatchObject({
+      '@type': 'TechArticle',
+      headline: 'Simulados <novos>',
+      inLanguage: 'pt-BR',
+      url: 'https://openem.exemplo/docs/alunos/simulados/',
+      isPartOf: { '@type': 'WebSite', name: 'OpENEM', url: 'https://openem.exemplo/' },
+    });
+    expect(trilha).toMatchObject({
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { position: 1, item: 'https://openem.exemplo/docs/' },
+        { position: 2, item: 'https://openem.exemplo/docs/alunos/simulados/' },
+      ],
+    });
+  });
+
+  it('sem o domínio: só a página, sem url nem trilha (exigem endereço completo)', () => {
+    const g = grafo(jsonLd(null, dados));
+    expect(g).toHaveLength(1);
+    expect(g[0]).not.toHaveProperty('url');
+  });
+
+  it('o JSON nunca fecha o <script> antes da hora', () => {
+    const script = jsonLd(null, { ...dados, titulo: '</script><script>alert(1)</script>' });
+    expect(script.indexOf('</script>')).toBe(script.length - '</script>'.length);
+  });
+
+  it('documento legal leva a data da última mudança', () => {
+    const [pagina] = grafo(
+      jsonLd(null, { ...dados, tipo: 'WebPage', atualizado: '2026-10-25', trilha: undefined }),
+    );
+    expect(pagina).toMatchObject({ '@type': 'WebPage', dateModified: '2026-10-25' });
   });
 });
