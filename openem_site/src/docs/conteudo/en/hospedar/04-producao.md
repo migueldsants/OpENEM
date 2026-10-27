@@ -152,6 +152,16 @@ docker compose exec db psql -U openem -d openem -c 'SELECT r."createdAt", r.reas
 
 To remove reported content, delete the row in `ForumThread` or `ForumPost`; its replies and reports go with it in cascade. Content that violates the rights of children and adolescents, besides being removed, may have to be reported to the authorities.
 
+## Search engines and AI assistants
+
+The site build (the frontend image) writes, next to the pages:
+
+- `robots.txt`: allows the site and the documentation and keeps the app (`/app/`) and the API (`/api/`) out of search engines, since they are screens for people who already have an account.
+- `sitemap.xml`: every page except the English address of pages that are not translated yet (it repeats the Portuguese text and points its canonical to the original page). It is only written when `SITE_URL` is set, because a sitemap needs full addresses.
+- `llms.txt` and `llms-full.txt`, in the [llmstxt.org](https://llmstxt.org) format: a Markdown index of the documentation, so AI assistants find what matters, and the full text of the pages in a single file. They come from the same pages as the site, so they never go stale.
+
+Each page carries a title, a description, a canonical link, its versions in each language (`hreflang`), Open Graph with the sharing image and structured data (schema.org JSON-LD). With `SITE_URL`, all these addresses are absolute; without it, they stay relative and the navigation trail (`BreadcrumbList`) is left out.
+
 ## Update
 
 Back up first. Then:

@@ -152,6 +152,16 @@ docker compose exec db psql -U openem -d openem -c 'SELECT r."createdAt", r.reas
 
 Para remover um conteúdo denunciado, apague a linha em `ForumThread` ou `ForumPost`; as respostas e as denúncias dele saem em cascata. Conteúdo que viole direitos de crianças e adolescentes, além de removido, pode ter de ser comunicado às autoridades.
 
+## Buscadores e assistentes de IA
+
+O build do site (a imagem do frontend) grava, junto das páginas:
+
+- `robots.txt`: libera o site e a documentação e tira dos buscadores o app (`/app/`) e a API (`/api/`), que são telas de quem já tem conta.
+- `sitemap.xml`: todas as páginas, menos o endereço inglês das páginas que ainda não têm tradução (ele repete o português e aponta o canonical para a página original). Só sai com a `SITE_URL` definida, porque o sitemap exige endereço completo.
+- `llms.txt` e `llms-full.txt`, no formato do [llmstxt.org](https://llmstxt.org): um índice da documentação em Markdown, para assistentes de IA acharem o que importa, e o texto completo das páginas num arquivo só. Saem das mesmas páginas do site, então nunca ficam desatualizados.
+
+Cada página leva título, descrição, canonical, as versões em cada idioma (`hreflang`), Open Graph com a imagem de compartilhamento e dados estruturados (schema.org em JSON-LD). Com a `SITE_URL`, todos esses endereços saem completos; sem ela, ficam relativos e a trilha de navegação (`BreadcrumbList`) fica de fora.
+
 ## Atualizar
 
 Faça backup antes. Depois:
