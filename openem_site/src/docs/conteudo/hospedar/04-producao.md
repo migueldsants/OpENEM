@@ -9,7 +9,7 @@ O aluno acessa o Caddy nas portas 80 e 443 (com o overlay de produção, abaixo)
 
 ## HTTPS na frente
 
-O `docker-compose.prod.yml` (o overlay de produção) acrescenta um Caddy na frente do nginx do app. Ele obtém e renova sozinho o certificado Let's Encrypt de `openem.tech`, redireciona `www.openem.tech` para o endereço principal e é o único serviço publicado na rede. Além de proteger senhas e tokens, o HTTPS é exigido pelo próprio PWA: o navegador só registra o service worker (uso offline e instalação do app) em contexto seguro, ou seja, HTTPS ou `localhost`.
+O `docker-compose.prod.yml` (o overlay de produção) acrescenta um Caddy na frente do nginx do app. Ele obtém e renova sozinho o certificado Let's Encrypt de `openem.tech`, redireciona `www.openem.tech` para o endereço principal e é o único serviço aberto para a rede. Ele roda na rede do host (`network_mode: host`), e não numa porta publicada pelo Docker: o Docker entrega as conexões IPv6 de uma porta publicada com o IP do gateway da rede interna, e todos os alunos que chegam por IPv6 viravam o mesmo cliente para o rate limiting. Além de proteger senhas e tokens, o HTTPS é exigido pelo próprio PWA: o navegador só registra o service worker (uso offline e instalação do app) em contexto seguro, ou seja, HTTPS ou `localhost`.
 
 Para subir:
 
@@ -24,9 +24,11 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 
 Com `COMPOSE_FILE` no `.env`, os comandos do compose usam os dois arquivos sem `-f`. Para outro domínio, troque `openem.tech` em `deploy/Caddyfile` e o `SITE_URL`. O overlay exige o Docker Compose v2.24.4 ou mais novo (`docker compose version`).
 
-O overlay também tira a porta 8080 da rede: o nginx do app deixa de ser publicado, e só o Caddy chega a ele. Sem o overlay, o compose serve HTTP na porta 8080 de todas as interfaces, o que serve à máquina de desenvolvimento e não deve ir para a internet.
+O overlay também tira a porta 8080 da rede: o nginx do app fica publicado só em `127.0.0.1:8080`, onde o Caddy chega a ele. Sem o overlay, o compose serve HTTP na porta 8080 de todas as interfaces, o que serve à máquina de desenvolvimento e não deve ir para a internet.
 
-O Caddy envia `Strict-Transport-Security` por padrão. O `nginx.conf` do app não envia HSTS; quem trocar de proxy configura o HSTS no novo.
+O `deploy/Caddyfile` envia `Strict-Transport-Security` (um ano, com subdomínios) em todas as respostas, o mesmo valor que a API já manda. O Caddy não faz isso sozinho, e o `nginx.conf` do app não envia HSTS: quem trocar de proxy configura o HSTS no novo.
+
+O nginx do app redireciona com caminho relativo (`absolute_redirect off`). Atrás do proxy ele recebe HTTP, e um redirecionamento absoluto sairia com `http://`.
 
 ### Outro proxy HTTPS
 

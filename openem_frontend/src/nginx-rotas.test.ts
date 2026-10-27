@@ -58,4 +58,8 @@ describe('nginx — endereços antigos do app', () => {
   it('o site serve as páginas pré-renderizadas e responde 404 no resto', () => {
     expect(nginx).toContain('try_files $uri $uri/index.html $uri/ =404;');
   });
+
+  it('redireciona com caminho relativo (atrás do HTTPS, não cai em http://)', () => {
+    expect(nginx).toMatch(/^\s*absolute_redirect off;/m);
+  });
 });

@@ -1,30 +1,32 @@
 # OpENEM em produção, num servidor só, com HTTPS (openem.tech).
-# Acrescenta o Caddy na frente do nginx do app: ele é o único serviço publicado
-# (portas 80 e 443). Para ativar, ponha esta linha no .env da raiz, e os
-# comandos do compose passam a usar os dois arquivos sem -f:
+# Acrescenta o Caddy na frente do nginx do app: ele é o único serviço aberto
+# para a rede (portas 80 e 443). Para ativar, ponha esta linha no .env da raiz,
+# e os comandos do compose passam a usar os dois arquivos sem -f:
 #   COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 # Exige Docker Compose v2.24.4 ou mais novo (`docker compose version`), por
-# causa do !reset. Ver hospedar/04-producao na documentação.
+# causa do !override. Ver hospedar/04-producao na documentação.
 
 services:
   proxy:
     image: caddy:2-alpine
     restart: unless-stopped
+    # Na rede do host, e não numa porta publicada pelo Docker: o Docker repassa
+    # as conexões IPv6 de uma porta publicada com o IP do gateway da rede
+    # interna, e todo aluno que chega por IPv6 virava o mesmo cliente para o
+    # rate limiting. No host, o Caddy vê o IP de verdade, em IPv4 e IPv6.
+    network_mode: host
     depends_on:
       - frontend
-    ports:
-      - '80:80'
-      - '443:443'
-      - '443:443/udp'
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
 
   frontend:
-    # Sem porta publicada: só o Caddy chega ao nginx, pela rede interna. Assim
-    # ninguém alcança o nginx direto e forja o X-Forwarded-For.
-    ports: !reset []
+    # Só no localhost, para o Caddy (que está na rede do host) alcançar o nginx.
+    # Assim ninguém de fora chega ao nginx direto e forja o X-Forwarded-For.
+    ports: !override
+      - '127.0.0.1:8080:80'
     volumes:
       # O nginx lê o IP do aluno no X-Forwarded-For quando o pedido vem do Caddy.
       - ./deploy/nginx-real-ip.conf:/etc/nginx/conf.d/real-ip.conf:ro
