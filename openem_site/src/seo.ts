@@ -40,13 +40,69 @@ export function sitemapXml(site: string, urls: string[]): string {
 
 /**
  * Troca os caminhos relativos do canonical e do og:image pelo endereço
- * completo, e acrescenta o og:url. Sem SITE_URL, a página fica como está.
+ * completo, e acrescenta o og:url, que é o canonical (no espelho inglês sem
+ * tradução, a página em português). Sem SITE_URL, a página fica como está.
  */
 export function absolutizar(html: string, site: string | null, url: string): string {
   if (!site) return html;
+  const canonical = /<link rel="canonical" href="(\/[^"]*)"/.exec(html)?.[1] ?? url;
   return html
     .replace(/(<link rel="canonical" href=")(\/[^"]*)"/, `$1${site}$2"`)
     .replace(/(<link rel="alternate" hreflang="[^"]+" href=")(\/[^"]*)"/g, `$1${site}$2"`)
     .replace(/(<meta property="og:image" content=")(\/[^"]*)"/, `$1${site}$2"`)
-    .replace('</head>', `  <meta property="og:url" content="${site}${url}" />\n  </head>`);
+    .replace('</head>', `  <meta property="og:url" content="${site}${canonical}" />\n  </head>`);
+}
+
+const LICENCA = 'https://www.gnu.org/licenses/agpl-3.0.html';
+
+export interface DadosDaPagina {
+  /** TechArticle nos guias da documentação; WebPage nos documentos legais. */
+  tipo: 'TechArticle' | 'WebPage';
+  titulo: string;
+  descricao: string;
+  /** Caminho da página, começando em /. */
+  url: string;
+  /** Idioma no formato do `<html lang>` (pt-BR, en). */
+  lang: string;
+  /** Data da última mudança, AAAA-MM-DD, quando a página a tem. */
+  atualizado?: string;
+  /** Trilha até a página, da raiz da documentação até ela. */
+  trilha?: { nome: string; url: string }[];
+}
+
+/**
+ * Dados estruturados (schema.org em JSON-LD) de uma página, para o buscador
+ * entender o que ela é. A `url` e a trilha (BreadcrumbList) exigem endereço
+ * completo: sem SITE_URL, elas ficam de fora e sobra só a descrição da página.
+ * O `<` vira escape para o JSON nunca fechar o `<script>` antes da hora.
+ */
+export function jsonLd(site: string | null, dados: DadosDaPagina): string {
+  const pagina: Record<string, unknown> = {
+    '@type': dados.tipo,
+    name: dados.titulo,
+    headline: dados.titulo,
+    description: dados.descricao,
+    inLanguage: dados.lang,
+    license: LICENCA,
+    isPartOf: { '@type': 'WebSite', name: 'OpENEM', ...(site ? { url: `${site}/` } : {}) },
+  };
+  if (site) pagina.url = `${site}${dados.url}`;
+  if (dados.atualizado) pagina.dateModified = dados.atualizado;
+  const grafo: Record<string, unknown>[] = [pagina];
+  if (site && dados.trilha && dados.trilha.length > 0) {
+    grafo.push({
+      '@type': 'BreadcrumbList',
+      itemListElement: dados.trilha.map((t, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: t.nome,
+        item: `${site}${t.url}`,
+      })),
+    });
+  }
+  const json = JSON.stringify({ '@context': 'https://schema.org', '@graph': grafo }).replace(
+    /</g,
+    '\\u003c',
+  );
+  return `<script type="application/ld+json">${json}</script>`;
 }
