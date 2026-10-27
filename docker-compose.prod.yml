@@ -1,0 +1,42 @@
+# OpENEM em produção, num servidor só, com HTTPS (openem.tech).
+# Acrescenta o Caddy na frente do nginx do app: ele é o único serviço publicado
+# (portas 80 e 443). Para ativar, ponha esta linha no .env da raiz, e os
+# comandos do compose passam a usar os dois arquivos sem -f:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+# Exige Docker Compose v2.24.4 ou mais novo (`docker compose version`), por
+# causa do !reset. Ver hospedar/04-producao na documentação.
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  frontend:
+    # Sem porta publicada: só o Caddy chega ao nginx, pela rede interna. Assim
+    # ninguém alcança o nginx direto e forja o X-Forwarded-For.
+    ports: !reset []
+    volumes:
+      # O nginx lê o IP do aluno no X-Forwarded-For quando o pedido vem do Caddy.
+      - ./deploy/nginx-real-ip.conf:/etc/nginx/conf.d/real-ip.conf:ro
+
+  backend:
+    environment:
+      # Dois proxies à frente da API: o Caddy e o nginx do app.
+      - TRUST_PROXY=2
+      # O link do e-mail de redefinição e a volta do login com Google saem
+      # daqui. Sem ele, a API nem sobe em produção.
+      - 'SITE_URL=${SITE_URL:?defina SITE_URL no .env, por exemplo https://openem.tech}'
+
+volumes:
+  caddy-data:
+  caddy-config:

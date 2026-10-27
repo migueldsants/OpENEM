@@ -5,13 +5,44 @@ descricao: HTTPS na frente do OpENEM, TRUST_PROXY, cabeçalhos de segurança, ra
 
 ## Caminho de uma requisição
 
-O aluno acessa o nginx do container `frontend` (porta 8080). Ele serve o site na raiz (a página do projeto e a documentação em `/docs/`) e o app em `/app/`, e repassa `/api/`, `/health` e `/media/` para a API na porta 3000, acrescentando o IP do aluno ao cabeçalho `X-Forwarded-For`. A API fala com o PostgreSQL e com o Redis pela rede interna do compose.
+O aluno acessa o Caddy nas portas 80 e 443 (com o overlay de produção, abaixo) ou, sem ele, o nginx do container `frontend` na porta 8080. O nginx serve o site na raiz (a página do projeto e a documentação em `/docs/`) e o app em `/app/`, e repassa `/api/`, `/health` e `/media/` para a API na porta 3000, acrescentando o IP do aluno ao cabeçalho `X-Forwarded-For`. A API fala com o PostgreSQL e com o Redis pela rede interna do compose.
 
 ## HTTPS na frente
 
-O compose só serve HTTP. Em produção, coloque um proxy reverso com TLS (nginx, Caddy, Traefik ou o que você já usa) na frente, apontando para `http://127.0.0.1:8080`. Além de proteger senhas e tokens, o HTTPS é exigido pelo próprio PWA: o navegador só registra o service worker (uso offline e instalação do app) em contexto seguro, ou seja, HTTPS ou `localhost`.
+O `docker-compose.prod.yml` (o overlay de produção) acrescenta um Caddy na frente do nginx do app. Ele obtém e renova sozinho o certificado Let's Encrypt de `openem.tech`, redireciona `www.openem.tech` para o endereço principal e é o único serviço publicado na rede. Além de proteger senhas e tokens, o HTTPS é exigido pelo próprio PWA: o navegador só registra o service worker (uso offline e instalação do app) em contexto seguro, ou seja, HTTPS ou `localhost`.
 
-O `nginx.conf` do app não envia `Strict-Transport-Security`. Se quiser HSTS, configure no seu proxy HTTPS.
+Para subir:
+
+1. Aponte o DNS `A` do domínio (e o `AAAA`, se o servidor tiver IPv6) para o IP do servidor.
+2. Libere as portas 80 e 443 no firewall. A 80 serve à validação do certificado e ao redirecionamento para HTTPS.
+3. No `.env` da raiz, defina o endereço público e o overlay:
+
+```bash
+SITE_URL=https://openem.tech
+COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+```
+
+Com `COMPOSE_FILE` no `.env`, os comandos do compose usam os dois arquivos sem `-f`. Para outro domínio, troque `openem.tech` em `deploy/Caddyfile` e o `SITE_URL`. O overlay exige o Docker Compose v2.24.4 ou mais novo (`docker compose version`).
+
+O overlay também tira a porta 8080 da rede: o nginx do app deixa de ser publicado, e só o Caddy chega a ele. Sem o overlay, o compose serve HTTP na porta 8080 de todas as interfaces, o que serve à máquina de desenvolvimento e não deve ir para a internet.
+
+O Caddy envia `Strict-Transport-Security` por padrão. O `nginx.conf` do app não envia HSTS; quem trocar de proxy configura o HSTS no novo.
+
+### Outro proxy HTTPS
+
+Se o HTTPS já vem de outro lugar (um nginx seu no host, um Traefik, um balanceador), não use o overlay. Aponte o proxy para `http://127.0.0.1:8080`, mande o `X-Forwarded-For` (ver TRUST_PROXY) e prenda a porta 8080 ao localhost, num `docker-compose.override.yml`:
+
+```yaml
+services:
+  frontend:
+    ports: !override
+      - '127.0.0.1:8080:80'
+  backend:
+    environment:
+      - TRUST_PROXY=2
+```
+
+Esse override também exige o Compose v2.24.4 ou mais novo. O `!override` troca a lista de portas em vez de somar a ela.
 
 ## TRUST_PROXY
 
@@ -22,19 +53,10 @@ Sem login (cadastro, login), o rate limiting conta por IP. Atrás de um proxy, a
 - **Lista de endereços ou sub-redes** no formato do Express, como `loopback, 10.0.0.0/8`.
 - **`true` é recusado** e impede a API de subir, porque deixaria o cliente escolher o próprio IP.
 
-O compose fixa `TRUST_PROXY=1`, o certo quando o nginx do frontend é o único proxy. Com um proxy HTTPS na frente dele, são dois:
+O compose fixa `TRUST_PROXY=1`, o certo quando o nginx do frontend é o único proxy. Com o overlay de produção são dois (o Caddy e o nginx), e o overlay sobe o valor para 2. Com um proxy HTTPS próprio na frente do nginx, o valor também tem de ser 2:
 
-1. O proxy HTTPS precisa mandar o IP do cliente no `X-Forwarded-For`. No nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`.
-2. Suba `TRUST_PROXY` para 2 num `docker-compose.override.yml`:
-
-```yaml
-services:
-  backend:
-    environment:
-      - TRUST_PROXY=2
-```
-
-3. Feche a porta 8080 para a rede. Com `TRUST_PROXY=2`, quem chegasse direto nela poderia forjar o `X-Forwarded-For`. Troque, no `docker-compose.yml`, a linha `ports` do frontend de `'8080:80'` para `'127.0.0.1:8080:80'`. A troca precisa ser no próprio arquivo: num arquivo de override, o Compose soma as portas em vez de substituir.
+1. O proxy HTTPS precisa mandar o IP do cliente no `X-Forwarded-For`. No nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. O Caddy do overlay já faz isso.
+2. Suba `TRUST_PROXY` para 2 no override, como no bloco "Outro proxy HTTPS" acima.
 
 Se o proxy HTTPS ficar na frente com `TRUST_PROXY=1`, todos os alunos aparecem com o IP dele, o mesmo problema de não confiar em proxy nenhum.
 
@@ -75,10 +97,12 @@ Os contadores ficam no Redis: valem para todas as instâncias da API e sobrevive
 
 O nginx do frontend limita `/api/` a 50 requisições por segundo por IP, com folga de 200, antes de chegar ao Node. É proteção contra inundação, não regra de negócio: fica bem acima do que uma sala inteira abrindo o app gera.
 
-Com outro proxy ou CDN na frente desse nginx, ele enxerga o IP do proxy e passaria a limitar todo mundo junto. Nesse caso, além de subir o `TRUST_PROXY`, ensine o nginx a ler o IP real, num arquivo montado em `/etc/nginx/conf.d/`:
+Atrás de um proxy, o nginx enxerga o IP do proxy e passaria a limitar todo mundo junto. Por isso o overlay de produção monta `deploy/nginx-real-ip.conf` em `/etc/nginx/conf.d/`: o nginx lê o IP do aluno no `X-Forwarded-For` quando o pedido vem da rede do Docker (`172.16.0.0/12`). Quem chega de fora tem o IP de origem fora dessa faixa, então o cabeçalho dele é ignorado. Se o Docker usa outra faixa (`default-address-pools` no daemon), troque o endereço nesse arquivo.
+
+Com outro proxy fora do Docker, o caminho é o mesmo: um arquivo no mesmo lugar, com o endereço desse proxy:
 
 ```nginx
-set_real_ip_from 172.16.0.0/12;  # a rede do seu proxy
+set_real_ip_from 203.0.113.10;  # o endereço do seu proxy
 real_ip_header X-Forwarded-For;
 ```
 

@@ -1,0 +1,12 @@
+# Caddy na frente do nginx do app (docker-compose.prod.yml). Ele obtém e renova
+# sozinho o certificado da Let's Encrypt e redireciona HTTP para HTTPS.
+# Para outro domínio, troque openem.tech aqui e o SITE_URL no .env.
+
+www.openem.tech {
+	redir https://openem.tech{uri} permanent
+}
+
+openem.tech {
+	encode zstd gzip
+	reverse_proxy frontend:80
+}
