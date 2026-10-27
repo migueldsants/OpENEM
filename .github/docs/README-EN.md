@@ -243,7 +243,18 @@ npm run test:e2e    # end-to-end (on the DATABASE_URL Postgres, schema test_e2e)
 
 ## Contributors
 
-*   **[Miguel dos Santos Miranda](https://github.com/migueldsants)**: creator and maintainer.
-*   **[Claude](https://claude.com/claude-code)** (Claude Code, by Anthropic): AI assistant that contributes code, tests and documentation. Its commits carry the `Co-Authored-By: Claude` line.
+<!-- contribuidores:inicio -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="25%"><a href="https://github.com/migueldsants"><img src="https://avatars.githubusercontent.com/u/117553721?s=100&amp;v=4" width="100" alt="Miguel dos Santos Miranda" /><br /><sub><b>Miguel dos Santos Miranda</b></sub></a><br /><sub><a href="https://github.com/migueldsants">@migueldsants</a></sub><br /><sub>Creator and maintainer</sub></td>
+      <td align="center" valign="top" width="25%"><a href="https://github.com/ruggieroromulo"><img src="https://avatars.githubusercontent.com/u/134303575?s=100&amp;v=4" width="100" alt="Rômulo Ruggiero" /><br /><sub><b>Rômulo Ruggiero</b></sub></a><br /><sub><a href="https://github.com/ruggieroromulo">@ruggieroromulo</a></sub></td>
+      <td align="center" valign="top" width="25%"><a href="https://claude.com/claude-code"><img src="https://avatars.githubusercontent.com/u/81847?s=100&amp;v=4" width="100" alt="Claude" /><br /><sub><b>Claude</b></sub></a><br /><sub><a href="https://github.com/claude">@claude</a></sub><br /><sub>AI assistant (Claude Code): code, tests and documentation</sub></td>
+    </tr>
+  </tbody>
+</table>
+<!-- contribuidores:fim -->
+
+The table updates itself. It comes from the commit history of `main`: it lists the author of each commit and whoever shows up in `Co-authored-by` lines, when the e-mail is linked to a GitHub account (that is how Claude, the AI assistant of Anthropic's Claude Code, shows up). The order is order of arrival. The [`contribuidores.yml`](../workflows/contribuidores.yml) workflow rebuilds the table on every push to `main` and every Monday, and opens a PR when it changes; the roles live in [`tools/contribuidores/papeis.json`](../../tools/contribuidores/papeis.json). To generate it right away: `GITHUB_TOKEN=$(gh auth token) node tools/contribuidores/atualizar.mjs`.
 
 Want to be listed here? See the [contributing guide](CONTRIBUTING-EN.md).

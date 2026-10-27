@@ -239,7 +239,18 @@ npm run test:e2e    # end-to-end (no Postgres do DATABASE_URL, schema test_e2e)
 
 ## Contribuidores
 
-*   **[Miguel dos Santos Miranda](https://github.com/migueldsants)**: criador e mantenedor.
-*   **[Claude](https://claude.com/claude-code)** (Claude Code, da Anthropic): assistente de IA que contribui com código, testes e documentação. Os commits dele levam a linha `Co-Authored-By: Claude`.
+<!-- contribuidores:inicio -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="25%"><a href="https://github.com/migueldsants"><img src="https://avatars.githubusercontent.com/u/117553721?s=100&amp;v=4" width="100" alt="Miguel dos Santos Miranda" /><br /><sub><b>Miguel dos Santos Miranda</b></sub></a><br /><sub><a href="https://github.com/migueldsants">@migueldsants</a></sub><br /><sub>Criador e mantenedor</sub></td>
+      <td align="center" valign="top" width="25%"><a href="https://github.com/ruggieroromulo"><img src="https://avatars.githubusercontent.com/u/134303575?s=100&amp;v=4" width="100" alt="Rômulo Ruggiero" /><br /><sub><b>Rômulo Ruggiero</b></sub></a><br /><sub><a href="https://github.com/ruggieroromulo">@ruggieroromulo</a></sub></td>
+      <td align="center" valign="top" width="25%"><a href="https://claude.com/claude-code"><img src="https://avatars.githubusercontent.com/u/81847?s=100&amp;v=4" width="100" alt="Claude" /><br /><sub><b>Claude</b></sub></a><br /><sub><a href="https://github.com/claude">@claude</a></sub><br /><sub>Assistente de IA (Claude Code): código, testes e documentação</sub></td>
+    </tr>
+  </tbody>
+</table>
+<!-- contribuidores:fim -->
+
+A tabela se atualiza sozinha. Ela sai do histórico de commits da `main`: entra o autor de cada commit e quem aparece nas linhas `Co-authored-by`, quando o e-mail está ligado a uma conta do GitHub (é assim que o Claude, assistente de IA do Claude Code, da Anthropic, aparece). A ordem é a de chegada. O workflow [`contribuidores.yml`](.github/workflows/contribuidores.yml) refaz a tabela a cada push na `main` e toda segunda-feira, e abre um PR quando ela muda; os papéis ficam em [`tools/contribuidores/papeis.json`](tools/contribuidores/papeis.json). Para gerar na hora: `GITHUB_TOKEN=$(gh auth token) node tools/contribuidores/atualizar.mjs`.
 
 Quer aparecer aqui? Veja o [guia de contribuição](CONTRIBUTING.md).
