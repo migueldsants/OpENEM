@@ -1,7 +1,10 @@
 // Endereços do site público (openem_site), que mora na mesma origem do app:
-// a documentação em /docs/. No dev, o site roda em outro Vite (:5174), e
-// VITE_DOCS_URL aponta para lá.
-export const DOCS_URL: string = import.meta.env.VITE_DOCS_URL ?? '/docs/';
+// a documentação em /docs/. No dev (`npm run dev`), o site roda em outro Vite,
+// na porta 5174: sem VITE_DOCS_URL, os links (Ajuda, Privacidade, Termos) vão
+// para lá. Nos testes o modo é `test` e vale o caminho do servidor.
+export const DOCS_URL: string =
+  import.meta.env.VITE_DOCS_URL ??
+  (import.meta.env.MODE === 'development' ? 'http://localhost:5174/docs/' : '/docs/');
 
 /**
  * Código-fonte desta instalação. A AGPL-3.0 (§13) pede que quem usa o app pela

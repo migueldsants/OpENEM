@@ -79,7 +79,7 @@ npm install
 npm run dev
 ```
 
-The site opens at `http://localhost:5174`, with the documentation at `/docs/`. Links to the app use `VITE_APP_URL`, which the site's `.env.development` points to the app at `http://localhost:5173/app/`.
+The site opens at `http://localhost:5174`, with the documentation at `/docs/`. Links to the app go to `http://localhost:5173/app/`, and the app's links to the site (Help, Privacy and Terms) go to `http://localhost:5174/docs/`. To use other ports, set `VITE_APP_URL` in the site and `VITE_DOCS_URL` in the app.
 
 ## Tests
 
