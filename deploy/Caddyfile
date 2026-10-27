@@ -2,11 +2,27 @@
 # sozinho o certificado da Let's Encrypt e redireciona HTTP para HTTPS.
 # Para outro domínio, troque openem.tech aqui e o SITE_URL no .env.
 
+{
+	# O Caddy roda na rede do host; a API de administração (localhost:2019)
+	# ficaria aberta a qualquer processo do servidor. A configuração muda pelo
+	# arquivo e um restart do container, então ela não faz falta.
+	admin off
+}
+
+# HSTS em todas as respostas, com o mesmo valor que a API já manda (helmet).
+# O ">" aplica depois da resposta do nginx e substitui o cabeçalho, em vez de
+# duplicá-lo nas respostas da API.
+(hsts) {
+	header >Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}
+
 www.openem.tech {
+	import hsts
 	redir https://openem.tech{uri} permanent
 }
 
 openem.tech {
+	import hsts
 	encode zstd gzip
-	reverse_proxy frontend:80
+	reverse_proxy 127.0.0.1:8080
 }
