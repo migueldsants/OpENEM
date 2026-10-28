@@ -53,7 +53,8 @@ import { makeTracker } from './rate-limit/tracker';
     // - `default`: 100 por minuto (THROTTLE_TTL_MS/THROTTLE_LIMIT).
     // Os contadores ficam no Redis (RateThrottlerStorage), valendo para todas
     // as instâncias. Rotas caras (login, cadastro, PDF, IA, fórum, temas) têm
-    // limites próprios via @Throttle; a tabela está no CLAUDE.md.
+    // limites próprios via @Throttle; a tabela está na documentação de produção
+    // (openem_site/src/docs/conteudo/hospedar/04-producao.md).
     ThrottlerModule.forRootAsync({
       inject: [ConfigService, RateThrottlerStorage],
       useFactory: (config: ConfigService, storage: RateThrottlerStorage) => ({
