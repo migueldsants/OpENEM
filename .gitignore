@@ -101,3 +101,6 @@ openem_backend/dist-scripts/
 .impeccable/review/
 .impeccable/questions/
 .impeccable/hook.cache.json
+
+# CLAUDE.md: instruções locais do Claude Code, cada pessoa mantém o seu fora do git.
+/CLAUDE.md
