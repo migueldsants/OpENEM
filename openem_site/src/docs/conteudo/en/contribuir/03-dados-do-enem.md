@@ -83,7 +83,9 @@ A defect that does not need the booklet to be fixed is handled in the mapping, i
 
 Today's case is the watermark of the 2022 reapplication booklet, the "ENEM 2022" repeated in the background of every page. The PDF extraction turned it into text: 63 repetitions at the start of the context of the first question on each page, in 48 questions. `removeWatermark` deletes from the context and the prompt any run of three or more consecutive "ENEM YYYY". A single "ENEM 2022" quoted in the exam text stays.
 
-A database imported before this fix is repaired by importing the exam again, which updates the statement of the questions that already exist:
+A fix like this only reaches the questions already in the database by reimporting. So, when you change the mapping in a way that alters an already imported question, **bump `ENEM_MAPPING_VERSION`** (in the same file) and note the reason in its comment. The full import records in the database (`AppState`, key `enem.mappingVersion`) the version it used, and the container's bootstrap compares the two on every start: when the code's is higher, it reimports everything in the background, with the API up (`src/common/bootstrap-plan.ts`). Whoever hosts only needs to deploy.
+
+In dev, just import the exam again:
 
 ```bash
 npm run db:import:enem -- --exam=2022-reaplicacao

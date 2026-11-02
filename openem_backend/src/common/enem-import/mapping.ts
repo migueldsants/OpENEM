@@ -325,6 +325,17 @@ export function normalizeCodeQuery(input: string): string {
 /** Prefixo público das imagens servidas pelo próprio backend. */
 export const MEDIA_PREFIX = '/media/enem';
 
+/**
+ * Versão do mapeamento. Suba quando uma mudança aqui precisa chegar às
+ * questões que já estão no banco (um texto limpo de outro jeito, um campo
+ * novo): no próximo deploy o bootstrap do container vê a versão nova e
+ * reimporta tudo (`bootstrap-plan.ts`). O import completo grava a versão que
+ * usou no `AppState`.
+ *
+ * 1: `removeWatermark` (marca d'água da reaplicação de 2022).
+ */
+export const ENEM_MAPPING_VERSION = 1;
+
 const ENEM_DEV_IMAGE =
   /^https?:\/\/(?:www\.)?enem\.dev\/([^/]+)\/questions\/([^/]+)\/(.+)$/;
 

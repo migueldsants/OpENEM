@@ -77,7 +77,7 @@ The bootstrap counts the official questions in the database. If there are none, 
 3. **keyword classification**: assigns a topic to the questions whose vocabulary leaves no doubt, without AI;
 4. **flashcards**: syncs the public deck catalog.
 
-This takes a few minutes. On later starts, with questions already in the database, the bootstrap does nothing. To update the data later, see [Production](/docs/en/hospedar/producao/#update).
+This takes a few minutes. On later starts, with questions already in the database, the bootstrap does nothing, unless a new version changes the import mapping: then it reimports the exams in the background, with the API up. To update the data later, see [Production](/docs/en/hospedar/producao/#update).
 
 If a step fails (no internet, for example), the error shows up in the log with the `[bootstrap]` prefix and the API starts anyway, without questions. Since the database still has no official questions, the next start tries again:
 

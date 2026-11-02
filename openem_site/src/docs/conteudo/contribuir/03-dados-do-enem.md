@@ -83,7 +83,9 @@ Defeito que não precisa do caderno para ser consertado é tratado no mapeamento
 
 O caso de hoje é a marca d'água do caderno da reaplicação de 2022, o "ENEM 2022" repetido no fundo de cada página. A extração do PDF a transformou em texto: 63 repetições no começo do contexto da primeira questão de cada página, em 48 questões. O `removeWatermark` apaga do contexto e do comando qualquer sequência de três ou mais "ENEM AAAA" seguidos. Um "ENEM 2022" citado no texto da prova fica.
 
-Um banco importado antes desse conserto se arruma reimportando a prova, que atualiza o enunciado das questões que já existem:
+Um conserto desses só chega às questões que já estão no banco reimportando. Por isso, ao mudar o mapeamento de um jeito que altera questão já importada, **suba `ENEM_MAPPING_VERSION`** (no mesmo arquivo) e anote o motivo no comentário dela. O import completo grava no banco (`AppState`, chave `enem.mappingVersion`) a versão que usou, e o bootstrap do container compara as duas a cada subida: com a do código maior, reimporta tudo em segundo plano, com a API no ar (`src/common/bootstrap-plan.ts`). Quem hospeda não precisa fazer nada além do deploy.
+
+Em dev, basta reimportar a prova:
 
 ```bash
 npm run db:import:enem -- --exam=2022-reaplicacao
