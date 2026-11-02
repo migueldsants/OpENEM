@@ -20,12 +20,15 @@ COPY openem_site/ openem_site/
 # Código-fonte que o app mostra no Login e no Perfil (AGPL-3.0, §13). Quem
 # hospeda uma versão modificada aponta para o próprio fork. Vazio: o oficial.
 ARG SOURCE_URL=
-RUN cd openem_frontend && VITE_SOURCE_URL="$SOURCE_URL" npm run build
+# Patrocínio que o app e a landing mostram. Vazio: o GitHub Sponsors do
+# mantenedor do OpENEM; um fork aponta para o próprio.
+ARG SPONSOR_URL=
+RUN cd openem_frontend && VITE_SOURCE_URL="$SOURCE_URL" VITE_SPONSOR_URL="$SPONSOR_URL" npm run build
 
 # Domínio da instalação (ex.: https://openem.exemplo), para o sitemap e as URLs
 # absolutas do Open Graph. Vazio: sem sitemap, URLs relativas.
 ARG SITE_URL=
-RUN cd openem_site && SITE_URL="$SITE_URL" npm run build && npm run check:links
+RUN cd openem_site && SITE_URL="$SITE_URL" VITE_SPONSOR_URL="$SPONSOR_URL" npm run build && npm run check:links
 
 # ---- Runner (nginx servindo os estáticos) ----
 FROM nginx:1.27-alpine AS runner
