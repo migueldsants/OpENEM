@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
+import { enxugarCatalogo } from './src/landing/tabela-dados';
 
 // O site é outro projeto, mas a mesma marca: o boot do tema e o ícone vêm do
 // app (openem_frontend/public), sem cópia. Assim um tema novo no app chega
@@ -66,6 +67,28 @@ function arquivoDeRedacoes(): Plugin {
   };
 }
 
+// A prévia da tabela periódica da landing, extraída do catálogo do app no
+// build: o JSON inteiro tem ~270 KB, a prévia usa ~10% disso.
+const ELEMENTOS = fileURLToPath(
+  new URL('../openem_frontend/src/data/elementos.json', import.meta.url),
+);
+const TABELA_ID = 'virtual:tabela-periodica';
+
+function tabelaPeriodica(): Plugin {
+  return {
+    name: 'openem-tabela-periodica',
+    resolveId(id) {
+      return id === TABELA_ID ? '\0' + TABELA_ID : undefined;
+    },
+    load(id) {
+      if (id !== '\0' + TABELA_ID) return undefined;
+      this.addWatchFile(ELEMENTOS);
+      const dados = enxugarCatalogo(JSON.parse(readFileSync(ELEMENTOS, 'utf8')));
+      return `export default ${JSON.stringify(dados)};`;
+    },
+  };
+}
+
 // No dev, /docs/qualquer-pagina cai no docs/index.html, e as páginas legais
 // (/privacidade/, /en/termos/...) no legal/index.html. No build, o prerender
 // grava um HTML por página.
@@ -84,7 +107,7 @@ function fallbackDaDocs(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), assetsDoApp(), arquivoDeRedacoes(), fallbackDaDocs()],
+  plugins: [react(), tailwindcss(), assetsDoApp(), arquivoDeRedacoes(), tabelaPeriodica(), fallbackDaDocs()],
   server: {
     port: 5174,
     strictPort: true,

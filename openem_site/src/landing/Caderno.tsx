@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import temas from 'virtual:arquivo-redacoes';
 import { porAno } from './anos';
 import { ANOS_DO_ENEM, NOME_DA_AREA, provaDoAno, temaRegular, ULTIMO_ANO, type Area, type DiaDeProva } from './prova';
@@ -20,6 +20,14 @@ function descreverDia({ dia, areas, redacao }: DiaDeProva): string {
 export function Caderno() {
   const anos = useMemo(() => porAno(temas), []);
   const [ano, setAno] = useState(ULTIMO_ANO);
+  // De que lado a capa nova entra: ano mais novo pela direita, mais antigo
+  // pela esquerda, como numa linha do tempo.
+  const [lado, setLado] = useState(0);
+  const escolher = (a: number) => {
+    if (a === ano) return;
+    setLado(a > ano ? 1 : -1);
+    setAno(a);
+  };
   const prova = provaDoAno(ano);
   const tema = temaRegular(anos, ano);
   const areas = prova.dias.flatMap((d) => d.areas);
@@ -28,12 +36,19 @@ export function Caderno() {
     <div className="flex flex-col gap-6">
       <div className="relative pt-3 pr-4">
         {/* As folhas de trás são neutras: o rosa fica só na capa do ano escolhido. */}
-        <div aria-hidden="true" className="absolute inset-[0_0_1.1rem_1.4rem] rotate-3 rounded-2xl border border-line bg-surface-2" />
-        <div aria-hidden="true" className="absolute inset-[0.4rem_0.5rem_0.75rem_0.6rem] rotate-[1.4deg] rounded-2xl border border-line bg-surface" />
+        <div
+          aria-hidden="true"
+          className="leque absolute inset-[0_0_1.1rem_1.4rem] rotate-3 rounded-2xl border border-line bg-surface-2"
+        />
+        <div
+          aria-hidden="true"
+          className="leque leque-2 absolute inset-[0.4rem_0.5rem_0.75rem_0.6rem] rotate-[1.4deg] rounded-2xl border border-line bg-surface"
+        />
         <article
           key={ano}
           aria-live="polite"
           className="troca card card-raised relative overflow-hidden rounded-[1.25rem]"
+          style={{ '--de': `${lado * 18}px` } as CSSProperties}
         >
           <div className="flex flex-wrap items-end justify-between gap-3 bg-brand px-5 py-5 text-brand-ink sm:px-6">
             <div>
@@ -95,7 +110,7 @@ export function Caderno() {
                 key={a}
                 type="button"
                 aria-pressed={ativo}
-                onClick={() => setAno(a)}
+                onClick={() => escolher(a)}
                 className={`aperta font-data min-h-11 rounded-lg border text-[0.8rem] font-medium tabular-nums ${
                   ativo
                     ? 'border-brand bg-brand font-semibold text-brand-ink shadow-[var(--shadow)]'

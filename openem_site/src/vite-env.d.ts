@@ -7,6 +7,11 @@ interface ImportMetaEnv {
   readonly VITE_SPONSOR_URL?: string;
 }
 
+declare module 'virtual:tabela-periodica' {
+  const dados: import('./landing/tabela-dados').DadosDaPrevia;
+  export default dados;
+}
+
 declare module 'virtual:arquivo-redacoes' {
   const temas: { ano: number; aplicacao: string; rotulo: string; tema: string }[];
   export default temas;
