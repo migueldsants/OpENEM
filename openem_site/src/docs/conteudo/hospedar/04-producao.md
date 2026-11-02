@@ -211,6 +211,7 @@ docker compose exec backend node dist-scripts/prisma/seed.js
 ```
 
 - `import-enem.js --refresh` apaga o dataset baixado e baixa de novo. O import atualiza sem duplicar e não desfaz comentários nem classificações feitos depois. Outras opções: `--exam=2023` (uma prova só), `--dry-run`, `--limit=5`, `--skip-download`, `--skip-images` e `--verbose`.
+- Quando uma versão nova muda o mapeamento do import, rode o import de novo depois de atualizar: a correção só chega às questões que já estão no banco assim. Por exemplo, o "ENEM 2022" repetido no começo de 48 questões da reaplicação de 2022 (a marca d'água do caderno, que veio como texto no dataset) só some depois de `import-enem.js --exam=2022-reaplicacao`.
 - `classify-heuristic.js` só mexe em questão sem assunto. Aceita `--dry-run` e `--sample=20` para auditar decisões.
 - `seed-flashcards.js` sincroniza o catálogo: corrige o texto dos cards sem perder o progresso dos alunos.
 - `seed.js` reaplica, por upsert, a taxonomia, os modelos de simulado, os temas de redação e o catálogo de fórmulas. Uma área que saiu da taxonomia só é removida se não tiver questões.

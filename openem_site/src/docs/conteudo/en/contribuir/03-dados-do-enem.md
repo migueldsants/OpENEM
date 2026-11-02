@@ -77,6 +77,18 @@ Two safeguards keep a question from being matched wrongly: the booklet numbering
 
 > **Warning:** the output of `enem-fix` is not committed here, because it is derived from the GPL-2.0 dataset. It goes to the [updated-enem-api](https://github.com/migueldsants/updated-enem-api) repository. Since the import always downloads the dataset from there, a fix that is not published in that repository disappears on the next `db:import:enem --refresh`.
 
+### Fixes in the import itself
+
+A defect that does not need the booklet to be fixed is handled in the mapping, in `src/common/enem-import/mapping.ts`, and applies to any version of the dataset.
+
+Today's case is the watermark of the 2022 reapplication booklet, the "ENEM 2022" repeated in the background of every page. The PDF extraction turned it into text: 63 repetitions at the start of the context of the first question on each page, in 48 questions. `removeWatermark` deletes from the context and the prompt any run of three or more consecutive "ENEM YYYY". A single "ENEM 2022" quoted in the exam text stays.
+
+A database imported before this fix is repaired by importing the exam again, which updates the statement of the questions that already exist:
+
+```bash
+npm run db:import:enem -- --exam=2022-reaplicacao
+```
+
 ## Essay prompt catalog
 
 The **Redações** (essays) screen has the official ENEM essay prompts from 1998 to 2025 (regular, PPL or reapplication and the other applications), with the prompt, the supporting texts and the facsimile of the booklet page.

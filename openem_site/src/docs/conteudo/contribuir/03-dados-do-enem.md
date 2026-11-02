@@ -77,6 +77,18 @@ Duas travas evitam casar questão errada: a numeração do caderno é conferida 
 
 > **Atenção:** o resultado do `enem-fix` não é versionado aqui, porque é derivado do dataset GPL-2.0. Ele vai para o repositório [updated-enem-api](https://github.com/migueldsants/updated-enem-api). Como o import sempre baixa o dataset de lá, um conserto que não for publicado nesse repositório some no próximo `db:import:enem --refresh`.
 
+### Consertos no próprio import
+
+Defeito que não precisa do caderno para ser consertado é tratado no mapeamento, em `src/common/enem-import/mapping.ts`, e vale para qualquer versão do dataset.
+
+O caso de hoje é a marca d'água do caderno da reaplicação de 2022, o "ENEM 2022" repetido no fundo de cada página. A extração do PDF a transformou em texto: 63 repetições no começo do contexto da primeira questão de cada página, em 48 questões. O `removeWatermark` apaga do contexto e do comando qualquer sequência de três ou mais "ENEM AAAA" seguidos. Um "ENEM 2022" citado no texto da prova fica.
+
+Um banco importado antes desse conserto se arruma reimportando a prova, que atualiza o enunciado das questões que já existem:
+
+```bash
+npm run db:import:enem -- --exam=2022-reaplicacao
+```
+
 ## Catálogo de redações
 
 A tela **Redações** traz os temas oficiais de redação do ENEM de 1998 a 2025 (regular, PPL ou reaplicação e as demais aplicações), com a proposta, os textos motivadores e o fac-símile da página do caderno.
