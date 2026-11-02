@@ -104,6 +104,11 @@ html {
     clip-path: inset(0 100% 0 0);
   }
 
+  /* O coração da doação bate uma vez quando o bloco aparece. */
+  [data-estado='visto'] .rv-pulso {
+    animation: pulso 900ms var(--ease-saida) 450ms 1;
+  }
+
   /* ---------------------------------------------------------------------
      Prévia da tabela periódica (src/landing/TabelaPrevia.tsx). Mesma casa
      da tela do app (tabela-periodica.css): a folha tingida pelo tom da
@@ -324,6 +329,15 @@ html {
     .tpv-traco {
       height: 2px;
     }
+  }
+}
+
+@keyframes pulso {
+  30% {
+    transform: scale(1.2);
+  }
+  60% {
+    transform: scale(0.95);
   }
 }
 

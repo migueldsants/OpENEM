@@ -13,12 +13,12 @@ describe('Landing: rodapé', () => {
   });
 });
 
-describe('Landing: patrocínio', () => {
-  it('convida a patrocinar só com links discretos, que abrem o GitHub Sponsors em aba nova', () => {
+describe('Landing: doação', () => {
+  it('tem um bloco de doar, que abre o GitHub Sponsors em aba nova sem competir com o botão do app', () => {
     render(<Landing />);
     const links = [
-      screen.getByRole('link', { name: /Patrocinar no GitHub/ }),
-      within(screen.getByRole('navigation', { name: 'Rodapé' })).getByRole('link', { name: 'Patrocinar' }),
+      screen.getByRole('link', { name: /Doar pelo GitHub Sponsors/ }),
+      within(screen.getByRole('navigation', { name: 'Rodapé' })).getByRole('link', { name: 'Doar' }),
     ];
     for (const link of links) {
       expect(link).toHaveAttribute('href', SPONSOR_URL);
@@ -26,7 +26,15 @@ describe('Landing: patrocínio', () => {
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
       expect(link.className).not.toMatch(/btn-primary/);
     }
+    expect(screen.getByRole('heading', { name: 'Doe e mantenha o OpENEM gratuito.' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('o cabeçalho leva ao bloco de doar', () => {
+    render(<Landing />);
+    const atalho = screen.getAllByRole('link', { name: 'Doar' }).find((a) => a.getAttribute('href') === '#doar');
+    expect(atalho).toBeDefined();
+    expect(document.getElementById('doar')).toBeInTheDocument();
   });
 });
 

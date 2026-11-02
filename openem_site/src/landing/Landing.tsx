@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  ArrowUpRight,
   Cards,
   ChartBar,
   ChatsCircle,
@@ -81,6 +82,10 @@ function Cabecalho() {
         </a>
       </nav>
       <div className="flex items-center gap-2">
+        <a href="#doar" className="btn btn-ghost aperta min-h-11 bg-surface" aria-label="Doar">
+          <Heart size={18} weight="fill" className="text-brand" aria-hidden />
+          <span className="hidden sm:inline">Doar</span>
+        </a>
         <a href={GITHUB_URL} className="btn btn-ghost aperta min-h-11 bg-surface" aria-label="Código no GitHub">
           <GithubLogo size={18} />
           <span className="hidden sm:inline">GitHub</span>
@@ -516,7 +521,7 @@ function Aberto() {
   return (
     // Sempre no escuro padrão: os seletores de tema valem em qualquer elemento.
     <section aria-labelledby="aberto-titulo" id="aberto" data-theme="default-dark" className="bg-bg text-fg">
-      <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:gap-14">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 pt-24 pb-16 sm:px-6 sm:pt-28 lg:grid-cols-2 lg:gap-14">
         <div data-revela className="flex flex-col gap-4.5">
           <h2 id="aberto-titulo" className={`rv-sobe ${TITULO_H2}`}>
             Aberto de verdade. Rode o seu.
@@ -533,18 +538,6 @@ function Aberto() {
               Como contribuir
             </a>
           </div>
-          <p className="text-[0.95rem] text-muted">
-            Gratuito e sem anúncios, mantido por quem patrocina.{' '}
-            <a
-              href={SPONSOR_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-medium text-fg underline decoration-line underline-offset-4 hover:decoration-current"
-            >
-              <Heart size={15} weight="fill" className="text-brand" aria-hidden />
-              Patrocinar no GitHub
-            </a>
-          </p>
         </div>
         <div data-revela className="card overflow-hidden rounded-[1.25rem]">
           <p className="font-data border-b border-line bg-surface-2 px-5.5 py-3 text-xs text-muted">terminal</p>
@@ -568,7 +561,44 @@ function Aberto() {
           </p>
         </div>
       </div>
+      <Doar />
     </section>
+  );
+}
+
+/**
+ * A doação, no fim da faixa do código aberto: visível, mas sem competir com
+ * "Começar a estudar" (botão ghost, não o da marca). Abre o GitHub Sponsors
+ * em outra aba; o cabeçalho traz um atalho para cá.
+ */
+function Doar() {
+  return (
+    <div id="doar" data-revela className="mx-auto max-w-[1200px] px-4 pb-24 sm:px-6 sm:pb-28">
+      <div className="rv-sobe flex flex-col gap-6 border-t border-line pt-10 md:flex-row md:items-center md:justify-between md:gap-10">
+        <div className="flex items-start gap-4">
+          <Heart size={34} weight="fill" className="rv-pulso mt-0.5 shrink-0 text-brand" aria-hidden />
+          <div>
+            <h3 className="font-display text-[1.6rem] leading-tight font-bold tracking-tight text-balance sm:text-[1.85rem]">
+              Doe e mantenha o OpENEM gratuito.
+            </h3>
+            <p className="mt-2 max-w-[42em] leading-relaxed text-muted">
+              Sem anúncio e sem plano pago: o projeto se mantém com doações pelo GitHub Sponsors. Quem doa
+              ajuda quem estuda de graça.
+            </p>
+          </div>
+        </div>
+        <a
+          href={SPONSOR_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-ghost aperta min-h-12 shrink-0 self-start px-5 text-base md:self-center"
+        >
+          <Heart size={18} weight="fill" className="text-brand" aria-hidden />
+          Doar pelo GitHub Sponsors
+          <ArrowUpRight size={16} weight="bold" aria-hidden />
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -634,7 +664,7 @@ export function Landing() {
               GitHub
             </a>
             <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer" className="text-muted hover:text-fg">
-              Patrocinar
+              Doar
             </a>
             <a href={`${GITHUB_URL}/blob/main/LICENSE`} className="text-muted hover:text-fg">
               Licença AGPL-3.0
