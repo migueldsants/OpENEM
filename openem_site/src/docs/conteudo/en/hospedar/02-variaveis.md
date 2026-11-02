@@ -125,7 +125,7 @@ The queue covers both the simulation booklet and the formula booklet. Raise `PDF
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `AUTO_IMPORT` | on (`1` in Compose) | Turns on the bootstrap of the container's first start (seed, import, keyword classification and flashcards). `0`, `false`, `off` or `no` turn it off. |
+| `AUTO_IMPORT` | on (`1` in Compose) | Turns on the bootstrap of the container's first start (seed, import, keyword classification and flashcards) and the background reimport when a new version changes the import mapping. `0`, `false`, `off` or `no` turn it off. |
 | `ENEM_DATASET_DIR` | `prisma/.enem-dataset` | Where the import keeps the downloaded dataset. Fixed to `/data/enem-dataset` in Compose. |
 | `ENEM_MEDIA_DIR` | `public/enem` | Where the question images live, served by the API at `/media/enem/`. Fixed to `/data/enem-media` in Compose. |
 | `SEED_DEMO` | none | With `1`, the seed creates the demo content of the e2e suite (6 questions and 2 simulations). Outside Compose. |

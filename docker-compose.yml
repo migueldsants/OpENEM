@@ -76,7 +76,9 @@ services:
       # Na primeira subida, com o banco sem questões oficiais, o container roda
       # sozinho seed, import das provas, classificação por palavra-chave e
       # flashcards (prisma/bootstrap.ts). Precisa de internet para baixar o
-      # dataset, que fica no volume. AUTO_IMPORT=0 desliga.
+      # dataset, que fica no volume. Depois, reimporta as provas em segundo
+      # plano quando uma versão nova muda o mapeamento do import
+      # (ENEM_MAPPING_VERSION). AUTO_IMPORT=0 desliga as duas coisas.
       - AUTO_IMPORT=${AUTO_IMPORT:-1}
       - ENEM_DATASET_DIR=/data/enem-dataset
       - PORT=3000

@@ -16,6 +16,7 @@ import {
   questionCode,
   QuestionValidationError,
   RawQuestion,
+  removeWatermark,
   rewriteImageUrl,
   rewriteImageUrls,
 } from './mapping';
@@ -156,6 +157,37 @@ describe('mapQuestion', () => {
     );
     expect(q.statement).toBe('No princípio era o verbo.');
     expect(q.questionPrompt).toBeNull();
+  });
+
+  it("tira a marca d'água do caderno que a extração deixou no contexto", () => {
+    // Como vem na reaplicação de 2022: 63 repetições antes do texto de apoio.
+    const marca = Array(63).fill('ENEM 2022').join(' ');
+    const q = mapQuestion(
+      raw({ context: `${marca}\n\nAs usinas nucleares utilizam a fissão.` }),
+      '2022-reaplicacao',
+      '121',
+    );
+    expect(q.statement).toBe('As usinas nucleares utilizam a fissão.');
+    expect(q.statement).not.toContain('ENEM 2022');
+  });
+
+  it("marca d'água no comando de questão sem contexto também sai", () => {
+    const q = mapQuestion(
+      raw({
+        context: null,
+        alternativesIntroduction:
+          'ENEM 2022 ENEM 2022 ENEM 2022 Qual é o valor?',
+      }),
+      '2022-reaplicacao',
+      '150',
+    );
+    expect(q.statement).toBe('Qual é o valor?');
+  });
+
+  it('"ENEM 2022" citado no texto da prova fica', () => {
+    expect(removeWatermark('No ENEM 2022 e no ENEM 2023, a nota subiu.')).toBe(
+      'No ENEM 2022 e no ENEM 2023, a nota subiu.',
+    );
   });
 
   it('a área vem da numeração oficial, com o nome da taxonomia', () => {
