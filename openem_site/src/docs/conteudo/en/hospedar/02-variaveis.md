@@ -71,6 +71,7 @@ Both features are optional and need `SITE_URL`: the e-mail link and the Google r
 | `CORS_ORIGINS` | none | Origins allowed by CORS, comma separated. Without a value, the API leaves CORS off in production (the app reaches it from the same origin through nginx) and accepts any origin outside production. `*` is rejected and stops the API from starting. Outside Compose. |
 | `SITE_URL` | none | Public domain of the installation, such as `https://openem.example`. It goes into the frontend image build, where it generates `sitemap.xml` and makes the Open Graph URLs absolute, and the backend builds the password reset e-mail link and the Google sign-in return address from it. Without it, the site ships without a sitemap and with relative URLs, and those two features stay off (outside production, the backend uses `http://localhost:5173`). Changing it requires `docker compose up --build`. |
 | `SOURCE_URL` | the official repository | Source code address the app shows on Login and Profile. The AGPL-3.0 requires that people using the app over the network can get the code running on it: if you modified OpENEM, point it at your fork. It goes into the frontend image build; changing it requires `docker compose up --build`. |
+| `SPONSOR_URL` | the maintainer's GitHub Sponsors | Sponsorship address shown by the app (the invitation that opens on sign-in and the Profile) and the landing page. In a fork, point it at your own sponsorship. It goes into the frontend image build; changing it requires `docker compose up --build`. |
 
 ## Rate limiting
 

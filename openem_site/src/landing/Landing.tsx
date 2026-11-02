@@ -5,6 +5,7 @@ import {
   ChatsCircle,
   Flame,
   GithubLogo,
+  Heart,
   Palette,
   Timer,
   type Icon,
@@ -12,7 +13,7 @@ import {
 import { useSyncExternalStore } from 'react';
 import temas from 'virtual:arquivo-redacoes';
 import { Wordmark } from '../components/Wordmark';
-import { APP_URL, DOCS_URL, GITHUB_URL } from '../config';
+import { APP_URL, DOCS_URL, GITHUB_URL, SPONSOR_URL } from '../config';
 import { Caderno } from './Caderno';
 import { ANOS_DO_ENEM } from './prova';
 
@@ -376,6 +377,18 @@ function Aberto() {
               Como contribuir
             </a>
           </div>
+          <p className="text-[0.95rem] text-muted">
+            Gratuito e sem anúncios, mantido por quem patrocina.{' '}
+            <a
+              href={SPONSOR_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-fg underline decoration-line underline-offset-4 hover:decoration-current"
+            >
+              <Heart size={15} weight="fill" className="text-brand" aria-hidden />
+              Patrocinar no GitHub
+            </a>
+          </p>
         </div>
         <div className="card overflow-hidden rounded-[1.25rem]">
           <p className="font-data border-b border-line bg-surface-2 px-5.5 py-3 text-xs text-muted">terminal</p>
@@ -453,6 +466,9 @@ export function Landing() {
             </a>
             <a href={GITHUB_URL} className="text-muted hover:text-fg">
               GitHub
+            </a>
+            <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer" className="text-muted hover:text-fg">
+              Patrocinar
             </a>
             <a href={`${GITHUB_URL}/blob/main/LICENSE`} className="text-muted hover:text-fg">
               Licença AGPL-3.0

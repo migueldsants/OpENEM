@@ -148,6 +148,8 @@ services:
         - SITE_URL=${SITE_URL:-}
         # Código-fonte que o app mostra (AGPL-3.0): o do seu fork, se modificou.
         - SOURCE_URL=${SOURCE_URL:-}
+        # Patrocínio que o app e a landing mostram: o do seu fork (opcional).
+        - SPONSOR_URL=${SPONSOR_URL:-}
     restart: unless-stopped
     ports:
       - '8080:80'
