@@ -197,7 +197,7 @@ git pull
 docker compose up --build -d
 ```
 
-On start, the backend applies the new migrations (`prisma migrate deploy`) before bringing up the API. The bootstrap does not run again, because the database already has questions.
+On start, the backend applies the new migrations (`prisma migrate deploy`) before bringing up the API. The bootstrap does not run again, because the database already has questions, with one exception: when the new version changes the import mapping (`ENEM_MAPPING_VERSION`), it reimports every exam by itself, in the background. The API starts right away and the questions are updated while the site works; the log shows `[bootstrap] mapeamento do import mudou` at the start and the import report at the end. The dataset is already in the volume, so nothing is downloaded. If the container stops halfway, the next start reimports again. `AUTO_IMPORT=0` turns this off too.
 
 ### Updating the data
 
@@ -211,6 +211,7 @@ docker compose exec backend node dist-scripts/prisma/seed.js
 ```
 
 - `import-enem.js --refresh` deletes the downloaded dataset and downloads it again. The import updates without duplicating and does not undo explanations or classifications made afterwards. Other options: `--exam=2023` (a single exam), `--dry-run`, `--limit=5`, `--skip-download`, `--skip-images` and `--verbose`.
+- A change in the import mapping only reaches the questions already in the database by reimporting, and the deploy already does that (see above). Running it by hand is only needed with `AUTO_IMPORT=0`. The full import, without `--exam` or `--limit`, records in the database the mapping version it used; a partial one does not, because the other exams still have the old text.
 - `classify-heuristic.js` only touches questions without a topic. It accepts `--dry-run` and `--sample=20` to audit decisions.
 - `seed-flashcards.js` syncs the catalog: it fixes card text without losing student progress.
 - `seed.js` reapplies, by upsert, the taxonomy, the simulation templates, the essay prompts and the formula catalog. An area that left the taxonomy is only removed if it has no questions.

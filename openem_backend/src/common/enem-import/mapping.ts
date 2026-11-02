@@ -325,6 +325,17 @@ export function normalizeCodeQuery(input: string): string {
 /** Prefixo público das imagens servidas pelo próprio backend. */
 export const MEDIA_PREFIX = '/media/enem';
 
+/**
+ * Versão do mapeamento. Suba quando uma mudança aqui precisa chegar às
+ * questões que já estão no banco (um texto limpo de outro jeito, um campo
+ * novo): no próximo deploy o bootstrap do container vê a versão nova e
+ * reimporta tudo (`bootstrap-plan.ts`). O import completo grava a versão que
+ * usou no `AppState`.
+ *
+ * 1: `removeWatermark` (marca d'água da reaplicação de 2022).
+ */
+export const ENEM_MAPPING_VERSION = 1;
+
 const ENEM_DEV_IMAGE =
   /^https?:\/\/(?:www\.)?enem\.dev\/([^/]+)\/questions\/([^/]+)\/(.+)$/;
 
@@ -403,8 +414,11 @@ export function mapQuestion(
   // alternativas apareceriam duas vezes, uma no apoio e uma na lista.
   const { alternatives, promotedFiles } = mapAlternatives(raw);
 
-  const contexto = removeImages((raw.context ?? '').trim(), promotedFiles);
-  const comando = (raw.alternativesIntroduction ?? '').trim();
+  const contexto = removeImages(
+    removeWatermark(raw.context ?? ''),
+    promotedFiles,
+  );
+  const comando = removeWatermark(raw.alternativesIntroduction ?? '');
   if (!contexto && !comando) {
     throw new QuestionValidationError('questão sem enunciado');
   }
@@ -440,6 +454,16 @@ export function mapQuestion(
     alternatives,
     imageUrls,
   };
+}
+
+/**
+ * Tira a marca d'água do caderno ("ENEM 2022 ENEM 2022 …") que a extração do
+ * PDF deixou como texto. Na reaplicação de 2022 ela abre o contexto da
+ * primeira questão de cada página, 63 vezes seguidas. Só some a sequência de
+ * três ou mais: "ENEM 2022" sozinho pode ser parte do texto da prova.
+ */
+export function removeWatermark(text: string): string {
+  return text.replace(/(?:\bENEM\s*\d{4}\b[ \t]*){3,}/g, '').trim();
 }
 
 /**

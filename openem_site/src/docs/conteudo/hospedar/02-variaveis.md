@@ -126,7 +126,7 @@ A fila vale para o caderno de simulado e o caderno de fórmulas. Aumente `PDF_CO
 
 | Variável | Padrão | O que faz |
 | --- | --- | --- |
-| `AUTO_IMPORT` | ligado (`1` no compose) | Liga o bootstrap da primeira subida do container (seed, import, classificação por palavra-chave e flashcards). `0`, `false`, `off` ou `no` desligam. |
+| `AUTO_IMPORT` | ligado (`1` no compose) | Liga o bootstrap da primeira subida do container (seed, import, classificação por palavra-chave e flashcards) e a reimportação em segundo plano quando uma versão nova muda o mapeamento do import. `0`, `false`, `off` ou `no` desligam. |
 | `ENEM_DATASET_DIR` | `prisma/.enem-dataset` | Onde o import guarda o dataset baixado. Fixo em `/data/enem-dataset` no compose. |
 | `ENEM_MEDIA_DIR` | `public/enem` | Onde ficam as imagens das questões, servidas pela API em `/media/enem/`. Fixo em `/data/enem-media` no compose. |
 | `SEED_DEMO` | nenhum | Com `1`, o seed cria o conteúdo de demonstração da suíte e2e (6 questões e 2 simulados). Fora do compose. |
