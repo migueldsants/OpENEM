@@ -38,17 +38,299 @@ html {
   }
 
   /* Troca de ano no caderno da hero (a capa remonta): entra com opacidade,
-     leve escala e um blur curto. */
+     leve escala e um blur curto, vindo do lado do ano escolhido (--de: ano
+     mais novo vem da direita, mais antigo da esquerda). */
   .troca {
     transition:
       opacity 260ms var(--ease-saida),
-      transform 260ms var(--ease-saida),
+      transform 320ms var(--ease-saida),
       filter 260ms var(--ease-saida);
     @starting-style {
       opacity: 0;
-      transform: scale(0.985);
+      transform: translateX(var(--de, 0px)) scale(0.985);
       filter: blur(6px);
     }
+  }
+
+  /* As folhas de trás do caderno se abrem em leque quando a página abre. A
+     rotação final é a da classe (rotate-3, rotate-[1.4deg]); o leque só parte
+     do zero. O conteúdo fica visível o tempo todo. */
+  .leque {
+    animation: leque 900ms var(--ease-saida) 120ms both;
+  }
+  .leque-2 {
+    animation-delay: 200ms;
+  }
+
+  /* ---------------------------------------------------------------------
+     Entrada ao rolar (src/landing/revelar.ts). Só vale com
+     data-estado="espera", que o script põe no que está abaixo da dobra: o
+     HTML pré-renderizado e o movimento reduzido ficam no estado final. */
+  .rv-sobe {
+    --rv-atraso: calc(var(--i, 0) * 80ms);
+    transition:
+      opacity 700ms var(--ease-saida) var(--rv-atraso),
+      transform 700ms var(--ease-saida) var(--rv-atraso);
+  }
+  :is([data-estado='espera'].rv-sobe, [data-estado='espera'] .rv-sobe) {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+
+  /* O traço de cada passo (Pratique, Simule, Revise) corre da esquerda, um
+     depois do outro: é uma sequência. */
+  .rv-traco {
+    transform-origin: left;
+    transition: transform 900ms var(--ease-movimento) calc(var(--i, 0) * 180ms);
+  }
+  [data-estado='espera'] .rv-traco {
+    transform: scaleX(0);
+  }
+
+  /* As linhas do esboço do caderno em PDF se compõem coluna por coluna. */
+  .rv-linha {
+    transform-origin: left;
+    transition: transform 460ms var(--ease-saida) calc(200ms + var(--i, 0) * 55ms);
+  }
+  [data-estado='espera'] .rv-linha {
+    transform: scaleX(0);
+  }
+
+  /* Os comandos do terminal aparecem como digitados, em ordem. */
+  .rv-digita {
+    transition: clip-path calc(var(--n, 20) * 24ms) steps(var(--n, 20), end) var(--rv-atraso, 0ms);
+  }
+  [data-estado='espera'] .rv-digita {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  /* ---------------------------------------------------------------------
+     Prévia da tabela periódica (src/landing/TabelaPrevia.tsx). Mesma casa
+     da tela do app (tabela-periodica.css): a folha tingida pelo tom da
+     categoria ou do degrau do mapa de calor, todo texto em --fg. */
+  .tpv-moldura {
+    container-type: inline-size;
+  }
+  .tpv-grade {
+    display: grid;
+    grid-template-columns: repeat(18, minmax(0, 1fr));
+    grid-template-rows: repeat(7, auto) 0.5rem repeat(2, auto);
+    gap: 3px;
+  }
+  .tpv-casa {
+    --tom: var(--line);
+    --mix: 0%;
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1 / 1.08;
+    min-width: 0;
+    border-radius: clamp(3px, 0.7cqw, 0.5rem);
+    background-color: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+    color: var(--fg);
+    overflow: hidden;
+    outline: 1px dashed transparent;
+    outline-offset: -3px;
+    /* A cor troca com o atraso da onda (--onda); a entrada, pelo número atômico. */
+    transition:
+      background-color 380ms var(--ease-saida) var(--onda, 0ms),
+      outline-color 380ms ease var(--onda, 0ms),
+      opacity 320ms var(--ease-saida) calc(var(--z, 0) * 4ms),
+      transform 460ms var(--ease-saida) calc(var(--z, 0) * 4ms);
+  }
+  [data-estado='espera'] .tpv-casa {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  .tpv-casa[data-estimado] {
+    outline-color: color-mix(in srgb, var(--fg) 55%, transparent);
+  }
+  /* Traço do topo no tom cheio: é a chave da categoria. No mapa de calor e no
+     desconhecido ele recolhe, porque lá não é dado. */
+  .tpv-traco {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    height: 3px;
+    background-color: var(--tom);
+    transform-origin: left;
+    transition:
+      transform 380ms var(--ease-saida) var(--onda, 0ms),
+      background-color 380ms var(--ease-saida) var(--onda, 0ms);
+  }
+  .tpv-casa:is([data-calor], [data-desconhecido]) .tpv-traco {
+    transform: scaleX(0);
+  }
+  /* Desconhecido: hachura, não uma cor da escala. */
+  .tpv-casa::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--surface-2);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 4px,
+      color-mix(in srgb, var(--muted) 30%, transparent) 4px 5px
+    );
+    opacity: 0;
+    transition: opacity 380ms ease var(--onda, 0ms);
+  }
+  .tpv-casa[data-desconhecido]::after {
+    opacity: 1;
+  }
+  /* Anel por cima de tudo: o elemento no vão é a seleção (rosa). */
+  .tpv-casa::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    transition: box-shadow 120ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tpv-casa:hover::before {
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 45%, transparent);
+    }
+  }
+  .tpv-casa[data-ativa]::before {
+    box-shadow: inset 0 0 0 2px var(--brand);
+  }
+  .tpv-simbolo,
+  .tpv-z {
+    position: relative;
+    z-index: 1;
+  }
+  .tpv-simbolo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    /* Piso de 0,6rem: no celular a casa tem ~18px e duas letras em negrito
+       ainda cabem. */
+    font-size: clamp(0.6rem, 2.1cqw, 1.35rem);
+    line-height: 1;
+  }
+  .tpv-z {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.3rem;
+    font-size: 0.625rem;
+    line-height: 1;
+    display: none;
+  }
+
+  .tpv-grade:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 4px;
+    border-radius: 0.5rem;
+  }
+  .tpv-marcador {
+    position: relative;
+    border: 1px dashed var(--line);
+    border-radius: clamp(3px, 0.7cqw, 0.5rem);
+    color: var(--muted);
+  }
+  .tpv-marcador .tpv-z {
+    font-size: 0.5625rem;
+  }
+  .tpv-amostra-sem-dado {
+    background-color: var(--surface-2);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 2px,
+      color-mix(in srgb, var(--muted) 75%, transparent) 2px 3px
+    );
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .tpv-amostra-estimado {
+    background: var(--surface);
+    border: 1px dashed color-mix(in srgb, var(--fg) 55%, transparent);
+  }
+
+  /* O elemento em foco: no vão entre o H e o He (colunas 3 a 12, linhas 1 a
+     3), como no app; em grade estreita, embaixo dela. */
+  .tpv-leitura {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+  }
+  .tpv-no-vao {
+    grid-column: 3 / 13;
+    grid-row: 1 / 4;
+    padding-inline: 0.75rem;
+    display: none;
+  }
+  .tpv-ladrilho {
+    --tom: var(--line);
+    --mix: 0%;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: 5rem;
+    height: 5.6rem;
+    padding: 0.4rem 0.3rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--tom) var(--mix), var(--surface));
+    color: var(--fg);
+    /* Sem remontar: entrada (@starting-style ou keyframes) dentro da grade
+       deixava o ladrilho pintado esmaecido. Só a cor acompanha o elemento. */
+    transition: background-color 240ms var(--ease-saida);
+  }
+  .tpv-ladrilho[data-desconhecido] {
+    background-color: var(--surface-2);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--muted) 30%, transparent) 5px 6px
+    );
+  }
+  .tpv-amostra {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 3px;
+    background: var(--tom);
+  }
+  .tpv-escala {
+    display: inline-flex;
+    overflow: hidden;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .tpv-escala > span {
+    width: 1.1rem;
+    height: 0.6rem;
+    background: color-mix(in srgb, var(--tp-calor) var(--mix), var(--surface));
+  }
+
+  @container (min-width: 40rem) {
+    .tpv-no-vao {
+      display: flex;
+    }
+    .tpv-embaixo {
+      display: none;
+    }
+  }
+  @container (min-width: 50rem) {
+    .tpv-z {
+      display: block;
+    }
+  }
+  @container (max-width: 30rem) {
+    .tpv-grade {
+      gap: 2px;
+    }
+    .tpv-traco {
+      height: 2px;
+    }
+  }
+}
+
+@keyframes leque {
+  from {
+    rotate: 0deg;
+    translate: 0 0.5rem;
   }
 }
 
@@ -60,5 +342,15 @@ html {
       transform: none;
       filter: none;
     }
+  }
+}
+
+/* Impresso, nada fica esperando a rolagem. */
+@media print {
+  [data-estado='espera'] :is(.rv-sobe, .rv-traco, .rv-linha, .rv-digita, .tpv-casa),
+  [data-estado='espera'].rv-sobe {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
   }
 }
