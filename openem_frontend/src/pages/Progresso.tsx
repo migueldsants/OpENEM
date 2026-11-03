@@ -483,7 +483,7 @@ function LeaderboardSection() {
                   <span
                     className={`min-w-0 flex-1 truncate ${e.isMe ? 'font-semibold' : 'font-medium'}`}
                   >
-                    {e.displayName}
+                    {e.nickname}
                     {e.isMe && (
                       <span className="ml-2 rounded-full border border-line bg-surface px-1.5 py-px text-xs font-medium text-muted">
                         você

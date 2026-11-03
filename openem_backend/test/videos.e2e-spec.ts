@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { testNickname } from './nickname';
 
 describe('Videoteca (issue #37, e2e)', () => {
   let app: INestApplication<App>;
@@ -39,6 +40,7 @@ describe('Videoteca (issue #37, e2e)', () => {
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `videos_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,
@@ -158,6 +160,7 @@ describe('Videoteca (issue #37, e2e)', () => {
     const other = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `other_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,

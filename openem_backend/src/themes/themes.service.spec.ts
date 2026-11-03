@@ -21,7 +21,7 @@ function row(over: Record<string, unknown> = {}) {
     likes: 0,
     publishedAt: null,
     updatedAt: new Date('2026-09-29T12:00:00Z'),
-    owner: { profile: { displayName: 'Ana' } },
+    owner: { profile: { nickname: 'Ana' } },
     ...over,
   };
 }

@@ -61,7 +61,7 @@ Dá. Em **Perfil**, desligue a chave **Gamificação**. Você deixa de ganhar XP
 
 ## Quem vê meu e-mail?
 
-Os outros alunos não veem. No fórum, no ranking e no perfil público aparece o nome do campo **Como quer ser chamado**, em **Perfil**, ou **Estudante** se ele estiver vazio. Mais em [Comunidade](/docs/alunos/comunidade/).
+Os outros alunos não veem. No fórum, no ranking e no perfil público aparece o seu apelido, que você troca em **Perfil**. Mais em [Comunidade](/docs/alunos/comunidade/).
 
 ## Como baixo meus dados ou excluo minha conta?
 

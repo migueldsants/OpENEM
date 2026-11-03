@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { publicName } from '../common/nickname';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
@@ -16,19 +17,19 @@ import {
   slicePage,
 } from './posts-page';
 
-// Autor exibido publicamente — nome de exibição, sem expor o e-mail.
+// Autor exibido publicamente: o apelido, sem expor e-mail nem nome.
 const AUTHOR_SELECT = {
   select: {
     id: true,
-    profile: { select: { displayName: true } },
+    profile: { select: { nickname: true } },
   },
 } as const;
 
 function authorName(user: {
   id: string;
-  profile: { displayName: string | null } | null;
+  profile: { nickname: string | null } | null;
 }) {
-  return { id: user.id, name: user.profile?.displayName ?? 'Estudante' };
+  return { id: user.id, name: publicName(user.profile) };
 }
 
 @Injectable()

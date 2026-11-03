@@ -11,6 +11,7 @@ import { THEME_TOKEN_KEYS } from './../src/common/theme-tokens';
 import { TERMS_VERSION } from './../src/common/terms';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { SEED_QUESTIONS_URL } from './seed-questions';
+import { testNickname } from './nickname';
 
 // Direitos do titular (LGPD, art. 18) e o que o cadastro grava: aceite dos
 // termos, exportação de todos os dados, exclusão da conta com a senha atual
@@ -27,7 +28,7 @@ describe('LGPD: aceite, exportação, exclusão e fórum (e2e)', () => {
     const email = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}@exemplo.com`;
     const reg = await http()
       .post('/api/v1/auth/register')
-      .send({ email, password, acceptTerms: true })
+      .send({ nickname: testNickname(), email, password, acceptTerms: true })
       .expect(201);
     return {
       email,
@@ -69,12 +70,12 @@ describe('LGPD: aceite, exportação, exclusão e fórum (e2e)', () => {
       const email = `sem_aceite_${Date.now()}@exemplo.com`;
       const res = await http()
         .post('/api/v1/auth/register')
-        .send({ email, password })
+        .send({ nickname: testNickname(), email, password })
         .expect(400);
       expect(String(res.body.message)).toMatch(/Termos de Uso/);
       await http()
         .post('/api/v1/auth/register')
-        .send({ email, password, acceptTerms: false })
+        .send({ nickname: testNickname(), email, password, acceptTerms: false })
         .expect(400);
       expect(await prisma.user.findUnique({ where: { email } })).toBeNull();
     });
@@ -284,7 +285,12 @@ describe('LGPD: aceite, exportação, exclusão e fórum (e2e)', () => {
     it('o e-mail fica livre para um cadastro novo', async () => {
       await http()
         .post('/api/v1/auth/register')
-        .send({ email: aluno.email, password, acceptTerms: true })
+        .send({
+          nickname: testNickname(),
+          email: aluno.email,
+          password,
+          acceptTerms: true,
+        })
         .expect(201);
     });
   });

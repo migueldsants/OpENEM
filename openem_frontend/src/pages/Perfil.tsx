@@ -4,11 +4,13 @@ import { useAuth } from '../auth';
 import { NavLink } from 'react-router-dom';
 import { ThemePreview } from '../components/ThemePreview';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { CampoApelido } from '../components/CampoApelido';
 import { SegurancaConta } from '../components/SegurancaConta';
 import { MeusDados } from '../components/MeusDados';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
 import { DOCS_URL, docsAlunos, SOURCE_URL } from '../lib/site';
+import { erroDeFormato, normalizarApelido } from '../lib/apelido';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -63,15 +65,17 @@ export default function Perfil() {
   // Inputs controlados, re-semeados quando o perfil carrega de forma assíncrona,
   // para que um blur sem digitação não sobrescreva o que estava salvo.
   const [displayName, setDisplayName] = useState('');
+  const [apelido, setApelido] = useState('');
   const [minutes, setMinutes] = useState(60);
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName ?? '');
+      setApelido(profile.nickname ?? '');
       setMinutes(profile.minutesPerDay);
     }
     // Re-semeia só quando os campos exibidos mudam (não em qualquer update do profile).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.displayName, profile?.minutesPerDay]);
+  }, [profile?.displayName, profile?.nickname, profile?.minutesPerDay]);
 
   async function update(patch: {
     focusMode?: boolean;
@@ -79,6 +83,7 @@ export default function Perfil() {
     minutesPerDay?: number;
     goal?: string;
     displayName?: string | null;
+    nickname?: string;
     foreignLanguage?: string;
   }) {
     setSaving(true);
@@ -110,7 +115,10 @@ export default function Perfil() {
             <p className="truncate font-medium">
               {profile?.displayName ?? me?.email}
             </p>
-            <p className="truncate text-xs text-muted">{me?.email}</p>
+            <p className="truncate text-xs text-muted">
+              {profile?.nickname && <>@{profile.nickname} · </>}
+              {me?.email}
+            </p>
           </div>
           <span className="chip ml-auto">
             {GOALS.find((g) => g.value === profile?.goal)?.label ?? 'SISU'}
@@ -119,8 +127,21 @@ export default function Perfil() {
       </div>
 
       <div className="card space-y-4 p-4">
+        <CampoApelido
+          value={apelido}
+          disabled={saving}
+          onChange={setApelido}
+          onBlur={() => {
+            const nickname = normalizarApelido(apelido);
+            // Formato errado já aparece embaixo do campo; o resto (ofensivo,
+            // em uso) volta do servidor no banner.
+            if (nickname !== (profile?.nickname ?? '') && !erroDeFormato(nickname)) {
+              void update({ nickname });
+            }
+          }}
+        />
         <label className="block">
-          <span className="eyebrow">Como quer ser chamado</span>
+          <span className="eyebrow">Como quer ser chamado (só você vê)</span>
           <input
             type="text"
             maxLength={80}

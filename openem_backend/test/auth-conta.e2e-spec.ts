@@ -11,6 +11,7 @@ import { GOOGLE_FETCH } from './../src/auth/auth.tokens';
 import { PasswordResetService } from './../src/auth/password-reset.service';
 import { fakeGoogle, type FakeGoogle } from './../src/auth/testing';
 import { MAIL_TRANSPORT } from './../src/mail/mail.service';
+import { testNickname } from './nickname';
 
 /**
  * Recuperação de senha, troca de senha, revogação de sessão e login com
@@ -117,7 +118,7 @@ describe('Conta: senha, sessões e Google (e2e)', () => {
   async function cadastrar(email: string, password: string): Promise<string> {
     const res = await http()
       .post('/api/v1/auth/register')
-      .send({ email, password, acceptTerms: true })
+      .send({ nickname: testNickname(), email, password, acceptTerms: true })
       .expect(201);
     return res.body.accessToken as string;
   }

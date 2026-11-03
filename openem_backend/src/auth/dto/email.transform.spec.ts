@@ -10,6 +10,7 @@ describe('normalização do e-mail nos DTOs de auth', () => {
         email: '  Ana@Exemplo.COM ',
         password: 'senhaForte123',
         acceptTerms: true,
+        nickname: 'ana',
       });
       expect(dto.email).toBe('ana@exemplo.com');
       expect(await validate(dto)).toHaveLength(0);

@@ -8,6 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { testNickname } from './nickname';
 
 // Issue #19 (social): likes em posts do fórum, perfil público (sem PII) e
 // ranking de XP (global e por liga). Cobre os 3 endpoints novos + toggle.
@@ -18,6 +19,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
   let userId: string;
   let threadId: string;
   let postId: string;
+  const apelido = testNickname();
 
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const otherAuth = () => ({ Authorization: `Bearer ${otherToken}` });
@@ -48,6 +50,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `p3soc_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,
@@ -62,12 +65,13 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     await request(app.getHttpServer())
       .put('/api/v1/users/me/profile')
       .set(auth())
-      .send({ displayName: 'Autor Social' })
+      .send({ displayName: 'Autor Social', nickname: apelido })
       .expect(200);
 
     const otherReg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `p3soc_other_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,
@@ -204,7 +208,9 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
       .set(auth())
       .expect(200);
     expect(res.body.id).toBe(userId);
-    expect(res.body.displayName).toBe('Autor Social');
+    // O nome público é o apelido; o nome de exibição fica só para o aluno.
+    expect(res.body.nickname).toBe(apelido);
+    expect(res.body).not.toHaveProperty('displayName');
     expect(res.body).toHaveProperty('xp');
     expect(res.body).toHaveProperty('level');
     expect(res.body).toHaveProperty('league');
@@ -231,7 +237,7 @@ describe('Fase 3 — social: likes, perfil público e ranking (issue #19, e2e)',
     expect(Array.isArray(res.body.entries)).toBe(true);
     if (res.body.entries.length > 0) {
       const e = res.body.entries[0];
-      expect(e).toHaveProperty('displayName');
+      expect(e).toHaveProperty('nickname');
       expect(e).toHaveProperty('xp');
       expect(e).toHaveProperty('level');
     }

@@ -10,6 +10,7 @@ import {
   readStoredTokens,
   type ThemeTokens,
 } from '../common/theme-tokens';
+import { publicName } from '../common/nickname';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import type { CommunitySort } from './dto/list-community-themes.dto';
@@ -43,7 +44,7 @@ const ROW_SELECT = {
   likes: true,
   publishedAt: true,
   updatedAt: true,
-  owner: { select: { profile: { select: { displayName: true } } } },
+  owner: { select: { profile: { select: { nickname: true } } } },
 } as const;
 
 type Row = Prisma.UserThemeGetPayload<{ select: typeof ROW_SELECT }>;
@@ -81,7 +82,7 @@ export class ThemesService {
       likes: row.likes,
       liked,
       mine: row.ownerId === userId,
-      author: row.owner.profile?.displayName?.trim() || 'Estudante',
+      author: publicName(row.owner.profile),
       publishedAt: row.publishedAt,
       updatedAt: row.updatedAt,
     };

@@ -3535,6 +3535,13 @@
             "example": "senhaForte123",
             "minLength": 8
           },
+          "nickname": {
+            "type": "string",
+            "example": "maria.estuda",
+            "minLength": 3,
+            "maxLength": 20,
+            "description": "Apelido público (fórum, ranking, perfil público), único. Letras sem acento, números, \".\" e \"_\"; é gravado em minúsculas e sem \"@\". Palavrões, ofensas e nomes reservados são recusados."
+          },
           "displayName": {
             "type": "string",
             "example": "Maria"
@@ -3548,6 +3555,7 @@
         "required": [
           "email",
           "password",
+          "nickname",
           "acceptTerms"
         ]
       },
@@ -3643,6 +3651,12 @@
           "displayName": {
             "type": "string",
             "maxLength": 80
+          },
+          "nickname": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20,
+            "description": "Apelido público, único (mesmas regras do cadastro). Não pode voltar a ser nulo."
           },
           "focusMode": {
             "type": "boolean",

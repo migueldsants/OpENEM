@@ -396,8 +396,8 @@ describe('GamificationService', () => {
       ]);
       prisma.gamificationStat.count.mockResolvedValue(1);
       prisma.user.findMany.mockResolvedValue([
-        { id: 'u2', profile: { displayName: 'Ana' } },
-        { id: 'u1', profile: { displayName: 'Eu' } },
+        { id: 'u2', profile: { nickname: 'Ana' } },
+        { id: 'u1', profile: { nickname: 'Eu' } },
       ]);
 
       const res = (await service.leaderboard('u1', 'global', 10)) as Board;
@@ -409,7 +409,12 @@ describe('GamificationService', () => {
         }),
       );
       expect(res.entries).toEqual([
-        expect.objectContaining({ userId: 'u2', rank: 1, isMe: false }),
+        expect.objectContaining({
+          userId: 'u2',
+          nickname: 'Ana',
+          rank: 1,
+          isMe: false,
+        }),
         expect.objectContaining({ userId: 'u1', rank: 2, isMe: true }),
       ]);
     });
@@ -454,7 +459,7 @@ describe('GamificationService', () => {
         { userId: 'u1', points: 1000 },
       ]);
       prisma.user.findMany.mockResolvedValue([
-        { id: 'u1', profile: { displayName: 'Eu' } },
+        { id: 'u1', profile: { nickname: 'Eu' } },
       ]);
 
       const res = (await service.leaderboard('u1', 'league', 10)) as Board;

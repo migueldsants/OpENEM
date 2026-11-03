@@ -112,10 +112,15 @@ describe('AuthProvider (issue #47)', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper });
     await act(async () => {
-      await result.current.register('c@d.com', 'senha', true);
+      await result.current.register('c@d.com', 'senha', 'bia', true);
     });
 
-    expect(mockedApi.register).toHaveBeenCalledWith('c@d.com', 'senha', true);
+    expect(mockedApi.register).toHaveBeenCalledWith(
+      'c@d.com',
+      'senha',
+      'bia',
+      true,
+    );
     expect(getToken()).toBe('tok-reg');
     expect(result.current.me?.email).toBe('c@d.com');
   });

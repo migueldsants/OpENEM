@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -13,10 +14,12 @@ import {
   ACHIEVEMENTS,
   visibleAchievements,
 } from '../common/gamification';
+import { publicName } from '../common/nickname';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginAttemptsService } from '../rate-limit/login-attempts.service';
 import { buildExport, EXPORT_SELECT } from './data-export';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { isNicknameTaken, NICKNAME_TAKEN } from './nickname-taken';
 
 @Injectable()
 export class UsersService {
@@ -40,6 +43,7 @@ export class UsersService {
             goal: true,
             minutesPerDay: true,
             displayName: true,
+            nickname: true,
             focusMode: true,
             gamificationEnabled: true,
             onboarded: true,
@@ -61,11 +65,16 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    await this.prisma.profile.upsert({
-      where: { userId },
-      update: dto,
-      create: { userId, ...dto },
-    });
+    try {
+      await this.prisma.profile.upsert({
+        where: { userId },
+        update: dto,
+        create: { userId, ...dto },
+      });
+    } catch (err) {
+      if (isNicknameTaken(err)) throw new ConflictException(NICKNAME_TAKEN);
+      throw err;
+    }
     return this.getMe(userId);
   }
 
@@ -138,7 +147,7 @@ export class UsersService {
 
   /**
    * Perfil público de um usuário (issue #19). Expõe apenas dados não-sensíveis:
-   * nome de exibição, objetivo, nível, liga, XP total e conquistas em destaque.
+   * apelido, objetivo, nível, liga, XP total e conquistas em destaque.
    * Nunca expõe e-mail ou outros PII. Se o usuário não existe, 404.
    *
    * Quem desligou a gamificação (`gamificationEnabled`) já some do ranking dos
@@ -152,7 +161,7 @@ export class UsersService {
         id: true,
         createdAt: true,
         profile: {
-          select: { displayName: true, goal: true, gamificationEnabled: true },
+          select: { nickname: true, goal: true, gamificationEnabled: true },
         },
         gamification: {
           select: { points: true, currentStreak: true, lastActivityOn: true },
@@ -166,7 +175,8 @@ export class UsersService {
 
     const base = {
       id: user.id,
-      displayName: user.profile?.displayName ?? 'Estudante',
+      // O apelido, nunca o nome de exibição: esse fica só para o próprio aluno.
+      nickname: publicName(user.profile),
       goal: user.profile?.goal ?? 'SISU',
       createdAt: user.createdAt,
     };

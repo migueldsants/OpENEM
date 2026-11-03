@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { testNickname } from './nickname';
 
 describe('Modo Foco / Pomodoro (issue #41, e2e)', () => {
   let app: INestApplication<App>;
@@ -39,6 +40,7 @@ describe('Modo Foco / Pomodoro (issue #41, e2e)', () => {
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `focus_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,

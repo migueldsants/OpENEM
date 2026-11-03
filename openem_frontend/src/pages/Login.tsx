@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, GOOGLE_LOGIN_URL, HttpError, type AuthOptions } from '../api';
 import { useAuth } from '../auth';
 import { GoogleLogo } from '../components/AuthLayout';
+import { CampoApelido } from '../components/CampoApelido';
 import { ErrorBanner } from '../components/ErrorBanner';
 import ThemeToggle from '../components/ThemeToggle';
+import { erroDeFormato, normalizarApelido } from '../lib/apelido';
 import { AREAS, AREA_DOT } from '../lib/areas';
 import { countdown } from '../lib/rate-limit';
 import { PRIVACIDADE_URL, SOURCE_URL, TERMOS_URL } from '../lib/site';
@@ -48,6 +50,8 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Obrigatório no cadastro: é o nome público no fórum e no ranking.
+  const [apelido, setApelido] = useState('');
   // Aceite dos Termos e da Política: sem ele o backend não cria a conta.
   const [aceite, setAceite] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -92,17 +96,25 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (mode === 'register' && !aceite) {
-      setMessage(
-        'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.',
-      );
-      return;
+    if (mode === 'register') {
+      const erroApelido = erroDeFormato(normalizarApelido(apelido));
+      if (erroApelido) {
+        setMessage(erroApelido);
+        return;
+      }
+      if (!aceite) {
+        setMessage(
+          'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.',
+        );
+        return;
+      }
     }
     setLoading(true);
     setMessage(null);
     try {
       if (mode === 'login') await login(email, password);
-      else await register(email, password, aceite);
+      else
+        await register(email, password, normalizarApelido(apelido), aceite);
       navigate('/', { replace: true });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Algo deu errado.');
@@ -213,6 +225,9 @@ export default function Login() {
                   placeholder="mínimo 8 caracteres"
                 />
               </label>
+              {mode === 'register' && (
+                <CampoApelido value={apelido} onChange={setApelido} />
+              )}
               {mode === 'login' && options.passwordReset && (
                 <p className="-mt-2 text-right">
                   <Link

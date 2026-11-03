@@ -72,6 +72,10 @@ model Profile {
   goal                String  @default("SISU") // SISU | PROUNI | TREINEIRO
   minutesPerDay       Int     @default(60)
   displayName         String?
+  /// Nome público (fórum, ranking, perfil público, temas), único e em
+  /// minúsculas, conferido por `common/nickname.ts`. Obrigatório no cadastro;
+  /// nulo só em conta antiga ou nova pelo Google, e o app pede antes de abrir.
+  nickname            String? @unique
   focusMode           Boolean @default(false) // modo sem distrações (Fase 2)
   gamificationEnabled Boolean @default(true) // toggle de gamificação (Fase 3)
   onboarded           Boolean @default(false) // false até o 1º onboarding ser concluído
