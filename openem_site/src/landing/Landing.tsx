@@ -1,23 +1,30 @@
 import {
   ArrowRight,
+  ArrowUpRight,
   Cards,
   ChartBar,
   ChatsCircle,
   Flame,
   GithubLogo,
+  Heart,
   Palette,
   Timer,
   type Icon,
 } from '@phosphor-icons/react';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import temas from 'virtual:arquivo-redacoes';
 import { Wordmark } from '../components/Wordmark';
-import { APP_URL, DOCS_URL, GITHUB_URL } from '../config';
+import { APP_URL, DOCS_URL, GITHUB_URL, SPONSOR_URL } from '../config';
 import { Caderno } from './Caderno';
 import { ANOS_DO_ENEM } from './prova';
+import { useAoAparecer, useRevelar } from './revelar';
+import { TabelaPrevia } from './TabelaPrevia';
 
 /** Questões oficiais no banco (1998 a 2025, todas as aplicações). */
-const QUESTOES_OFICIAIS = '7.781';
+const QUESTOES_OFICIAIS = 7781;
+
+/** Posição de um item na entrada em sequência (ver `.rv-*` em styles.css). */
+const ordem = (i: number, extra?: Record<string, string | number>) => ({ '--i': i, ...extra }) as CSSProperties;
 
 function lerSessao(): boolean {
   try {
@@ -56,21 +63,29 @@ function Cabecalho() {
   return (
     <header className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
       <Wordmark />
-      <nav aria-label="Seções" className="hidden gap-7 text-[0.95rem] font-medium md:flex">
+      <nav aria-label="Seções" className="hidden gap-5 text-[0.95rem] font-medium md:flex lg:gap-7">
         <a href="#recursos" className="text-muted hover:text-fg">
           Recursos
+        </a>
+        <a href="#tabela" className="text-muted hover:text-fg">
+          Tabela periódica
         </a>
         <a href="#redacoes" className="text-muted hover:text-fg">
           Redações
         </a>
-        <a href="#papel" className="text-muted hover:text-fg">
+        {/* Entre md e lg só cabem três âncoras sem quebrar a barra. */}
+        <a href="#papel" className="hidden text-muted hover:text-fg lg:inline">
           No papel
         </a>
-        <a href="#aberto" className="text-muted hover:text-fg">
+        <a href="#aberto" className="hidden text-muted hover:text-fg lg:inline">
           Hospedar
         </a>
       </nav>
       <div className="flex items-center gap-2">
+        <a href="#doar" className="btn btn-ghost aperta min-h-11 bg-surface" aria-label="Doar">
+          <Heart size={18} weight="fill" className="text-brand" aria-hidden />
+          <span className="hidden sm:inline">Doar</span>
+        </a>
         <a href={GITHUB_URL} className="btn btn-ghost aperta min-h-11 bg-surface" aria-label="Código no GitHub">
           <GithubLogo size={18} />
           <span className="hidden sm:inline">GitHub</span>
@@ -119,24 +134,73 @@ function Hero() {
   );
 }
 
+const DURACAO_CONTAGEM_MS = 1200;
+
+/**
+ * Um número da faixa que conta do zero quando aparece. O HTML pré-renderizado
+ * e o movimento reduzido já mostram o valor final; o leitor de tela lê sempre
+ * o valor final, nunca a contagem.
+ */
+function Contador({ ate, depois = '' }: { ate: number; depois?: string }) {
+  const ref = useRef<HTMLElement>(null);
+  const { espera, apareceu } = useAoAparecer(ref);
+  const [atual, setAtual] = useState(0);
+  useEffect(() => {
+    if (!apareceu) return;
+    let quadro = 0;
+    const inicio = performance.now();
+    const passo = (agora: number) => {
+      const t = Math.min(1, (agora - inicio) / DURACAO_CONTAGEM_MS);
+      // Desacelera no fim (expo-out): os últimos algarismos assentam devagar.
+      setAtual(t === 1 ? ate : Math.round(ate * (1 - 2 ** (-10 * t))));
+      if (t < 1) quadro = requestAnimationFrame(passo);
+    };
+    quadro = requestAnimationFrame(passo);
+    return () => cancelAnimationFrame(quadro);
+  }, [apareceu, ate]);
+  const mostrado = espera || apareceu ? atual : ate;
+  return (
+    <dd
+      ref={ref}
+      className="font-display text-[2.1rem] leading-tight font-extrabold tracking-[-0.03em] tabular-nums sm:text-[2.75rem]"
+    >
+      <span aria-hidden="true">
+        {mostrado.toLocaleString('pt-BR')}
+        {depois}
+      </span>
+      <span className="sr-only">
+        {ate.toLocaleString('pt-BR')}
+        {depois}
+      </span>
+    </dd>
+  );
+}
+
 function Numeros() {
-  const itens: { valor: string; texto: string }[] = [
+  const itens: { valor: number; depois?: string; texto: string }[] = [
     { valor: QUESTOES_OFICIAIS, texto: 'questões oficiais, com gabarito' },
-    { valor: `${ANOS_DO_ENEM.length} anos`, texto: `de provas, de ${ANOS_DO_ENEM[0]} a ${ANOS_DO_ENEM[ANOS_DO_ENEM.length - 1]}` },
-    { valor: `${temas.length} temas`, texto: 'de redação, com a página do caderno' },
-    { valor: 'R$ 0', texto: 'para estudar, sem limite de questões' },
+    {
+      valor: ANOS_DO_ENEM.length,
+      depois: ' anos',
+      texto: `de provas, de ${ANOS_DO_ENEM[0]} a ${ANOS_DO_ENEM[ANOS_DO_ENEM.length - 1]}`,
+    },
+    { valor: temas.length, depois: ' temas', texto: 'de redação, com a página do caderno' },
   ];
   return (
     <section aria-label="O OpENEM em números" className="border-y border-line bg-surface">
       <dl className="mx-auto grid max-w-[1200px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-9 sm:px-6 lg:grid-cols-4">
-        {itens.map(({ valor, texto }) => (
-          <div key={valor} className="flex flex-col-reverse">
+        {itens.map(({ valor, depois, texto }) => (
+          <div key={texto} className="flex flex-col-reverse">
             <dt className="text-[0.95rem] text-muted">{texto}</dt>
-            <dd className="font-display text-[2.1rem] leading-tight font-extrabold tracking-[-0.03em] sm:text-[2.75rem]">
-              {valor}
-            </dd>
+            <Contador ate={valor} depois={depois} />
           </div>
         ))}
+        <div className="flex flex-col-reverse">
+          <dt className="text-[0.95rem] text-muted">para estudar, sem limite de questões</dt>
+          <dd className="font-display text-[2.1rem] leading-tight font-extrabold tracking-[-0.03em] sm:text-[2.75rem]">
+            R$ 0
+          </dd>
+        </div>
       </dl>
     </section>
   );
@@ -211,21 +275,28 @@ const AREAS: { nome: string; cor: string }[] = [
 function Recursos() {
   return (
     <section aria-labelledby="recursos-titulo" id="recursos" className="mx-auto max-w-[1200px] px-4 pt-24 sm:px-6 sm:pt-28">
-      <h2 id="recursos-titulo" className={`max-w-[760px] ${TITULO_H2}`}>
+      <h2 id="recursos-titulo" data-revela className={`rv-sobe max-w-[760px] ${TITULO_H2}`}>
         Pratique, simule, revise. E repita até a prova.
       </h2>
-      <ol className="mt-14 grid gap-10 md:grid-cols-3">
+      <ol data-revela className="mt-14 grid gap-10 md:grid-cols-3">
         {PASSOS.map(({ titulo, texto }, i) => (
-          <li key={titulo} className="flex flex-col gap-3 border-t-2 border-fg pt-5">
-            <span className="font-data text-sm text-muted">{String(i + 1).padStart(2, '0')}</span>
-            <h3 className="font-display text-[1.75rem] font-bold tracking-tight">{titulo}</h3>
-            <p className="leading-relaxed text-muted">{texto}</p>
+          <li key={titulo} className="relative flex flex-col gap-3 pt-5" style={ordem(i)}>
+            <span aria-hidden="true" className="rv-traco absolute inset-x-0 top-0 h-0.5 rounded-full bg-fg" />
+            <span className="rv-sobe font-data text-sm text-muted" style={ordem(i * 2)}>
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3 className="rv-sobe font-display text-[1.75rem] font-bold tracking-tight" style={ordem(i * 2 + 1)}>
+              {titulo}
+            </h3>
+            <p className="rv-sobe leading-relaxed text-muted" style={ordem(i * 2 + 1)}>
+              {texto}
+            </p>
           </li>
         ))}
       </ol>
-      <ul className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {RECURSOS.map(({ icone: Icone, cor, titulo, texto }) => (
-          <li key={titulo} className="card flex flex-col gap-2.5 rounded-[1.25rem] p-6">
+      <ul data-revela className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {RECURSOS.map(({ icone: Icone, cor, titulo, texto }, i) => (
+          <li key={titulo} className="rv-sobe card flex flex-col gap-2.5 rounded-[1.25rem] p-6" style={ordem(i)}>
             <Icone size={26} className={cor} aria-hidden="true" />
             <h3 className="text-[1.15rem] font-bold">{titulo}</h3>
             <p className="leading-relaxed text-muted">{texto}</p>
@@ -244,6 +315,33 @@ function Recursos() {
   );
 }
 
+function Tabela() {
+  return (
+    <section aria-labelledby="tabela-titulo" id="tabela" className="mx-auto max-w-[1200px] px-4 pt-28 sm:px-6">
+      <div data-revela className="flex flex-col gap-4.5">
+        <h2 id="tabela-titulo" className={`rv-sobe max-w-[820px] ${TITULO_H2}`}>
+          A tabela periódica inteira, com as tendências que o ENEM cobra.
+        </h2>
+        <p className="rv-sobe max-w-[46em] text-lg leading-relaxed text-muted" style={ordem(1)}>
+          Os 118 elementos na posição da IUPAC, com a ficha de cada um e a fonte de cada dado. Escolha uma
+          tendência e veja para onde ela cresce. No app ainda tem distribuição eletrônica passo a passo, massa
+          molar e comparação entre elementos.
+        </p>
+      </div>
+      <div data-revela className="mt-10">
+        <TabelaPrevia />
+      </div>
+      <a
+        href={`${APP_URL}tabela-periodica`}
+        className="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-brand hover:underline"
+      >
+        Abrir a tabela periódica
+        <ArrowRight size={16} weight="bold" />
+      </a>
+    </section>
+  );
+}
+
 // Uma amostra dos temas, de ponta a ponta do arquivo (todos estão no app).
 const ANOS_DA_AMOSTRA = [2025, 2024, 2019, 2013, 1998];
 
@@ -257,11 +355,11 @@ function Redacoes() {
       id="redacoes"
       className="mx-auto grid max-w-[1200px] items-start gap-12 px-4 pt-28 sm:px-6 lg:grid-cols-2 lg:gap-14"
     >
-      <div className="flex flex-col gap-4.5">
-        <h2 id="redacoes-titulo" className={TITULO_H2}>
+      <div data-revela className="flex flex-col gap-4.5">
+        <h2 id="redacoes-titulo" className={`rv-sobe ${TITULO_H2}`}>
           Todos os temas de redação, como saíram na prova.
         </h2>
-        <p className="text-lg leading-relaxed text-muted">
+        <p className="rv-sobe text-lg leading-relaxed text-muted" style={ordem(1)}>
           De 1998 a 2025, da aplicação regular à reaplicação e às demais. Cada tema traz a proposta, os
           textos motivadores e a página do caderno. Nada resumido, nada reescrito.
         </p>
@@ -273,9 +371,9 @@ function Redacoes() {
           <ArrowRight size={16} weight="bold" />
         </a>
       </div>
-      <ul className="flex flex-col gap-2.5">
-        {amostra.map((t) => (
-          <li key={t.ano} className="card flex items-baseline gap-5 px-5 py-4.5">
+      <ul data-revela className="flex flex-col gap-2.5">
+        {amostra.map((t, i) => (
+          <li key={t.ano} className="rv-sobe card flex items-baseline gap-5 px-5 py-4.5" style={ordem(i)}>
             <span className="font-data text-sm font-semibold text-red">{t.ano}</span>
             <span className="font-semibold">{t.tema}</span>
           </li>
@@ -285,17 +383,71 @@ function Redacoes() {
   );
 }
 
-function LinhasDoCaderno({ larguras }: { larguras: string[] }) {
+function LinhasDoCaderno({ larguras, desde }: { larguras: string[]; desde: number }) {
   return (
     <div className="flex flex-col gap-1.5">
       {larguras.map((w, i) =>
         w === 'figura' ? (
-          <div key={i} className="h-11 rounded bg-line" />
+          <div key={i} className="rv-linha h-11 rounded bg-line" style={ordem(desde + i)} />
         ) : (
-          <div key={i} className="h-1.5 rounded-sm bg-line" style={{ width: w }} />
+          <div key={i} className="rv-linha h-1.5 rounded-sm bg-line" style={ordem(desde + i, { width: w })} />
         ),
       )}
     </div>
+  );
+}
+
+const PAUSA_DA_LOUSA_MS = 900;
+
+/**
+ * O tempo restante da lousa. Como no quadro da sala, a marca não corre: de
+ * tempos em tempos ela é apagada e reescrita. Ao aparecer, a lousa mostra a
+ * marca anterior (2h45), apaga e escreve a atual (2h30), que é o que o HTML
+ * pré-renderizado e o movimento reduzido mostram direto.
+ */
+function TempoRestante() {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const { espera, apareceu } = useAoAparecer(ref);
+  const [trocou, setTrocou] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!apareceu || !el) return;
+    let animacao: Animation | undefined;
+    const pausa = window.setTimeout(() => {
+      // O apagador passa da esquerda para a direita.
+      animacao = el.animate(
+        [
+          { clipPath: 'inset(0 0 0 0)', opacity: 1 },
+          { clipPath: 'inset(0 0 0 100%)', opacity: 0.35 },
+        ],
+        { duration: 420, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', fill: 'forwards' },
+      );
+      animacao.onfinish = () => setTrocou(true);
+    }, PAUSA_DA_LOUSA_MS);
+    return () => {
+      window.clearTimeout(pausa);
+      animacao?.cancel();
+    };
+  }, [apareceu]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!trocou || !el) return;
+    // E o giz escreve a marca nova, no mesmo sentido (o apagador sai antes).
+    for (const a of el.getAnimations()) a.cancel();
+    const animacao = el.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], {
+      duration: 640,
+      easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    });
+    return () => animacao.cancel();
+  }, [trocou]);
+
+  const anterior = espera || (apareceu && !trocou);
+  return (
+    <p ref={ref} className="font-display text-[2.1rem] leading-tight font-extrabold sm:text-[2.5rem]">
+      {anterior ? '2h45' : '2h30'}
+    </p>
   );
 }
 
@@ -304,12 +456,12 @@ function NoPapel() {
     <section aria-labelledby="papel-titulo" id="papel" className="mt-28 border-y border-line bg-surface">
       <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:gap-14">
         {/* Esboço do caderno em PDF e da lousa: ilustração, sem conteúdo real. */}
-        <div aria-hidden="true" className="grid grid-cols-2 items-end gap-4">
+        <div aria-hidden="true" data-revela className="grid grid-cols-2 items-end gap-4">
           <div className="flex aspect-[0.72] flex-col gap-2.5 rounded-xl border border-line bg-surface-2 p-4 shadow-[var(--shadow)]">
-            <div className="h-2.5 w-[55%] rounded-sm bg-brand" />
+            <div className="rv-linha h-2.5 w-[55%] rounded-sm bg-brand" style={ordem(-3)} />
             <div className="grid flex-1 grid-cols-2 gap-2.5">
-              <LinhasDoCaderno larguras={['100%', '100%', '70%', 'figura', '100%', '60%']} />
-              <LinhasDoCaderno larguras={['100%', '80%', '100%', '50%', '100%', '75%']} />
+              <LinhasDoCaderno larguras={['100%', '100%', '70%', 'figura', '100%', '60%']} desde={0} />
+              <LinhasDoCaderno larguras={['100%', '80%', '100%', '50%', '100%', '75%']} desde={6} />
             </div>
             <p className="font-data text-[0.7rem] text-muted">Caderno · 2 colunas · PDF</p>
           </div>
@@ -326,19 +478,19 @@ function NoPapel() {
             </div>
             <div className="border-t border-dashed border-[#eef3ea]/40 pt-3">
               <p className="text-sm opacity-85">Tempo restante</p>
-              <p className="font-display text-[2.1rem] leading-tight font-extrabold sm:text-[2.5rem]">2h30</p>
+              <TempoRestante />
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4.5">
-          <h2 id="papel-titulo" className={TITULO_H2}>
+        <div data-revela className="flex flex-col gap-4.5">
+          <h2 id="papel-titulo" className={`rv-sobe ${TITULO_H2}`}>
             Prefere fazer a prova impressa? Também dá.
           </h2>
-          <p className="text-lg leading-relaxed text-muted">
+          <p className="rv-sobe text-lg leading-relaxed text-muted" style={ordem(1)}>
             Gere o caderno em PDF no padrão do ENEM: duas colunas, capa, cartão-resposta, gabarito e
             comentários se quiser, na cor do seu tema.
           </p>
-          <p className="text-lg leading-relaxed text-muted">
+          <p className="rv-sobe text-lg leading-relaxed text-muted" style={ordem(2)}>
             Na hora de fazer, abra o quadro da sala em tela cheia: início, término e o tempo restante,
             atualizado de tempos em tempos, como o fiscal faz no quadro.
           </p>
@@ -355,16 +507,26 @@ const COMANDOS = [
   'docker compose up --build',
 ];
 
+// Cada comando é "digitado" depois do anterior: um tique por caractere
+// (24 ms, ver .rv-digita) e uma pausa curta, como quem confere antes do Enter.
+const TIQUE_MS = 24;
+const PAUSA_ENTRE_COMANDOS_MS = 220;
+const DIGITACAO = COMANDOS.reduce<{ n: number; atraso: number }[]>((acc, c) => {
+  const ant = acc[acc.length - 1];
+  const atraso = ant ? ant.atraso + ant.n * TIQUE_MS + PAUSA_ENTRE_COMANDOS_MS : 300;
+  return [...acc, { n: c.length + 2, atraso }];
+}, []);
+
 function Aberto() {
   return (
     // Sempre no escuro padrão: os seletores de tema valem em qualquer elemento.
     <section aria-labelledby="aberto-titulo" id="aberto" data-theme="default-dark" className="bg-bg text-fg">
-      <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:gap-14">
-        <div className="flex flex-col gap-4.5">
-          <h2 id="aberto-titulo" className={TITULO_H2}>
+      <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 pt-24 pb-16 sm:px-6 sm:pt-28 lg:grid-cols-2 lg:gap-14">
+        <div data-revela className="flex flex-col gap-4.5">
+          <h2 id="aberto-titulo" className={`rv-sobe ${TITULO_H2}`}>
             Aberto de verdade. Rode o seu.
           </h2>
-          <p className="text-lg leading-relaxed text-muted">
+          <p className="rv-sobe text-lg leading-relaxed text-muted" style={ordem(1)}>
             O código é AGPL-3.0. Escola, cursinho popular ou coletivo pode subir o próprio OpENEM: banco,
             API e app num comando, com as provas oficiais importadas na primeira vez.
           </p>
@@ -377,12 +539,16 @@ function Aberto() {
             </a>
           </div>
         </div>
-        <div className="card overflow-hidden rounded-[1.25rem]">
+        <div data-revela className="card overflow-hidden rounded-[1.25rem]">
           <p className="font-data border-b border-line bg-surface-2 px-5.5 py-3 text-xs text-muted">terminal</p>
           <pre className="font-data overflow-x-auto p-5.5 text-sm leading-[1.9]">
             <code>
-              {COMANDOS.map((c) => (
-                <span key={c} className="block">
+              {COMANDOS.map((c, i) => (
+                <span
+                  key={c}
+                  className="rv-digita block w-fit"
+                  style={{ '--n': DIGITACAO[i].n, '--rv-atraso': `${DIGITACAO[i].atraso}ms` } as CSSProperties}
+                >
                   <span className="text-muted select-none">$ </span>
                   {c}
                 </span>
@@ -395,13 +561,52 @@ function Aberto() {
           </p>
         </div>
       </div>
+      <Doar />
     </section>
   );
 }
 
-export function Landing() {
+/**
+ * A doação, no fim da faixa do código aberto: visível, mas sem competir com
+ * "Começar a estudar" (botão ghost, não o da marca). Abre o GitHub Sponsors
+ * em outra aba; o cabeçalho traz um atalho para cá.
+ */
+function Doar() {
   return (
-    <div className="min-h-dvh bg-bg text-fg">
+    <div id="doar" data-revela className="mx-auto max-w-[1200px] px-4 pb-24 sm:px-6 sm:pb-28">
+      <div className="rv-sobe flex flex-col gap-6 border-t border-line pt-10 md:flex-row md:items-center md:justify-between md:gap-10">
+        <div className="flex items-start gap-4">
+          <Heart size={34} weight="fill" className="rv-pulso mt-0.5 shrink-0 text-brand" aria-hidden />
+          <div>
+            <h3 className="font-display text-[1.6rem] leading-tight font-bold tracking-tight text-balance sm:text-[1.85rem]">
+              Doe e mantenha o OpENEM gratuito.
+            </h3>
+            <p className="mt-2 max-w-[42em] leading-relaxed text-muted">
+              Sem anúncio e sem plano pago: o projeto se mantém com doações pelo GitHub Sponsors. Quem doa
+              ajuda quem estuda de graça.
+            </p>
+          </div>
+        </div>
+        <a
+          href={SPONSOR_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-ghost aperta min-h-12 shrink-0 self-start px-5 text-base md:self-center"
+        >
+          <Heart size={18} weight="fill" className="text-brand" aria-hidden />
+          Doar pelo GitHub Sponsors
+          <ArrowUpRight size={16} weight="bold" aria-hidden />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export function Landing() {
+  const raiz = useRef<HTMLDivElement>(null);
+  useRevelar(raiz);
+  return (
+    <div ref={raiz} className="min-h-dvh bg-bg text-fg">
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2"
@@ -414,24 +619,28 @@ export function Landing() {
         <Hero />
         <Numeros />
         <Recursos />
+        <Tabela />
         <Redacoes />
         <NoPapel />
         <Aberto />
 
         <section
           aria-labelledby="fim-titulo"
+          data-revela
           className="mx-auto flex max-w-[1200px] flex-col items-center gap-5.5 px-4 py-28 text-center sm:px-6 sm:py-32"
         >
           <h2
             id="fim-titulo"
-            className="max-w-[14em] font-display text-[2.5rem] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-6xl lg:text-[4rem]"
+            className="rv-sobe max-w-[14em] font-display text-[2.5rem] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-6xl lg:text-[4rem]"
           >
             Sua próxima questão está a um clique.
           </h2>
-          <p className="max-w-[34em] text-lg leading-relaxed text-muted">
+          <p className="rv-sobe max-w-[34em] text-lg leading-relaxed text-muted" style={ordem(1)}>
             Crie a conta, diga sua meta e quantos minutos tem por dia, e comece pela prova que quiser.
           </p>
-          <BotaoEstudar className="mt-1 py-4 text-lg" />
+          <div className="rv-sobe mt-1" style={ordem(2)}>
+            <BotaoEstudar className="py-4 text-lg" />
+          </div>
         </section>
       </main>
 
@@ -453,6 +662,9 @@ export function Landing() {
             </a>
             <a href={GITHUB_URL} className="text-muted hover:text-fg">
               GitHub
+            </a>
+            <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer" className="text-muted hover:text-fg">
+              Doar
             </a>
             <a href={`${GITHUB_URL}/blob/main/LICENSE`} className="text-muted hover:text-fg">
               Licença AGPL-3.0

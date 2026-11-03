@@ -30,6 +30,7 @@ import {
   IconTabelaPeriodica,
 } from './components/icons';
 import { AchievementToastHost } from './components/AchievementToast';
+import { ConvitePatrocinio } from './components/ConvitePatrocinio';
 import { MoreSheet, porSecao, type NavItem } from './components/MoreSheet';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PomodoroFloating } from './components/PomodoroFloating';
@@ -535,6 +536,9 @@ export default function App() {
       <TimerAlarme />
       {/* Conquistas desbloqueadas: acima de tudo, fora da tela que as disparou. */}
       <AchievementToastHost />
+      {/* Convite ao GitHub Sponsors: uma vez por login, depois do onboarding e
+          fora do modo sem distrações; com simulado correndo, espera. */}
+      <ConvitePatrocinio pausado={immersive} />
     </div>
     </PomodoroProvider>
   );

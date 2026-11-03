@@ -77,7 +77,7 @@ O bootstrap conta as questões oficiais no banco. Se não houver nenhuma, ele ro
 3. **classificação por palavra-chave**: dá assunto às questões em que o vocabulário não deixa dúvida, sem IA;
 4. **flashcards**: sincroniza o catálogo público de decks.
 
-Isso leva alguns minutos. Nas subidas seguintes, com questões já no banco, o bootstrap não faz nada. Para atualizar os dados depois, veja [Produção](/docs/hospedar/producao/#atualizar).
+Isso leva alguns minutos. Nas subidas seguintes, com questões já no banco, o bootstrap não faz nada, a não ser que uma versão nova mude o mapeamento do import: aí ele reimporta as provas em segundo plano, com a API no ar. Para atualizar os dados depois, veja [Produção](/docs/hospedar/producao/#atualizar).
 
 Se um passo falhar (sem internet, por exemplo), o erro aparece no log com o prefixo `[bootstrap]` e a API sobe mesmo assim, sem questões. Como o banco continua sem questões oficiais, o próximo início tenta de novo:
 

@@ -9,8 +9,9 @@ import { SegurancaConta } from '../components/SegurancaConta';
 import { MeusDados } from '../components/MeusDados';
 import { FAMILIES, useTheme } from '../theme';
 import { PageHeader } from '../components/PageHeader';
-import { DOCS_URL, docsAlunos, SOURCE_URL } from '../lib/site';
+import { DOCS_URL, docsAlunos, SOURCE_URL, SPONSOR_URL } from '../lib/site';
 import { erroDeFormato, normalizarApelido } from '../lib/apelido';
+import { IconHeart } from '../components/icons';
 
 const GOALS = [
   { value: 'SISU', label: 'SISU' },
@@ -340,6 +341,15 @@ export default function Perfil() {
             className="btn btn-ghost"
           >
             Ver o código-fonte
+          </a>
+          <a
+            href={SPONSOR_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost"
+          >
+            <IconHeart width={18} height={18} weight="fill" className="text-brand" />
+            Patrocinar o projeto
           </a>
         </div>
       </div>

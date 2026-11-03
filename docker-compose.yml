@@ -76,7 +76,9 @@ services:
       # Na primeira subida, com o banco sem questões oficiais, o container roda
       # sozinho seed, import das provas, classificação por palavra-chave e
       # flashcards (prisma/bootstrap.ts). Precisa de internet para baixar o
-      # dataset, que fica no volume. AUTO_IMPORT=0 desliga.
+      # dataset, que fica no volume. Depois, reimporta as provas em segundo
+      # plano quando uma versão nova muda o mapeamento do import
+      # (ENEM_MAPPING_VERSION). AUTO_IMPORT=0 desliga as duas coisas.
       - AUTO_IMPORT=${AUTO_IMPORT:-1}
       - ENEM_DATASET_DIR=/data/enem-dataset
       - PORT=3000
@@ -146,6 +148,8 @@ services:
         - SITE_URL=${SITE_URL:-}
         # Código-fonte que o app mostra (AGPL-3.0): o do seu fork, se modificou.
         - SOURCE_URL=${SOURCE_URL:-}
+        # Patrocínio que o app e a landing mostram: o do seu fork (opcional).
+        - SPONSOR_URL=${SPONSOR_URL:-}
     restart: unless-stopped
     ports:
       - '8080:80'

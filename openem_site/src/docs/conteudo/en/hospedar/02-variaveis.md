@@ -71,6 +71,7 @@ Both features are optional and need `SITE_URL`: the e-mail link and the Google r
 | `CORS_ORIGINS` | none | Origins allowed by CORS, comma separated. Without a value, the API leaves CORS off in production (the app reaches it from the same origin through nginx) and accepts any origin outside production. `*` is rejected and stops the API from starting. Outside Compose. |
 | `SITE_URL` | none | Public domain of the installation, such as `https://openem.example`. It goes into the frontend image build, where it generates `sitemap.xml` and makes the Open Graph URLs absolute, and the backend builds the password reset e-mail link and the Google sign-in return address from it. Without it, the site ships without a sitemap and with relative URLs, and those two features stay off (outside production, the backend uses `http://localhost:5173`). Changing it requires `docker compose up --build`. |
 | `SOURCE_URL` | the official repository | Source code address the app shows on Login and Profile. The AGPL-3.0 requires that people using the app over the network can get the code running on it: if you modified OpENEM, point it at your fork. It goes into the frontend image build; changing it requires `docker compose up --build`. |
+| `SPONSOR_URL` | the maintainer's GitHub Sponsors | Sponsorship address shown by the app (the invitation that opens on sign-in and the Profile) and the landing page. In a fork, point it at your own sponsorship. It goes into the frontend image build; changing it requires `docker compose up --build`. |
 
 ## Rate limiting
 
@@ -125,7 +126,7 @@ The queue covers both the simulation booklet and the formula booklet. Raise `PDF
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `AUTO_IMPORT` | on (`1` in Compose) | Turns on the bootstrap of the container's first start (seed, import, keyword classification and flashcards). `0`, `false`, `off` or `no` turn it off. |
+| `AUTO_IMPORT` | on (`1` in Compose) | Turns on the bootstrap of the container's first start (seed, import, keyword classification and flashcards) and the background reimport when a new version changes the import mapping. `0`, `false`, `off` or `no` turn it off. |
 | `ENEM_DATASET_DIR` | `prisma/.enem-dataset` | Where the import keeps the downloaded dataset. Fixed to `/data/enem-dataset` in Compose. |
 | `ENEM_MEDIA_DIR` | `public/enem` | Where the question images live, served by the API at `/media/enem/`. Fixed to `/data/enem-media` in Compose. |
 | `SEED_DEMO` | none | With `1`, the seed creates the demo content of the e2e suite (6 questions and 2 simulations). Outside Compose. |

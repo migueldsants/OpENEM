@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { countPending, syncPending } from './queue';
 
 /**
@@ -12,13 +12,25 @@ export function useOfflineSync() {
   const [online, setOnline] = useState(() => navigator.onLine);
   const [pending, setPending] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  // A fila no IndexedDB pode responder depois de o componente sair da tela.
+  // Aí nada de setState: o React consulta `window` mesmo num componente
+  // desmontado, e nos testes o jsdom já foi desligado (ReferenceError).
+  const montado = useRef(true);
+  useEffect(() => {
+    montado.current = true;
+    return () => {
+      montado.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
+    let total: number;
     try {
-      setPending(await countPending());
+      total = await countPending();
     } catch {
-      setPending(0);
+      total = 0;
     }
+    if (montado.current) setPending(total);
   }, []);
 
   const sync = useCallback(async () => {
@@ -27,14 +39,14 @@ export function useOfflineSync() {
     try {
       const synced = await syncPending();
       await refresh();
-      if (synced > 0) {
+      if (synced > 0 && montado.current) {
         window.dispatchEvent(
           new CustomEvent('openem:synced', { detail: synced }),
         );
       }
       return synced;
     } finally {
-      setSyncing(false);
+      if (montado.current) setSyncing(false);
     }
   }, [refresh]);
 

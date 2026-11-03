@@ -15,6 +15,8 @@ import { PrismaClient } from '@prisma/client';
 import { ensureDataset, importEnem, printReport } from './import-enem-lib';
 import { isTestDatabaseUrl } from '../src/common/test-database';
 import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
+import { MAPPING_VERSION_KEY } from '../src/common/bootstrap-plan';
+import { ENEM_MAPPING_VERSION } from '../src/common/enem-import/mapping';
 
 const prisma = new PrismaClient();
 
@@ -72,10 +74,20 @@ async function main() {
   printReport(report);
   if (values['dry-run']) {
     console.log('\n(dry-run: nada foi gravado)');
-  } else {
-    // Provas e questões novas: o cache de catálogo da API fica velho.
-    await invalidateCatalogCache();
+    return;
   }
+  // Só o import completo vale como "banco no mapeamento atual": com --exam ou
+  // --limit, as outras provas continuam com o texto do mapeamento antigo.
+  if (exams.length === 0 && limit === undefined) {
+    const value = String(ENEM_MAPPING_VERSION);
+    await prisma.appState.upsert({
+      where: { key: MAPPING_VERSION_KEY },
+      create: { key: MAPPING_VERSION_KEY, value },
+      update: { value },
+    });
+  }
+  // Provas e questões novas: o cache de catálogo da API fica velho.
+  await invalidateCatalogCache();
 }
 
 main()

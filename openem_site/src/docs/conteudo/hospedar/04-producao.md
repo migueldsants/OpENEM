@@ -197,7 +197,7 @@ git pull
 docker compose up --build -d
 ```
 
-Ao iniciar, o backend aplica as migrations novas (`prisma migrate deploy`) antes de subir a API. O bootstrap não roda de novo, porque o banco já tem questões.
+Ao iniciar, o backend aplica as migrations novas (`prisma migrate deploy`) antes de subir a API. O bootstrap não roda de novo, porque o banco já tem questões, com uma exceção: quando a versão nova muda o mapeamento do import (`ENEM_MAPPING_VERSION`), ele reimporta todas as provas sozinho, em segundo plano. A API sobe na hora e as questões vão sendo atualizadas enquanto o site funciona; o log mostra `[bootstrap] mapeamento do import mudou` no começo e o relatório do import no fim. O dataset já está no volume, então nada é baixado. Se o container parar no meio, a próxima subida reimporta de novo. `AUTO_IMPORT=0` desliga isso também.
 
 ### Atualizar os dados
 
@@ -211,6 +211,7 @@ docker compose exec backend node dist-scripts/prisma/seed.js
 ```
 
 - `import-enem.js --refresh` apaga o dataset baixado e baixa de novo. O import atualiza sem duplicar e não desfaz comentários nem classificações feitos depois. Outras opções: `--exam=2023` (uma prova só), `--dry-run`, `--limit=5`, `--skip-download`, `--skip-images` e `--verbose`.
+- Uma mudança no mapeamento do import só chega às questões que já estão no banco reimportando, e o deploy já faz isso (veja acima). Rodar à mão só é preciso com `AUTO_IMPORT=0`. O import completo, sem `--exam` nem `--limit`, grava no banco a versão do mapeamento que usou; um parcial não grava, porque as outras provas continuam com o texto antigo.
 - `classify-heuristic.js` só mexe em questão sem assunto. Aceita `--dry-run` e `--sample=20` para auditar decisões.
 - `seed-flashcards.js` sincroniza o catálogo: corrige o texto dos cards sem perder o progresso dos alunos.
 - `seed.js` reaplica, por upsert, a taxonomia, os modelos de simulado, os temas de redação e o catálogo de fórmulas. Uma área que saiu da taxonomia só é removida se não tiver questões.

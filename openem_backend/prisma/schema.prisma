@@ -830,3 +830,12 @@ model LoginCode {
   @@index([userId])
   @@index([expiresAt])
 }
+
+/// Estado de manutenção do banco, chave → valor. Hoje guarda só
+/// `enem.mappingVersion`: a versão do mapeamento do import (`ENEM_MAPPING_VERSION`)
+/// que gerou as questões oficiais, para o bootstrap reimportar quando ela sobe.
+model AppState {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

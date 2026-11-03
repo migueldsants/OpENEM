@@ -10,3 +10,10 @@ export const APP_URL: string =
 export const DOCS_URL = '/docs/';
 
 export const GITHUB_URL = 'https://github.com/migueldsants/OpENEM';
+
+/**
+ * Patrocínio do projeto (GitHub Sponsors do mantenedor, o usuário de
+ * `.github/FUNDING.yml`). Um fork aponta VITE_SPONSOR_URL (build arg
+ * SPONSOR_URL da imagem) para o próprio; o app lê a mesma variável.
+ */
+export const SPONSOR_URL: string = import.meta.env.VITE_SPONSOR_URL || 'https://github.com/sponsors/migueldsants';
