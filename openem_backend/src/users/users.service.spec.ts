@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -127,6 +128,21 @@ describe('UsersService', () => {
       });
       expect(res.profile.goal).toBe('PROUNI');
     });
+
+    it('apelido de outro aluno vira 409', async () => {
+      const prisma = makePrisma() as any;
+      prisma.profile.upsert.mockRejectedValue(
+        Object.assign(new Error('unique'), {
+          code: 'P2002',
+          meta: { target: ['nickname'] },
+        }),
+      );
+      const service = makeService(prisma);
+
+      await expect(
+        service.updateProfile('u1', { nickname: 'ana' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
   });
 
   describe('getPublicProfile()', () => {
@@ -135,7 +151,7 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue({
         id: 'u1',
         createdAt: new Date('2026-01-01'),
-        profile: { displayName: 'Ana', goal: 'SISU' },
+        profile: { nickname: 'Ana', goal: 'SISU' },
         gamification: { points: 400, currentStreak: 3 },
         achievements: [{ code: 'FIRST_ANSWER', unlockedAt: new Date() }],
       });
@@ -143,7 +159,7 @@ describe('UsersService', () => {
 
       const res = await service.getPublicProfile('u1');
       expect(res).not.toHaveProperty('email');
-      expect(res.displayName).toBe('Ana');
+      expect(res.nickname).toBe('Ana');
       if (!res.gamificationEnabled) throw new Error('gamificação ligada');
       expect(res.level).toBe(5); // 25*(5-1)^2 = 400
       expect(res.league.key).toBe('PRATA');
@@ -163,7 +179,7 @@ describe('UsersService', () => {
       const service = makeService(prisma);
 
       const res = await service.getPublicProfile('u2');
-      expect(res.displayName).toBe('Estudante');
+      expect(res.nickname).toBe('Estudante');
       if (!res.gamificationEnabled) throw new Error('gamificação ligada');
       expect(res.xp).toBe(0);
       expect(res.achievementsUnlocked).toBe(0);
@@ -175,7 +191,7 @@ describe('UsersService', () => {
         id: 'u3',
         createdAt: new Date('2026-01-01'),
         profile: {
-          displayName: 'Bia',
+          nickname: 'Bia',
           goal: 'PROUNI',
           gamificationEnabled: false,
         },
@@ -191,7 +207,7 @@ describe('UsersService', () => {
       const res = await service.getPublicProfile('u3');
       expect(res).toEqual({
         id: 'u3',
-        displayName: 'Bia',
+        nickname: 'Bia',
         goal: 'PROUNI',
         createdAt: new Date('2026-01-01'),
         gamificationEnabled: false,
@@ -205,7 +221,7 @@ describe('UsersService', () => {
         id: 'u4',
         createdAt: new Date('2026-01-01'),
         profile: {
-          displayName: 'Caio',
+          nickname: 'Caio',
           goal: 'SISU',
           gamificationEnabled: true,
         },

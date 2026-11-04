@@ -8,6 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { THEME_TOKEN_KEYS } from './../src/common/theme-tokens';
+import { testNickname } from './nickname';
 
 // Tela Temas: temas do aluno (claro + escuro), publicação opcional na
 // comunidade e curtidas (uma por aluno, toggle). As cores vão para o
@@ -15,6 +16,7 @@ import { THEME_TOKEN_KEYS } from './../src/common/theme-tokens';
 describe('Temas: meus temas, comunidade e curtidas (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
+  const autora = testNickname();
   let otherToken: string;
 
   const auth = (t: string) => ({ Authorization: `Bearer ${t}` });
@@ -31,6 +33,7 @@ describe('Temas: meus temas, comunidade e curtidas (e2e)', () => {
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `${prefix}_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,
@@ -66,7 +69,7 @@ describe('Temas: meus temas, comunidade e curtidas (e2e)', () => {
     await request(app.getHttpServer())
       .put('/api/v1/users/me/profile')
       .set(auth(token))
-      .send({ displayName: 'Autora dos Temas' })
+      .send({ nickname: autora })
       .expect(200);
   });
 
@@ -204,7 +207,7 @@ describe('Temas: meus temas, comunidade e curtidas (e2e)', () => {
       liked: true,
       likes: 1,
       mine: false,
-      author: 'Autora dos Temas',
+      author: autora,
     });
     expect(JSON.stringify(list.body)).not.toContain('@exemplo.com');
 

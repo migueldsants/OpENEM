@@ -59,6 +59,7 @@ import EntrarGoogle from './pages/EntrarGoogle';
 import EsqueciSenha from './pages/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha';
 import Onboarding from './pages/Onboarding';
+import EscolherApelido from './pages/EscolherApelido';
 import Perfil from './pages/Perfil';
 import Pomodoro from './pages/Pomodoro';
 import Redacoes from './pages/Redacoes';
@@ -323,6 +324,8 @@ export default function App() {
   const maxWidth = CONTENT_MAX_W[contentWidth(location.pathname)];
   // Usuários recém-cadastrados (onboarded=false) passam pelo onboarding antes do app.
   const needsOnboarding = authenticated && me && me.profile !== null && !me.profile.onboarded;
+  // Sem apelido (conta antiga ou nova pelo Google), o aluno escolhe um antes de tudo.
+  const needsNickname = authenticated && me && !me.profile?.nickname;
 
   if (!authenticated) {
     return (
@@ -333,6 +336,12 @@ export default function App() {
         <Route path="*" element={<Login />} />
       </Routes>
     );
+  }
+
+  if (needsNickname) {
+    // Sem rota própria: a tela vale para qualquer endereço e, salvo o
+    // apelido, o aluno segue para onde ia.
+    return <EscolherApelido />;
   }
 
   if (needsOnboarding) {

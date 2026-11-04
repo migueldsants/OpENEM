@@ -4,14 +4,18 @@ import { MemoryRouter } from 'react-router-dom';
 import App from './App';
 
 // --- Mocks para isolar a tabbar mobile (sem providers reais de auth/theme) ---
+// Perfil mutável: um teste tira o apelido para ver a tela de escolha.
+const profile = vi.hoisted(() => ({
+  onboarded: true,
+  focusMode: false,
+  nickname: 'ana' as string | null,
+}));
 vi.mock('./auth', () => ({
   useAuth: () => ({
     authenticated: true,
     logout: vi.fn(),
-    me: {
-      email: 'teste@exemplo.com',
-      profile: { onboarded: true, focusMode: false },
-    },
+    refreshMe: vi.fn(),
+    me: { email: 'teste@exemplo.com', profile },
   }),
 }));
 
@@ -177,5 +181,20 @@ describe('Sidebar do desktop — cabe em janela baixa', () => {
     expect(withinNav.queryByText('Conquistas')).not.toBeInTheDocument();
     // A aba Games saiu do app.
     expect(withinNav.queryByText('Games')).not.toBeInTheDocument();
+  });
+});
+
+describe('Apelido obrigatório', () => {
+  it('sem apelido, qualquer endereço abre a escolha antes do app', () => {
+    profile.nickname = null;
+    try {
+      const { container } = renderApp('/questoes');
+      expect(
+        screen.getByRole('heading', { name: 'Escolha seu apelido' }),
+      ).toBeInTheDocument();
+      expect(container.querySelector('nav.tabbar')).toBeNull();
+    } finally {
+      profile.nickname = 'ana';
+    }
   });
 });

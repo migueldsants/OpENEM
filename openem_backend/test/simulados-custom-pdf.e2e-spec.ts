@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { testNickname } from './nickname';
 
 /**
  * Simulado personalizado por tema e caderno em PDF.
@@ -45,6 +46,7 @@ describe('Simulados personalizados e PDF (e2e)', () => {
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `sim_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,
@@ -161,6 +163,7 @@ describe('Simulados personalizados e PDF (e2e)', () => {
     const outro = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `sim_outro_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,

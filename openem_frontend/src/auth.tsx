@@ -24,6 +24,7 @@ interface AuthState {
   register: (
     email: string,
     password: string,
+    nickname: string,
     acceptTerms: boolean,
   ) => Promise<void>;
   /** Entra com um token já emitido (senha redefinida, Google, troca de senha). */
@@ -87,8 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, acceptTerms: boolean) => {
-      const res = await api.register(email, password, acceptTerms);
+    async (
+      email: string,
+      password: string,
+      nickname: string,
+      acceptTerms: boolean,
+    ) => {
+      const res = await api.register(email, password, nickname, acceptTerms);
       await persist(res.accessToken);
       await refreshMe();
     },

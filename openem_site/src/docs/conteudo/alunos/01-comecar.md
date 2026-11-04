@@ -7,12 +7,15 @@ descricao: Crie sua conta, responda as duas perguntas iniciais e aprenda a se mo
 
 1. Abra o OpENEM e toque em **Criar conta**.
 2. Digite seu e-mail e uma senha com pelo menos 8 caracteres.
-3. Leia os [Termos de Uso](/termos/) e a [Política de Privacidade](/privacidade/) e marque **Li e aceito os Termos de Uso e a Política de Privacidade**. Se você tem menos de 18 anos, use o OpENEM com a ciência do seu responsável.
-4. Toque em **Criar conta** de novo para confirmar.
+3. Escolha um **apelido**: é o nome que os outros alunos veem no fórum e no ranking. Ele tem de 3 a 20 caracteres, só letras sem acento, números, ponto e sublinhado (`_`), e ninguém mais pode estar usando. Palavrões, ofensas e referências a ódio não são aceitos.
+4. Leia os [Termos de Uso](/termos/) e a [Política de Privacidade](/privacidade/) e marque **Li e aceito os Termos de Uso e a Política de Privacidade**. Se você tem menos de 18 anos, use o OpENEM com a ciência do seu responsável.
+5. Toque em **Criar conta** de novo para confirmar.
 
 Se você já tem conta, use a aba **Entrar** com o mesmo e-mail e senha. Se aparecer o aviso **Servidor fora do ar**, o problema está no servidor, não na sua senha: tente de novo mais tarde.
 
 Dependendo do servidor, a tela de entrada também mostra **Entrar com Google**, que cria a conta ou entra nela com a sua conta Google, e **Esqueci minha senha**, que manda um link para criar uma senha nova. Os detalhes estão nas [perguntas frequentes](/docs/alunos/perguntas-frequentes/).
+
+Quem entra pelo Google pela primeira vez, ou tem uma conta de antes do apelido existir, vê a tela **Escolha seu apelido** antes de usar o app.
 
 ## Responder as duas perguntas iniciais
 

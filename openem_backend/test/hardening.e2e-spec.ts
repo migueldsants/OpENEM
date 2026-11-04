@@ -10,6 +10,7 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { parseTrustProxy } from './../src/common/trust-proxy';
 import { SEED_QUESTIONS_URL } from './seed-questions';
+import { testNickname } from './nickname';
 
 // Hardening (issue #49): validação de posse do simulationId, rate limiting
 // do auth e transação/idempotência do finish(). Os limites de throttle são
@@ -57,11 +58,21 @@ describe('Hardening (e2e)', () => {
     emailB = `hard_b_${Date.now()}@exemplo.com`;
     const regA = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email: emailA, password: 'senhaForte123', acceptTerms: true })
+      .send({
+        nickname: testNickname(),
+        email: emailA,
+        password: 'senhaForte123',
+        acceptTerms: true,
+      })
       .expect(201);
     const regB = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ email: emailB, password: 'senhaForte123', acceptTerms: true })
+      .send({
+        nickname: testNickname(),
+        email: emailB,
+        password: 'senhaForte123',
+        acceptTerms: true,
+      })
       .expect(201);
     tokenA = regA.body.accessToken;
     tokenB = regB.body.accessToken;

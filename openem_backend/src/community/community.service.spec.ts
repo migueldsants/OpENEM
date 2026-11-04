@@ -4,7 +4,7 @@ import { POSTS_PAGE_DEFAULT, POSTS_PAGE_MAX } from './posts-page';
 
 // Tipos mínimos para os mocks do Prisma (mantém o teste legível sem depender do
 // tipo completo do PrismaService).
-type Author = { id: string; profile: { displayName: string | null } | null };
+type Author = { id: string; profile: { nickname: string | null } | null };
 type ThreadRow = {
   id: string;
   title: string;
@@ -72,7 +72,7 @@ function makePrismaMock() {
       threadId,
       body,
       createdAt,
-      user: { id: 'u-seed', profile: { displayName: 'Replyer' } },
+      user: { id: 'u-seed', profile: { nickname: 'Replyer' } },
     };
     posts.set(post.id, post);
     return post;
@@ -98,7 +98,7 @@ function makePrismaMock() {
           body: data.body,
           createdAt: new Date(),
           questionId: data.questionId ?? null,
-          user: { id: data.userId, profile: { displayName: 'Autor' } },
+          user: { id: data.userId, profile: { nickname: 'Autor' } },
         });
         return Promise.resolve({ id });
       }),
@@ -142,7 +142,7 @@ function makePrismaMock() {
           threadId: data.threadId,
           body: data.body,
           createdAt: new Date(),
-          user: { id: data.userId, profile: { displayName: 'Replyer' } },
+          user: { id: data.userId, profile: { nickname: 'Replyer' } },
         };
         posts.set(post.id, post);
         return Promise.resolve({
@@ -426,9 +426,9 @@ describe('CommunityService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('usa "Estudante" quando perfil sem displayName', async () => {
+  it('usa "Estudante" quando perfil sem apelido', async () => {
     const prisma = makePrismaMock();
-    // Insere manualmente um topico cujo autor nao tem displayName.
+    // Insere manualmente um topico cujo autor nao tem apelido.
     prisma.threads.set('manual', {
       id: 'manual',
       title: 't',

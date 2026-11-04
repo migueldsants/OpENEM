@@ -11,6 +11,7 @@ import { normalizeEmail } from '../common/rate-limit';
 import { TERMS_VERSION } from '../common/terms';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginAttemptsService } from '../rate-limit/login-attempts.service';
+import { isNicknameTaken, NICKNAME_TAKEN } from '../users/nickname-taken';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -59,20 +60,33 @@ export class AuthService {
       throw new ConflictException('E-mail já cadastrado');
     }
 
-    const passwordHash = await argon2.hash(dto.password);
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        termsAcceptedAt: new Date(),
-        termsVersion: TERMS_VERSION,
-        profile: {
-          create: { displayName: dto.displayName },
-        },
-      },
+    const nicknameTaken = await this.prisma.profile.findUnique({
+      where: { nickname: dto.nickname },
+      select: { id: true },
     });
+    if (nicknameTaken) {
+      throw new ConflictException(NICKNAME_TAKEN);
+    }
 
-    return this.sessions.issue(user);
+    const passwordHash = await argon2.hash(dto.password);
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          termsAcceptedAt: new Date(),
+          termsVersion: TERMS_VERSION,
+          profile: {
+            create: { displayName: dto.displayName, nickname: dto.nickname },
+          },
+        },
+      });
+      return this.sessions.issue(user);
+    } catch (err) {
+      // Dois cadastros ao mesmo tempo com o mesmo apelido: o outro chegou antes.
+      if (isNicknameTaken(err)) throw new ConflictException(NICKNAME_TAKEN);
+      throw err;
+    }
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {

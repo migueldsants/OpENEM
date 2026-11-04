@@ -382,7 +382,7 @@ export interface SavedTheme {
   likes: number;
   liked: boolean;
   mine: boolean;
-  /** Nome de exibição do autor. */
+  /** Apelido do autor ("Estudante" se ainda não escolheu). */
   author: string;
   publishedAt: string | null;
   updatedAt: string;
@@ -396,7 +396,8 @@ export interface ThemeInput {
 export type CommunityThemeSort = 'popular' | 'recent';
 interface PublicProfileBase {
   id: string;
-  displayName: string;
+  /** Apelido ("Estudante" se ainda não escolheu); o nome fica só para o aluno. */
+  nickname: string;
   goal: string;
   createdAt: string;
 }
@@ -420,7 +421,8 @@ export interface PublicProfileGamified extends PublicProfileBase {
 }
 export interface LeaderboardEntryXp {
   userId: string;
-  displayName: string;
+  /** Apelido ("Estudante" se ainda não escolheu). */
+  nickname: string;
   xp: number;
   level: number;
   /** Posição real no ranking (1 = primeiro), também fora do top. */
@@ -892,6 +894,8 @@ export interface Profile {
   goal: string;
   minutesPerDay: number;
   displayName: string | null;
+  /** Nome público, único. Nulo em conta antiga ou nova pelo Google: o app pede. */
+  nickname: string | null;
   focusMode: boolean;
   gamificationEnabled: boolean;
   onboarded: boolean;
@@ -920,10 +924,15 @@ export const api = {
     fetch('/health').then(
       (r) => r.json() as Promise<{ status: string; database: string }>,
     ),
-  register: (email: string, password: string, acceptTerms: boolean) =>
+  register: (
+    email: string,
+    password: string,
+    nickname: string,
+    acceptTerms: boolean,
+  ) =>
     request<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: { email, password, acceptTerms },
+      body: { email, password, nickname, acceptTerms },
     }),
   login: (email: string, password: string) =>
     request<AuthResponse>('/auth/login', {
@@ -966,6 +975,7 @@ export const api = {
         | 'minutesPerDay'
         | 'goal'
         | 'displayName'
+        | 'nickname'
         | 'gamificationEnabled'
         | 'onboarded'
         | 'foreignLanguage'

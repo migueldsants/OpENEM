@@ -8,6 +8,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { SEED_QUESTIONS_URL } from './seed-questions';
+import { testNickname } from './nickname';
 
 describe('Review — próxima revisão agendada (issue #20, e2e)', () => {
   let app: INestApplication<App>;
@@ -41,6 +42,7 @@ describe('Review — próxima revisão agendada (issue #20, e2e)', () => {
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `review20_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,

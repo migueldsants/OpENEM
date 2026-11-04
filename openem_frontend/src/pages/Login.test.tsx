@@ -157,7 +157,7 @@ describe('Login — criar conta', () => {
     register.mockResolvedValue(undefined);
   });
 
-  function abrirCadastro() {
+  function abrirCadastro(apelido = 'Nova.Aluna') {
     render(
       <MemoryRouter>
         <Login />
@@ -170,6 +170,9 @@ describe('Login — criar conta', () => {
     });
     fireEvent.change(screen.getByPlaceholderText('mínimo 8 caracteres'), {
       target: { value: 'senhaForte123' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('seu.apelido'), {
+      target: { value: apelido },
     });
   }
 
@@ -196,6 +199,7 @@ describe('Login — criar conta', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('seu.apelido')).not.toBeInTheDocument();
     // O rodapé aponta para os dois documentos.
     expect(screen.getByRole('link', { name: 'Privacidade' })).toHaveAttribute(
       'href',
@@ -216,7 +220,7 @@ describe('Login — criar conta', () => {
     expect(register).not.toHaveBeenCalled();
   });
 
-  it('com o aceite marcado, envia o aceite junto', async () => {
+  it('com o aceite marcado, envia o apelido normalizado e o aceite', async () => {
     abrirCadastro();
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(enviar());
@@ -224,8 +228,31 @@ describe('Login — criar conta', () => {
       expect(register).toHaveBeenCalledWith(
         'nova@exemplo.com',
         'senhaForte123',
+        'nova.aluna',
         true,
       ),
+    );
+  });
+
+  it('o apelido é obrigatório e o formato é conferido antes de enviar', async () => {
+    abrirCadastro('maria silva');
+    expect(screen.getByPlaceholderText('seu.apelido')).toBeRequired();
+    expect(screen.getByText(/sem espaços/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.submit(enviar().closest('form')!);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/sem espaços/);
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('mostra a recusa do servidor (apelido ofensivo ou em uso)', async () => {
+    register.mockRejectedValue(
+      new Error('Esse apelido já está em uso. Escolha outro.'),
+    );
+    abrirCadastro();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(enviar());
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'apelido já está em uso',
     );
   });
 });

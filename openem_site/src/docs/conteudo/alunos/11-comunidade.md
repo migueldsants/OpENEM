@@ -36,13 +36,17 @@ Viu ofensa, assédio, spam ou alguém expondo dados pessoais? Toque em **Denunci
 
 ## O nome que os outros veem
 
-No fórum, no ranking e no perfil público, os outros alunos veem o nome que você escolheu em **Perfil**, no campo **Como quer ser chamado**. Se o campo estiver vazio, aparece **Estudante**. Seu e-mail nunca aparece para os outros.
+No fórum, no ranking, no perfil público e nos temas publicados, os outros alunos veem o seu **apelido**, escolhido ao criar a conta. Ele é único: duas pessoas não têm o mesmo. Para trocar, edite o campo **Apelido** em **Perfil**.
+
+O apelido não aceita palavrões, ofensas a grupos (por raça, religião, gênero ou orientação), referências ao nazismo e a outros discursos de ódio, nem nomes que imitam a equipe, como "admin" ou "suporte". Se o app recusar o apelido, escolha outro.
+
+O campo **Como quer ser chamado**, também em **Perfil**, só aparece para você, na saudação da tela inicial. Seu e-mail nunca aparece para os outros.
 
 ## Perfil público
 
 Toque no nome de alguém, no fórum ou no ranking, para abrir o perfil público dessa pessoa. Ele mostra:
 
-- O nome, desde quando a pessoa estuda no OpENEM e o objetivo (SISU, ProUni ou Treineiro).
+- O apelido, desde quando a pessoa estuda no OpENEM e o objetivo (SISU, ProUni ou Treineiro).
 - A liga, o nível e o XP total.
 - A sequência atual de dias.
 - Quantas conquistas foram desbloqueadas e até quatro **Conquistas em destaque**.

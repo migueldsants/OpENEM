@@ -22,6 +22,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
     user: { findUnique: jest.Mock; findFirst: jest.Mock; create: jest.Mock };
+    profile: { findUnique: jest.Mock };
   };
   let jwt: { signAsync: jest.Mock };
   let attempts: LoginAttemptsService;
@@ -33,6 +34,7 @@ describe('AuthService', () => {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
       },
+      profile: { findUnique: jest.fn().mockResolvedValue(null) },
     };
     jwt = { signAsync: jest.fn().mockResolvedValue('signed-token') };
     attempts = new LoginAttemptsService(new MemoryCacheStore(), 'rl');
@@ -53,6 +55,7 @@ describe('AuthService', () => {
       prisma.user.create.mockResolvedValue({ id: 'u1', email: 'a@b.com' });
 
       const res = await service.register({
+        nickname: 'ana',
         email: 'a@b.com',
         password: 'password123',
         acceptTerms: true,
@@ -78,6 +81,7 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'u1' });
       await expect(
         service.register({
+          nickname: 'ana',
           email: 'a@b.com',
           password: 'password123',
           acceptTerms: true,
@@ -90,6 +94,7 @@ describe('AuthService', () => {
       prisma.user.create.mockResolvedValue({ id: 'u1', email: 'ana@b.com' });
 
       await service.register({
+        nickname: 'ana',
         email: ' Ana@B.com ',
         password: 'password123',
         acceptTerms: true,
@@ -109,6 +114,7 @@ describe('AuthService', () => {
       prisma.user.findFirst.mockResolvedValue({ id: 'antiga' });
       await expect(
         service.register({
+          nickname: 'ana',
           email: 'ana@b.com',
           password: 'password123',
           acceptTerms: true,
@@ -118,6 +124,58 @@ describe('AuthService', () => {
         where: { email: { equals: 'ana@b.com', mode: 'insensitive' } },
         orderBy: { createdAt: 'asc' },
       });
+    });
+    it('grava o apelido no perfil', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'u1', email: 'a@b.com' });
+
+      await service.register({
+        nickname: 'ana',
+        email: 'a@b.com',
+        password: 'password123',
+        acceptTerms: true,
+      });
+
+      expect(prisma.profile.findUnique).toHaveBeenCalledWith({
+        where: { nickname: 'ana' },
+        select: { id: true },
+      });
+      const createArg = prisma.user.create.mock.calls[0][0] as {
+        data: { profile: { create: { nickname: string } } };
+      };
+      expect(createArg.data.profile.create.nickname).toBe('ana');
+    });
+
+    it('recusa apelido já em uso, antes de criar a conta', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.profile.findUnique.mockResolvedValue({ id: 'p1' });
+      await expect(
+        service.register({
+          nickname: 'ana',
+          email: 'a@b.com',
+          password: 'password123',
+          acceptTerms: true,
+        }),
+      ).rejects.toThrow(/apelido já está em uso/);
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    });
+
+    it('vira 409 quando outro cadastro leva o apelido no meio', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockRejectedValue(
+        Object.assign(new Error('unique'), {
+          code: 'P2002',
+          meta: { target: ['nickname'] },
+        }),
+      );
+      await expect(
+        service.register({
+          nickname: 'ana',
+          email: 'a@b.com',
+          password: 'password123',
+          acceptTerms: true,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
   });
 

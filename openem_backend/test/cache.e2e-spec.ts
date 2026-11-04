@@ -11,6 +11,7 @@ import { RedisCacheStore } from './../src/cache/cache-store';
 import { CACHE_STORE, CacheService } from './../src/cache/cache.service';
 import { invalidateCatalogCache } from './../src/cache/catalog-invalidation';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { testNickname } from './nickname';
 
 /**
  * Cache de catálogo (issue #86). No CI roda com o Redis do job (REDIS_URL);
@@ -47,6 +48,7 @@ async function registrar(app: INestApplication<App>, prefixo: string) {
   const reg = await request(app.getHttpServer())
     .post('/api/v1/auth/register')
     .send({
+      nickname: testNickname(),
       email: `${prefixo}_${Date.now()}@exemplo.com`,
       password: 'senhaForte123',
       acceptTerms: true,

@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { SEED_QUESTIONS_URL } from './seed-questions';
+import { testNickname } from './nickname';
 
 /**
  * Rate limiting distribuído (issue #87). As apps de teste só dividem os
@@ -51,7 +52,12 @@ async function registrar(
   const res = await request(app.getHttpServer())
     .post('/api/v1/auth/register')
     .set('X-Forwarded-For', ip)
-    .send({ email, password: 'senhaForte123', acceptTerms: true })
+    .send({
+      nickname: testNickname(),
+      email,
+      password: 'senhaForte123',
+      acceptTerms: true,
+    })
     .expect(201);
   return { email, token: res.body.accessToken as string };
 }

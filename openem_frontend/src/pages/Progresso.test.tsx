@@ -47,7 +47,7 @@ const entry = (
   over: Partial<LeaderboardEntryXp> = {},
 ): LeaderboardEntryXp => ({
   userId: `u${rank}`,
-  displayName: `Aluno ${rank}`,
+  nickname: `aluno${rank}`,
   xp: 5000 - rank * 10,
   level: 10,
   rank,
@@ -92,19 +92,19 @@ describe('Progresso', () => {
       league: 'Bronze',
       entries: [
         ...Array.from({ length: 10 }, (_, i) => entry(i + 1)),
-        entry(237, { userId: 'eu', displayName: 'Eu mesmo', xp: 120, isMe: true }),
+        entry(237, { userId: 'eu', nickname: 'eu.mesmo', xp: 120, isMe: true }),
       ],
     });
     renderPage();
 
-    const me = (await screen.findByText('Eu mesmo')).closest('li')!;
+    const me = (await screen.findByText('eu.mesmo')).closest('li')!;
     expect(me).toHaveAttribute('aria-current', 'true');
     expect(within(me).getByText('237')).toBeInTheDocument();
     expect(within(me).getByText('você')).toBeInTheDocument();
     expect(screen.queryByText('11')).toBeNull();
     // O salto na numeração é marcado por uma divisória.
     expect(me.className).toContain('border-t');
-    const tenth = screen.getByText('Aluno 10').closest('li')!;
+    const tenth = screen.getByText('aluno10').closest('li')!;
     expect(tenth).not.toHaveAttribute('aria-current');
   });
 
@@ -113,11 +113,11 @@ describe('Progresso', () => {
       enabled: true,
       scope: 'league',
       league: 'Bronze',
-      entries: [entry(1), entry(2, { displayName: 'Eu mesmo', isMe: true }), entry(3)],
+      entries: [entry(1), entry(2, { nickname: 'eu.mesmo', isMe: true }), entry(3)],
     });
     renderPage();
 
-    const me = (await screen.findByText('Eu mesmo')).closest('li')!;
+    const me = (await screen.findByText('eu.mesmo')).closest('li')!;
     expect(me).toHaveAttribute('aria-current', 'true');
     expect(within(me).getByText('2')).toBeInTheDocument();
     expect(me.className).not.toContain('border-t');

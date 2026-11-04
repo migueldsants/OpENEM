@@ -7,6 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { IsNickname } from '../../users/dto/nickname.decorator';
 import { NormalizeEmail } from './email.transform';
 
 export class RegisterDto {
@@ -20,6 +21,16 @@ export class RegisterDto {
   @MinLength(8)
   @MaxLength(72)
   password!: string;
+
+  @ApiProperty({
+    example: 'maria.estuda',
+    minLength: 3,
+    maxLength: 20,
+    description:
+      'Apelido público (fórum, ranking, perfil público), único. Letras sem acento, números, "." e "_"; é gravado em minúsculas e sem "@". Palavrões, ofensas e nomes reservados são recusados.',
+  })
+  @IsNickname()
+  nickname!: string;
 
   @ApiProperty({ example: 'Maria', required: false })
   @IsOptional()

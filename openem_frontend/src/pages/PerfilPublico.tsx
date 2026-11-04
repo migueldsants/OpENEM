@@ -56,7 +56,7 @@ export default function PerfilPublico() {
   const header = (
     <PageHeader
       eyebrow="Perfil público"
-      title={profile.displayName}
+      title={profile.nickname}
       subtitle={<>Estudante desde {new Date(profile.createdAt).toLocaleDateString('pt-BR')}{' '} ({timeSince(profile.createdAt)}) · Objetivo: {profile.goal}</>}
     />
   );

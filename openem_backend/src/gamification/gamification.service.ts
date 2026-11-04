@@ -3,6 +3,7 @@ import {
   dailyChallengeFor,
   dailyChallengeStatus,
 } from '../common/daily-challenge';
+import { publicName } from '../common/nickname';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ACHIEVEMENTS,
@@ -533,11 +534,9 @@ export class GamificationService {
     );
     const users = await this.prisma.user.findMany({
       where: { id: { in: rows.map((r) => r.userId) } },
-      select: { id: true, profile: { select: { displayName: true } } },
+      select: { id: true, profile: { select: { nickname: true } } },
     });
-    const nameById = new Map(
-      users.map((u) => [u.id, u.profile?.displayName ?? 'Estudante']),
-    );
+    const nameById = new Map(users.map((u) => [u.id, publicName(u.profile)]));
 
     return {
       enabled: true as const,
@@ -545,7 +544,7 @@ export class GamificationService {
       league: league?.name ?? null,
       entries: rows.map((r) => ({
         userId: r.userId,
-        displayName: nameById.get(r.userId) ?? 'Estudante',
+        nickname: nameById.get(r.userId) ?? publicName(null),
         xp: r.xp,
         level: levelFromXp(r.xp).level,
         rank: r.rank,

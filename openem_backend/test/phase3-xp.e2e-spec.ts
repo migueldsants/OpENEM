@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { testNickname } from './nickname';
 
 describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
   let app: INestApplication<App>;
@@ -40,6 +41,7 @@ describe('Fase 3 — XP em todas as ações (issue #17, e2e)', () => {
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({
+        nickname: testNickname(),
         email: `xp17_${Date.now()}@exemplo.com`,
         password: 'senhaForte123',
         acceptTerms: true,

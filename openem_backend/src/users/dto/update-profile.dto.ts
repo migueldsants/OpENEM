@@ -8,7 +8,9 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
+import { IsNickname } from './nickname.decorator';
 
 export const STUDY_GOALS = ['SISU', 'PROUNI', 'TREINEIRO'] as const;
 export type StudyGoal = (typeof STUDY_GOALS)[number];
@@ -36,6 +38,18 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(80)
   displayName?: string;
+
+  @ApiProperty({
+    required: false,
+    minLength: 3,
+    maxLength: 20,
+    description:
+      'Apelido público, único (mesmas regras do cadastro). Não pode voltar a ser nulo.',
+  })
+  // Nulo é recusado: o @IsOptional deixaria passar e apagaria o apelido.
+  @ValidateIf((_, value) => value !== undefined)
+  @IsNickname()
+  nickname?: string;
 
   @ApiProperty({
     required: false,
