@@ -4,7 +4,7 @@
   "description": "",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "build": "nest build",
     "build:scripts": "tsc -p tsconfig.scripts.json && node -e \"require('fs').copyFileSync('prisma/seed-flashcards-data.json', 'dist-scripts/prisma/seed-flashcards-data.json'); require('fs').copyFileSync('prisma/classificacao-assuntos.json', 'dist-scripts/prisma/classificacao-assuntos.json')\"",
