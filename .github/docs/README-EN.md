@@ -1,6 +1,21 @@
-# OpENEM
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../assets/openem-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../assets/openem-logo-light.svg">
+    <img alt="OpENEM" src="../assets/openem-logo-light.svg" width="320">
+  </picture>
+</h1>
 
-[Leia em Português](../../README.md)
+<p align="center">
+  <a href="https://github.com/migueldsants/OpENEM/blob/main/LICENSE"><img alt="License AGPL-3.0" src="https://img.shields.io/github/license/migueldsants/OpENEM"></a>
+  <a href="https://github.com/migueldsants/OpENEM/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/migueldsants/OpENEM/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/migueldsants/OpENEM/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/migueldsants/OpENEM/main"></a>
+  <a href="https://github.com/migueldsants/OpENEM/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/migueldsants/OpENEM"></a>
+  <a href="https://openem.tech"><img alt="Website: openem.tech" src="https://img.shields.io/badge/site-openem.tech-d91748"></a>
+  <a href="https://openem.tech/docs/en/"><img alt="Documentation" src="https://img.shields.io/badge/docs-openem.tech%2Fdocs-d91748"></a>
+</p>
+
+<p align="center"><a href="../../README.md">Leia em Português</a></p>
 
 OpENEM is a free and open-source platform developed to revolutionize student preparation for the ENEM. We offer a complete study environment with commented questions, realistic simulations, and intelligent performance tracking tools.
 
