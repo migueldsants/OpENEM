@@ -252,10 +252,20 @@ export class WeeklyGoalsService {
           plan: { select: { createdAt: true } },
         },
       }),
-      this.prisma.focusSession.findMany({
-        where: { userId, completedAt: { gte: since, lt: until }, subject },
-        select: { completedAt: true, durationSec: true },
-      }),
+      this.prisma.focusSession
+        .findMany({
+          where: {
+            userId,
+            completedAt: { not: null, gte: since, lt: until },
+            subject,
+          },
+          select: { completedAt: true, durationSec: true },
+        })
+        .then((rows) =>
+          rows.flatMap((f) =>
+            f.completedAt ? [{ ...f, completedAt: f.completedAt }] : [],
+          ),
+        ),
     ]);
     return weekMinutes(
       blocks.map((b) => ({

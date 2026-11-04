@@ -183,10 +183,16 @@ export class PerformanceService {
           },
         },
       }),
-      this.prisma.focusSession.findMany({
-        where: { userId, completedAt: { gte: since } },
-        select: { completedAt: true, durationSec: true },
-      }),
+      this.prisma.focusSession
+        .findMany({
+          where: { userId, completedAt: { not: null, gte: since } },
+          select: { completedAt: true, durationSec: true },
+        })
+        .then((rows) =>
+          rows.flatMap((f) =>
+            f.completedAt ? [{ ...f, completedAt: f.completedAt }] : [],
+          ),
+        ),
       this.prisma.profile.findUnique({
         where: { userId },
         select: { minutesPerDay: true },

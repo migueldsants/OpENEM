@@ -465,7 +465,8 @@ model FocusSession {
   subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
   durationSec Int
   startedAt   DateTime
-  completedAt DateTime @default(now())
+  /// Nulo enquanto a sessão está em andamento; o servidor fecha em :complete.
+  completedAt DateTime?
 
   @@index([userId, completedAt])
 }

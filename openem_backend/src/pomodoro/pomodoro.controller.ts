@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CompleteFocusSessionDto } from './dto/complete-focus-session.dto';
+import { StartFocusSessionDto } from './dto/start-focus-session.dto';
 import { PomodoroService } from './pomodoro.service';
 
 @ApiTags('pomodoro')
@@ -13,16 +22,27 @@ import { PomodoroService } from './pomodoro.service';
 export class PomodoroController {
   constructor(private readonly pomodoroService: PomodoroService) {}
 
-  @Post('sessions')
+  @Post('sessions/start')
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @ApiOperation({
     summary:
-      'Registra uma sessão de foco concluída com XP proporcional (issue #41)',
+      'Abre uma sessão de foco no servidor; o relógio passa a contar daqui',
   })
-  complete(
+  start(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: CompleteFocusSessionDto,
+    @Body() dto: StartFocusSessionDto,
   ) {
-    return this.pomodoroService.complete(user.userId, dto);
+    return this.pomodoroService.start(user.userId, dto);
+  }
+
+  @Post('sessions/:id/complete')
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @ApiOperation({
+    summary:
+      'Conclui a sessão depois do tempo real e credita XP proporcional (issue #41)',
+  })
+  complete(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.pomodoroService.complete(user.userId, id);
   }
 
   @Get('history')

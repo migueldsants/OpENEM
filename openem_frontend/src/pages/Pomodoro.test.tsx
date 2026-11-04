@@ -11,6 +11,7 @@ vi.mock('../api', () => ({
     focusToday: vi.fn(),
     subjects: vi.fn(),
     completeFocusSession: vi.fn(),
+    startFocusSession: vi.fn(),
     focusHistory: vi.fn(),
     focusBySubject: vi.fn(),
   },

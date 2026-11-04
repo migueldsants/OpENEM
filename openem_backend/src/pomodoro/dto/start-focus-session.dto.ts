@@ -1,18 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsInt,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-/** Registro de sessão de foco concluída (issue #41). */
-export class CompleteFocusSessionDto {
+/** Abertura de uma sessão de foco (issue #41). */
+export class StartFocusSessionDto {
   @ApiProperty({
-    description: 'Duração da sessão em segundos (30s a 4h)',
+    description: 'Duração pretendida da sessão, em segundos (30s a 4h)',
     minimum: 30,
     maximum: 14400,
   })
@@ -21,10 +14,6 @@ export class CompleteFocusSessionDto {
   @Min(30)
   @Max(14400)
   durationSec!: number;
-
-  @ApiProperty({ description: 'Momento em que a sessão começou (ISO 8601)' })
-  @IsISO8601()
-  startedAt!: string;
 
   @ApiPropertyOptional({ description: 'Matéria estudada na sessão' })
   @IsOptional()

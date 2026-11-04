@@ -45,7 +45,8 @@ interface PersistedSession {
   endsAt: number | null;
   /** Segundos restantes congelados quando pausado. */
   frozen: number;
-  startedAt: string;
+  /** Sessão aberta no servidor; o complete usa este id. */
+  focusSessionId: string | null;
   subjectId: string;
   cycles: number;
   longBreak: boolean;
@@ -124,6 +125,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [cycles, setCycles] = useState(restored?.cycles ?? 0);
   const [longBreak, setLongBreak] = useState(restored?.longBreak ?? false);
   const [subjectId, setSubjectId] = useState(restored?.subjectId ?? '');
+  const [focusSessionId, setFocusSessionId] = useState<string | null>(
+    restored?.focusSessionId ?? null,
+  );
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [todayMinutes, setTodayMinutes] = useState<number | null>(null);
@@ -131,9 +135,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [saved, setSaved] = useState<FocusSession | null>(null);
   const [award, setAward] = useState<GamificationDelta | null>(null);
 
-  const startedAtRef = useRef<string>(
-    restored?.startedAt ?? new Date().toISOString(),
-  );
+  // Identifica a fase de foco atual; resposta atrasada do start não pode
+  // contaminar um ciclo seguinte.
+  const focusSeqRef = useRef(0);
   // Guarda contra registrar a mesma sessão duas vezes (re-render, StrictMode).
   const finishingRef = useRef(false);
 
@@ -167,7 +171,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       paused,
       endsAt,
       frozen: remaining,
-      startedAt: startedAtRef.current,
+      focusSessionId,
       subjectId,
       cycles,
       longBreak,
@@ -177,7 +181,17 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     } catch {
       /* modo privado/quota: perder a persistência não quebra a sessão */
     }
-  }, [config, mode, paused, endsAt, remaining, subjectId, cycles, longBreak]);
+  }, [
+    config,
+    mode,
+    paused,
+    endsAt,
+    remaining,
+    focusSessionId,
+    subjectId,
+    cycles,
+    longBreak,
+  ]);
 
   // Tick de 1s recalculado a partir do alvo — imune ao throttle de aba oculta.
   useEffect(() => {
@@ -188,23 +202,37 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(t);
   }, [endsAt, paused, mode]);
 
-  const beginPhase = useCallback((next: PomodoroMode, seconds: number) => {
-    if (next === 'focus') startedAtRef.current = new Date().toISOString();
-    setMode(next);
-    setPaused(false);
-    setRemaining(seconds);
-    setEndsAt(Date.now() + seconds * 1000);
-  }, []);
+  const beginPhase = useCallback(
+    (next: PomodoroMode, seconds: number) => {
+      if (next === 'focus') {
+        const seq = ++focusSeqRef.current;
+        setFocusSessionId(null);
+        void api
+          .startFocusSession({
+            durationSec: seconds,
+            subjectId: subjectId || undefined,
+          })
+          .then((res) => {
+            if (focusSeqRef.current === seq) setFocusSessionId(res.id);
+          })
+          .catch(() => {
+            if (focusSeqRef.current === seq) setFocusSessionId(null);
+          });
+      }
+      setMode(next);
+      setPaused(false);
+      setRemaining(seconds);
+      setEndsAt(Date.now() + seconds * 1000);
+    },
+    [subjectId],
+  );
 
   const finishFocus = useCallback(async () => {
     const durationSec = config.focusMin * 60;
     setSaving(true);
     try {
-      const res = await api.completeFocusSession({
-        durationSec,
-        startedAt: startedAtRef.current,
-        subjectId: subjectId || undefined,
-      });
+      if (!focusSessionId) throw new Error('sessão não aberta');
+      const res = await api.completeFocusSession(focusSessionId);
       setSaved(res);
       setAward(res.gamification ?? null);
       setTodayMinutes((m) => (m ?? 0) + Math.round(durationSec / 60));
@@ -212,6 +240,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       setSaved(null); // falha silenciosa: o foco do usuário vem primeiro
     } finally {
       setSaving(false);
+      setFocusSessionId(null);
       const done = cycles + 1;
       const isLong =
         config.longBreakEvery > 0 && done % config.longBreakEvery === 0;
@@ -221,7 +250,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       chime(config.sound);
       finishingRef.current = false;
     }
-  }, [config, subjectId, cycles, beginPhase]);
+  }, [config, cycles, beginPhase, focusSessionId]);
 
   // Fim de fase: foco registra a sessão e abre a pausa; pausa volta ao ocioso.
   useEffect(() => {
@@ -274,6 +303,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   }, [remaining]);
 
   const backToIdle = useCallback(() => {
+    focusSeqRef.current += 1;
+    setFocusSessionId(null);
     setMode('idle');
     setPaused(false);
     setEndsAt(null);

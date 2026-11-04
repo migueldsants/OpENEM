@@ -13,6 +13,7 @@ vi.mock('../api', () => ({
     focusToday: vi.fn(),
     subjects: vi.fn(),
     completeFocusSession: vi.fn(),
+    startFocusSession: vi.fn(),
   },
 }));
 
@@ -51,6 +52,13 @@ describe('PomodoroTimer (issue #41)', () => {
     vi.useFakeTimers();
     vi.mocked(api.focusToday).mockResolvedValue({ minutes: 0 });
     vi.mocked(api.subjects).mockResolvedValue(SUBJECTS as never);
+    vi.mocked(api.startFocusSession).mockResolvedValue({
+      id: 'fs1',
+      subjectId: 's1',
+      subjectName: 'Matemática',
+      durationSec: 1500,
+      startedAt: new Date().toISOString(),
+    });
     vi.mocked(api.completeFocusSession).mockResolvedValue({
       id: 'fs1',
       subjectId: 's1',
@@ -107,13 +115,12 @@ describe('PomodoroTimer (issue #41)', () => {
     renderTimer();
     await flush();
     fireEvent.click(screen.getByText(/Focar 25 min/));
+    await flush();
 
     await tickAsync(25 * 60_000); // completa os 25 min
     await flush();
 
-    expect(api.completeFocusSession).toHaveBeenCalledWith(
-      expect.objectContaining({ durationSec: 1500 }),
-    );
+    expect(api.completeFocusSession).toHaveBeenCalledWith('fs1');
     expect(screen.getByText(/Sessão registrada/)).toBeInTheDocument();
   });
 
@@ -121,6 +128,7 @@ describe('PomodoroTimer (issue #41)', () => {
     renderTimer();
     await flush();
     fireEvent.click(screen.getByText(/Focar 25 min/));
+    await flush();
 
     await tickAsync(25 * 60_000 + 5000);
     await flush();
@@ -135,12 +143,15 @@ describe('PomodoroTimer (issue #41)', () => {
       target: { value: 's1' },
     });
     fireEvent.click(screen.getByText(/Focar 25 min/));
+    await flush();
     await tickAsync(25 * 60_000);
     await flush();
 
-    expect(api.completeFocusSession).toHaveBeenCalledWith(
-      expect.objectContaining({ subjectId: 's1', durationSec: 1500 }),
-    );
+    expect(api.startFocusSession).toHaveBeenCalledWith({
+      durationSec: 1500,
+      subjectId: 's1',
+    });
+    expect(api.completeFocusSession).toHaveBeenCalledWith('fs1');
   });
 
   it('falha ao registrar mostra a pausa sem quebrar (silencioso)', async () => {
@@ -148,10 +159,24 @@ describe('PomodoroTimer (issue #41)', () => {
     renderTimer();
     await flush();
     fireEvent.click(screen.getByText(/Focar 25 min/));
+    await flush();
     await tickAsync(25 * 60_000);
     await flush();
 
     // Entra na pausa mesmo com falha no registro (não mostra "registrada").
+    expect(screen.getByText(/Pausa de 5 minutos/)).toBeInTheDocument();
+  });
+
+  it('não conclui no servidor se a sessão não foi aberta', async () => {
+    vi.mocked(api.startFocusSession).mockRejectedValue(new Error('offline'));
+    renderTimer();
+    await flush();
+    fireEvent.click(screen.getByText(/Focar 25 min/));
+    await flush();
+    await tickAsync(25 * 60_000);
+    await flush();
+
+    expect(api.completeFocusSession).not.toHaveBeenCalled();
     expect(screen.getByText(/Pausa de 5 minutos/)).toBeInTheDocument();
   });
 

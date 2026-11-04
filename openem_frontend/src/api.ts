@@ -572,13 +572,17 @@ export interface Formula {
   symbols: FormulaSymbol[];
 }
 
-/** Sessão de foco (Pomodoro) registrada (issue #41). */
-export interface FocusSession {
+/** Sessão de foco (Pomodoro) recém-aberta no servidor (issue #41). */
+export interface StartedFocusSession {
   id: string;
   subjectId: string | null;
   subjectName: string | null;
   durationSec: number;
   startedAt: string;
+}
+
+/** Sessão de foco (Pomodoro) concluída e registrada (issue #41). */
+export interface FocusSession extends StartedFocusSession {
   completedAt: string;
 }
 export interface FocusHistory {
@@ -1099,14 +1103,18 @@ export const api = {
       method: 'POST',
     }),
 
-  completeFocusSession: (input: {
+  startFocusSession: (input: {
     durationSec: number;
-    startedAt: string;
     subjectId?: string;
   }) =>
+    request<StartedFocusSession>('/pomodoro/sessions/start', {
+      method: 'POST',
+      body: input,
+    }),
+  completeFocusSession: (id: string) =>
     request<FocusSession & { gamification?: GamificationDelta }>(
-      '/pomodoro/sessions',
-      { method: 'POST', body: input },
+      `/pomodoro/sessions/${encodeURIComponent(id)}/complete`,
+      { method: 'POST' },
     ),
   focusHistory: (days = 30) =>
     request<FocusHistory>(`/pomodoro/history?days=${days}`),

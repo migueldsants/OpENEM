@@ -12,6 +12,7 @@ vi.mock('../api', () => ({
     focusToday: vi.fn(),
     subjects: vi.fn(),
     completeFocusSession: vi.fn(),
+    startFocusSession: vi.fn(),
   },
 }));
 
@@ -48,6 +49,13 @@ describe('PomodoroFloating (issue #41)', () => {
     vi.useFakeTimers();
     vi.mocked(api.focusToday).mockResolvedValue({ minutes: 0 });
     vi.mocked(api.subjects).mockResolvedValue([] as never);
+    vi.mocked(api.startFocusSession).mockResolvedValue({
+      id: 'fs1',
+      subjectId: null,
+      subjectName: null,
+      durationSec: 1500,
+      startedAt: new Date().toISOString(),
+    });
     vi.mocked(api.completeFocusSession).mockResolvedValue({
       id: 'fs1',
       subjectId: null,
