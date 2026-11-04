@@ -95,12 +95,5 @@ reports/
 # Scripts de banco compilados para a imagem Docker (npm run build:scripts)
 openem_backend/dist-scripts/
 
-# Impeccable: capturas de revisão, rodadas de decisão e cache do hook são
-# material de trabalho; DESIGN.md, PRODUCT.md, .impeccable/design.json,
-# config.json e surfaces/ são versionados.
-.impeccable/review/
-.impeccable/questions/
-.impeccable/hook.cache.json
-
-# CLAUDE.md: instruções locais do Claude Code, cada pessoa mantém o seu fora do git.
-/CLAUDE.md
+# Impeccable: material de trabalho local, fora do git.
+.impeccable/
