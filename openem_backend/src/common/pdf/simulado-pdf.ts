@@ -16,14 +16,16 @@
  *
  * A cor vem do tema escolhido pelo aluno (`themes.ts`), que é o mesmo tema da
  * interface. O texto é medido antes de ser desenhado: nada de bloco cortado no
- * fim da coluna.
+ * fim da coluna, e a questão que cabe numa coluna não é partida entre duas.
  */
 
 import { existsSync } from 'node:fs';
-import { isAbsolute, join, normalize, sep } from 'node:path';
+import { dirname, isAbsolute, join, normalize, sep } from 'node:path';
 import PDFDocument from 'pdfkit';
 import { MEDIA_PREFIX } from '../enem-import/mapping';
 import { alternativeText, PdfBlock, toPdfBlocks } from './markdown-blocks';
+import { pdfSafeText, splitRuns, TextRun } from './pdf-text';
+import { loadWoffAsSfnt, withVerticalMetricsOf } from './woff-to-sfnt';
 import { contrastInk, PdfTheme, resolveTheme, themeWithBrand } from './themes';
 
 export interface PdfAlternative {
@@ -108,11 +110,67 @@ const GUTTER = 22;
 /** Altura da faixa de cabeçalho das páginas de questões. */
 const HEADER_H = 30;
 
+/**
+ * Inter, embutida (a mesma do app e do caderno de fórmulas). A Helvetica
+ * padrão do PDF só tem os caracteres do WinAnsi: "mol⁻¹" saía "mol"1",
+ * "→" saía "!’" e "Cr₂O₃" saía "Cr ‚O ƒ" — e, com o glifo errado, a largura
+ * medida também errava e a linha invadia a coluna vizinha. A Inter tem os
+ * índices, setas e operadores que a química e a física do ENEM usam.
+ */
 const FONT = {
-  body: 'Helvetica',
-  bold: 'Helvetica-Bold',
-  italic: 'Helvetica-Oblique',
+  body: 'Inter',
+  bold: 'Inter-Bold',
+  italic: 'Inter-Italic',
 };
+
+/**
+ * Fonte de símbolos para o pouco que a Inter não tem (≡ da ligação tripla,
+ * ⇌ do equilíbrio, ∈, ≅): a MathJax_Main, que já vem no `mathjax-full`.
+ * Só os caracteres sem glifo na Inter passam para ela (`splitRuns`).
+ */
+const SYMBOL_FONT: Record<string, string> = {
+  [FONT.body]: 'Simbolos',
+  [FONT.bold]: 'Simbolos-Bold',
+  [FONT.italic]: 'Simbolos-Italic',
+};
+
+function registerFonts(doc: Doc): void {
+  // Do WOFF (e não do WOFF2: o fontkit quebra ao recortar do WOFF2), mas já
+  // convertido para TTF: ver `woff-to-sfnt.ts`.
+  const inter = join(
+    dirname(require.resolve('inter-ui/package.json')),
+    'Inter (web)',
+  );
+  const mathjax = join(
+    dirname(require.resolve('mathjax-full/package.json')),
+    'es5',
+    'output',
+    'chtml',
+    'fonts',
+    'woff-v2',
+  );
+  const pares: [string, string, string][] = [
+    [FONT.body, 'Inter-Regular.woff', 'MathJax_Main-Regular.woff'],
+    [FONT.bold, 'Inter-Bold.woff', 'MathJax_Main-Bold.woff'],
+    [FONT.italic, 'Inter-Italic.woff', 'MathJax_Main-Italic.woff'],
+  ];
+  for (const [nome, arqInter, arqSimbolos] of pares) {
+    const principal = loadWoffAsSfnt(join(inter, arqInter));
+    let simbolos = symbolFontCache.get(arqSimbolos);
+    if (!simbolos) {
+      simbolos = withVerticalMetricsOf(
+        loadWoffAsSfnt(join(mathjax, arqSimbolos)),
+        principal,
+      );
+      symbolFontCache.set(arqSimbolos, simbolos);
+    }
+    doc.registerFont(nome, principal);
+    doc.registerFont(SYMBOL_FONT[nome], simbolos);
+  }
+}
+
+/** Fontes de símbolos já com as métricas da Inter (uma vez por processo). */
+const symbolFontCache = new Map<string, Buffer>();
 
 const SIZE = {
   statement: 8.8,
@@ -124,6 +182,130 @@ const SIZE = {
 };
 
 type Doc = PDFKit.PDFDocument;
+type TextOptions = PDFKit.Mixins.TextOptions;
+
+/**
+ * A fonte carregada pelo PDFKit guarda o objeto do fontkit em `_font.font`
+ * (fora do @types/pdfkit, como `openImage`). É por ele que se sabe se a fonte
+ * tem o glifo antes de desenhar.
+ */
+function currentFontkit(doc: Doc): {
+  hasGlyphForCodePoint(cp: number): boolean;
+} {
+  return (
+    doc as unknown as {
+      _font: { font: { hasGlyphForCodePoint(cp: number): boolean } };
+    }
+  )._font.font;
+}
+
+/** Cobertura de glifos por fonte; os arquivos são os mesmos em todo PDF. */
+const glyphCache = new Map<string, Map<number, boolean>>();
+
+function hasGlyph(doc: Doc, fonte: string, cp: number): boolean {
+  let porFonte = glyphCache.get(fonte);
+  if (!porFonte) {
+    porFonte = new Map();
+    glyphCache.set(fonte, porFonte);
+  }
+  let tem = porFonte.get(cp);
+  if (tem === undefined) {
+    doc.font(fonte);
+    tem = currentFontkit(doc).hasGlyphForCodePoint(cp);
+    porFonte.set(cp, tem);
+  }
+  return tem;
+}
+
+/** Trechos por fonte; texto só com Latin-1 nem consulta a cobertura. */
+function runsOf(doc: Doc, texto: string, fonte: string): TextRun[] {
+  let soLatin1 = true;
+  for (let i = 0; i < texto.length && soLatin1; i++) {
+    soLatin1 = texto.charCodeAt(i) <= 0xff;
+  }
+  if (soLatin1) return [{ text: texto, fallback: false }];
+  const reserva = SYMBOL_FONT[fonte];
+  const runs = splitRuns(
+    texto,
+    (cp) => hasGlyph(doc, fonte, cp),
+    (cp) => !!reserva && hasGlyph(doc, reserva, cp),
+  );
+  doc.font(fonte);
+  return runs;
+}
+
+/**
+ * Altura do texto, contando a fonte de símbolos. Cada símbolo é medido como
+ * "W"s da largura dele ou mais: a medida sai igual ou maior que o desenho,
+ * nunca menor — menor faria o texto invadir o bloco de baixo.
+ */
+function textHeight(
+  doc: Doc,
+  texto: string,
+  opcoes: TextOptions,
+  fonte: string,
+): number {
+  const runs = runsOf(doc, texto, fonte);
+  if (!runs.some((r) => r.fallback)) return doc.heightOfString(texto, opcoes);
+  const larguraW = doc.widthOfString('W');
+  const medida = runs
+    .map((r) => {
+      if (!r.fallback) return r.text;
+      doc.font(SYMBOL_FONT[fonte]);
+      const w = doc.widthOfString(r.text);
+      doc.font(fonte);
+      return 'W'.repeat(Math.max(1, Math.ceil(w / larguraW)));
+    })
+    .join('');
+  return doc.heightOfString(medida, { ...opcoes, align: 'left' });
+}
+
+/**
+ * `doc.text` que troca para a fonte de símbolos nos caracteres que a Inter
+ * não tem. Com símbolo, o trecho sai alinhado à esquerda (o PDFKit justifica
+ * cada pedaço `continued` à parte) e sem `height`, para nada ser cortado.
+ */
+function putText(
+  doc: Doc,
+  texto: string,
+  x: number,
+  y: number,
+  opcoes: TextOptions,
+  fonte: string,
+): void {
+  const runs = runsOf(doc, texto, fonte);
+  if (!runs.some((r) => r.fallback)) {
+    doc.text(texto, x, y, opcoes);
+    return;
+  }
+  const base: TextOptions = {
+    ...opcoes,
+    height: undefined,
+    align: opcoes.align === 'justify' ? 'left' : opcoes.align,
+  };
+  runs.forEach((r, i) => {
+    doc.font(r.fallback ? SYMBOL_FONT[fonte] : fonte);
+    const o = { ...base, continued: i < runs.length - 1 };
+    if (i === 0) doc.text(r.text, x, y, o);
+    else doc.text(r.text, o);
+  });
+  doc.font(fonte);
+}
+
+/** Todo texto vindo do banco passa por `pdfSafeText` antes do desenho. */
+function sanitizeQuestion(q: PdfQuestion): PdfQuestion {
+  return {
+    ...q,
+    statement: pdfSafeText(q.statement),
+    questionPrompt: q.questionPrompt && pdfSafeText(q.questionPrompt),
+    explanation: q.explanation && pdfSafeText(q.explanation),
+    topicName: q.topicName && pdfSafeText(q.topicName),
+    alternatives: q.alternatives.map((a) => ({
+      ...a,
+      text: pdfSafeText(a.text),
+    })),
+  };
+}
 
 /**
  * `openImage` existe no PDFKit mas não em @types/pdfkit — é como se descobre o
@@ -163,21 +345,35 @@ export function resolveImagePath(
   return existsSync(alvo) ? alvo : null;
 }
 
+/** Topo e pé da área de questões de uma página. */
+const COLUMN_TOP = MARGIN.top + HEADER_H;
+const COLUMN_BOTTOM = PAGE.height - MARGIN.bottom;
+
 /** Gerencia colunas, quebras de página e o cursor vertical. */
 class Layout {
-  readonly top = MARGIN.top + HEADER_H;
-  readonly bottom = PAGE.height - MARGIN.bottom;
+  readonly top: number;
+  readonly bottom: number;
+  /** Altura útil de uma coluna inteira — a da página real, também na medição. */
+  readonly columnHeight = COLUMN_BOTTOM - COLUMN_TOP;
   readonly columnWidth: number;
   column = 0;
   y: number;
 
+  /**
+   * `measuring`: coluna sem fim, para medir a altura de uma questão inteira
+   * antes de desenhá-la (ver `measureQuestion`). Nela nada muda de coluna e as
+   * imagens não são embutidas.
+   */
   constructor(
     private readonly doc: Doc,
     readonly columns: number,
+    readonly measuring = false,
   ) {
     const util = PAGE.width - MARGIN.left - MARGIN.right;
     this.columnWidth =
       columns === 1 ? util : (util - GUTTER * (columns - 1)) / columns;
+    this.top = measuring ? 0 : COLUMN_TOP;
+    this.bottom = measuring ? Number.POSITIVE_INFINITY : COLUMN_BOTTOM;
     this.y = this.top;
   }
 
@@ -637,12 +833,18 @@ function drawFlowingText(
   while (restante && guarda++ < 200) {
     doc.font(font).fontSize(size);
     const opcoes = { width: layout.columnWidth, align, lineGap };
-    const alturaTotal = doc.heightOfString(restante, opcoes);
+    const alturaTotal = textHeight(doc, restante, opcoes, font);
 
     if (alturaTotal <= layout.available) {
-      doc
-        .fillColor(color)
-        .text(restante, layout.x, layout.y, { ...opcoes, height: alturaTotal });
+      doc.fillColor(color);
+      putText(
+        doc,
+        restante,
+        layout.x,
+        layout.y,
+        { ...opcoes, height: alturaTotal },
+        font,
+      );
       layout.y += alturaTotal + spacingAfter;
       return;
     }
@@ -663,7 +865,7 @@ function drawFlowingText(
     while (lo <= hi) {
       const meio = Math.floor((lo + hi) / 2);
       const pedaco = palavras.slice(0, meio).join(' ');
-      if (doc.heightOfString(pedaco, opcoes) <= layout.available) {
+      if (textHeight(doc, pedaco, opcoes, font) <= layout.available) {
         melhor = meio;
         lo = meio + 1;
       } else {
@@ -675,10 +877,9 @@ function drawFlowingText(
       continue;
     }
     const pedaco = palavras.slice(0, melhor).join(' ');
-    const h = doc.heightOfString(pedaco, opcoes);
-    doc
-      .fillColor(color)
-      .text(pedaco, layout.x, layout.y, { ...opcoes, height: h });
+    const h = textHeight(doc, pedaco, opcoes, font);
+    doc.fillColor(color);
+    putText(doc, pedaco, layout.x, layout.y, { ...opcoes, height: h }, font);
     restante = palavras.slice(melhor).join(' ');
     layout.next();
   }
@@ -705,7 +906,7 @@ function drawImage(
     try {
       const img = imageSize(doc, caminho);
       const escala = Math.min(1, maxW / img.width);
-      const maxH = layout.bottom - layout.top;
+      const maxH = layout.columnHeight;
       let w = img.width * escala;
       let h = img.height * escala;
       if (h > maxH) {
@@ -714,10 +915,12 @@ function drawImage(
         h *= r;
       }
       layout.ensure(h + 6);
-      doc.image(caminho, layout.x + (layout.columnWidth - w) / 2, layout.y, {
-        width: w,
-        height: h,
-      });
+      if (!layout.measuring) {
+        doc.image(caminho, layout.x + (layout.columnWidth - w) / 2, layout.y, {
+          width: w,
+          height: h,
+        });
+      }
       layout.y += h + 6;
       return;
     } catch {
@@ -756,7 +959,7 @@ function drawTable(
     const fonte = r === 0 ? FONT.bold : FONT.body;
     doc.font(fonte);
     const alturas = linha.map((c) =>
-      doc.heightOfString(c, { width: cellW - 6 }),
+      textHeight(doc, c, { width: cellW - 6 }, fonte),
     );
     const h = Math.max(12, ...alturas) + 4;
     layout.ensure(h);
@@ -764,13 +967,15 @@ function drawTable(
       doc.rect(layout.x, layout.y, layout.columnWidth, h).fill(theme.surface);
     }
     for (let c = 0; c < linha.length; c++) {
-      doc
-        .font(fonte)
-        .fontSize(7.8)
-        .fillColor(theme.fg)
-        .text(linha[c], layout.x + c * cellW + 3, layout.y + 2.5, {
-          width: cellW - 6,
-        });
+      doc.font(fonte).fontSize(7.8).fillColor(theme.fg);
+      putText(
+        doc,
+        linha[c],
+        layout.x + c * cellW + 3,
+        layout.y + 2.5,
+        { width: cellW - 6 },
+        fonte,
+      );
     }
     doc
       .moveTo(layout.x, layout.y + h)
@@ -784,7 +989,10 @@ function drawTable(
 
 /**
  * Altura necessária para o começo do enunciado caber junto do cabeçalho.
- * Texto pede três linhas (o bastante para não ficar uma linha órfã); imagem
+ * Só vale para a questão que não cabe numa coluna inteira (a que cabe é
+ * medida inteira, em `measureQuestion`). Texto pede as mesmas três linhas que
+ * `drawFlowingText` exige antes de partir um parágrafo — pedir menos deixava
+ * "QUESTÃO 03" sozinha no pé da coluna, com o texto todo na seguinte. Imagem
  * pede a altura real, porque ela não se parte.
  */
 function firstBlockHeight(
@@ -801,13 +1009,75 @@ function firstBlockHeight(
     try {
       const img = imageSize(doc, caminho);
       const escala = Math.min(1, layout.columnWidth / img.width);
-      return Math.min(img.height * escala, layout.bottom - layout.top) + 8;
+      return Math.min(img.height * escala, layout.columnHeight) + 8;
     } catch {
       return 30;
     }
   }
-  doc.font(FONT.body).fontSize(SIZE.statement);
-  return Math.min(24, doc.currentLineHeight(true) * 3);
+  const tamanho =
+    bloco.kind === 'paragraph' && bloco.style === 'heading'
+      ? SIZE.statement + 0.8
+      : SIZE.statement;
+  doc.font(FONT.body).fontSize(tamanho);
+  return (doc.currentLineHeight(true) + 1.8) * 3 + 1;
+}
+
+/** Uma questão inteira: cabeçalho, enunciado, comando e alternativas. */
+function drawQuestion(
+  doc: Doc,
+  layout: Layout,
+  q: PdfQuestion,
+  blocos: PdfBlock[],
+  theme: PdfTheme,
+  opts: PdfOptions,
+): void {
+  drawQuestionLabel(doc, layout, q, theme);
+  drawBlocks(doc, layout, blocos, theme, opts);
+  if (q.questionPrompt?.trim()) {
+    drawFlowingText(doc, layout, q.questionPrompt, {
+      font: FONT.bold,
+      size: SIZE.statement,
+      color: theme.fg,
+    });
+  }
+  layout.y += 2;
+  drawAlternatives(doc, layout, q, theme, opts);
+}
+
+/**
+ * Folga sobre a altura medida: a alternativa curta pede 2 pt a mais do que
+ * ocupa (`ensure(h + 6)` contra `h + 4`), e sem a folga a última alternativa
+ * podia pular sozinha para a coluna seguinte.
+ */
+const MEASURE_SLACK = 2;
+
+/**
+ * Altura da questão inteira, sem quebra nenhuma. Desenha a questão de verdade
+ * num documento de rascunho, com a mesma largura de coluna e uma coluna sem
+ * fim: assim a medida usa exatamente o código que vai desenhar, e não uma
+ * conta paralela que pode divergir dele.
+ */
+function measureQuestion(
+  rascunho: Doc,
+  colunas: number,
+  q: PdfQuestion,
+  blocos: PdfBlock[],
+  theme: PdfTheme,
+  opts: PdfOptions,
+): number {
+  const medida = new Layout(rascunho, colunas, true);
+  drawQuestion(rascunho, medida, q, blocos, theme, opts);
+  return medida.y - medida.top + MEASURE_SLACK;
+}
+
+/** Documento de rascunho para `measureQuestion`; nunca é finalizado. */
+function measuringDoc(): Doc {
+  const doc = new PDFDocument({ size: 'A4', margins: { ...MARGIN } });
+  registerFonts(doc);
+  // Sem pé de página: o texto medido pode descer além da folha sem que o
+  // PDFKit abra outra página no meio da medida.
+  doc.page.margins.bottom = -1e7;
+  return doc;
 }
 
 function drawBlocks(
@@ -882,7 +1152,7 @@ function drawAlternatives(
     const largura = layout.columnWidth - recuo;
     doc.font(FONT.body).fontSize(SIZE.alternative);
     const h = texto
-      ? doc.heightOfString(texto, { width: largura, lineGap: 1 })
+      ? textHeight(doc, texto, { width: largura, lineGap: 1 }, FONT.body)
       : 0;
 
     // A letra e a primeira linha não se separam: garante espaço para as duas.
@@ -906,15 +1176,15 @@ function drawAlternatives(
     if (texto) {
       const cabe = h <= layout.available;
       if (cabe) {
-        doc
-          .font(FONT.body)
-          .fontSize(SIZE.alternative)
-          .fillColor(theme.fg)
-          .text(texto, layout.x + recuo, topo, {
-            width: largura,
-            lineGap: 1,
-            height: h,
-          });
+        doc.font(FONT.body).fontSize(SIZE.alternative).fillColor(theme.fg);
+        putText(
+          doc,
+          texto,
+          layout.x + recuo,
+          topo,
+          { width: largura, lineGap: 1, height: h },
+          FONT.body,
+        );
         layout.y = topo + h + 4;
       } else {
         // Alternativa longa demais para o resto da coluna: a letra já foi
@@ -946,11 +1216,17 @@ function drawFlowingTextIndented(
   let guarda = 0;
   while (restante && guarda++ < 100) {
     doc.font(FONT.body).fontSize(SIZE.alternative);
-    const h = doc.heightOfString(restante, opcoes);
+    const h = textHeight(doc, restante, opcoes, FONT.body);
     if (h <= layout.available) {
-      doc
-        .fillColor(theme.fg)
-        .text(restante, layout.x + recuo, layout.y, { ...opcoes, height: h });
+      doc.fillColor(theme.fg);
+      putText(
+        doc,
+        restante,
+        layout.x + recuo,
+        layout.y,
+        { ...opcoes, height: h },
+        FONT.body,
+      );
       layout.y += h + 4;
       return;
     }
@@ -958,7 +1234,7 @@ function drawFlowingTextIndented(
     let melhor = 0;
     for (let i = 1; i <= palavras.length; i++) {
       const pedaco = palavras.slice(0, i).join(' ');
-      if (doc.heightOfString(pedaco, opcoes) > layout.available) break;
+      if (textHeight(doc, pedaco, opcoes, FONT.body) > layout.available) break;
       melhor = i;
     }
     if (melhor === 0) {
@@ -966,10 +1242,15 @@ function drawFlowingTextIndented(
       continue;
     }
     const pedaco = palavras.slice(0, melhor).join(' ');
-    doc.fillColor(theme.fg).text(pedaco, layout.x + recuo, layout.y, {
-      ...opcoes,
-      height: doc.heightOfString(pedaco, opcoes),
-    });
+    doc.fillColor(theme.fg);
+    putText(
+      doc,
+      pedaco,
+      layout.x + recuo,
+      layout.y,
+      { ...opcoes, height: textHeight(doc, pedaco, opcoes, FONT.body) },
+      FONT.body,
+    );
     restante = palavras.slice(melhor).join(' ');
     layout.next();
   }
@@ -1253,11 +1534,34 @@ function drawColumnRules(
 
 // ------------------------------------------------------------------ público
 
+/** Onde cada questão começou e terminou (página do documento, coluna). */
+export interface QuestionPlacement {
+  number: number;
+  start: { page: number; column: number };
+  end: { page: number; column: number };
+}
+
 /** Cria o documento e desenha o caderno inteiro. */
 export function renderSimuladoPdf(
   questions: PdfQuestion[],
   options: PdfOptions,
 ): Doc {
+  return drawSimulado(questions, options).doc;
+}
+
+/** Posição de cada questão no caderno — é o que o teste do layout confere. */
+export function questionPlacements(
+  questions: PdfQuestion[],
+  options: PdfOptions,
+): QuestionPlacement[] {
+  return drawSimulado(questions, options).placements;
+}
+
+function drawSimulado(
+  originais: PdfQuestion[],
+  options: PdfOptions,
+): { doc: Doc; placements: QuestionPlacement[] } {
+  const questions = originais.map(sanitizeQuestion);
   const theme =
     typeof options.theme === 'object' && options.theme
       ? options.theme
@@ -1276,6 +1580,7 @@ export function renderSimuladoPdf(
       Creator: 'OpENEM',
     },
   });
+  registerFonts(doc);
   doc.page.margins.bottom = 0;
 
   if (comCapa) {
@@ -1288,28 +1593,40 @@ export function renderSimuladoPdf(
   const paginasDeQuestao: number[] = [doc.bufferedPageRange().count - 1];
   const layout = new Layout(doc, colunas);
   let paginaAtual = paginasDeQuestao[0];
+  const placements: QuestionPlacement[] = [];
+  const rascunho = measuringDoc();
+  const pagina = () => doc.bufferedPageRange().count - 1;
 
   for (const q of questions) {
-    // Cabeçalho e começo do enunciado ficam juntos: "QUESTÃO 07" sozinha no pé
-    // da coluna é o defeito mais visível de um caderno gerado. Por isso o
-    // primeiro bloco é MEDIDO antes — uma questão que abre com imagem precisa
-    // de muito mais espaço que uma que abre com texto.
+    // A questão é medida inteira antes de ser desenhada. Se cabe numa coluna
+    // e não cabe no que sobrou desta, começa na seguinte: questão partida
+    // entre colunas (ou páginas) obriga o aluno a ir e voltar no meio da
+    // leitura. Só a que é maior que uma coluna inteira atravessa colunas — e
+    // aí o cabeçalho vai junto do começo do enunciado, nunca sozinho no pé.
     const blocos = toPdfBlocks(q.statement);
-    layout.ensure(20 + firstBlockHeight(doc, layout, blocos, options));
-    drawQuestionLabel(doc, layout, q, theme);
-    drawBlocks(doc, layout, blocos, theme, options);
-    if (q.questionPrompt?.trim()) {
-      drawFlowingText(doc, layout, q.questionPrompt, {
-        font: FONT.bold,
-        size: SIZE.statement,
-        color: theme.fg,
-      });
+    const altura = measureQuestion(
+      rascunho,
+      colunas,
+      q,
+      blocos,
+      theme,
+      options,
+    );
+    if (altura <= layout.columnHeight) {
+      layout.ensure(altura);
+    } else {
+      layout.ensure(20 + firstBlockHeight(doc, layout, blocos, options));
     }
-    layout.y += 2;
-    drawAlternatives(doc, layout, q, theme, options);
+    const inicio = { page: pagina(), column: layout.column };
+    drawQuestion(doc, layout, q, blocos, theme, options);
+    placements.push({
+      number: q.number,
+      start: inicio,
+      end: { page: pagina(), column: layout.column },
+    });
     layout.y += 10;
 
-    const atual = doc.bufferedPageRange().count - 1;
+    const atual = pagina();
     if (atual !== paginaAtual) {
       for (let p = paginaAtual + 1; p <= atual; p++) paginasDeQuestao.push(p);
       paginaAtual = atual;
@@ -1323,7 +1640,7 @@ export function renderSimuladoPdf(
 
   drawColumnRules(doc, theme, paginasDeQuestao, colunas);
   decoratePages(doc, theme, options, comCapa);
-  return doc;
+  return { doc, placements };
 }
 
 function resolveThemeWithBrand(options: PdfOptions): PdfTheme {
