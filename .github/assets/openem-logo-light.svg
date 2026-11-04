@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -73 421 98" width="421" height="98" role="img" aria-label="OpENEM">
-  <!-- Logo por extenso do OpENEM, igual ao Wordmark do site (openem_site/src/components/Wordmark.tsx): Bricolage Grotesque ExtraBold (OFL) em caminhos, com o "ENEM" no gradiente --brand -> --brand-2 do tema default. -->
+  <!-- Logo por extenso do OpENEM, igual ao Wordmark do site (openem_site/src/components/Wordmark.tsx): Bricolage Grotesque ExtraBold (OFL) em caminhos, com o "ENEM" no gradiente da marca (brand para brand-2) do tema default. -->
   <title>OpENEM</title>
   <defs>
     <linearGradient id="marca" gradientUnits="userSpaceOnUse" x1="134.1" y1="0" x2="412.8" y2="0">
