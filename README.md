@@ -1,6 +1,21 @@
-# OpENEM
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/openem-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/openem-logo-light.svg">
+    <img alt="OpENEM" src=".github/assets/openem-logo-light.svg" width="320">
+  </picture>
+</h1>
 
-[Read in English](.github/docs/README-EN.md)
+<p align="center">
+  <a href="https://github.com/migueldsants/OpENEM/blob/main/LICENSE"><img alt="Licença AGPL-3.0" src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-22c55e?style=flat-square"></a>
+  <a href="https://github.com/migueldsants/OpENEM/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/migueldsants/OpENEM/ci.yml?branch=main&amp;style=flat-square&amp;label=CI"></a>
+  <a href="https://github.com/migueldsants/OpENEM/commits/main"><img alt="Último commit" src="https://img.shields.io/github/last-commit/migueldsants/OpENEM/main?style=flat-square&amp;label=%C3%BAltimo%20commit&amp;color=0891b2"></a>
+  <a href="https://github.com/migueldsants/OpENEM/stargazers"><img alt="Estrelas no GitHub" src="https://img.shields.io/github/stars/migueldsants/OpENEM?style=flat-square&amp;label=estrelas&amp;color=f59e0b"></a>
+  <a href="https://openem.tech"><img alt="Site: openem.tech" src="https://img.shields.io/badge/site-openem.tech-d91748?style=flat-square"></a>
+  <a href="https://openem.tech/docs/"><img alt="Documentação" src="https://img.shields.io/badge/documenta%C3%A7%C3%A3o-openem.tech%2Fdocs-7C3AED?style=flat-square"></a>
+</p>
+
+<p align="center"><a href=".github/docs/README-EN.md">Read in English</a></p>
 
 OpENEM é uma plataforma gratuita e de código aberto desenvolvida para revolucionar a preparação de estudantes para o ENEM. Oferecemos um ambiente completo de estudos com questões comentadas, simulados realistas e ferramentas inteligentes de acompanhamento de desempenho.
 
