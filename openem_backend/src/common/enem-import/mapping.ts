@@ -333,8 +333,9 @@ export const MEDIA_PREFIX = '/media/enem';
  * usou no `AppState`.
  *
  * 1: `removeWatermark` (marca d'água da reaplicação de 2022).
+ * 2: `restorePowersOfTen` (expoente achatado: "4,0 × 105" → "4,0 × 10⁵").
  */
-export const ENEM_MAPPING_VERSION = 1;
+export const ENEM_MAPPING_VERSION = 2;
 
 const ENEM_DEV_IMAGE =
   /^https?:\/\/(?:www\.)?enem\.dev\/([^/]+)\/questions\/([^/]+)\/(.+)$/;
@@ -415,10 +416,12 @@ export function mapQuestion(
   const { alternatives, promotedFiles } = mapAlternatives(raw);
 
   const contexto = removeImages(
-    removeWatermark(raw.context ?? ''),
+    restorePowersOfTen(removeWatermark(raw.context ?? '')),
     promotedFiles,
   );
-  const comando = removeWatermark(raw.alternativesIntroduction ?? '');
+  const comando = restorePowersOfTen(
+    removeWatermark(raw.alternativesIntroduction ?? ''),
+  );
   if (!contexto && !comando) {
     throw new QuestionValidationError('questão sem enunciado');
   }
@@ -464,6 +467,48 @@ export function mapQuestion(
  */
 export function removeWatermark(text: string): string {
   return text.replace(/(?:\bENEM\s*\d{4}\b[ \t]*){3,}/g, '').trim();
+}
+
+const SOBRESCRITO: Record<string, string> = {
+  '0': '⁰',
+  '1': '¹',
+  '2': '²',
+  '3': '³',
+  '4': '⁴',
+  '5': '⁵',
+  '6': '⁶',
+  '7': '⁷',
+  '8': '⁸',
+  '9': '⁹',
+};
+
+const sobrescrito = (digitos: string) =>
+  [...digitos].map((d) => SOBRESCRITO[d]).join('');
+
+/**
+ * Devolve o expoente que a extração do PDF achatou na notação científica:
+ * "4,0 × 105" era 4,0 × 10⁵ e "5 × 10–1" era 5 × 10⁻¹ (o app e o caderno
+ * mostravam "105" e "10–1"). O banco já escreve as potências certas com
+ * algarismos sobrescritos (× 10⁹), e o achatado vira o mesmo formato.
+ *
+ * Só conta como potência o "10" colado a um número pelo sinal de vezes (× ou
+ * x) — "50 cm × 100 cm" não tem número antes do sinal e fica. O expoente tem
+ * um ou dois algarismos e não começa com zero, a não ser o próprio 0
+ * ("2,0×100 mol" é 2,0 × 10⁰): assim "× 1000" fica. Seguido de "%" ou "=" é
+ * conta ("0,25 × 100 = 25"), e fica. O negativo só vale com o traço colado
+ * ao 10 ("10–3"); com espaços ("10 - 3") é subtração.
+ *
+ * No banco de 2026 todas as ocorrências conferidas são potências (inclusive
+ * "24 × 105" da 2024R-154, que pede o valor "como uma potência de base 10").
+ * Potência de outra base achatada ("263 × 94" da 2017R-149, que é 26³ × 9⁴)
+ * não tem como ser reconhecida e precisa ser consertada no dataset.
+ */
+export function restorePowersOfTen(text: string): string {
+  return text.replace(
+    /(\d\s?[×x]\s?)10(?:([-–−])(\d{1,2})|(0|[1-9]\d?))(?![\d,.]?\d)(?!\s*[%=])/g,
+    (_todo, antes: string, menos: string, negativo: string, positivo: string) =>
+      `${antes}10${menos ? '⁻' + sobrescrito(negativo) : sobrescrito(positivo)}`,
+  );
 }
 
 /**
@@ -533,7 +578,7 @@ function mapAlternatives(raw: RawQuestion): {
   const promotedFiles: string[] = [];
 
   const alternatives = raw.alternatives.map((a, i) => {
-    const texto = (a.text ?? '').trim();
+    const texto = restorePowersOfTen((a.text ?? '').trim());
     let arquivo = a.file;
     if (!texto && !arquivo && fila.length > 0) {
       arquivo = fila.shift()!;

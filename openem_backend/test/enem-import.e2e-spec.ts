@@ -119,6 +119,38 @@ describe('importEnem (e2e)', () => {
     expect(depois).toBe(antes);
   });
 
+  it('reimportar com texto novo atualiza a alternativa sem trocar o id', async () => {
+    // Simula uma alternativa gravada por um mapeamento antigo (texto
+    // diferente do que o mapeamento atual produz). Recriar a alternativa
+    // orfanaria as respostas: Answer.chosenId não tem chave estrangeira.
+    const q = await prisma.question.findUniqueOrThrow({
+      where: { externalId: `enem:${SLUG}:10` },
+      include: { alternatives: { orderBy: { position: 'asc' } } },
+    });
+    const alvo = q.alternatives[0];
+    await prisma.alternative.update({
+      where: { id: alvo.id },
+      data: { text: `${alvo.text} (texto antigo)` },
+    });
+
+    const report = await importEnem(prisma, {
+      datasetDir,
+      exams: [SLUG],
+      log: () => {},
+    });
+
+    expect(report.alternativesRebuilt).toBe(0);
+    expect(report.alternativesUpdated).toBe(1);
+    const depois = await prisma.question.findUniqueOrThrow({
+      where: { externalId: `enem:${SLUG}:10` },
+      include: { alternatives: { orderBy: { position: 'asc' } } },
+    });
+    expect(depois.alternatives.map((a) => a.id)).toEqual(
+      q.alternatives.map((a) => a.id),
+    );
+    expect(depois.alternatives[0].text).toBe(alvo.text);
+  });
+
   it('reimportar preserva o comentário e a classificação já feitos', async () => {
     // Simula o trabalho posterior ao import: comentário gerado e assunto
     // classificado. Uma reimportação não pode desfazer nenhum dos dois.

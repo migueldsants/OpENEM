@@ -17,6 +17,7 @@ import {
   QuestionValidationError,
   RawQuestion,
   removeWatermark,
+  restorePowersOfTen,
   rewriteImageUrl,
   rewriteImageUrls,
 } from './mapping';
@@ -188,6 +189,91 @@ describe('mapQuestion', () => {
     expect(removeWatermark('No ENEM 2022 e no ENEM 2023, a nota subiu.')).toBe(
       'No ENEM 2022 e no ENEM 2023, a nota subiu.',
     );
+  });
+
+  describe('restorePowersOfTen', () => {
+    it('devolve o expoente achatado da notação científica', () => {
+      // ENEM-2024-135: o caderno tem 4,0 × 10⁵ toneladas.
+      expect(restorePowersOfTen('um total de 4,0 × 105 toneladas')).toBe(
+        'um total de 4,0 × 10⁵ toneladas',
+      );
+      expect(restorePowersOfTen('7,5 × 1021')).toBe('7,5 × 10²¹');
+      expect(restorePowersOfTen('6 × 1023 mol⁻¹')).toBe('6 × 10²³ mol⁻¹');
+      expect(restorePowersOfTen('1,5 x 102')).toBe('1,5 x 10²');
+      expect(restorePowersOfTen('5x105')).toBe('5x10⁵');
+      expect(restorePowersOfTen('2,0×100  mol.')).toBe('2,0×10⁰  mol.');
+      expect(restorePowersOfTen('fim: 3,0 × 108.')).toBe('fim: 3,0 × 10⁸.');
+    });
+
+    it('expoente negativo só com o traço colado ao 10', () => {
+      expect(restorePowersOfTen('5 × 10–1 T')).toBe('5 × 10⁻¹ T');
+      expect(restorePowersOfTen('4,5x10-26')).toBe('4,5x10⁻²⁶');
+      expect(restorePowersOfTen('1,6 × 10−19 C')).toBe('1,6 × 10⁻¹⁹ C');
+      // Com espaços é subtração.
+      expect(restorePowersOfTen('5 × 10 - 3 = 47')).toBe('5 × 10 - 3 = 47');
+    });
+
+    it('não mexe no que não é potência', () => {
+      for (const texto of [
+        'quadros de 50 cm × 100 cm', // sem número colado ao sinal
+        'custa 3 × 1000 reais', // 1000 não é 10 seguido de expoente
+        'vale 2 × 105,5 metros', // número decimal
+        'porcentagem: 0,25 × 100 = 25', // conta
+        'são 0,4 × 100% do total',
+        'x 105 e 10⁵', // "x" sem número antes
+        'já certo: 4,0 × 10⁵',
+      ]) {
+        expect(restorePowersOfTen(texto)).toBe(texto);
+      }
+    });
+
+    it('vale no enunciado, no comando e nas alternativas', () => {
+      const q = mapQuestion(
+        raw({
+          context: 'Total de 4,0 × 105 toneladas.',
+          alternativesIntroduction: 'Use 6 × 1023 mol.',
+          alternatives: [
+            {
+              letter: 'A',
+              text: '1,0 × 104 ton',
+              file: null,
+              isCorrect: false,
+            },
+            {
+              letter: 'B',
+              text: '3,9 × 105 ton',
+              file: null,
+              isCorrect: false,
+            },
+            {
+              letter: 'C',
+              text: '5,0 × 105 ton',
+              file: null,
+              isCorrect: false,
+            },
+            { letter: 'D', text: '1,9 × 106 ton', file: null, isCorrect: true },
+            {
+              letter: 'E',
+              text: '2,0 × 107 ton',
+              file: null,
+              isCorrect: false,
+            },
+          ],
+          correctAlternative: 'D',
+        }),
+        '2024',
+        '135',
+      );
+      expect(q.statement).toBe('Total de 4,0 × 10⁵ toneladas.');
+      expect(q.questionPrompt).toBe('Use 6 × 10²³ mol.');
+      expect(q.alternatives.map((a) => a.text)).toEqual([
+        '1,0 × 10⁴ ton',
+        '3,9 × 10⁵ ton',
+        '5,0 × 10⁵ ton',
+        '1,9 × 10⁶ ton',
+        '2,0 × 10⁷ ton',
+      ]);
+    });
   });
 
   it('a área vem da numeração oficial, com o nome da taxonomia', () => {

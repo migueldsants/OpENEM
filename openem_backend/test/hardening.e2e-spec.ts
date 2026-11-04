@@ -294,7 +294,9 @@ describe('Hardening (e2e)', () => {
     } finally {
       await throttleApp.close();
     }
-  });
+    // Sobe um app inteiro e faz até 32 logins com argon2: no runner mais lento
+    // do CI passava dos 5 s padrão do Jest (falhou duas vezes no PR #119).
+  }, 30_000);
 
   it('GET /health permanece acessível mesmo com throttle', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);

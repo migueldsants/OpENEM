@@ -13,7 +13,9 @@
  * ATENÇÃO ao reimportar: `Answer.chosenId` guarda o id da alternativa mas NÃO
  * tem chave estrangeira. Recriar as alternativas de uma questão orfanaria as
  * respostas já dadas pelos alunos, em silêncio e sem erro de integridade. Por
- * isso as alternativas só são recriadas quando realmente mudaram.
+ * isso texto, imagem e gabarito novos são atualizados no lugar, mantendo o id,
+ * e as alternativas só são recriadas quando a estrutura muda (quantidade ou
+ * letras): ver `planAlternativesSync`.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -44,6 +46,7 @@ import {
   RawExam,
   RawQuestion,
 } from '../src/common/enem-import/mapping';
+import { planAlternativesSync } from '../src/common/enem-import/alternatives-sync';
 
 const TARBALL_URL =
   'https://codeload.github.com/migueldsants/updated-enem-api/tar.gz/refs/heads/main';
@@ -70,6 +73,8 @@ export interface ImportReport {
   updated: number;
   skipped: number;
   alternativesRebuilt: number;
+  /** Questões com alternativas atualizadas no lugar (ids mantidos). */
+  alternativesUpdated: number;
   /** Questões cuja área veio da numeração por o rótulo do dataset estar errado. */
   areasCorrected: number;
   /** Questões do ENEM até 2008 com área classificada pelo OpENEM (não oficial). */
@@ -154,23 +159,6 @@ export function listExamSlugs(datasetDir: string): string[] {
     .sort();
 }
 
-/** Assinatura das alternativas, para decidir se precisam ser recriadas. */
-function fingerprint(
-  alts: {
-    letter: string | null;
-    text: string;
-    imageUrl: string | null;
-    isCorrect: boolean;
-    position: number;
-  }[],
-): string {
-  return JSON.stringify(
-    [...alts]
-      .sort((a, b) => a.position - b.position)
-      .map((a) => [a.letter, a.text, a.imageUrl, a.isCorrect, a.position]),
-  );
-}
-
 /** Catálogo de área/matéria/assunto resolvido uma vez, não por questão. */
 async function carregarTaxonomia(prisma: PrismaClient) {
   const areas = await prisma.subjectArea.findMany({
@@ -240,6 +228,7 @@ export async function importEnem(
     updated: 0,
     skipped: 0,
     alternativesRebuilt: 0,
+    alternativesUpdated: 0,
     imagesCopied: 0,
     unmappedImages: 0,
     classified: 0,
@@ -356,6 +345,7 @@ export async function importEnem(
           topic: { select: { subject: { select: { subjectAreaId: true } } } },
           alternatives: {
             select: {
+              id: true,
               letter: true,
               text: true,
               imageUrl: true,
@@ -416,10 +406,21 @@ export async function importEnem(
               : {}),
           },
         });
-        if (
-          fingerprint(existente.alternatives) !==
-          fingerprint(questao.alternatives)
-        ) {
+        const plano = planAlternativesSync(
+          existente.alternatives,
+          questao.alternatives,
+        );
+        if (plano.kind === 'update') {
+          // Mesmas alternativas com outro texto/gabarito: atualiza no lugar,
+          // e o id (que as respostas guardam) continua valendo.
+          for (const u of plano.updates) {
+            await prisma.alternative.update({
+              where: { id: u.id },
+              data: u.data,
+            });
+          }
+          report.alternativesUpdated += 1;
+        } else if (plano.kind === 'rebuild') {
           await prisma.alternative.deleteMany({
             where: { questionId: existente.id },
           });
@@ -548,6 +549,11 @@ export function printReport(
   }
   if (report.unmappedImages) {
     log(`imagens não resolvidas: ${report.unmappedImages}`);
+  }
+  if (report.alternativesUpdated) {
+    log(
+      `alternativas atualizadas: ${report.alternativesUpdated} (ids mantidos)`,
+    );
   }
   if (report.alternativesRebuilt) {
     log(`alternativas recriadas: ${report.alternativesRebuilt}`);
