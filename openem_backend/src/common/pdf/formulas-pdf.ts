@@ -21,6 +21,7 @@ import PDFDocument from 'pdfkit';
 import SVGtoPDF from 'svg-to-pdfkit';
 import { MathSvg, texToSvg } from './math-svg';
 import { contrastInk, PdfTheme, resolveTheme, themeWithBrand } from './themes';
+import { loadWoffAsSfnt } from './woff-to-sfnt';
 
 export interface FormulaPdfSymbol {
   symbol: string;
@@ -100,7 +101,8 @@ function registerFonts(doc: Doc): void {
     'Inter (web)',
   );
   // WOFF (e não WOFF2): o fontkit do PDFKit quebra ao recortar a Inter a
-  // partir do WOFF2.
+  // partir do WOFF2. E já convertido para TTF (`woff-to-sfnt.ts`): lido como
+  // WOFF, o fontkit descomprimia as tabelas a cada palavra medida.
   const arquivo: Record<string, string> = {
     [FONT.regular]: 'Inter-Regular.woff',
     [FONT.medium]: 'Inter-Medium.woff',
@@ -109,7 +111,7 @@ function registerFonts(doc: Doc): void {
     [FONT.extrabold]: 'Inter-ExtraBold.woff',
   };
   for (const [nome, file] of Object.entries(arquivo)) {
-    doc.registerFont(nome, join(pasta, file));
+    doc.registerFont(nome, loadWoffAsSfnt(join(pasta, file)));
   }
 }
 

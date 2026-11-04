@@ -8,6 +8,7 @@ import {
   formatDuration,
   INSTRUCTIONS,
   PdfQuestion,
+  questionPlacements,
   resolveImagePath,
   shortArea,
   simuladoPdfBuffer,
@@ -248,6 +249,71 @@ describe('simuladoPdfBuffer', () => {
       explanations: true,
     });
     expect(buf.subarray(0, 5).toString()).toBe('%PDF-');
+  });
+
+  it('questão que cabe numa coluna nunca é partida entre colunas ou páginas', () => {
+    // Tamanhos variados, como num simulado real: as curtas e as médias se
+    // alternam e o fim da coluna cai no meio de várias delas.
+    const tamanhos = [6, 14, 9, 11, 4, 12, 13, 7, 10, 5, 15, 8, 3, 12, 9, 6];
+    const questoes = tamanhos.map((n, i) =>
+      question({
+        number: i + 1,
+        statement: Array.from(
+          { length: n },
+          (_, k) => `Frase ${k} do enunciado, com algumas palavras a mais.`,
+        ).join(' '),
+      }),
+    );
+    for (const twoColumns of [true, false]) {
+      const posicoes = questionPlacements(questoes, {
+        title: 'Sem cortes',
+        twoColumns,
+      });
+      expect(posicoes).toHaveLength(questoes.length);
+      // O teste só vale se o caderno ocupa mais de uma página.
+      expect(posicoes.at(-1)!.end.page).toBeGreaterThan(posicoes[0].start.page);
+      for (const p of posicoes) expect(p.end).toEqual(p.start);
+    }
+  });
+
+  it('questão maior que uma coluna atravessa colunas, e a seguinte vem depois', () => {
+    const longa = question({
+      number: 1,
+      statement: 'Parágrafo longo com bastante texto. '.repeat(260),
+    });
+    const [a, b] = questionPlacements([longa, question({ number: 2 })], {
+      title: 'Longa',
+    });
+    const ordem = (p: { page: number; column: number }) =>
+      p.page * 2 + p.column;
+    expect(ordem(a.end)).toBeGreaterThan(ordem(a.start));
+    // A curta vem logo depois: na mesma coluna, ou na seguinte se não coube.
+    expect(ordem(b.start) - ordem(a.end)).toBeGreaterThanOrEqual(0);
+    expect(ordem(b.start) - ordem(a.end)).toBeLessThanOrEqual(1);
+    expect(b.end).toEqual(b.start);
+  });
+
+  it('embute a Inter e a fonte de símbolos, sem a Helvetica do WinAnsi', async () => {
+    // "mol⁻¹", "→" e "Cr₂O₃" saíam como mol"1, !’ e Cr ‚O ƒ na Helvetica.
+    const quimica = question({
+      statement:
+        'Dados: massas molares (g · mol⁻¹): Cr₂O₃ = 152.\n\n' +
+        '2 HCl (aq) + Ca(OH)₂ (s) → CaCl₂ (aq) + 2 H₂O (l)\n\n' +
+        'Cl₂(g) + 2 H₂O (l) ⇌ HClO (aq) + H₃O⁺ (aq)\n\n' +
+        'Texto com acento decomposto: reação.',
+      alternatives: [
+        { letter: 'A', text: 'C≡N', imageUrl: null, isCorrect: true },
+        { letter: 'B', text: 'C=N', imageUrl: null, isCorrect: false },
+      ],
+    });
+    const buf = await simuladoPdfBuffer([quimica], {
+      title: 'Química',
+      cover: false,
+    });
+    const pdf = buf.toString('latin1');
+    expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+Inter/);
+    expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+MathJax_Main/);
+    expect(pdf).not.toContain('/BaseFont /Helvetica');
   });
 
   it('sem questão nenhuma ainda produz um PDF (capa e avisos)', async () => {
