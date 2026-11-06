@@ -261,6 +261,7 @@ npm run test:e2e    # end-to-end (no Postgres do DATABASE_URL, schema test_e2e)
       <td align="center" valign="top" width="25%"><a href="https://github.com/migueldsants"><img src="https://avatars.githubusercontent.com/u/117553721?s=100&amp;v=4" width="100" alt="Miguel dos Santos Miranda" /><br /><sub><b>Miguel dos Santos Miranda</b></sub></a><br /><sub><a href="https://github.com/migueldsants">@migueldsants</a></sub><br /><sub>Criador e mantenedor</sub></td>
       <td align="center" valign="top" width="25%"><a href="https://github.com/ruggieroromulo"><img src="https://avatars.githubusercontent.com/u/134303575?s=100&amp;v=4" width="100" alt="Rômulo Ruggiero" /><br /><sub><b>Rômulo Ruggiero</b></sub></a><br /><sub><a href="https://github.com/ruggieroromulo">@ruggieroromulo</a></sub></td>
       <td align="center" valign="top" width="25%"><a href="https://claude.com/claude-code"><img src="https://avatars.githubusercontent.com/u/81847?s=100&amp;v=4" width="100" alt="Claude" /><br /><sub><b>Claude</b></sub></a><br /><sub><a href="https://github.com/claude">@claude</a></sub><br /><sub>Assistente de IA (Claude Code): código, testes e documentação</sub></td>
+      <td align="center" valign="top" width="25%"><a href="https://github.com/senamiguel"><img src="https://avatars.githubusercontent.com/u/68573307?s=100&amp;v=4" width="100" alt="Miguel Sena" /><br /><sub><b>Miguel Sena</b></sub></a><br /><sub><a href="https://github.com/senamiguel">@senamiguel</a></sub></td>
     </tr>
   </tbody>
 </table>
