@@ -63,7 +63,10 @@ export const EXPORT_SELECT = {
     },
   },
   weeklyGoals: true,
-  focusSessions: { orderBy: { completedAt: 'asc' } },
+  focusSessions: {
+    where: { completedAt: { not: null } },
+    orderBy: { completedAt: 'asc' },
+  },
   essays: {
     include: {
       prompt: { select: { title: true, theme: true, year: true } },

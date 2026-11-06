@@ -48,7 +48,7 @@ Enquanto houver ações guardadas, a faixa mostra quantas estão pendentes. Quan
 - Entrar na conta ou criar uma.
 - Salvar a avaliação de cada flashcard. Sem conexão, o card não avança.
 - Entregar um simulado e ver o resultado. As questões de um simulado já iniciado continuam na tela, mas imagens que você ainda não abriu podem não aparecer.
-- Registrar um ciclo do Pomodoro. O relógio conta sem internet, mas o ciclo só vira minutos e XP se houver conexão no fim do foco.
+- Registrar um ciclo do Pomodoro. O app abre a sessão no servidor quando você toca em **Focar** e a conclui no fim; o relógio conta sem internet, mas o ciclo só vira minutos e XP se houver conexão no começo e no fim do foco.
 - Gerar PDF de simulado ou de fórmulas, pedir comentário de questão, favoritar, salvar anotações, mudar o Cronograma e usar a Comunidade.
 
 > **Dica:** antes de pegar o ônibus ou ir para um lugar sem sinal, abra com internet as questões ou os temas que quer estudar. Assim eles ficam guardados no aparelho.

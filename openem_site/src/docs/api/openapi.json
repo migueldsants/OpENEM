@@ -2930,16 +2930,16 @@
         ]
       }
     },
-    "/api/v1/pomodoro/sessions": {
+    "/api/v1/pomodoro/sessions/start": {
       "post": {
-        "operationId": "PomodoroController_complete",
+        "operationId": "PomodoroController_start",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteFocusSessionDto"
+                "$ref": "#/components/schemas/StartFocusSessionDto"
               }
             }
           }
@@ -2954,7 +2954,36 @@
             "bearer": []
           }
         ],
-        "summary": "Registra uma sessão de foco concluída com XP proporcional (issue #41)",
+        "summary": "Abre uma sessão de foco no servidor; o relógio passa a contar daqui",
+        "tags": [
+          "pomodoro"
+        ]
+      }
+    },
+    "/api/v1/pomodoro/sessions/{id}/complete": {
+      "post": {
+        "operationId": "PomodoroController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Conclui a sessão depois do tempo real e credita XP proporcional (issue #41)",
         "tags": [
           "pomodoro"
         ]
@@ -4671,18 +4700,14 @@
           "subjectId"
         ]
       },
-      "CompleteFocusSessionDto": {
+      "StartFocusSessionDto": {
         "type": "object",
         "properties": {
           "durationSec": {
             "type": "number",
-            "description": "Duração da sessão em segundos (30s a 4h)",
+            "description": "Duração pretendida da sessão, em segundos (30s a 4h)",
             "minimum": 30,
             "maximum": 14400
-          },
-          "startedAt": {
-            "type": "string",
-            "description": "Momento em que a sessão começou (ISO 8601)"
           },
           "subjectId": {
             "type": "string",
@@ -4690,8 +4715,7 @@
           }
         },
         "required": [
-          "durationSec",
-          "startedAt"
+          "durationSec"
         ]
       },
       "CreateVideoDto": {

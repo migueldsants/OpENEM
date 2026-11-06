@@ -1,17 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   GamificationDelta,
   GamificationService,
 } from '../gamification/gamification.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CompleteFocusSessionDto } from './dto/complete-focus-session.dto';
+import { StartFocusSessionDto } from './dto/start-focus-session.dto';
 
-export interface FocusSessionView {
+/** Folga para o relógio do cliente fechar o ciclo e a requisição chegar. */
+export const FOCUS_COMPLETE_TOLERANCE_MS = 5_000;
+
+export interface StartedFocusSessionView {
   id: string;
   subjectId: string | null;
   subjectName: string | null;
   durationSec: number;
   startedAt: Date;
+}
+
+export interface FocusSessionView extends StartedFocusSessionView {
   completedAt: Date;
 }
 
@@ -22,19 +32,24 @@ export function xpForFocusSession(durationSec: number): number {
 
 @Injectable()
 export class PomodoroService {
+  /** Relógio do servidor; os testes trocam. */
+  now: () => number = Date.now;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
   ) {}
 
   /**
-   * Registra uma sessão de foco concluída (issue #41). O cliente controla o
-   * timer; o servidor valida a duração e credita XP proporcional.
+   * Abre a sessão no servidor. O cliente não decide quando ela começou: o
+   * `startedAt` é gravado aqui, e o `complete` só aceita depois de o tempo
+   * real ter passado. Só existe uma sessão aberta por aluno; começar outra
+   * descarta a anterior (timer órfão de outra aba/aparelho).
    */
-  async complete(
+  async start(
     userId: string,
-    dto: CompleteFocusSessionDto,
-  ): Promise<FocusSessionView & { gamification?: GamificationDelta }> {
+    dto: StartFocusSessionDto,
+  ): Promise<StartedFocusSessionView> {
     if (dto.subjectId) {
       const subject = await this.prisma.subject.findUnique({
         where: { id: dto.subjectId },
@@ -43,45 +58,104 @@ export class PomodoroService {
       if (!subject) throw new NotFoundException('Matéria não encontrada');
     }
 
+    await this.prisma.focusSession.deleteMany({
+      where: { userId, completedAt: null },
+    });
+
     const session = await this.prisma.focusSession.create({
       data: {
         userId,
         subjectId: dto.subjectId ?? null,
         durationSec: dto.durationSec,
-        startedAt: new Date(dto.startedAt),
+        startedAt: new Date(this.now()),
+        completedAt: null,
       },
       include: { subject: { select: { name: true } } },
     });
 
-    const baseXp = xpForFocusSession(dto.durationSec);
+    return this.toStartedView(session);
+  }
+
+  /**
+   * Fecha a sessão aberta depois de conferir o tempo real decorrido e credita
+   * o XP. O `updateMany` com `completedAt: null` garante uso único mesmo com
+   * duas requisições simultâneas.
+   */
+  async complete(
+    userId: string,
+    id: string,
+  ): Promise<FocusSessionView & { gamification?: GamificationDelta }> {
+    const session = await this.prisma.focusSession.findUnique({
+      where: { id },
+      include: { subject: { select: { name: true } } },
+    });
+    if (!session || session.userId !== userId) {
+      throw new NotFoundException('Sessão de foco não encontrada');
+    }
+    if (session.completedAt !== null) {
+      throw new BadRequestException('Sessão de foco já concluída');
+    }
+
+    const agora = new Date(this.now());
+    const decorridoMs = agora.getTime() - session.startedAt.getTime();
+    if (
+      decorridoMs + FOCUS_COMPLETE_TOLERANCE_MS <
+      session.durationSec * 1000
+    ) {
+      throw new BadRequestException(
+        'A sessão ainda não terminou; aguarde o cronômetro.',
+      );
+    }
+
+    const { count } = await this.prisma.focusSession.updateMany({
+      where: { id, userId, completedAt: null },
+      data: { completedAt: agora },
+    });
+    if (count === 0) {
+      throw new BadRequestException('Sessão de foco já concluída');
+    }
+
+    const baseXp = xpForFocusSession(session.durationSec);
     const gamification = await this.gamification.recordActivity(
       userId,
       'STUDY_SESSION',
       baseXp,
-      `Sessão de foco de ${Math.round(dto.durationSec / 60)} min`,
-      new Date(),
+      `Sessão de foco de ${Math.round(session.durationSec / 60)} min`,
+      agora,
       { sessionsDone: 1 },
     );
 
+    return {
+      ...this.toStartedView(session),
+      completedAt: agora,
+      ...(gamification ? { gamification } : {}),
+    };
+  }
+
+  private toStartedView(session: {
+    id: string;
+    subjectId: string | null;
+    subject: { name: string } | null;
+    durationSec: number;
+    startedAt: Date;
+  }): StartedFocusSessionView {
     return {
       id: session.id,
       subjectId: session.subjectId,
       subjectName: session.subject?.name ?? null,
       durationSec: session.durationSec,
       startedAt: session.startedAt,
-      completedAt: session.completedAt,
-      ...(gamification ? { gamification } : {}),
     };
   }
 
   /**
-   * Histórico de sessões do usuário (mais recentes primeiro) com total de
-   * minutos dos últimos N dias.
+   * Histórico de sessões concluídas do usuário (mais recentes primeiro) com
+   * total de minutos dos últimos N dias.
    */
   async history(userId: string, days = 30) {
-    const since = new Date(Date.now() - days * 86_400_000);
+    const since = new Date(this.now() - days * 86_400_000);
     const sessions = await this.prisma.focusSession.findMany({
-      where: { userId, completedAt: { gte: since } },
+      where: { userId, completedAt: { not: null, gte: since } },
       orderBy: { completedAt: 'desc' },
       take: 100,
       include: { subject: { select: { name: true } } },
@@ -91,12 +165,8 @@ export class PomodoroService {
     );
     return {
       sessions: sessions.map((s) => ({
-        id: s.id,
-        subjectId: s.subjectId,
-        subjectName: s.subject?.name ?? null,
-        durationSec: s.durationSec,
-        startedAt: s.startedAt,
-        completedAt: s.completedAt,
+        ...this.toStartedView(s),
+        completedAt: s.completedAt ?? s.startedAt,
       })),
       totalMinutes,
     };
@@ -104,9 +174,9 @@ export class PomodoroService {
 
   /** Minutos por matéria nos últimos N dias — alimenta o gráfico (issue #41). */
   async minutesBySubject(userId: string, days = 30) {
-    const since = new Date(Date.now() - days * 86_400_000);
+    const since = new Date(this.now() - days * 86_400_000);
     const sessions = await this.prisma.focusSession.findMany({
-      where: { userId, completedAt: { gte: since } },
+      where: { userId, completedAt: { not: null, gte: since } },
       select: {
         durationSec: true,
         subject: { select: { id: true, name: true } },
@@ -133,10 +203,13 @@ export class PomodoroService {
 
   /** Resumo para o widget do Pomodoro (meta diária do onboarding). */
   async todayMinutes(userId: string) {
-    const startOfDay = new Date();
+    const startOfDay = new Date(this.now());
     startOfDay.setHours(0, 0, 0, 0);
     const agg = await this.prisma.focusSession.aggregate({
-      where: { userId, completedAt: { gte: startOfDay } },
+      where: {
+        userId,
+        completedAt: { not: null, gte: startOfDay },
+      },
       _sum: { durationSec: true },
     });
     return { minutes: Math.round((agg._sum.durationSec ?? 0) / 60) };

@@ -185,6 +185,7 @@ describe('WeeklyGoalsService (issue #44)', () => {
       expect(focusWhere).toEqual({
         userId: 'u1',
         completedAt: {
+          not: null,
           gte: new Date('2026-08-31T03:00:00Z'),
           lt: new Date('2026-09-07T03:00:00Z'),
         },

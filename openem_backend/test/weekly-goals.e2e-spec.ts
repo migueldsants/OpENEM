@@ -7,10 +7,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
 import { testNickname } from './nickname';
 
 describe('Metas semanais (issue #44, e2e)', () => {
   let app: INestApplication<App>;
+  let prisma: PrismaService;
   let token: string;
 
   const auth = () => ({ Authorization: `Bearer ${token}` });
@@ -36,6 +38,7 @@ describe('Metas semanais (issue #44, e2e)', () => {
       ],
     });
     await app.init();
+    prisma = app.get(PrismaService);
 
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
@@ -183,13 +186,18 @@ describe('Metas semanais (issue #44, e2e)', () => {
       .expect(201);
     expect(goal.body.minutesDone).toBe(0);
 
-    await request(app.getHttpServer())
-      .post('/api/v1/pomodoro/sessions')
+    const focus = await request(app.getHttpServer())
+      .post('/api/v1/pomodoro/sessions/start')
       .set(mine)
-      .send({
-        durationSec: 25 * 60,
-        startedAt: new Date(Date.now() - 25 * 60_000).toISOString(),
-      })
+      .send({ durationSec: 25 * 60 })
+      .expect(201);
+    await prisma.focusSession.update({
+      where: { id: focus.body.id },
+      data: { startedAt: new Date(Date.now() - 25 * 60_000) },
+    });
+    await request(app.getHttpServer())
+      .post(`/api/v1/pomodoro/sessions/${focus.body.id}/complete`)
+      .set(mine)
       .expect(201);
 
     // Bloco de hoje (dayIndex 0 de um plano criado agora), marcado como feito.
