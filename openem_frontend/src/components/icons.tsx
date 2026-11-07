@@ -17,6 +17,7 @@ import {
   Medal,
   MedalMilitary,
   PenNib,
+  Path,
   PersonSimpleRun,
   Printer,
   Scroll,
@@ -217,6 +218,8 @@ export const IconUndo = shim(ArrowCounterClockwise, 'bold');
 export const IconRedo = shim(ArrowClockwise, 'bold');
 export const IconBooks = shim(Books, 'duotone');
 export const IconRun = shim(PersonSimpleRun, 'duotone');
+/** Matérias e trilhas de estudo (discussão #122). */
+export const IconPath = shim(Path, 'duotone');
 // Matérias dos decks de flashcards (mesma resolução de chave).
 export const IconDna = shim(Dna, 'duotone');
 export const IconScroll = shim(Scroll, 'duotone');

@@ -13,7 +13,7 @@ O cartão **Esta semana** traz:
 - **Minutos de foco**: os minutos do Pomodoro na semana, contra a sua meta. A meta é a de minutos por dia que você escolheu no começo, vezes sete.
 - **Questões**: quantas você respondeu e quantas acertou.
 - **O acerto em cada área**: Matemática, Natureza, Humanas e Linguagens.
-- **Pratique agora**: até 3 assuntos em que você mais errou no último mês, dando mais peso aos que caem muito na prova. Toque em **Praticar** para abrir as [questões](/docs/alunos/questoes/) daquele assunto.
+- **Pratique agora**: até 3 assuntos em que você mais errou no último mês, dando mais peso aos que caem muito na prova. Toque em **Praticar** para abrir as [questões](/docs/alunos/questoes/) daquele assunto, ou em **Ver na trilha** para ver o assunto na [trilha da matéria](/docs/alunos/materias/).
 - **Dias seguidos de estudo**, contando até hoje (ou até ontem, se hoje você ainda não estudou).
 
 Em **Semanas anteriores** ficam as últimas semanas, com as questões, os minutos, o acerto e a variação contra a semana de antes em pontos percentuais (por exemplo, **+6 p.p.**), e uma linha com os dias estudados. Toque numa semana para ver os dias e as áreas dela.

@@ -213,6 +213,7 @@ docker compose exec backend node dist-scripts/prisma/seed.js
 - `import-enem.js --refresh` apaga o dataset baixado e baixa de novo. O import atualiza sem duplicar e não desfaz comentários nem classificações feitos depois. Outras opções: `--exam=2023` (uma prova só), `--dry-run`, `--limit=5`, `--skip-download`, `--skip-images` e `--verbose`.
 - Uma mudança no mapeamento do import só chega às questões que já estão no banco reimportando, e o deploy já faz isso (veja acima). Rodar à mão só é preciso com `AUTO_IMPORT=0`. O import completo, sem `--exam` nem `--limit`, grava no banco a versão do mapeamento que usou; um parcial não grava, porque as outras provas continuam com o texto antigo.
 - `classify-heuristic.js` só mexe em questão sem assunto. Aceita `--dry-run` e `--sample=20` para auditar decisões.
+- O peso de cada assunto (que guia o sorteio dos simulados e as prioridades do Desempenho) sai de quanto ele caiu nas 10 provas regulares mais recentes. Os scripts acima já o recalculam no fim; para aplicar a regra sem rodar mais nada, use `docker compose exec backend node dist-scripts/prisma/recompute-weights.js`. Com menos de 5 provas regulares no banco, o peso de fábrica fica.
 - `seed-flashcards.js` sincroniza o catálogo: corrige o texto dos cards sem perder o progresso dos alunos.
 - `seed.js` reaplica, por upsert, a taxonomia, os modelos de simulado, os temas de redação e o catálogo de fórmulas. Uma área que saiu da taxonomia só é removida se não tiver questões.
 

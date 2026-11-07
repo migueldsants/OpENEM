@@ -2,7 +2,7 @@ import type { Recommendation, StudySession } from '../api';
 
 /** A única ação que a Home sugere: o que fazer agora. */
 export interface ProximoPasso {
-  tipo: 'revisao' | 'cronograma' | 'recomendacao' | 'comecar';
+  tipo: 'revisao' | 'cronograma' | 'trilha' | 'recomendacao' | 'comecar';
   titulo: string;
   descricao: string;
   acao: string;
@@ -12,8 +12,9 @@ export interface ProximoPasso {
 /**
  * Escolhe o próximo passo, nesta ordem: revisão vencida (esquecer custa mais
  * a cada dia), o bloco de hoje do cronograma (o plano que o aluno fez),
- * um assunto fraco recomendado pelos erros recentes e, sem nada disso,
- * começar pelas questões.
+ * a etapa da trilha (quando o aluno ainda não tem erro recente), um assunto
+ * fraco recomendado pelos erros recentes e, sem nada disso, começar pelas
+ * questões.
  */
 export function proximoPasso({
   vencidas,
@@ -50,6 +51,19 @@ export function proximoPasso({
           : `${pendente.minutes} min, o primeiro de ${hoje.length} ${hoje.length === 1 ? 'bloco' : 'blocos'} de hoje.`,
       acao: 'Abrir cronograma',
       to: '/cronograma',
+    };
+  }
+
+  // Sem erro recente (aluno novo, ou que acertou tudo), a recomendação vem
+  // da trilha: o passo leva à etapa, não a uma questão solta.
+  const trilha = recomendacao?.track;
+  if (trilha) {
+    return {
+      tipo: 'trilha',
+      titulo: `${trilha.subjectName}: ${trilha.title}`,
+      descricao: `Etapa ${trilha.stage} da trilha, com questões que já caíram no ENEM. Escolhida pelo que mais cai na prova.`,
+      acao: 'Abrir a trilha',
+      to: `/materias/${encodeURIComponent(trilha.subjectId)}`,
     };
   }
 

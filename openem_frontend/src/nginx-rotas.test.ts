@@ -19,7 +19,7 @@ const redirecionadas =
  * Rotas criadas depois da mudança para /app/: nunca existiram na raiz, então
  * não há endereço antigo a redirecionar (nem a renovar no sw.js do site).
  */
-const NASCERAM_EM_APP = ['esqueci-senha', 'redefinir-senha', 'entrar'];
+const NASCERAM_EM_APP = ['esqueci-senha', 'redefinir-senha', 'entrar', 'materias'];
 
 /** Primeiro segmento de cada rota do app ("/usuarios/:id" → "usuarios"). */
 const rotasDoApp = [

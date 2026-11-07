@@ -15,6 +15,7 @@ import {
   IconChevronRight,
   IconClock,
   IconFormula,
+  IconPath,
   IconTabelaPeriodica,
   IconToolbox,
   IconStack,
@@ -39,6 +40,7 @@ interface Atalho {
 const ICONE_DO_PASSO: Record<ProximoPasso['tipo'], typeof IconStack> = {
   revisao: IconRepeat,
   cronograma: IconCalendar,
+  trilha: IconPath,
   recomendacao: IconStack,
   comecar: IconStack,
 };

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   api,
   type SimulationFilters,
@@ -1059,6 +1060,22 @@ export default function Simulados() {
         // é o que o aluno tem em mãos.
       });
   }, []);
+
+  // A trilha da tela Matérias monta o simulado da etapa e chega aqui com ele
+  // pronto: abre direto no player. O estado da navegação é limpo para o
+  // voltar ou um F5 não reabrirem o mesmo simulado.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const iniciado = (location.state as { simuladoIniciado?: SimulationStart } | null)
+    ?.simuladoIniciado;
+  useEffect(() => {
+    if (!iniciado?.id) return;
+    const state: ActiveState = { start: iniciado, answers: {}, timeSpent: {} };
+    saveActive(state);
+    setActive(state);
+    setPhase('running');
+    navigate(location.pathname, { replace: true, state: null });
+  }, [iniciado, navigate, location.pathname]);
 
   function updateActive(next: ActiveState) {
     setActive(next);

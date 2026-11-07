@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { TracksService } from '../tracks/tracks.service';
 import {
   rankTopicsForReinforcement,
   reinforcementReason,
@@ -14,9 +15,27 @@ const RECENT_ANSWER_LIMIT = 2000;
 // Sem revelar o gabarito na recomendação (como na listagem).
 import { QUESTION_PUBLIC_SELECT } from '../questions/question.select';
 
+export interface RecommendationItem {
+  question: unknown;
+  reason: string;
+  /** Presente quando a questão veio da trilha (aluno sem erros recentes). */
+  track?: {
+    subjectId: string;
+    subjectName: string;
+    /** Número da etapa, a partir de 1. */
+    stage: number;
+    title: string;
+  };
+}
+
 @Injectable()
 export class RecommendationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // Opcional para os testes unitários antigos, que montam o serviço só com
+    // o Prisma; na API o TracksModule sempre o fornece.
+    @Optional() private readonly tracks?: TracksService,
+  ) {}
 
   /**
    * Sugere questões a partir dos erros recentes: prioriza assuntos com menor
@@ -57,8 +76,42 @@ export class RecommendationService {
     // Answer(userId, questionId)). A versão anterior mandava o id de cada
     // resposta do usuário num `notIn`, o que crescia sem limite com o histórico.
     const naoRespondida = { answers: { none: { userId } } } as const;
-    const out: { question: unknown; reason: string }[] = [];
+    const out: RecommendationItem[] = [];
     const usedIds = new Set<string>();
+
+    // 0) Sem erro recente (aluno novo, ou que acertou tudo): a etapa atual da
+    // trilha da matéria que mais rende, em vez de questões soltas.
+    if (this.tracks && !ranked.some((t) => t.accuracy < 1)) {
+      const stage = await this.tracks.suggestedStage(userId).catch(() => null);
+      if (stage) {
+        const where = {
+          topicId: { in: stage.topicIds },
+          ...naoRespondida,
+        };
+        const disponiveis = await this.prisma.question.count({ where });
+        for (const skip of sampleOffsets(disponiveis, limit)) {
+          const [q] = await this.prisma.question.findMany({
+            where,
+            skip,
+            take: 1,
+            orderBy: { id: 'asc' },
+            select: QUESTION_PUBLIC_SELECT,
+          });
+          if (!q || usedIds.has(q.id)) continue;
+          usedIds.add(q.id);
+          out.push({
+            question: q,
+            reason: `Trilha de ${stage.subjectName}: ${stage.title}`,
+            track: {
+              subjectId: stage.subjectId,
+              subjectName: stage.subjectName,
+              stage: stage.stageIndex + 1,
+              title: stage.title,
+            },
+          });
+        }
+      }
+    }
 
     // 1) Questões novas dos assuntos mais fracos.
     for (const topic of ranked) {

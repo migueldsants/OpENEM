@@ -170,6 +170,15 @@ function Prioridades({ prioridades, semAssunto }: { prioridades: PrioridadeDeEst
                   {p.subject} · <span className="whitespace-nowrap">{acertosDaPrioridade(p)}</span>
                 </p>
                 {caiMuitoNaProva(p) && <p className="text-xs font-medium text-warning">Cai muito na prova</p>}
+                {p.subjectId && (
+                  <NavLink
+                    to={`/materias/${encodeURIComponent(p.subjectId)}`}
+                    className="text-xs font-medium text-brand underline-offset-2 hover:underline"
+                    aria-label={`Ver ${p.topic} na trilha de ${p.subject}`}
+                  >
+                    Ver na trilha
+                  </NavLink>
+                )}
               </div>
               <NavLink
                 to={`/questoes?topicId=${encodeURIComponent(p.topicId)}`}

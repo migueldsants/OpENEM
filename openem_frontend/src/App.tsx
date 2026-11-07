@@ -17,6 +17,7 @@ import {
   IconLogout,
   IconMore,
   IconToolbox,
+  IconPath,
   IconPlay,
   IconRepeat,
   IconStack,
@@ -53,6 +54,8 @@ import Favoritos from './pages/Favoritos';
 import Flashcards from './pages/Flashcards';
 import Formulas from './pages/Formulas';
 import Home from './pages/Home';
+import Materia from './pages/Materia';
+import Materias from './pages/Materias';
 import Painel from './pages/Painel';
 import Login from './pages/Login';
 import EntrarGoogle from './pages/EntrarGoogle';
@@ -85,6 +88,7 @@ const NAV: NavItem[] = [
   { to: '/painel', label: 'Painel', Icon: IconClipboard, mobile: 'primary' },
 
   { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary', section: 'Estudar' },
+  { to: '/materias', label: 'Matérias', Icon: IconPath, mobile: 'more', section: 'Estudar' },
   { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary', section: 'Estudar' },
   { to: '/revisao', label: 'Revisão', Icon: IconRepeat, mobile: 'primary', section: 'Estudar' },
   { to: '/redacoes', label: 'Redações', Icon: IconPen, mobile: 'more', section: 'Estudar' },
@@ -358,6 +362,8 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/painel" element={<Painel />} />
       <Route path="/questoes" element={<Questoes />} />
+      <Route path="/materias" element={<Materias />} />
+      <Route path="/materias/:subjectId" element={<Materia />} />
       <Route path="/simulados" element={<Simulados />} />
       <Route path="/desempenho" element={<Desempenho />} />
       <Route path="/revisao" element={<Revisao />} />

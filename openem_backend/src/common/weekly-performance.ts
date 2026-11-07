@@ -24,6 +24,8 @@ export interface WeeklyAnswer {
     name: string;
     weight: number;
     subjectName: string;
+    /** Para o link "Ver na trilha"; opcional nos testes antigos. */
+    subjectId?: string;
   } | null;
 }
 
@@ -66,6 +68,8 @@ export interface Priority {
   topicId: string;
   topic: string;
   subject: string;
+  /** Matéria do assunto, para abrir a trilha dela; null em dado antigo. */
+  subjectId: string | null;
   area: AreaKey | null;
   answers: number;
   correct: number;
@@ -274,6 +278,7 @@ export function buildWeeklySummary(
       topicId: r.topicId,
       topic: t.topic.name,
       subject: t.topic.subjectName,
+      subjectId: t.topic.subjectId ?? null,
       area: areaKeyFromName(t.areaName) ?? areaKeyFromName(t.topic.subjectName),
       answers: t.attempts,
       correct: t.correct,

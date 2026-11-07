@@ -15,6 +15,7 @@ import { PrismaClient } from '@prisma/client';
 import { ensureDataset, importEnem, printReport } from './import-enem-lib';
 import { isTestDatabaseUrl } from '../src/common/test-database';
 import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
+import { recomputeTopicWeights } from '../src/tracks/topic-weights';
 import { MAPPING_VERSION_KEY } from '../src/common/bootstrap-plan';
 import { ENEM_MAPPING_VERSION } from '../src/common/enem-import/mapping';
 
@@ -86,6 +87,8 @@ async function main() {
       update: { value },
     });
   }
+  // Provas novas mudam a incidência, e com ela o peso dos assuntos.
+  await recomputeTopicWeights(prisma);
   // Provas e questões novas: o cache de catálogo da API fica velho.
   await invalidateCatalogCache();
 }
