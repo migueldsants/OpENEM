@@ -59,7 +59,8 @@ describe('HeatmapService (issue #43)', () => {
 
     await service.heatmap('u-qualquer');
     expect(prisma.answer.findMany).toHaveBeenCalledWith({
-      where: { userId: 'u-qualquer' },
+      where: { userId: 'u-qualquer', question: { topicId: { not: null } } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: {
         isCorrect: true,
         question: { select: { topicId: true } },

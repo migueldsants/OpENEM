@@ -108,3 +108,33 @@ describe('sessoesDeHoje', () => {
     expect(hoje.map((s) => s.id)).toEqual(['c', 'a']);
   });
 });
+
+describe('proximoPasso — trilha', () => {
+  const daTrilha = {
+    ...rec,
+    reason: 'Trilha de Matemática: Base numérica',
+    track: {
+      subjectId: 's mat',
+      subjectName: 'Matemática',
+      stage: 1,
+      title: 'Base numérica',
+    },
+  } as Recommendation;
+
+  it('aluno sem erro recente vai para a etapa da trilha', () => {
+    const p = proximoPasso({ vencidas: 0, hoje: [], recomendacao: daTrilha });
+    expect(p.tipo).toBe('trilha');
+    expect(p.titulo).toBe('Matemática: Base numérica');
+    expect(p.to).toBe('/materias/s%20mat');
+  });
+
+  it('revisão e cronograma continuam na frente da trilha', () => {
+    expect(
+      proximoPasso({ vencidas: 1, hoje: [], recomendacao: daTrilha }).tipo,
+    ).toBe('revisao');
+    expect(
+      proximoPasso({ vencidas: 0, hoje: [sessao()], recomendacao: daTrilha })
+        .tipo,
+    ).toBe('cronograma');
+  });
+});

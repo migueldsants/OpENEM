@@ -173,6 +173,7 @@ export class PerformanceService {
                   weight: true,
                   subject: {
                     select: {
+                      id: true,
                       name: true,
                       subjectArea: { select: { name: true } },
                     },
@@ -215,6 +216,7 @@ export class PerformanceService {
                 name: topic.name,
                 weight: topic.weight,
                 subjectName: topic.subject.name,
+                subjectId: topic.subject.id,
               }
             : null,
         };

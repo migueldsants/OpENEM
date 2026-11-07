@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { PrismaClient } from '@prisma/client';
 import { invalidateCatalogCache } from '../src/cache/catalog-invalidation';
+import { recomputeTopicWeights } from '../src/tracks/topic-weights';
 import {
   CATALOG_SOURCE,
   CatalogEntry,
@@ -94,7 +95,10 @@ async function main() {
       console.log(`ignoradas (${motivo}): ${n}`);
     }
     if (values['dry-run']) console.log('\n(dry-run: nada foi gravado)');
-    else await invalidateCatalogCache();
+    else {
+      await recomputeTopicWeights(prisma);
+      await invalidateCatalogCache();
+    }
   } finally {
     await prisma.$disconnect();
   }

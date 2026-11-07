@@ -2293,6 +2293,55 @@
         ]
       }
     },
+    "/api/v1/tracks": {
+      "get": {
+        "operationId": "TracksController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Matérias com o que cai nas provas regulares recentes e o domínio do aluno",
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/api/v1/tracks/{subjectId}": {
+      "get": {
+        "operationId": "TracksController_detail",
+        "parameters": [
+          {
+            "name": "subjectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trilha de estudo de uma matéria: etapas, incidência e domínio de cada assunto",
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
     "/api/v1/community/threads": {
       "get": {
         "operationId": "CommunityController_list",

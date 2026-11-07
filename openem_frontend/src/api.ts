@@ -330,6 +330,14 @@ export type XpHistory =
 export interface Recommendation {
   question: Question;
   reason: string;
+  /** Presente quando a questão veio da trilha (aluno sem erros recentes). */
+  track?: {
+    subjectId: string;
+    subjectName: string;
+    /** Número da etapa, a partir de 1. */
+    stage: number;
+    title: string;
+  };
 }
 export interface ThreadAuthor {
   id: string;
@@ -515,6 +523,8 @@ export interface PrioridadeDeEstudo {
   topicId: string;
   topic: string;
   subject: string;
+  /** Para abrir a trilha da matéria; null em resposta de backend antigo. */
+  subjectId?: string | null;
   area: AreaDaSemana | null;
   answers: number;
   correct: number;
@@ -755,6 +765,85 @@ export interface StudyPlan {
   sessions: StudySession[];
 }
 /** Ferramenta aberta no GitHub (tela Ferramentas). */
+/** Recorte das provas regulares que entram na incidência (`GET /tracks`). */
+export interface IncidenceWindow {
+  fromYear: number;
+  toYear: number;
+  exams: number;
+  /** Ano de cada prova, em ordem crescente: o eixo de `TrackTopic.byYear`. */
+  years: number[];
+}
+export type MasteryState = 'nao-visto' | 'praticando' | 'dominado';
+export interface TrackStageSummary {
+  title: string;
+  done: boolean;
+  practicable: boolean;
+}
+export interface TrackSuggestion {
+  subjectId: string;
+  subjectName: string;
+  areaName: string;
+  stageIndex: number;
+  title: string;
+  topicIds: string[];
+}
+export interface TrackSubjectSummary {
+  id: string;
+  name: string;
+  area: { id: string; name: string };
+  /** Média de questões por prova nas regulares da janela. */
+  perExam: number;
+  /** 0..100. */
+  mastery: number;
+  answered: number;
+  currentStage: number | null;
+  stages: TrackStageSummary[];
+}
+export interface TracksOverview {
+  window: IncidenceWindow | null;
+  language: 'ingles' | 'espanhol';
+  overall: { mastery: number; answered: number; enough: boolean };
+  suggestions: TrackSuggestion[];
+  subjects: TrackSubjectSummary[];
+}
+export interface TrackTopic {
+  id: string;
+  name: string;
+  perExam: number;
+  /** Em quantas provas da janela o assunto caiu. */
+  years: number;
+  /** Questões em cada prova da janela, na ordem de `IncidenceWindow.years`. */
+  byYear: number[];
+  /** Questões do assunto no banco; zero quer dizer que não dá para treinar. */
+  bank: number;
+  state: MasteryState;
+  /** 0..100. */
+  mastery: number;
+  answered: number;
+  /** Acerto nas últimas 10 respostas, 0..100; null sem resposta. */
+  accuracy: number | null;
+}
+export interface TrackStage {
+  index: number;
+  title: string;
+  why: string;
+  perExam: number;
+  practicable: boolean;
+  done: boolean;
+  topics: TrackTopic[];
+}
+export interface TrackDetail {
+  subject: { id: string; name: string; area: { id: string; name: string } };
+  window: IncidenceWindow | null;
+  language: 'ingles' | 'espanhol';
+  perExam: number;
+  mastery: number;
+  answered: number;
+  currentStage: number | null;
+  stages: TrackStage[];
+  extras: { perExam: number; topics: TrackTopic[] };
+}
+
 export interface Tool {
   name: string;
   /** `dono/repositório` no GitHub. */
@@ -1353,6 +1442,11 @@ export const api = {
   clearStudyPlan: () => request<StudyPlan>('/study-plan', { method: 'DELETE' }),
 
   tools: () => request<Tool[]>('/tools'),
+  /** Tela Matérias: o que cai em cada matéria e quanto o aluno domina. */
+  tracks: () => request<TracksOverview>('/tracks'),
+  /** Trilha de uma matéria, com a incidência e o domínio de cada assunto. */
+  track: (subjectId: string) =>
+    request<TrackDetail>(`/tracks/${encodeURIComponent(subjectId)}`),
 
   gamification: () => request<GamificationSummary>('/gamification/me'),
   achievements: () =>

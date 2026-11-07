@@ -105,3 +105,71 @@ describe('RecommendationService — janela de histórico', () => {
     expect(args.take).toBeGreaterThan(0);
   });
 });
+
+describe('RecommendationService — trilha para quem não tem erro recente', () => {
+  const etapa = {
+    subjectId: 's-mat',
+    subjectName: 'Matemática',
+    areaName: 'Matemática e suas Tecnologias',
+    stageIndex: 1,
+    title: 'Proporção e porcentagem',
+    topicIds: ['t-razao', 't-pct'],
+  };
+
+  it('aluno novo recebe questões da etapa atual da trilha, marcadas com ela', async () => {
+    const prisma = makePrisma() as any;
+    prisma.answer.findMany.mockResolvedValue([]);
+    prisma.question.findMany.mockResolvedValueOnce([
+      { id: 'q-trilha', statement: 'a', topic: { id: 't-razao' } },
+    ]);
+    const tracks = { suggestedStage: jest.fn().mockResolvedValue(etapa) };
+    const service = new RecommendationService(prisma, tracks as any);
+
+    const res = await service.next('u1', 1);
+
+    expect(tracks.suggestedStage).toHaveBeenCalledWith('u1');
+    expect(res).toHaveLength(1);
+    expect(res[0].track).toEqual({
+      subjectId: 's-mat',
+      subjectName: 'Matemática',
+      stage: 2,
+      title: 'Proporção e porcentagem',
+    });
+    const where = prisma.question.findMany.mock.calls[0][0].where;
+    expect(where.topicId).toEqual({ in: ['t-razao', 't-pct'] });
+    expect(where.answers).toEqual({ none: { userId: 'u1' } });
+  });
+
+  it('quem tem erro recente segue no reforço, sem consultar a trilha', async () => {
+    const prisma = makePrisma() as any;
+    prisma.answer.findMany.mockResolvedValue([
+      { isCorrect: false, question: { topicId: 't-fraco' } },
+    ]);
+    prisma.question.findMany.mockResolvedValueOnce([
+      { id: 'q-reforco', statement: 'a', topic: { id: 't-fraco' } },
+    ]);
+    const tracks = { suggestedStage: jest.fn() };
+    const service = new RecommendationService(prisma, tracks as any);
+
+    const res = await service.next('u1', 1);
+
+    expect(tracks.suggestedStage).not.toHaveBeenCalled();
+    expect(res[0].track).toBeUndefined();
+  });
+
+  it('falha da trilha não derruba a recomendação', async () => {
+    const prisma = makePrisma() as any;
+    prisma.answer.findMany.mockResolvedValue([]);
+    prisma.question.findMany.mockResolvedValueOnce([
+      { id: 'filler', statement: 'b', topic: null },
+    ]);
+    const tracks = {
+      suggestedStage: jest.fn().mockRejectedValue(new Error('fora')),
+    };
+    const service = new RecommendationService(prisma, tracks as any);
+
+    const res = await service.next('u1', 1);
+    expect(res).toHaveLength(1);
+    expect(res[0].track).toBeUndefined();
+  });
+});

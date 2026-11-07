@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { loadTopicAnswers } from './topic-answers';
 
 interface Bucket {
   total: number;
@@ -32,24 +33,14 @@ export class HeatmapService {
    * também — o grid é completo, não só o que foi estudado.
    */
   async heatmap(userId: string) {
-    // Agregação por tópico: query enxuta (topicId + isCorrect) e contagem
-    // em JS — o Prisma não agrupa por campo de relação.
-    const answers = await this.prisma.answer.findMany({
-      where: { userId },
-      select: { isCorrect: true, question: { select: { topicId: true } } },
-    });
-    const byTopic = new Map<string, Bucket>();
-    for (const a of answers) {
-      // O grid é montado a partir da taxonomia, então questão ainda sem assunto
-      // classificado não tem célula onde cair. TODO: expor o total dessas
-      // respostas na resposta, para o mapa não divergir do total de tentativas.
-      const topicId = a.question.topicId;
-      if (!topicId) continue;
-      const b = byTopic.get(topicId) ?? { total: 0, correct: 0 };
-      b.total += 1;
-      if (a.isCorrect) b.correct += 1;
-      byTopic.set(topicId, b);
-    }
+    // Agregação por tópico em JS (o Prisma não agrupa por campo de relação),
+    // a mesma leitura das trilhas da tela Matérias. O grid é montado a partir
+    // da taxonomia, então questão ainda sem assunto classificado não tem
+    // célula onde cair e fica de fora.
+    const byTopic: Map<string, Bucket> = await loadTopicAnswers(
+      this.prisma,
+      userId,
+    );
 
     const areas = await this.prisma.subjectArea.findMany({
       orderBy: { name: 'asc' },
