@@ -23,6 +23,7 @@ import {
   classifyByKeywords,
   HeuristicDecision,
 } from '../src/common/classification/heuristic';
+import { KEYWORDS_SOURCE } from '../src/common/classification/catalog';
 import { isTestDatabaseUrl } from '../src/common/test-database';
 
 const prisma = new PrismaClient();
@@ -107,7 +108,7 @@ async function main() {
           data: {
             topicId: u.topicId,
             classificationConfidence: u.confidence,
-            classificationSource: 'keywords',
+            classificationSource: KEYWORDS_SOURCE,
           },
         }),
       ),

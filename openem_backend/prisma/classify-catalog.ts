@@ -1,12 +1,13 @@
 /**
  * Aplica o catálogo de assuntos (`classificacao-assuntos.json`, ao lado deste
- * arquivo) às questões oficiais ainda sem assunto.
+ * arquivo) às questões oficiais ainda sem assunto e às que a palavra-chave
+ * classificou com confiança abaixo de `KEYWORDS_TRUSTED_CONFIDENCE`.
  *
  *   npm run db:classify:catalog              # grava
  *   npm run db:classify:catalog -- --dry-run # só mostra o que faria
  *
- * Roda depois da classificação por palavra-chave (que tem precedência) e não
- * precisa de chave de IA: o catálogo foi gerado uma vez e está versionado. Ver
+ * Roda depois da classificação por palavra-chave (que tem precedência quando
+ * decide com folga) e não precisa de chave de IA: o catálogo foi gerado uma vez e está versionado. Ver
  * `src/common/classification/catalog.ts`.
  */
 import { readFileSync } from 'node:fs';
@@ -19,8 +20,21 @@ import {
   CATALOG_SOURCE,
   CatalogEntry,
   CatalogTopic,
+  KEYWORDS_SOURCE,
+  KEYWORDS_TRUSTED_CONFIDENCE,
   catalogDecisions,
 } from '../src/common/classification/catalog';
+
+/** Questões que o catálogo pode gravar: sem assunto ou palavra-chave fraca. */
+const SUBSTITUIVEL = {
+  OR: [
+    { topicId: null },
+    {
+      classificationSource: KEYWORDS_SOURCE,
+      classificationConfidence: { lt: KEYWORDS_TRUSTED_CONFIDENCE },
+    },
+  ],
+};
 
 const { values } = parseArgs({
   options: { 'dry-run': { type: 'boolean', default: false } },
@@ -54,8 +68,14 @@ async function main() {
     );
 
     const questoes = await prisma.question.findMany({
-      where: { externalId: { in: Object.keys(catalogo) }, topicId: null },
-      select: { externalId: true, subjectAreaId: true, topicId: true },
+      where: { externalId: { in: Object.keys(catalogo) }, ...SUBSTITUIVEL },
+      select: {
+        externalId: true,
+        subjectAreaId: true,
+        topicId: true,
+        classificationSource: true,
+        classificationConfidence: true,
+      },
     });
     const { aplicar, ignoradas } = catalogDecisions(
       catalogo,
@@ -73,7 +93,7 @@ async function main() {
       for (const [chave, ids] of grupos) {
         const [topicId, confianca] = chave.split('|');
         await prisma.question.updateMany({
-          where: { externalId: { in: ids }, topicId: null },
+          where: { externalId: { in: ids }, ...SUBSTITUIVEL },
           data: {
             topicId,
             classificationConfidence: Number(confianca),
@@ -89,7 +109,9 @@ async function main() {
     }
     console.log('=== Catálogo de assuntos ===');
     console.log(`no catálogo:        ${Object.keys(catalogo).length}`);
-    console.log(`sem assunto no banco: ${questoes.length}`);
+    const fracas = questoes.filter((q) => q.topicId).length;
+    console.log(`sem assunto no banco: ${questoes.length - fracas}`);
+    console.log(`palavra-chave < ${KEYWORDS_TRUSTED_CONFIDENCE}: ${fracas}`);
     console.log(`classificadas:      ${aplicar.length}`);
     for (const [motivo, n] of motivos) {
       console.log(`ignoradas (${motivo}): ${n}`);

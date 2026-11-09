@@ -1,8 +1,12 @@
 import {
   CATALOG_MIN_CONFIDENCE,
+  CATALOG_SOURCE,
   CatalogEntry,
   CatalogTopic,
+  KEYWORDS_SOURCE,
+  KEYWORDS_TRUSTED_CONFIDENCE,
   catalogDecisions,
+  catalogMayReplace,
 } from './catalog';
 
 describe('catalogDecisions', () => {
@@ -34,14 +38,89 @@ describe('catalogDecisions', () => {
     ]);
   });
 
-  it('nunca sobrescreve um assunto já gravado', () => {
+  it('não sobrescreve assunto de IA, correção manual ou palavra-chave confiável', () => {
     const r = catalogDecisions(
       catalogo,
-      [{ externalId: 'enem:2023:136', subjectAreaId: 'mat', topicId: 'outro' }],
+      [
+        { externalId: 'enem:2023:136', subjectAreaId: 'mat', topicId: 'outro' },
+        {
+          externalId: 'enem:2023:136',
+          subjectAreaId: 'mat',
+          topicId: 'outro',
+          classificationSource: 'ai:anthropic',
+          classificationConfidence: 0.5,
+        },
+        {
+          externalId: 'enem:2023:136',
+          subjectAreaId: 'mat',
+          topicId: 'outro',
+          classificationSource: KEYWORDS_SOURCE,
+          classificationConfidence: KEYWORDS_TRUSTED_CONFIDENCE,
+        },
+      ],
       topicos,
     );
     expect(r.aplicar).toEqual([]);
     expect(r.ignoradas).toEqual([]);
+  });
+
+  it('substitui a palavra-chave abaixo do corte de confiança', () => {
+    const r = catalogDecisions(
+      catalogo,
+      [
+        {
+          externalId: 'enem:2023:136',
+          subjectAreaId: 'mat',
+          topicId: 'outro',
+          classificationSource: KEYWORDS_SOURCE,
+          classificationConfidence: 0.68,
+        },
+      ],
+      topicos,
+    );
+    expect(r.aplicar).toEqual([
+      { externalId: 'enem:2023:136', topicId: 't-geo', confidence: 0.9 },
+    ]);
+  });
+
+  it('palavra-chave fraca fica quando o catálogo também está em dúvida', () => {
+    const r = catalogDecisions(
+      catalogo,
+      [
+        {
+          externalId: 'enem:2023:100',
+          subjectAreaId: 'nat',
+          topicId: 'outro',
+          classificationSource: KEYWORDS_SOURCE,
+          classificationConfidence: 0.6,
+        },
+      ],
+      topicos,
+    );
+    expect(r.aplicar).toEqual([]);
+    expect(r.ignoradas.map((i) => i.motivo)).toEqual(['baixa confiança']);
+  });
+
+  it('catalogMayReplace: sem assunto ou palavra-chave abaixo do corte', () => {
+    const base = { externalId: 'x', subjectAreaId: 'mat' };
+    expect(catalogMayReplace({ ...base, topicId: null })).toBe(true);
+    expect(
+      catalogMayReplace({
+        ...base,
+        topicId: 't',
+        classificationSource: KEYWORDS_SOURCE,
+        classificationConfidence: null,
+      }),
+    ).toBe(true);
+    expect(
+      catalogMayReplace({
+        ...base,
+        topicId: 't',
+        classificationSource: CATALOG_SOURCE,
+        classificationConfidence: 0.6,
+      }),
+    ).toBe(false);
+    expect(KEYWORDS_TRUSTED_CONFIDENCE).toBe(0.7);
   });
 
   it('ignora e conta: baixa confiança, assunto fora da taxonomia, outra área', () => {
