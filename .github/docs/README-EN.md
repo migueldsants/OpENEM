@@ -157,8 +157,10 @@ npm run db:classify:keywords
 What the keywords do not decide comes from the **topic catalog**
 (`prisma/classificacao-assuntos.json`): a one-off classification by Claude
 Haiku 5.5 against each area's topic list, versioned in the repository —
-OpENEM's own classification, not official. It only fills questions that still
-have no topic, skips anything below 0.6 confidence and needs no AI key. With
+OpENEM's own classification, not official. It fills questions that still
+have no topic, replaces keyword decisions made with confidence below 0.70 (in
+a manual review, 12% of those were wrong), skips anything below 0.6
+confidence and needs no AI key. With
 both passes, every official question gets a topic except one whose
 statement is truncated in the dataset. A new database comes
 out that way (the container runs both on first start); on an existing one,
