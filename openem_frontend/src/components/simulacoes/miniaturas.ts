@@ -23,6 +23,7 @@ import { altura, envoltoria } from '../../lib/simulacoes/ondas-superficie';
 import { PARES } from '../../lib/simulacoes/isomeria';
 import { distribuicaoSoma, triangulo } from '../../lib/simulacoes/matematica';
 import { dobrar, solido, type Face } from '../../lib/simulacoes/solidos';
+import { nucleo } from '../../lib/simulacoes/atomo';
 import { alfa, COR_CEU, seta, texto } from './canvas';
 
 export interface Tinta {
@@ -117,6 +118,7 @@ let populacoes: [number, number][] | null = null;
 let deriva: number[] | null = null;
 let nacl: ReturnType<typeof gerarReticulo> | null = null;
 let cubo: Face | null = null;
+let nucleoMini: ReturnType<typeof nucleo> | null = null;
 const agua = montarMolecula(MOLECULAS.find((m) => m.key === 'h2o')!); // a molécula que a simulação abre
 const vidaNucleo = (() => {
   const r = criarRng(3);
@@ -1273,6 +1275,61 @@ const DESENHOS: Record<string, Desenho> = {
     ctx.restore();
     brilho(ctx, w - 4, cy, 30, SOL_HALO, 0.45);
     bola(ctx, w - 2, cy, 9, SOL);
+  },
+  // Atomo.tsx (modelo de Bohr do carbono-12 em 2D): núcleo de prótons e nêutrons e os elétrons nas camadas K e L.
+  atomo(ctx, w, h, t, k) {
+    const cx = w / 2;
+    const cy = h / 2;
+    const S = Math.min(w, h) / 2 - 8;
+    const raios = [S * 0.45, S * 0.9];
+    raios.forEach((r) => {
+      ctx.strokeStyle = alfa(k.muted, 0.45);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    });
+    nucleoMini ??= nucleo(6, 6, 1);
+    const rn = Math.min(9, S * 0.11) / (1.05 * Math.cbrt(12));
+    const g = t * 0.3;
+    nucleoMini
+      .map((q) => ({ x: q.pos[0] * Math.cos(g) + q.pos[2] * Math.sin(g), y: q.pos[1], d: -q.pos[0] * Math.sin(g) + q.pos[2] * Math.cos(g), p: q.proton }))
+      .sort((a, b) => a.d - b.d)
+      .forEach((q) => {
+        const gr = ctx.createRadialGradient(cx + q.x * rn - 1, cy - q.y * rn - 1, 0.3, cx + q.x * rn, cy - q.y * rn, rn);
+        gr.addColorStop(0, '#ffffff');
+        gr.addColorStop(1, q.p ? '#ef4444' : '#9ca3af');
+        bola(ctx, cx + q.x * rn, cy - q.y * rn, rn, gr);
+      });
+    [2, 4].forEach((n, i) => {
+      for (let j = 0; j < n; j++) {
+        const a = (TAU * j) / n + t * (1.4 / (i + 1));
+        bola(ctx, cx + Math.cos(a) * raios[i], cy + Math.sin(a) * raios[i], 4, '#3b82f6');
+      }
+    });
+  },
+
+  // Ligacoes.tsx: o sódio passa um elétron para o cloro e os dois viram íons.
+  ligacoes(ctx, w, h, t, k) {
+    const f = Math.min(1, ((t % 4) / 4) * 1.6);
+    const ida = f < 0.5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2;
+    const y = h / 2;
+    const xNa = w * 0.3;
+    const xCl = w * 0.7;
+    const at = (x: number, r: number, sim: string, cor: string) => {
+      ctx.fillStyle = alfa(cor, 0.16);
+      ctx.strokeStyle = alfa(k.fg, 0.6);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+      texto(ctx, sim, x, y + 5, k.fg, { alinhar: 'center', tamanho: 15, peso: 800 });
+    };
+    const R = Math.min(26, h * 0.2);
+    at(xNa, R * 0.85, ida >= 1 ? 'Na⁺' : 'Na', k.mat);
+    at(xCl, R, ida >= 1 ? 'Cl⁻' : 'Cl', k.hum);
+    const d = R + 7;
+    const slots: [number, number][] = [[0, -d], [d, -4], [0, d], [-d, -4], [-5, -d], [d, 4], [5, d]];
+    slots.forEach(([sx, sy]) => bola(ctx, xCl + sx, y + sy, 3, k.hum));
+    const de: [number, number] = [xNa + R * 0.85 + 7, y];
+    const para: [number, number] = [xCl - d, y + 4];
+    bola(ctx, de[0] + (para[0] - de[0]) * ida, de[1] + (para[1] - de[1]) * ida - Math.sin(ida * Math.PI) * 22, 3.4, k.mat);
   },
 };
 

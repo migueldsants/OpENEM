@@ -213,6 +213,22 @@ export const SIMULACOES: SimulacaoInfo[] = [
     conceitos: ['Isomeria plana', 'Isomeria geométrica', 'Isomeria óptica', 'Carbono quiral'],
   },
   {
+    slug: 'atomo',
+    titulo: 'Monte um átomo',
+    materia: 'Química',
+    dimensao: '3D',
+    resumo: 'Qualquer átomo da tabela periódica, com os isótopos e íons que existem, nos modelos de Dalton, Thomson, Rutherford, Bohr, Sommerfeld e quântico, em 2D ou 3D.',
+    conceitos: ['Modelos atômicos', 'Isótopos', 'Íons', 'Distribuição eletrônica', 'Orbitais'],
+  },
+  {
+    slug: 'ligacoes',
+    titulo: 'Ligações químicas',
+    materia: 'Química',
+    dimensao: '2D',
+    resumo: 'Escolha dois elementos da tabela periódica e veja a ligação se formar: iônica, covalente polar ou apolar, metálica e dativa, com fórmula e estrutura de Lewis.',
+    conceitos: ['Ligação iônica', 'Ligação covalente', 'Ligação metálica', 'Ligação dativa', 'Eletronegatividade', 'Polaridade'],
+  },
+  {
     slug: 'pilha',
     titulo: 'Pilhas e eletroquímica',
     materia: 'Química',

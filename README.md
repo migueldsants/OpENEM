@@ -256,7 +256,10 @@ refração com Fresnel, lentes e espelhos, efeito Doppler, interferência numa
 cuba de ondas, órbitas de Kepler, carga em campo magnético, gás ideal por
 dinâmica molecular, titulação pelo balanço de cargas, equilíbrio
 N₂O₄ ⇌ 2 NO₂, geometria molecular com ângulos medidos, estruturas cristalinas,
-pilhas com Nernst e Faraday, decaimento radioativo, espectro do hidrogênio,
+um simulador de átomo (qualquer elemento, com os isótopos e íons que existem,
+nos modelos de Dalton a quântico, em 2D ou 3D), ligações químicas entre
+quaisquer dois elementos (iônica, covalente, metálica e dativa), pilhas com
+Nernst e Faraday, decaimento radioativo, espectro do hidrogênio,
 DNA com transcrição e tradução, predador e presa, deriva genética, estações do
 ano, fases da Lua com eclipses, isomeria em 3D, soma de vetores, cruzamentos de
 Mendel com o quadro de Punnett, fusos horários num globo e, em Matemática,

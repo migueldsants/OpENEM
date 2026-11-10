@@ -45,7 +45,7 @@ describe('catálogo de simulações', () => {
 
   it('filtra por matéria e por dimensão', () => {
     const quimica3d = filtrarSimulacoes(SIMULACOES, '', 'Química', '3D');
-    expect(quimica3d.map((s) => s.slug)).toEqual(['geometria-molecular', 'cristais', 'isomeria']);
+    expect(quimica3d.map((s) => s.slug)).toEqual(['geometria-molecular', 'cristais', 'isomeria', 'atomo']);
     expect(filtrarSimulacoes(SIMULACOES, '', 'Geografia', null).every((s) => s.materia === 'Geografia')).toBe(true);
     expect(filtrarSimulacoes(SIMULACOES, 'nada que exista aqui', null, null)).toEqual([]);
   });

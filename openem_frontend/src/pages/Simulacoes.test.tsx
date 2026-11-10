@@ -121,7 +121,8 @@ describe('tela de uma simulação', () => {
     expect(within(modal).getByRole('heading', { name: 'No ENEM' })).toBeInTheDocument();
     fireEvent.click(within(modal).getByRole('button', { name: 'Fechar' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    if (info.dimensao === '3D') expect(screen.getByText(/precisa de WebGL/)).toBeInTheDocument();
+    // O átomo abre em 2D e tem o próprio teste para o 3D.
+    if (info.dimensao === '3D' && slug !== 'atomo') expect(screen.getByText(/precisa de WebGL/)).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Outras simulações' })).toBeInTheDocument();
     // O caminho volta para a lista da matéria.
     const caminho = screen.getByRole('navigation', { name: 'Caminho' });
@@ -141,6 +142,44 @@ describe('tela de uma simulação', () => {
     expect(screen.getByText(/letra "y"/)).toBeInTheDocument();
     fireEvent.change(f, { target: { value: 'a x^2' } });
     expect(screen.getByRole('slider', { name: 'Parâmetro a' })).toBeInTheDocument();
+  }, 20_000);
+
+  it('Monte um átomo: isótopos e íons que existem, e o 3D', async () => {
+    abrir('atomo');
+    const nêutron = await screen.findByRole('button', { name: 'Pôr um nêutron' }, { timeout: 15_000 });
+    // Carbono-12 → 13 → 14 (radioativo, 5.700 anos).
+    fireEvent.click(nêutron);
+    fireEvent.click(nêutron);
+    expect(screen.getByText('Isótopo ¹⁴C')).toBeInTheDocument();
+    expect(screen.getAllByText(/700 anos/).length).toBeGreaterThan(0);
+    // Pôr nêutrons até travar no último isótopo conhecido.
+    for (let i = 0; i < 30 && !(nêutron as HTMLButtonElement).disabled; i++) fireEvent.click(nêutron);
+    expect(nêutron).toBeDisabled();
+    // Íon: o oxigênio aceita até 2 elétrons a mais (O²⁻), não 3.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Elemento' }), { target: { value: '8' } });
+    const eletron = screen.getByRole('button', { name: 'Pôr um elétron' });
+    fireEvent.click(eletron);
+    fireEvent.click(eletron);
+    expect(eletron).toBeDisabled();
+    expect(screen.getByText(/O²⁻/, { selector: 'dd' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: '3D' }));
+    expect(screen.getByText(/precisa de WebGL/)).toBeInTheDocument();
+  }, 20_000);
+
+  it('Ligações químicas: dois elementos quaisquer da tabela', async () => {
+    abrir('ligacoes');
+    await screen.findByRole('combobox', { name: 'Elemento 1' }, { timeout: 15_000 });
+    expect(screen.getByText('NaCl', { selector: 'dd' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Al₂O₃' }));
+    expect(screen.getByText('Al₂O₃', { selector: 'dd' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'H₂O' }));
+    expect(screen.getByText('angular', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('polar', { selector: 'dd' })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Elemento 1' }), { target: { value: '26' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Elemento 2' }), { target: { value: '8' } });
+    // Ferro: escolher entre Fe³⁺ (Fe₂O₃) e Fe²⁺ (FeO).
+    fireEvent.click(screen.getByRole('radio', { name: 'Fe²⁺' }));
+    expect(screen.getByText('FeO', { selector: 'dd' })).toBeInTheDocument();
   }, 20_000);
 
   it('mexer num controle atualiza as medidas (lançamento sem ar)', async () => {

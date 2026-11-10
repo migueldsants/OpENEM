@@ -8,7 +8,7 @@ A tela **Simulações** é um laboratório no bolso: 36 experimentos que você c
 ## O que tem
 
 - **Física:** lançamento oblíquo (com e sem resistência do ar, na Terra, na Lua, em Marte e em Júpiter), pêndulo simples, massa-mola e ressonância, plano inclinado com atrito, empuxo, circuitos com lâmpadas, o **laboratório de circuitos**, refração e reflexão total, lentes e espelhos, efeito Doppler, interferência na cuba de ondas (3D), órbitas e leis de Kepler (3D) carga em campo magnético (3D) e soma de vetores.
-- **Química:** gás ideal com centenas de moléculas, titulação ácido-base com indicadores, equilíbrio químico e Le Chatelier, geometria molecular (3D), estruturas cristalinas (3D), isomeria (3D), pilhas e eletroquímica, decaimento radioativo e o átomo de Bohr com o espectro do hidrogênio.
+- **Química:** gás ideal com centenas de moléculas, titulação ácido-base com indicadores, equilíbrio químico e Le Chatelier, geometria molecular (3D), estruturas cristalinas (3D), isomeria (3D), o simulador de átomo (3D e 2D), ligações químicas, pilhas e eletroquímica, decaimento radioativo e o átomo de Bohr com o espectro do hidrogênio.
 - **Biologia:** predador e presa (lebres e linces), seleção natural com deriva genética DNA, do gene à proteína (3D), e cruzamentos de Mendel com o quadro de Punnett.
 - **Geografia:** estações do ano e duração do dia (3D), com a Terra na órbita real, fases da Lua e eclipses (3D) e fusos horários num globo (3D).
 - **Matemática:** gráficos de funções (1º e 2º grau, exponencial, logaritmo e seno), ciclo trigonométrico, triângulos e pontos notáveis, probabilidade com dados, projeções ortográficas (3D) e sólidos e planificação (3D).
@@ -30,6 +30,12 @@ Várias simulações não usam só controles deslizantes: você mexe direto na c
 - Em **Projeções ortográficas**, monte um sólido clicando para pôr e tirar cubos e veja as vistas de frente, de cima e de lado. Nos desafios, você recebe as vistas e precisa montar um sólido que as produza.
 - Em **Isomeria**, gire a ligação simples, veja que a dupla não gira e tente sobrepor uma molécula à sua imagem no espelho.
 - Em **Cruzamentos de Mendel**, escolha os genótipos dos pais e sorteie filhos; em **Probabilidade com dados**, lance mil vezes e compare com a conta.
+
+## Monte um átomo e ligações químicas
+
+Em **Monte um átomo**, escolha qualquer um dos 118 elementos ou ponha e tire prótons, nêutrons e elétrons. Os nêutrons só passam pelos isótopos já observados (a lista da IAEA, com a meia-vida e o tipo de decaimento de cada um) e os elétrons, pelos íons que existem: o cloro vira Cl⁻, mas não Cl²⁻. As propriedades (massa, distribuição eletrônica, eletronegatividade, energia de ionização) vêm da mesma base da [tabela periódica](/docs/alunos/tabela-periodica/). Veja o átomo nos modelos de Dalton, Thomson, Rutherford, Bohr, Sommerfeld e quântico, em 2D ou em 3D; no quântico, escolha um orbital para ver a forma dele.
+
+Em **Ligações químicas**, escolha dois elementos quaisquer e veja a ligação se formar: o elétron passando do metal para o ametal na iônica, os pares compartilhados na covalente (com δ+ e δ− quando é polar) e o mar de elétrons na metálica. A tela mostra a fórmula, a geometria, a polaridade e a diferença de eletronegatividade. A aba **Ligação dativa** traz exemplos como o NH₄⁺ e o CO.
 
 ## O laboratório de circuitos
 

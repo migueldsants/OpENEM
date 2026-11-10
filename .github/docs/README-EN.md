@@ -259,7 +259,9 @@ solved by Kirchhoff's laws, a circuit lab the student builds piece by piece,
 refraction with Fresnel, lenses and mirrors, the Doppler effect, interference
 in a ripple tank, Kepler orbits, a charge in a magnetic field, an ideal gas by
 molecular dynamics, titration by charge balance, the N₂O₄ ⇌ 2 NO₂ equilibrium,
-molecular geometry with measured angles, crystal structures, galvanic cells
+molecular geometry with measured angles, crystal structures, an atom builder (any element, with the isotopes and ions that exist, in
+the models from Dalton to quantum, in 2D or 3D), chemical bonds between any
+two elements (ionic, covalent, metallic and dative), galvanic cells
 with Nernst and Faraday, radioactive decay, the hydrogen spectrum, DNA with
 transcription and translation, predator and prey, genetic drift, the seasons
 the phases of the Moon with eclipses, isomerism in 3D, vector addition,
