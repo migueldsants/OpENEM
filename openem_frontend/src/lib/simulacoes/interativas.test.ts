@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { angulo, configuracao, distancia, espelhar, formula, montar, PARES } from './isomeria';
 import {
   afimPorPontos,
+  amplitudeDados,
+  desvioPadrao,
   distribuicaoSoma,
   esperanca,
   exponencialPorPontos,
   formaGeral,
   logaritmo,
+  media,
+  mediana,
+  modas,
   notavelMaisPerto,
   quadrante,
   quadraticaPorVertice,
@@ -16,26 +21,37 @@ import {
   senoPorPico,
   totalCubos,
   triangulo,
+  variancia,
   vistas,
   vistasIguais,
 } from './matematica';
 import {
   anguloEntre,
+  C_CELULA,
   CIDADES,
+  colisao1D,
   cruzar,
   diferenca,
   direcao,
+  energiaCinetica,
+  estadoCelula,
   fusoTeorico,
   gametas,
   horaOficial,
   horaSolar,
   leiDosCossenos,
   modulo,
+  passoOsmose,
   proporcao,
   relogio,
   somaVetores,
+  tonicidade,
+  volumeEquilibrio,
+  V_LISE,
+  V_PAREDE,
   type Gene,
 } from './mais-modelos';
+import { balanceada, contarAtomos, escrever, massaMolarDe, menoresInteiros, REACOES, reagir } from './estequiometria';
 import { areaFace, dobrar, solido, type V3 } from './solidos';
 
 describe('funções', () => {
@@ -244,5 +260,105 @@ describe('fusos horários', () => {
     expect(relogio(-1)).toBe('23:00');
     // Nova Délhi tem meia hora no fuso.
     expect(relogio(horaOficial(0, CIDADES.find((c) => c.nome === 'Nova Délhi')!.fuso))).toBe('05:30');
+  });
+});
+
+describe('estatística', () => {
+  it('média, mediana, moda, variância e desvio padrão', () => {
+    const xs = [2, 4, 4, 4, 5, 5, 7, 9];
+    expect(media(xs)).toBe(5);
+    expect(mediana(xs)).toBe(4.5);
+    expect(modas(xs)).toEqual([4]);
+    expect(variancia(xs)).toBe(4);
+    expect(desvioPadrao(xs)).toBe(2);
+    expect(amplitudeDados(xs)).toBe(7);
+    expect(mediana([3, 1, 2])).toBe(2);
+    expect(modas([1, 2, 3])).toEqual([]); // amodal
+    expect(modas([1, 1, 2, 2, 3])).toEqual([1, 2]); // bimodal
+  });
+
+  it('um valor extremo puxa a média, não a mediana', () => {
+    const base = [4, 5, 5, 6, 6, 7];
+    const comExtremo = [...base, 40];
+    expect(media(comExtremo) - media(base)).toBeGreaterThan(4);
+    expect(mediana(comExtremo) - mediana(base)).toBeLessThanOrEqual(0.5);
+  });
+});
+
+describe('colisões', () => {
+  it('o momento se conserva sempre; a energia, só na elástica', () => {
+    for (const e of [0, 0.5, 1]) {
+      const [a, b] = colisao1D(2, 3, 1, -1, e);
+      expect(2 * a + 1 * b).toBeCloseTo(2 * 3 + 1 * -1, 12);
+      const antes = energiaCinetica(2, 3) + energiaCinetica(1, -1);
+      const depois = energiaCinetica(2, a) + energiaCinetica(1, b);
+      if (e === 1) expect(depois).toBeCloseTo(antes, 12);
+      else expect(depois).toBeLessThan(antes);
+    }
+  });
+
+  it('casos de livro: massas iguais trocam as velocidades; inelástica sai junto', () => {
+    expect(colisao1D(1, 4, 1, 0, 1).map((v) => +v.toFixed(12))).toEqual([0, 4]);
+    const [a, b] = colisao1D(3, 2, 1, -2, 0);
+    expect(a).toBeCloseTo(b, 12);
+    expect(a).toBeCloseTo(1, 12);
+    // Bola leve contra parede pesada: volta quase com a mesma velocidade.
+    expect(colisao1D(1, 5, 1e9, 0, 1)[0]).toBeCloseTo(-5, 6);
+  });
+});
+
+describe('osmose', () => {
+  const n = C_CELULA; // V inicial = 1
+  const rodar = (cFora: number, tipo: 'animal' | 'vegetal') => {
+    let V = 1;
+    for (let i = 0; i < 20000; i++) V = passoOsmose(V, n, cFora, 0.01, 1.5, tipo);
+    return V;
+  };
+
+  it('isotônica não muda; hipertônica murcha até igualar as concentrações', () => {
+    expect(tonicidade(0.3, 0.3)).toBe('isotônica');
+    expect(rodar(0.3, 'animal')).toBeCloseTo(1, 6);
+    expect(tonicidade(0.6, 0.3)).toBe('hipertônica');
+    expect(rodar(0.6, 'animal')).toBeCloseTo(volumeEquilibrio(n, 0.6), 3);
+    expect(estadoCelula('animal', 0.5)).toBe('murcha (crenada)');
+    expect(estadoCelula('vegetal', 0.5)).toBe('plasmolisada');
+  });
+
+  it('em água pura a célula animal estoura e a vegetal fica túrgida', () => {
+    expect(tonicidade(0, 0.3)).toBe('hipotônica');
+    expect(rodar(0, 'animal')).toBe(V_LISE);
+    expect(estadoCelula('animal', V_LISE)).toBe('lise (estourou)');
+    expect(rodar(0, 'vegetal')).toBe(V_PAREDE);
+    expect(estadoCelula('vegetal', V_PAREDE)).toBe('túrgida');
+  });
+});
+
+describe('estequiometria', () => {
+  it('toda reação do catálogo está balanceada com os menores inteiros', () => {
+    for (const r of REACOES) {
+      expect(balanceada(r, r.coef), r.key).toBe(true);
+      expect(menoresInteiros(r.coef), r.key).toBe(true);
+      expect(r.coef).toHaveLength(r.reagentes.length + r.produtos.length);
+    }
+    const agua = REACOES.find((r) => r.key === 'agua')!;
+    expect(balanceada(agua, [1, 1, 1])).toBe(false);
+    expect(balanceada(agua, [4, 2, 4])).toBe(true);
+    expect(menoresInteiros([4, 2, 4])).toBe(false);
+    expect(contarAtomos(agua.reagentes, [2, 1])).toEqual({ H: 4, O: 2 });
+    expect(escrever(agua, agua.coef)).toBe('2 H₂ + O₂ → 2 H₂O');
+  });
+
+  it('reagente limitante, sobra e conservação da massa', () => {
+    const agua = REACOES.find((r) => r.key === 'agua')!;
+    expect(reagir(agua, [4, 3])).toEqual({ vezes: 2, limitante: 0, produtos: [4], sobra: [0, 1] });
+    expect(reagir(agua, [4, 2]).limitante).toBeNull(); // proporção exata
+    expect(reagir(agua, [5, 1])).toMatchObject({ vezes: 1, limitante: 1, sobra: [3, 0] });
+    const massas = { H: 1.008, O: 15.999, C: 12.011, N: 14.007, S: 32.06, Fe: 55.845 };
+    for (const r of REACOES) {
+      const nr = r.reagentes.length;
+      const antes = r.reagentes.reduce((s, x, i) => s + r.coef[i] * massaMolarDe(x, massas), 0);
+      const depois = r.produtos.reduce((s, x, j) => s + r.coef[nr + j] * massaMolarDe(x, massas), 0);
+      expect(depois, r.key).toBeCloseTo(antes, 9);
+    }
   });
 });

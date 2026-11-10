@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -120,7 +120,8 @@ describe('tela de uma simulação', () => {
     const modal = screen.getByRole('dialog', { name: info.titulo });
     expect(within(modal).getByRole('heading', { name: 'No ENEM' })).toBeInTheDocument();
     fireEvent.click(within(modal).getByRole('button', { name: 'Fechar' }));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // A saída anima por 180 ms antes de desmontar.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     // O átomo abre em 2D e tem o próprio teste para o 3D.
     if (info.dimensao === '3D' && slug !== 'atomo') expect(screen.getByText(/precisa de WebGL/)).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Outras simulações' })).toBeInTheDocument();

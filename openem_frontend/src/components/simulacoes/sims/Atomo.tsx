@@ -294,6 +294,32 @@ export default function Atomo() {
   const listaOrbitais = useMemo(() => cfg.filter((s) => s.e > 0).flatMap((s) => orbitais(s).map((o) => `${s.n}${o.forma}`)), [cfg]);
   const so = orbitalSel !== 'todos' && listaOrbitais.includes(orbitalSel) ? orbitalSel : null;
   const nuvemPts = useMemo(() => (modelo === 'quantico' && cfg.length ? pontosNuvem(cfg, soValencia, so) : []), [modelo, cfg, soValencia, so]);
+  // Tudo o que o desenho 2D usa a cada quadro é calculado uma vez por átomo, não por quadro:
+  // o núcleo (raio 1, escalado na hora), a matriz e a trilha de cada órbita e o tamanho da cena.
+  const nucleoBase = useMemo(() => nucleo(z, a - z, 1), [z, a]);
+  const orbitas2d = useMemo(() => {
+    const vistas = new Set<string>();
+    const trilhas: [number, number][][] = [];
+    const itens = orbitas.map((o) => {
+      const m = matriz(o.rot);
+      const chave = `${o.a.toFixed(2)}-${o.b.toFixed(2)}-${o.rot.join()}`;
+      if (!vistas.has(chave)) {
+        vistas.add(chave);
+        trilhas.push(
+          Array.from({ length: 73 }, (_, s) => {
+            const p = posOrbita({ ...o, fase: 0, vel: 1 }, (s / 72) * Math.PI * 2, m);
+            return [p[0], p[2]] as [number, number];
+          }),
+        );
+      }
+      return { o, m };
+    });
+    return { itens, trilhas };
+  }, [orbitas]);
+  const raioMax2d = useMemo(
+    () => (modelo === 'quantico' ? Math.max(3, ...nuvemPts.map((q) => Math.hypot(q.p[0], q.p[1]))) * 0.9 : Math.max(2, ...orbitas.map((o) => o.a + Math.sqrt(Math.max(0, o.a * o.a - o.b * o.b))))),
+    [modelo, nuvemPts, orbitas],
+  );
 
   if (!dados || !e) {
     return (
@@ -350,21 +376,21 @@ export default function Atomo() {
       return;
     }
     // Núcleo (fora de escala: o de verdade seria dezenas de milhares de vezes menor).
-    const raioMax = modelo === 'quantico' ? Math.max(3, ...nuvemPts.map((q) => Math.hypot(q.p[0], q.p[1]))) * 0.9 : Math.max(2, ...orbitas.map((o) => o.a + Math.sqrt(Math.max(0, o.a * o.a - o.b * o.b))));
-    const k = S / raioMax;
+    const k = S / raioMax2d;
     const alvoNucleo = modelo === 'rutherford' || modelo === 'quantico' ? 6 : Math.min(26, S * 0.11);
     const rn = alvoNucleo / (1.05 * Math.cbrt(a));
-    const nucl = nucleo(z, n, rn);
     const giroN = t * 0.3;
-    nucl
-      .map((q) => ({ x: q.pos[0] * Math.cos(giroN) + q.pos[2] * Math.sin(giroN), y: q.pos[1], d: -q.pos[0] * Math.sin(giroN) + q.pos[2] * Math.cos(giroN), proton: q.proton }))
+    const cg = Math.cos(giroN);
+    const sg = Math.sin(giroN);
+    // Cada núcleon: um disco na cor e um reflexo claro (sem degradê, que é caro com 200 esferas).
+    nucleoBase
+      .map((q) => ({ x: (q.pos[0] * cg + q.pos[2] * sg) * rn, y: q.pos[1] * rn, d: -q.pos[0] * sg + q.pos[2] * cg, proton: q.proton }))
       .sort((p, q) => p.d - q.d)
       .forEach((q) => {
-        const g = ctx.createRadialGradient(cx + q.x - rn / 3, cy - q.y - rn / 3, 0.5, cx + q.x, cy - q.y, rn);
-        g.addColorStop(0, '#ffffff');
-        g.addColorStop(1, q.proton ? COR_PROTON : COR_NEUTRON);
-        ctx.fillStyle = g;
+        ctx.fillStyle = q.proton ? COR_PROTON : COR_NEUTRON;
         ctx.beginPath(); ctx.arc(cx + q.x, cy - q.y, rn, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.beginPath(); ctx.arc(cx + q.x - rn * 0.3, cy - q.y - rn * 0.3, rn * 0.38, 0, Math.PI * 2); ctx.fill();
       });
     if (modelo === 'quantico') {
       const giro = t * 0.35;
@@ -378,33 +404,24 @@ export default function Atomo() {
       return;
     }
     // Órbitas vistas de cima (o plano x, z do 3D) e os elétrons.
-    const vistas = new Set<string>();
-    orbitas.forEach((o) => {
-      const chave = `${o.a.toFixed(2)}-${o.b.toFixed(2)}-${o.rot.join()}`;
-      if (vistas.has(chave)) return;
-      vistas.add(chave);
-      const m = matriz(o.rot);
-      ctx.strokeStyle = alfa(c.muted, 0.45);
-      ctx.lineWidth = 1;
+    ctx.strokeStyle = alfa(c.muted, 0.45);
+    ctx.lineWidth = 1;
+    for (const trilha of orbitas2d.trilhas) {
       ctx.beginPath();
-      for (let s = 0; s <= 72; s++) {
-        const p = posOrbita({ ...o, fase: 0, vel: 1 }, (s / 72) * Math.PI * 2, m);
-        if (s) ctx.lineTo(cx + p[0] * k, cy + p[2] * k);
-        else ctx.moveTo(cx + p[0] * k, cy + p[2] * k);
-      }
+      trilha.forEach(([x, y], s) => (s ? ctx.lineTo(cx + x * k, cy + y * k) : ctx.moveTo(cx + x * k, cy + y * k)));
       ctx.stroke();
-    });
+    }
     if (modelo === 'bohr') {
       camadas(cfg).forEach((qtd, i) => {
         const r = raioCamada(i + 1) * k;
         texto(ctx, `${'KLMNOPQ'[i]} · ${qtd}`, cx + r * 0.71 + 4, cy - r * 0.71 - 4, c.muted, { tamanho: 11, peso: 700, mono: true });
       });
     }
-    orbitas.forEach((o) => {
-      const p = posOrbita(o, t, matriz(o.rot));
-      ctx.fillStyle = COR_ELETRON;
+    ctx.fillStyle = COR_ELETRON;
+    for (const { o, m } of orbitas2d.itens) {
+      const p = posOrbita(o, t, m);
       ctx.beginPath(); ctx.arc(cx + p[0] * k, cy + p[2] * k, 4.2, 0, Math.PI * 2); ctx.fill();
-    });
+    }
   };
 
   const raioCena = modelo === 'quantico' ? 1.7 * Math.max(...cfg.map((s) => s.n), 1) + 1.5 : modelo === 'bohr' || modelo === 'sommerfeld' ? raioCamada(camadas(cfg).length) + 2 : 6;
@@ -418,7 +435,7 @@ export default function Atomo() {
           dim === '2D' ? (
             <Palco2D quadro={quadro} rotulo={`Modelo de ${info.nome} do ${e.nome.toLowerCase()}, ${notacaoA(e.simbolo, a)}${carga ? ` com carga ${textoCarga(carga)}` : ''}`} proporcao={16 / 11} alturaMin={300} />
           ) : (
-            <Palco3D rotulo={`Modelo de ${info.nome} do ${e.nome.toLowerCase()} em 3D`} camera={[0, raioCena * 0.9, raioCena * 1.6]} distancia={[2, 40]} autoGirar={girando}>
+            <Palco3D rotulo={`Modelo de ${info.nome} do ${e.nome.toLowerCase()} em 3D`} camera={[0, raioCena * 0.9, raioCena * 1.6]} distancia={[2, 40]} autoGirar={girando} parado={!girando}>
               <ambientLight intensity={0.6} />
               <directionalLight position={[5, 8, 6]} intensity={1.4} />
               <directionalLight position={[-6, -3, -4]} intensity={0.4} />

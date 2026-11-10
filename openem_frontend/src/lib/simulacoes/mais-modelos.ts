@@ -158,3 +158,66 @@ export function relogio(h: number): string {
 
 /** Diferença de horário de B em relação a A (h): positiva se em B já é mais tarde. */
 export const diferenca = (a: Cidade, b: Cidade) => b.fuso - a.fuso;
+
+// ---------------------------------------------------------------------------
+// Colisão em uma dimensão
+// ---------------------------------------------------------------------------
+
+/**
+ * Velocidades depois da colisão frontal de dois corpos. O momento linear se
+ * conserva sempre; o coeficiente de restituição `e` diz quanto da velocidade
+ * relativa volta: 1 = elástica (a energia cinética se conserva), 0 =
+ * perfeitamente inelástica (saem grudados).
+ */
+export function colisao1D(m1: number, v1: number, m2: number, v2: number, e: number): [number, number] {
+  const p = m1 * v1 + m2 * v2;
+  const M = m1 + m2;
+  return [(p - m2 * e * (v1 - v2)) / M, (p + m1 * e * (v1 - v2)) / M];
+}
+
+export const energiaCinetica = (m: number, v: number) => (m * v * v) / 2;
+
+// ---------------------------------------------------------------------------
+// Osmose
+// ---------------------------------------------------------------------------
+
+export type TipoCelula = 'animal' | 'vegetal';
+
+/** Concentração do interior da célula no início (osmol/L): a do soro fisiológico, 0,9% de NaCl. */
+export const C_CELULA = 0.3;
+/** A célula animal estoura (lise) com 1,6× o volume; a parede da vegetal segura em 1,25×. */
+export const V_LISE = 1.6;
+export const V_PAREDE = 1.25;
+export const V_MIN = 0.35;
+
+/** A solução de fora em relação à célula. */
+export function tonicidade(cFora: number, cDentro: number): 'hipotônica' | 'isotônica' | 'hipertônica' {
+  if (Math.abs(cFora - cDentro) <= 0.02 * Math.max(cDentro, 0.01)) return 'isotônica';
+  return cFora < cDentro ? 'hipotônica' : 'hipertônica';
+}
+
+/**
+ * Um passo da osmose. A água atravessa a membrana para o lado mais
+ * concentrado: dV/dt = P·(c_dentro − c_fora), com c_dentro = n/V (o soluto
+ * não atravessa, então n é constante). V em unidades do volume inicial.
+ */
+export function passoOsmose(V: number, n: number, cFora: number, dt: number, P: number, tipo: TipoCelula): number {
+  const novo = V + P * (n / V - cFora) * dt;
+  return Math.max(V_MIN, Math.min(tipo === 'animal' ? V_LISE : V_PAREDE, novo));
+}
+
+/** Volume em que as concentrações se igualam (infinito em água pura). */
+export const volumeEquilibrio = (n: number, cFora: number) => (cFora > 0 ? n / cFora : Infinity);
+
+export function estadoCelula(tipo: TipoCelula, V: number): string {
+  if (tipo === 'animal') {
+    if (V >= V_LISE - 1e-6) return 'lise (estourou)';
+    if (V > 1.08) return 'inchada';
+    if (V < 0.92) return 'murcha (crenada)';
+    return 'normal';
+  }
+  if (V >= V_PAREDE - 1e-6) return 'túrgida';
+  if (V > 1.08) return 'quase túrgida';
+  if (V < 0.85) return 'plasmolisada';
+  return 'flácida';
+}

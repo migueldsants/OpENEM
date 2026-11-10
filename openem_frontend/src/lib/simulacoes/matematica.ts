@@ -228,3 +228,37 @@ export const totalCubos = (h: Pilhas) => h.reduce((s, l) => s + l.reduce((a, b) 
 export function vistasIguais(a: Vistas, b: Vistas) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
+
+// ---------------------------------------------------------------------------
+// Estatística
+// ---------------------------------------------------------------------------
+
+export const media = (xs: readonly number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : NaN);
+
+/** Valor do meio dos dados em ordem (a média dos dois do meio, se a quantidade for par). */
+export function mediana(xs: readonly number[]): number {
+  if (!xs.length) return NaN;
+  const o = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(o.length / 2);
+  return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
+}
+
+/** Valores mais frequentes; lista vazia se nenhum se repete (conjunto amodal). */
+export function modas(xs: readonly number[]): number[] {
+  const cont = new Map<number, number>();
+  for (const x of xs) cont.set(x, (cont.get(x) ?? 0) + 1);
+  const max = Math.max(0, ...cont.values());
+  if (max < 2) return [];
+  return [...cont].filter(([, n]) => n === max).map(([x]) => x).sort((a, b) => a - b);
+}
+
+/** Variância populacional: a média dos quadrados dos desvios em relação à média. */
+export function variancia(xs: readonly number[]): number {
+  const m = media(xs);
+  return xs.length ? xs.reduce((s, x) => s + (x - m) ** 2, 0) / xs.length : NaN;
+}
+
+export const desvioPadrao = (xs: readonly number[]) => Math.sqrt(variancia(xs));
+
+/** Maior valor menos o menor. */
+export const amplitudeDados = (xs: readonly number[]) => (xs.length ? Math.max(...xs) - Math.min(...xs) : NaN);

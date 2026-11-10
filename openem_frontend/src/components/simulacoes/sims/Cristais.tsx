@@ -94,7 +94,7 @@ export default function Cristais() {
     <div className="lg:h-full">
       <LayoutSim
         palco={
-          <Palco3D rotulo={`Retículo cristalino: ${e.nome} (${e.exemplo})`} camera={[4.5, 3.5, 6]} distancia={[3, 20]} autoGirar={girar}>
+          <Palco3D rotulo={`Retículo cristalino: ${e.nome} (${e.exemplo})`} camera={[4.5, 3.5, 6]} distancia={[3, 20]} autoGirar={girar} parado={!girar}>
             <ambientLight intensity={0.55} />
             <directionalLight position={[4, 6, 5]} intensity={1.5} />
             <directionalLight position={[-5, -3, -4]} intensity={0.4} />

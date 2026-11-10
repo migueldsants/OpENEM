@@ -92,7 +92,7 @@ export default function Isomeria() {
     <div className="lg:h-full">
       <LayoutSim
         palco={
-          <Palco3D rotulo={`${a.nome} e ${b.nome}, isomeria ${par.tipo}`} camera={[0, 1.5, 15]} distancia={[4, 25]} autoGirar={girar}>
+          <Palco3D rotulo={`${a.nome} e ${b.nome}, isomeria ${par.tipo}`} camera={[0, 1.5, 15]} distancia={[4, 25]} autoGirar={girar} parado={!girar}>
             <ambientLight intensity={0.6} />
             <directionalLight position={[4, 6, 6]} intensity={1.5} />
             <directionalLight position={[-5, -2, -4]} intensity={0.4} />

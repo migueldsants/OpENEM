@@ -5,7 +5,7 @@
  */
 import { OrbitControls, Stars } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useContext, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { COR_CEU, usaMovimentoReduzido } from './canvas';
 import { PalcoCheioCtx } from './contexto';
 
@@ -29,6 +29,7 @@ export function Palco3D({
   autoGirar = false,
   ceu = false,
   sobreposicao,
+  parado = false,
 }: {
   children: ReactNode;
   camera?: [number, number, number];
@@ -45,11 +46,26 @@ export function Palco3D({
   ceu?: boolean;
   /** Desenhado por cima da cena, fora do WebGL (um quadro, uma legenda). */
   sobreposicao?: ReactNode;
+  /**
+   * Cena sem animação própria (nada gira, nada anda): só redesenha quando o
+   * aluno mexe na câmera ou quando algo muda. Poupa bateria no celular.
+   */
+  parado?: boolean;
 }) {
   const [suporte] = useState(temWebGL);
   const cheio = useContext(PalcoCheioCtx);
   const preencher = cheio ? 'sim-palco-cheio' : '';
-  const [parado] = useState(usaMovimentoReduzido);
+  // Fora da tela, o WebGL para de desenhar.
+  const caixa = useRef<HTMLDivElement>(null);
+  const [visivel, setVisivel] = useState(true);
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setVisivel(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const [semMovimento] = useState(usaMovimentoReduzido);
   if (!suporte) {
     return (
       <div
@@ -67,16 +83,17 @@ export function Palco3D({
   }
   return (
     <div
+      ref={caixa}
       role="img"
       aria-label={`${rotulo}. Arraste para girar a cena e use a roda ou dois dedos para aproximar.`}
       className={`relative w-full overflow-hidden rounded-xl bg-surface-2 ${preencher}`}
       style={{ aspectRatio: String(proporcao), minHeight: 280, ...(ceu ? { background: COR_CEU } : null) }}
     >
-      <Canvas camera={{ position: camera, fov, near: 0.01, far: 2000 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+      <Canvas camera={{ position: camera, fov, near: 0.01, far: 2000 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }} frameloop={!visivel ? 'never' : parado ? 'demand' : 'always'}>
         {ceu && (
           <>
             <color attach="background" args={[COR_CEU]} />
-            <Stars radius={120} depth={60} count={4000} factor={4} saturation={0.2} fade speed={parado ? 0 : 0.6} />
+            <Stars radius={120} depth={60} count={4000} factor={4} saturation={0.2} fade speed={semMovimento ? 0 : 0.6} />
           </>
         )}
         <OrbitControls

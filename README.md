@@ -247,10 +247,11 @@ node tools/tabela-periodica/verificar.mjs   # precisa fechar com 0 não explicad
 
 ### Simulações
 
-A tela **Simulações** reúne 36 experimentos de Física, Química, Biologia,
+A tela **Simulações** reúne 42 experimentos de Física, Química, Biologia,
 Matemática e Geografia, em 2D (canvas) e 3D (three.js com React Three Fiber): lançamento
 oblíquo com arrasto do ar, pêndulo sem a aproximação de ângulo pequeno,
-massa-mola e ressonância, plano inclinado, empuxo, circuitos resolvidos pelas
+massa-mola e ressonância, plano inclinado, empuxo, colisões com
+conservação da quantidade de movimento, circuitos resolvidos pelas
 leis de Kirchhoff, um laboratório de circuitos que o aluno monta peça por peça,
 refração com Fresnel, lentes e espelhos, efeito Doppler, interferência numa
 cuba de ondas, órbitas de Kepler, carga em campo magnético, gás ideal por
@@ -258,13 +259,14 @@ dinâmica molecular, titulação pelo balanço de cargas, equilíbrio
 N₂O₄ ⇌ 2 NO₂, geometria molecular com ângulos medidos, estruturas cristalinas,
 um simulador de átomo (qualquer elemento, com os isótopos e íons que existem,
 nos modelos de Dalton a quântico, em 2D ou 3D), ligações químicas entre
-quaisquer dois elementos (iônica, covalente, metálica e dativa), pilhas com
+quaisquer dois elementos (iônica, covalente, metálica e dativa), balanceamento
+e reagente limitante, pilhas com
 Nernst e Faraday, decaimento radioativo, espectro do hidrogênio,
-DNA com transcrição e tradução, predador e presa, deriva genética, estações do
+DNA com transcrição e tradução, predador e presa, deriva genética, osmose em hemácias e células vegetais, estações do
 ano, fases da Lua com eclipses, isomeria em 3D, soma de vetores, cruzamentos de
 Mendel com o quadro de Punnett, fusos horários num globo e, em Matemática,
 gráficos de funções com pontos arrastáveis ou digitados pelo aluno, ciclo trigonométrico, triângulos e
-pontos notáveis, probabilidade com dados, projeções ortográficas (o aluno monta
+pontos notáveis, probabilidade com dados, média, mediana e desvio padrão com pontos arrastáveis, projeções ortográficas (o aluno monta
 o sólido de cubos) e planificação de sólidos. Cada simulação cabe inteira na tela do
 computador, com a explicação num modal. Tudo roda no aparelho, sem backend.
 

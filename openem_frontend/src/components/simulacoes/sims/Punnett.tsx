@@ -146,6 +146,7 @@ export default function Punnett() {
     <div className="lg:h-full">
       <LayoutSim
         palco={palco}
+        palcoFixo={false}
         leituras={
           <Leituras
             itens={[

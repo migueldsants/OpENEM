@@ -57,3 +57,66 @@
     min-height: 0 !important;
   }
 }
+
+/* Modal "Entenda": o fundo esmaece e o painel cresce de 0,97 em 200 ms; no
+   celular o painel é uma folha que sobe de baixo. Transições (não keyframes),
+   para a saída partir de onde a entrada estiver. */
+.sim-modal-fundo {
+  transition: opacity 200ms ease;
+  @starting-style {
+    opacity: 0;
+  }
+}
+.sim-modal-fundo[data-fechando='true'] {
+  opacity: 0;
+  transition-duration: 150ms;
+}
+.sim-modal {
+  transition: transform 200ms var(--ease-saida);
+  @starting-style {
+    transform: scale(0.97);
+  }
+}
+.sim-modal-fundo[data-fechando='true'] .sim-modal {
+  transform: scale(0.97);
+  transition-duration: 150ms;
+}
+@media (max-width: 39.99rem) {
+  .sim-modal {
+    transition: transform 320ms var(--ease-folha);
+    @starting-style {
+      transform: translateY(100%);
+    }
+  }
+  .sim-modal-fundo[data-fechando='true'] .sim-modal {
+    transform: translateY(100%);
+    transition-duration: 200ms;
+  }
+}
+
+/* Celular e tablet: o palco fica preso no topo enquanto a página rola até os
+   controles (abaixo da barra do app, que some a partir de 48rem). */
+@media (max-width: 63.99rem) {
+  .sim-palco-fixo {
+    position: sticky;
+    top: 3.5rem;
+    z-index: 10;
+    margin-inline: -1rem;
+    padding: 0.5rem 1rem 0.25rem;
+    background: var(--bg);
+  }
+  .sim-palco-fixo .sim-palco-cheio {
+    max-height: 44dvh;
+  }
+}
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .sim-palco-fixo {
+    top: 0;
+  }
+}
+/* Tela baixa (celular deitado): o palco preso tomaria a tela toda. */
+@media (max-width: 63.99rem) and (max-height: 34rem) {
+  .sim-palco-fixo {
+    position: static;
+  }
+}

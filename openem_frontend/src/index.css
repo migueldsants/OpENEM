@@ -367,6 +367,14 @@
   }
 }
 
+/* Curvas de movimento do sistema (DESIGN.md): saída para entradas e respostas,
+   movimento para deslocamentos na tela, folha para painéis que sobem de baixo. */
+:root {
+  --ease-saida: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-movimento: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-folha: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -459,9 +467,12 @@
       transform 0.18s ease,
       box-shadow 0.18s ease;
   }
-  .lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+  /* Só com mouse: no toque, o :hover fica preso depois do toque. */
+  @media (hover: hover) and (pointer: fine) {
+    .lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
   }
   .lift:active {
     transform: translateY(0);
@@ -537,7 +548,8 @@
    faz o wrapper virar o bloco de contenção de todo `position: fixed` da
    página, e os modais passam a cobrir só a área do conteúdo. */
 .animate-route {
-  animation: routeIn 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  /* Curta: repete a cada navegação, inclusive nas setas de anterior e próxima. */
+  animation: routeIn 0.22s var(--ease-saida) backwards;
 }
 
 /* Reveal no scroll (a classe é adicionada via IntersectionObserver). */

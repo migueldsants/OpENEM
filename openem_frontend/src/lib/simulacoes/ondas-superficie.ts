@@ -32,6 +32,9 @@ function amp(p: Fontes, r: number) {
   return (p.A ?? 0.01) / Math.sqrt(1 + r / (0.25 * lambda));
 }
 
+/** Amplitude da onda de uma fonte a distância r (para quem desenha a superfície vértice a vértice). */
+export const amplitudeFonte = (p: Fontes, r: number) => amp(p, r);
+
 /** Altura da superfície no ponto (x, y) no instante t; fontes em (±d/2, 0). */
 export function altura(p: Fontes, x: number, y: number, t: number): number {
   const k = TAU / comprimentoOnda(p);

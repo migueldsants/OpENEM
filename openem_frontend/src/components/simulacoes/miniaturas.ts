@@ -1331,6 +1331,113 @@ const DESENHOS: Record<string, Desenho> = {
     const para: [number, number] = [xCl - d, y + 4];
     bola(ctx, de[0] + (para[0] - de[0]) * ida, de[1] + (para[1] - de[1]) * ida - Math.sin(ida * Math.PI) * 22, 3.4, k.mat);
   },
+  // Colisoes.tsx: dois carrinhos (mat e hum) se chocam e voltam, com as setas de velocidade.
+  colisoes(ctx, w, h, t, k) {
+    const chao = h * 0.68;
+    ctx.fillStyle = alfa(k.muted, 0.35);
+    ctx.fillRect(8, chao, w - 16, 4);
+    const ciclo = (t % 3) / 3;
+    const ida = ciclo < 0.5;
+    const f = ida ? ciclo * 2 : (1 - ciclo) * 2;
+    const L1 = h * 0.3;
+    const L2 = h * 0.22;
+    const x1 = w * 0.12 + f * (w * 0.5 - L1 / 2 - w * 0.12);
+    const x2 = w * 0.9 - f * (w * 0.9 - (w * 0.5 + L2 / 2));
+    const carro = (x: number, L: number, cor: string, v: number) => {
+      ctx.fillStyle = cor;
+      ctx.beginPath(); ctx.roundRect(x - L / 2, chao - L - 4, L, L, 5); ctx.fill();
+      bola(ctx, x - L * 0.28, chao - 3, 3.5, k.fg);
+      bola(ctx, x + L * 0.28, chao - 3, 3.5, k.fg);
+      seta(ctx, x, chao - L - 12, x + v, chao - L - 12, k.fg, 2);
+    };
+    carro(x1, L1, k.mat, ida ? 22 : -10);
+    carro(x2, L2, k.hum, ida ? -16 : 26);
+  },
+
+  // Estequiometria.tsx: 2 H₂ + O₂ viram 2 H₂O, em bolinhas nas cores dos átomos.
+  estequiometria(ctx, w, h, t, k) {
+    const p = Math.min(1, ((t % 4) / 4) * 1.5);
+    const some = Math.min(1, p / 0.55);
+    const surge = Math.max(0, (p - 0.45) / 0.55);
+    const r = Math.min(9, h * 0.07);
+    const meio = w / 2;
+    const at = (x: number, y: number, el: string, raio: number, a: number) => {
+      ctx.globalAlpha = a;
+      bola(ctx, x, y, raio, COR_ATOMO[el]);
+      ctx.strokeStyle = alfa(k.fg, 0.35);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    };
+    const ir = (x: number, y: number, f: number): [number, number] => [x + (meio - x) * f * 0.8, y + (h / 2 - y) * f * 0.8];
+    for (const y of [h * 0.3, h * 0.7]) {
+      const [x, yy] = ir(w * 0.14, y, some);
+      at(x - r * 0.6, yy, 'H', r * 0.7, 1 - some);
+      at(x + r * 0.6, yy, 'H', r * 0.7, 1 - some);
+    }
+    const [ox, oy] = ir(w * 0.34, h / 2, some);
+    at(ox - r * 0.8, oy, 'O', r, 1 - some);
+    at(ox + r * 0.8, oy, 'O', r, 1 - some);
+    texto(ctx, '→', meio, h / 2 + 6, p > 0.3 ? k.brand : k.muted, { alinhar: 'center', tamanho: 18, peso: 800 });
+    for (const y of [h * 0.3, h * 0.7]) {
+      const x = meio + (w * 0.78 - meio) * surge;
+      const yy = h / 2 + (y - h / 2) * surge;
+      at(x - r * 1.05, yy + r * 0.7, 'H', r * 0.7, surge);
+      at(x + r * 1.05, yy + r * 0.7, 'H', r * 0.7, surge);
+      at(x, yy, 'O', r, surge);
+    }
+  },
+
+  // Osmose.tsx: a hemácia incha e murcha conforme a água entra e sai; o soluto fica de fora.
+  osmose(ctx, w, h, t, k) {
+    ctx.fillStyle = alfa('#3b82f6', 0.1);
+    ctx.fillRect(0, 0, w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    const fase2 = Math.sin(t * 0.9);
+    const R = Math.min(w, h) * (0.27 + 0.07 * fase2);
+    const r = criarRng(8);
+    for (let i = 0; i < 26; i++) {
+      const x = r() * w;
+      const y = r() * h;
+      if (Math.hypot(x - cx, y - cy) > R + 10) bola(ctx, x, y, 2.6, '#f59e3c');
+    }
+    ctx.fillStyle = alfa('#f2587a', 0.28);
+    ctx.strokeStyle = '#e11d48';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 9; i++) bola(ctx, cx + Math.cos(i * 2.4) * R * 0.6 * Math.sqrt((i + 1) / 9), cy + Math.sin(i * 2.4) * R * 0.6 * Math.sqrt((i + 1) / 9), 2.6, '#f59e3c');
+    const entra = Math.cos(t * 0.9) > 0;
+    for (let i = 0; i < 6; i++) {
+      const a = (TAU * i) / 6 + 0.5;
+      const r0 = R + (entra ? 14 : -10);
+      const r1 = R + (entra ? -8 : 16);
+      seta(ctx, cx + Math.cos(a) * r0, cy + Math.sin(a) * r0, cx + Math.cos(a) * r1, cy + Math.sin(a) * r1, '#3b82f6', 1.8);
+    }
+    void k;
+  },
+
+  // Estatistica.tsx: gráfico de pontos com a média (mat, o apoio) e a mediana (hum); um ponto extremo puxa a média.
+  estatistica(ctx, w, h, t, k) {
+    const eixo = h * 0.7;
+    const X = (v: number) => 14 + (v / 20) * (w - 28);
+    const extremo = 13 + 5 * (0.5 + 0.5 * Math.sin(t * 0.9));
+    const dados = [4, 5, 5, 6, 6, 6, 7, 7, 8, extremo];
+    const m = dados.reduce((s, x) => s + x, 0) / dados.length;
+    linha(ctx, [[8, eixo], [w - 8, eixo]], k.muted, 1.5);
+    for (let v = 0; v <= 20; v += 2) linha(ctx, [[X(v), eixo], [X(v), eixo + 4]], k.muted, 1);
+    const r = Math.min(7, h * 0.06);
+    const cont = new Map<number, number>();
+    dados.forEach((v, i) => {
+      const n = cont.get(v) ?? 0;
+      cont.set(v, n + 1);
+      bola(ctx, X(v), eixo - r - 3 - n * r * 2.2, r, i === dados.length - 1 ? k.brand : k.fg);
+    });
+    linha(ctx, [[X(m), 10], [X(m), eixo]], k.mat, 2);
+    ctx.fillStyle = k.mat;
+    ctx.beginPath(); ctx.moveTo(X(m), eixo + 8); ctx.lineTo(X(m) - 7, eixo + 20); ctx.lineTo(X(m) + 7, eixo + 20); ctx.closePath(); ctx.fill();
+    linha(ctx, [[X(6), 10], [X(6), eixo]], k.hum, 1.6, [5, 4]);
+  },
 };
 
 export function desenharMiniatura(slug: string, ctx: CanvasRenderingContext2D, w: number, h: number, t: number, k: Tinta) {

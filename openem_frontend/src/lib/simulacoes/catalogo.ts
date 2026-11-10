@@ -165,6 +165,14 @@ export const SIMULACOES: SimulacaoInfo[] = [
     conceitos: ['Vetores', 'Força resultante', 'Componentes', 'Lei dos cossenos'],
   },
   {
+    slug: 'colisoes',
+    titulo: 'Colisões e quantidade de movimento',
+    materia: 'Física',
+    dimensao: '2D',
+    resumo: 'Lance dois carrinhos um contra o outro, com as massas e velocidades que quiser, em colisão elástica, parcial ou inelástica.',
+    conceitos: ['Quantidade de movimento', 'Conservação do momento', 'Colisões', 'Energia cinética'],
+  },
+  {
     slug: 'gases',
     titulo: 'Gás ideal: pressão, volume e temperatura',
     materia: 'Química',
@@ -229,6 +237,14 @@ export const SIMULACOES: SimulacaoInfo[] = [
     conceitos: ['Ligação iônica', 'Ligação covalente', 'Ligação metálica', 'Ligação dativa', 'Eletronegatividade', 'Polaridade'],
   },
   {
+    slug: 'estequiometria',
+    titulo: 'Balanceamento e reagente limitante',
+    materia: 'Química',
+    dimensao: '2D',
+    resumo: 'Ajuste os coeficientes até os átomos fecharem dos dois lados e depois reaja quantidades à sua escolha para ver quem acaba primeiro e o que sobra.',
+    conceitos: ['Balanceamento', 'Estequiometria', 'Reagente limitante', 'Lei de Lavoisier', 'Mol'],
+  },
+  {
     slug: 'pilha',
     titulo: 'Pilhas e eletroquímica',
     materia: 'Química',
@@ -285,6 +301,14 @@ export const SIMULACOES: SimulacaoInfo[] = [
     conceitos: ['Leis de Mendel', 'Quadro de Punnett', 'Probabilidade genética', 'Dominância'],
   },
   {
+    slug: 'osmose',
+    titulo: 'Osmose na célula',
+    materia: 'Biologia',
+    dimensao: '2D',
+    resumo: 'Mergulhe uma hemácia ou uma célula vegetal em água destilada, soro ou água do mar e veja a água atravessar a membrana.',
+    conceitos: ['Osmose', 'Transporte passivo', 'Membrana plasmática', 'Soluções hipo, iso e hipertônicas'],
+  },
+  {
     slug: 'funcoes',
     titulo: 'Gráficos de funções',
     materia: 'Matemática',
@@ -315,6 +339,14 @@ export const SIMULACOES: SimulacaoInfo[] = [
     dimensao: '2D',
     resumo: 'Lance um, dois ou três dados mil vezes e compare a frequência de cada soma com a probabilidade calculada.',
     conceitos: ['Probabilidade', 'Estatística', 'Lei dos grandes números', 'Valor esperado'],
+  },
+  {
+    slug: 'estatistica',
+    titulo: 'Média, mediana e desvio padrão',
+    materia: 'Matemática',
+    dimensao: '2D',
+    resumo: 'Arraste os pontos de um conjunto de dados e veja a média, a mediana, a moda e o desvio padrão mudarem na hora.',
+    conceitos: ['Estatística', 'Medidas de tendência central', 'Medidas de dispersão', 'Desvio padrão'],
   },
   {
     slug: 'projecoes-ortograficas',

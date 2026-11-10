@@ -155,7 +155,7 @@ export default function DNA() {
     <div className="lg:h-full">
       <LayoutSim
         palco={
-          <Palco3D rotulo={`Dupla hélice de DNA com ${seq.length} pares de bases`} camera={[0, 0, Math.max(9, seq.length * 0.42)]} distancia={[3, 30]} autoGirar={girar}>
+          <Palco3D rotulo={`Dupla hélice de DNA com ${seq.length} pares de bases`} camera={[0, 0, Math.max(9, seq.length * 0.42)]} distancia={[3, 30]} autoGirar={girar} parado={!girar}>
             <ambientLight intensity={0.6} />
             <directionalLight position={[4, 6, 6]} intensity={1.4} />
             <directionalLight position={[-5, -2, -4]} intensity={0.4} />

@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { Markdown } from '../Markdown';
 import { Portal, useDialog } from '../Modal';
 import { IconBook, IconCube, IconPause, IconPlay, IconUndo, IconX } from '../icons';
-import { marcasEixo, useCores, type Cores } from './canvas';
+import { marcasEixo, usaMovimentoReduzido, useCores, type Cores } from './canvas';
 import { ExplicacaoCtx, PalcoCheioCtx, type LugarExplicacao } from './contexto';
 import './simulacoes.css';
 
@@ -79,6 +79,8 @@ export function Palco2D({
     medir();
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
     ro?.observe(canvas);
+    // Fora da tela (o aluno rolou para longe do palco), o laço para: nem física nem desenho.
+    let visivel = true;
     const laco = (agora: number) => {
       const dt = Math.min((agora - ultimo) / 1000, 1 / 20);
       ultimo = agora;
@@ -88,12 +90,24 @@ export function Palco2D({
         quadroRef.current(ctx!, w, h, dt, coresRef.current);
         ctx!.restore();
       }
-      raf = requestAnimationFrame(laco);
+      if (visivel) raf = requestAnimationFrame(laco);
     };
     raf = requestAnimationFrame(laco);
+    const io =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver(([e]) => {
+            if (e.isIntersecting && !visivel) {
+              ultimo = performance.now();
+              raf = requestAnimationFrame(laco);
+            } else if (!e.isIntersecting && visivel) cancelAnimationFrame(raf);
+            visivel = e.isIntersecting;
+          })
+        : null;
+    io?.observe(canvas);
     return () => {
       cancelAnimationFrame(raf);
       ro?.disconnect();
+      io?.disconnect();
     };
   }, []);
 
@@ -135,6 +149,7 @@ export function LayoutSim({
   leituras,
   extra,
   rotuloExtra = 'Gráficos',
+  palcoFixo = true,
 }: {
   palco: ReactNode;
   controles: ReactNode;
@@ -142,14 +157,23 @@ export function LayoutSim({
   extra?: ReactNode;
   /** Nome da aba do `extra` (um gráfico, um texto, a tradução do DNA). */
   rotuloExtra?: string;
+  /**
+   * No celular, o palco fica preso no topo enquanto o aluno rola até os
+   * controles, para ver o efeito do que mexe. Desligue em palcos altos (uma
+   * tabela, um quadro) que tomariam a tela.
+   */
+  palcoFixo?: boolean;
 }) {
   const [aba, setAba] = useState<'controles' | 'graficos'>('controles');
   const id = useId();
   return (
     <div className="grid gap-3 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,340px)]">
-      <div className="flex min-w-0 flex-col gap-3 lg:min-h-0">
-        <div className="card card-raised p-2 lg:min-h-0 lg:flex-1">
-          <PalcoCheioCtx.Provider value>{palco}</PalcoCheioCtx.Provider>
+      {/* No celular a coluna some (contents): o palco vira item da grade e pode ficar preso ao longo da tela toda. */}
+      <div className="contents min-w-0 lg:flex lg:min-h-0 lg:flex-col lg:gap-3">
+        <div className={`min-w-0 lg:min-h-0 lg:flex-1 ${palcoFixo ? 'sim-palco-fixo' : ''}`}>
+          <div className="card card-raised p-2 lg:h-full">
+            <PalcoCheioCtx.Provider value>{palco}</PalcoCheioCtx.Provider>
+          </div>
         </div>
         {leituras}
       </div>
@@ -393,25 +417,50 @@ export interface ItemLeitura {
 
 /**
  * Medidas ao vivo, numa faixa compacta embaixo do palco. A nota de cada
- * medida (a fórmula, o valor sem ar…) fica na dica e para leitor de tela,
- * para a faixa não crescer.
+ * medida (a fórmula, o valor sem ar…) não ocupa a faixa: aparece na dica do
+ * mouse, ao tocar no nome da medida (sublinhado pontilhado) e para leitor de tela.
  */
 export function Leituras({ itens, titulo = 'Medidas' }: { itens: ItemLeitura[]; titulo?: string }) {
+  // Nota aberta pelo toque (no mouse, a dica do `title` já mostra).
+  const [aberta, setAberta] = useState<string | null>(null);
   return (
     <section className="card px-4 py-3" aria-label={titulo}>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-[repeat(auto-fit,minmax(128px,1fr))]">
-        {itens.map((it) => (
-          <div key={it.rotulo} className="min-w-0" title={it.nota}>
-            <dt className="flex items-center gap-1.5 truncate text-[11px] text-muted">
+        {itens.map((it) => {
+          const rotulo = (
+            <>
               {it.cor && <span className="size-2 shrink-0 rounded-full" style={{ background: it.cor }} />}
-              {it.rotulo}
-            </dt>
-            <dd className="font-data text-sm font-semibold tabular-nums" aria-live="off">
-              {it.valor}
-              {it.nota && <span className="sr-only"> ({it.nota})</span>}
-            </dd>
-          </div>
-        ))}
+              <span className="truncate">{it.rotulo}</span>
+            </>
+          );
+          return (
+            <div key={it.rotulo} className="min-w-0" title={it.nota}>
+              <dt className="text-[11px] text-muted">
+                {it.nota ? (
+                  <button
+                    type="button"
+                    className="flex max-w-full items-center gap-1.5 text-left underline decoration-dotted decoration-[color-mix(in_oklab,var(--muted)_60%,transparent)] underline-offset-2"
+                    aria-expanded={aberta === it.rotulo}
+                    onClick={() => setAberta(aberta === it.rotulo ? null : it.rotulo)}
+                  >
+                    {rotulo}
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1.5">{rotulo}</span>
+                )}
+              </dt>
+              <dd className="font-data text-sm font-semibold tabular-nums" aria-live="off">
+                {it.valor}
+                {it.nota &&
+                  (aberta === it.rotulo ? (
+                    <span className="block font-sans text-[11px] font-normal text-muted text-pretty">{it.nota}</span>
+                  ) : (
+                    <span className="sr-only"> ({it.nota})</span>
+                  ))}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
     </section>
   );
@@ -437,18 +486,27 @@ function TextoExplicacao({ children, enem }: { children: string; enem?: string }
 function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExplicacao; onClose: () => void; children: string; enem?: string }) {
   const painel = useRef<HTMLDivElement>(null);
   const titulo = useId();
-  useDialog(painel, onClose);
+  // A saída anima antes de desmontar (sem movimento reduzido, fecha na hora).
+  const [fechando, setFechando] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const fechar = () => {
+    if (usaMovimentoReduzido()) return onClose();
+    setFechando(true);
+    timer.current = window.setTimeout(onClose, 180);
+  };
+  useDialog(painel, fechar);
   const { info } = lugar;
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4" onClick={onClose}>
+      <div className="sim-modal-fundo fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4" data-fechando={fechando} onClick={fechar}>
         <div
           ref={painel}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titulo}
           tabIndex={-1}
-          className="card card-raised flex max-h-[88dvh] w-full max-w-2xl flex-col outline-none animate-rise"
+          className="sim-modal card card-raised flex max-h-[88dvh] w-full max-w-2xl flex-col outline-none"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-3 border-b border-line p-5 pb-4">
@@ -469,7 +527,7 @@ function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExpli
                 ))}
               </ul>
             </div>
-            <button type="button" className="btn btn-ghost shrink-0 px-2.5" onClick={onClose} aria-label="Fechar">
+            <button type="button" className="btn btn-ghost shrink-0 px-2.5" onClick={fechar} aria-label="Fechar">
               <IconX width={18} height={18} />
             </button>
           </div>

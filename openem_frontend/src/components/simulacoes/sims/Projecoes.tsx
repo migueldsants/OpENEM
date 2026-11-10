@@ -114,7 +114,7 @@ export default function Projecoes() {
     <div className="lg:h-full">
       <LayoutSim
         palco={
-          <Palco3D rotulo={`Sólido de ${totalCubos(h)} cubos e as suas vistas`} camera={[5.5, 6, 7.5]} distancia={[5, 20]} sobreposicao={<PainelVistas v={v} alvo={alvo} />}>
+          <Palco3D rotulo={`Sólido de ${totalCubos(h)} cubos e as suas vistas`} camera={[5.5, 6, 7.5]} distancia={[5, 20]} sobreposicao={<PainelVistas v={v} alvo={alvo} />} parado>
             <ambientLight intensity={0.55} />
             <directionalLight position={[4, 8, 6]} intensity={1.5} />
             <directionalLight position={[-6, 3, -2]} intensity={0.35} />

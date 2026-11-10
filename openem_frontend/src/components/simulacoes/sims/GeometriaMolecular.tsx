@@ -101,7 +101,7 @@ export default function GeometriaMolecular() {
     <div className="lg:h-full">
       <LayoutSim
         palco={
-          <Palco3D rotulo={`Modelo de bolas e varetas de ${mol.nome}`} camera={[0, 1.2, 5]} distancia={[2.5, 12]} autoGirar={girar}>
+          <Palco3D rotulo={`Modelo de bolas e varetas de ${mol.nome}`} camera={[0, 1.2, 5]} distancia={[2.5, 12]} autoGirar={girar} parado={!girar}>
             <ambientLight intensity={0.55} />
             <directionalLight position={[3, 5, 4]} intensity={1.6} />
             <directionalLight position={[-4, -2, -3]} intensity={0.4} />
