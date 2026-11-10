@@ -245,6 +245,31 @@ node tools/tabela-periodica/montar.mjs
 node tools/tabela-periodica/verificar.mjs   # precisa fechar com 0 não explicadas
 ```
 
+### Simulações
+
+A tela **Simulações** reúne 36 experimentos de Física, Química, Biologia,
+Matemática e Geografia, em 2D (canvas) e 3D (three.js com React Three Fiber): lançamento
+oblíquo com arrasto do ar, pêndulo sem a aproximação de ângulo pequeno,
+massa-mola e ressonância, plano inclinado, empuxo, circuitos resolvidos pelas
+leis de Kirchhoff, um laboratório de circuitos que o aluno monta peça por peça,
+refração com Fresnel, lentes e espelhos, efeito Doppler, interferência numa
+cuba de ondas, órbitas de Kepler, carga em campo magnético, gás ideal por
+dinâmica molecular, titulação pelo balanço de cargas, equilíbrio
+N₂O₄ ⇌ 2 NO₂, geometria molecular com ângulos medidos, estruturas cristalinas,
+pilhas com Nernst e Faraday, decaimento radioativo, espectro do hidrogênio,
+DNA com transcrição e tradução, predador e presa, deriva genética, estações do
+ano, fases da Lua com eclipses, isomeria em 3D, soma de vetores, cruzamentos de
+Mendel com o quadro de Punnett, fusos horários num globo e, em Matemática,
+gráficos de funções com pontos arrastáveis ou digitados pelo aluno, ciclo trigonométrico, triângulos e
+pontos notáveis, probabilidade com dados, projeções ortográficas (o aluno monta
+o sólido de cubos) e planificação de sólidos. Cada simulação cabe inteira na tela do
+computador, com a explicação num modal. Tudo roda no aparelho, sem backend.
+
+Os modelos ficam em `openem_frontend/src/lib/simulacoes/` (puros e testados
+contra as soluções analíticas: RK4, leapfrog e o integrador de Boris) e as telas
+em `openem_frontend/src/components/simulacoes/`. O three.js só baixa quando o
+aluno abre uma cena 3D e fica fora do precache do service worker.
+
 ### Testes
 
 ```bash

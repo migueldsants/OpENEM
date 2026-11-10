@@ -249,6 +249,32 @@ node tools/tabela-periodica/montar.mjs
 node tools/tabela-periodica/verificar.mjs   # must end with 0 unexplained
 ```
 
+### Simulations
+
+The **Simulações** screen gathers 36 Physics, Chemistry, Biology, Mathematics
+and Geography experiments, in 2D (canvas) and 3D (three.js with React Three Fiber):
+projectile motion with air drag, a pendulum without the small-angle
+approximation, mass-spring and resonance, inclined plane, buoyancy, circuits
+solved by Kirchhoff's laws, a circuit lab the student builds piece by piece,
+refraction with Fresnel, lenses and mirrors, the Doppler effect, interference
+in a ripple tank, Kepler orbits, a charge in a magnetic field, an ideal gas by
+molecular dynamics, titration by charge balance, the N₂O₄ ⇌ 2 NO₂ equilibrium,
+molecular geometry with measured angles, crystal structures, galvanic cells
+with Nernst and Faraday, radioactive decay, the hydrogen spectrum, DNA with
+transcription and translation, predator and prey, genetic drift, the seasons
+the phases of the Moon with eclipses, isomerism in 3D, vector addition,
+Mendelian crosses with the Punnett square, time zones on a globe and, in
+Mathematics, function graphs with draggable points or typed by the student, the unit circle, triangles
+and their centers, probability with dice, orthographic projections (the
+student builds the solid out of cubes) and nets of solids. Each simulation fits on a computer
+screen, with the explanation in a modal. Everything runs on the device, with
+no backend.
+
+The models live in `openem_frontend/src/lib/simulacoes/` (pure and tested
+against analytic solutions: RK4, leapfrog and the Boris pusher) and the screens
+in `openem_frontend/src/components/simulacoes/`. three.js only downloads when a
+student opens a 3D scene and stays out of the service worker precache.
+
 ### Tests
 
 ```bash

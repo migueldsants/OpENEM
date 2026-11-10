@@ -26,6 +26,9 @@ import {
   ArrowDown,
   Equals,
   Atom,
+  Planet,
+  ArrowRight,
+  Cube,
   BookOpen,
   CalendarBlank,
   CaretLeft,
@@ -179,6 +182,9 @@ export const IconDiamond = shim(Diamond, 'duotone');
 export const IconText = shim(TextT, 'duotone');
 export const IconFormula = shim(Pi, 'duotone');
 export const IconAtom = shim(Atom, 'duotone');
+export const IconPlanet = shim(Planet, 'duotone');
+export const IconArrowRight = shim(ArrowRight, 'bold');
+export const IconCube = shim(Cube, 'duotone');
 export const IconGlobe = shim(GlobeHemisphereWest, 'duotone');
 export const IconPalette = shim(Palette, 'duotone');
 export const IconShare = shim(UploadSimple, 'bold');

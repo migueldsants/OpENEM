@@ -1,0 +1,59 @@
+/* Controles das simulações (tela /simulacoes). */
+.sim-range {
+  accent-color: var(--brand);
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+.sim-switch {
+  appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 2.5rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.sim-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(1.4rem - 6px);
+  height: calc(1.4rem - 6px);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.2s ease;
+}
+.sim-switch:checked {
+  background: var(--brand);
+}
+.sim-switch:checked::after {
+  transform: translateX(1.1rem);
+  background: var(--brand-ink);
+}
+
+/* Rótulos HTML dentro das cenas 3D. */
+.sim-rotulo-3d {
+  pointer-events: none;
+  white-space: nowrap;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg);
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  border: 1px solid var(--line);
+}
+
+/* Palco que preenche a altura no desktop (LayoutSim): a proporção vale só no celular. */
+@media (min-width: 64rem) {
+  .sim-palco-cheio {
+    aspect-ratio: auto !important;
+    height: 100%;
+    min-height: 0 !important;
+  }
+}
