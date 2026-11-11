@@ -304,6 +304,11 @@ describe('Hardening (e2e)', () => {
   });
 
   describe('rate limiting atrás de proxy (TRUST_PROXY)', () => {
+    // Cada teste sobe um app inteiro e faz mais de 30 logins: no runner do CI
+    // isso já passou dos 5 s padrão do Jest, sem nada estar errado.
+    beforeAll(() => jest.setTimeout(30_000));
+    afterAll(() => jest.setTimeout(5_000));
+
     // Instância dedicada por teste: cada app tem os próprios contadores.
     async function appDedicada(trustProxy?: string) {
       const moduleFixture = await Test.createTestingModule({
