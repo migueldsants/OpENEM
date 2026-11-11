@@ -74,19 +74,44 @@ export default function Doppler() {
     }
     const t = st.t;
     const esc = w / LARGURA_M;
-    const yPista = h * 0.45;
+    const yPista = h * 0.48;
     const X = (x: number) => x * esc;
     const Y = (y: number) => yPista + y * esc;
-    // Pista.
-    ctx.fillStyle = alfa(c.muted, 0.15);
-    ctx.fillRect(0, yPista - 14, w, 28);
-    // Frentes de onda.
-    ctx.lineWidth = 1.5;
+    // Pista com a faixa do meio tracejada.
+    ctx.fillStyle = alfa(c.muted, 0.14);
+    ctx.fillRect(0, yPista - 17, w, 34);
+    ctx.strokeStyle = alfa(c.muted, 0.45);
+    ctx.lineWidth = 2;
+    ctx.setLineDash([14, 12]);
+    ctx.beginPath(); ctx.moveTo(0, yPista); ctx.lineTo(w, yPista); ctx.stroke();
+    ctx.setLineDash([]);
+    // Frentes de onda: as mais novas mais fortes.
+    ctx.lineWidth = 2;
     for (const fr of st.frentes) {
       const r = v * (t - fr.te) * esc;
       const idade = (t - fr.te) / (LARGURA_M / v);
-      ctx.strokeStyle = alfa(c.brand, Math.max(0.08, 0.85 - idade * 0.8));
+      ctx.strokeStyle = alfa(c.brand, Math.max(0.07, 0.9 - idade * 0.85));
       ctx.beginPath(); ctx.arc(X(fr.x), yPista, r, 0, Math.PI * 2); ctx.stroke();
+    }
+    // λ à frente e atrás, entre duas frentes vizinhas já longe da ambulância: o que o ENEM pergunta.
+    const longe = st.frentes.findLastIndex((fr) => v * (t - fr.te) * esc > 70);
+    const ult = longe >= 1 ? st.frentes[longe] : undefined;
+    const pen = longe >= 1 ? st.frentes[longe - 1] : undefined;
+    if (ult && pen && vs < v && vs > 3) {
+      const r1 = v * (t - ult.te) * esc;
+      const r2 = v * (t - pen.te) * esc;
+      const cota = (xa: number, xb: number, rot: string) => {
+        const y = yPista + 30;
+        if (Math.abs(xb - xa) < 6 || Math.min(xa, xb) < 10 || Math.max(xa, xb) > w - 10) return;
+        ctx.strokeStyle = c.fg;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(xa, y - 5); ctx.lineTo(xa, y + 5); ctx.moveTo(xa, y); ctx.lineTo(xb, y); ctx.moveTo(xb, y - 5); ctx.lineTo(xb, y + 5);
+        ctx.stroke();
+        texto(ctx, rot, (xa + xb) / 2, y + 18, c.fg, { alinhar: 'center', tamanho: 11, peso: 700 });
+      };
+      cota(X(pen.x) + r2, X(ult.x) + r1, 'λ menor');
+      cota(X(ult.x) - r1, X(pen.x) - r2, 'λ maior');
     }
     // Cone de Mach.
     const am = anguloMach(v, vs);
@@ -94,24 +119,49 @@ export default function Doppler() {
       const xs = X(xFonte(t));
       const tg = Math.tan((am * Math.PI) / 180);
       ctx.strokeStyle = c.danger;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.moveTo(xs - h / tg, yPista - h); ctx.lineTo(xs, yPista); ctx.lineTo(xs - h / tg, yPista + h);
       ctx.stroke();
     }
-    // Fonte (ambulância).
+    // Ambulância: carroceria, cabine, rodas e a sirene piscando com brilho.
     const xs = X(xFonte(t));
+    const pisca = Math.floor(t / 0.02) % 2 === 0;
     ctx.fillStyle = c.fg;
-    ctx.beginPath(); ctx.roundRect(xs - 16, yPista - 9, 32, 18, 4); ctx.fill();
-    ctx.fillStyle = Math.floor(t / 0.02) % 2 ? c.danger : c.mat;
-    ctx.fillRect(xs - 4, yPista - 13, 8, 5);
-    // Observador.
+    ctx.beginPath(); ctx.roundRect(xs - 26, yPista - 12, 40, 22, 4); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(xs + 12, yPista - 6, 14, 16, [2, 6, 3, 2]); ctx.fill();
+    ctx.fillStyle = c.danger;
+    ctx.fillRect(xs - 26, yPista - 1, 40, 4);
+    ctx.fillStyle = c.surface2;
+    ctx.fillRect(xs + 16, yPista - 3, 7, 6);
+    for (const dx of [-17, 15]) {
+      ctx.fillStyle = c.bg;
+      ctx.beginPath(); ctx.arc(xs + dx, yPista + 11, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = c.fg; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    const luz = pisca ? c.danger : c.mat;
+    const brilho = ctx.createRadialGradient(xs - 6, yPista - 15, 0, xs - 6, yPista - 15, 18);
+    brilho.addColorStop(0, alfa(luz, 0.55));
+    brilho.addColorStop(1, alfa(luz, 0));
+    ctx.fillStyle = brilho;
+    ctx.beginPath(); ctx.arc(xs - 6, yPista - 15, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = luz;
+    ctx.fillRect(xs - 11, yPista - 17, 10, 5);
+    // Observador, com o que ele ouve num balão.
     const ox = X(OBS[0]);
-    const oy = Y(OBS[1]);
+    const oy = Y(OBS[1]) + 6;
     ctx.fillStyle = c.nat;
-    ctx.beginPath(); ctx.arc(ox, oy - 10, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillRect(ox - 4, oy - 4, 8, 16);
-    texto(ctx, 'você', ox, oy + 26, c.nat, { alinhar: 'center', peso: 600, tamanho: 11 });
+    ctx.beginPath(); ctx.arc(ox, oy - 15, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(ox - 7, oy - 6, 14, 20, 5); ctx.fill();
+    const foAgora = frequenciaNoObservador(t);
+    const balao = foAgora ? `ouve ${fmt(foAgora, 0)} Hz` : vs >= v ? 'silêncio até o estrondo' : 'ainda não ouve';
+    ctx.font = '600 12px JetBrains Mono Variable, monospace';
+    const bw = ctx.measureText(balao).width + 18;
+    ctx.fillStyle = c.surface;
+    ctx.strokeStyle = alfa(c.nat, 0.7);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(ox - bw / 2, oy + 22, bw, 24, 8); ctx.fill(); ctx.stroke();
+    texto(ctx, balao, ox, oy + 38, c.fg, { alinhar: 'center', tamanho: 12, peso: 600, mono: true });
     // Escala.
     ctx.strokeStyle = c.muted; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(12, h - 16); ctx.lineTo(12 + 100 * esc, h - 16); ctx.stroke();
@@ -119,7 +169,7 @@ export default function Doppler() {
     texto(ctx, `câmera lenta: ${fmt(LENTO * 100, 0)}% da velocidade real`, w - 12, h - 12, c.muted, { alinhar: 'right', tamanho: 11 });
 
     // Frequência ouvida (e som, se ligado).
-    const fo = frequenciaNoObservador(t);
+    const fo = foAgora;
     st.acc += dt;
     if (st.acc > 0.1) {
       st.acc = 0;

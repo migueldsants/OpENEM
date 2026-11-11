@@ -41,6 +41,7 @@ import {
   Circle,
   Clock,
   Copy,
+  ArrowsIn,
   ArrowsOut,
   Diamond,
   DotsThree,
@@ -198,6 +199,7 @@ export const IconEraser = shim(Eraser, 'duotone');
 export const IconCopy = shim(Copy, 'duotone');
 // Expandir o detalhe de uma formula (issue #38).
 export const IconExpand = shim(ArrowsOut, 'bold');
+export const IconCollapse = shim(ArrowsIn, 'bold');
 export const IconHand = shim(Hand, 'duotone');
 export const IconMinus = shim(Minus, 'bold');
 export const IconZoomIn = shim(MagnifyingGlassPlus, 'bold');

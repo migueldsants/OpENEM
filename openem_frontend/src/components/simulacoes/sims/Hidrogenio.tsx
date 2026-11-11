@@ -9,7 +9,7 @@ import {
   serieEspectral,
 } from '../../../lib/simulacoes/quimica';
 import { criarRng, fmt } from '../../../lib/simulacoes/numerico';
-import { alfa, texto } from '../canvas';
+import { alfa, seta, texto } from '../canvas';
 import { Alternar, Explicacao, LayoutSim, Leituras, Palco2D, type Quadro } from '../ui';
 
 const N_MAX = 6;
@@ -28,12 +28,22 @@ const rgb = (nm: number) => {
 
 export default function Hidrogenio() {
   const [lampada, setLampada] = useState(false);
-  const sim = useRef({ n: 1, desde: 0, t: 0, fotons: [] as { nm: number; idade: number; ang: number }[], linhas: new Map<string, number>(), rng: criarRng(11) });
+  const sim = useRef({
+    n: 1,
+    desde: 0,
+    t: 0,
+    fotons: [] as { nm: number; idade: number; ang: number }[],
+    linhas: new Map<string, number>(),
+    rng: criarRng(11),
+    // Os últimos saltos, para a seta no diagrama de níveis: subida (absorção, sem fóton) e descida (emissão).
+    saltos: [] as { de: number; para: number; nm: number | null; t: number }[],
+  });
   const [ultima, setUltima] = useState<Transicao | null>(null);
   const [nAtual, setNAtual] = useState(1);
   const acc = useRef(0);
 
   const excitar = (n: number) => {
+    if (n !== sim.current.n) sim.current.saltos.push({ de: sim.current.n, para: n, nm: null, t: sim.current.t });
     sim.current.n = n;
     sim.current.desde = sim.current.t;
     setNAtual(n);
@@ -53,6 +63,7 @@ export default function Hidrogenio() {
       st.fotons.push({ nm, idade: 0, ang: st.rng() * Math.PI * 2 });
       const chave = `${st.n}-${para}`;
       st.linhas.set(chave, (st.linhas.get(chave) ?? 0) + 1);
+      st.saltos.push({ de: st.n, para, nm, t: st.t });
       setUltima({ de: st.n, para, nm });
       st.n = para;
       st.desde = st.t;
@@ -65,23 +76,39 @@ export default function Hidrogenio() {
         excitar(2 + Math.floor(st.rng() * (N_MAX - 1)));
       }
     }
+    st.saltos = st.saltos.filter((sa) => st.t - sa.t < 1.6);
     // Átomo de Bohr (raios ∝ n², comprimidos para caber).
-    const ax = w * 0.27;
-    const ay = h * 0.42;
-    const Rmax = Math.min(w * 0.24, h * 0.38);
-    const raio = (n: number) => (Math.sqrt(raioNivel(n) / raioNivel(N_MAX)) * Rmax);
+    const sy = h * 0.78; // topo do espectro
+    const ax = w * 0.28;
+    const ay = sy * 0.5;
+    const Rmax = Math.min(w * 0.25, sy * 0.44);
+    const raio = (n: number) => Math.sqrt(raioNivel(n) / raioNivel(N_MAX)) * Rmax;
     for (let n = 1; n <= N_MAX; n++) {
-      ctx.strokeStyle = n === st.n ? c.brand : alfa(c.muted, 0.5);
-      ctx.lineWidth = n === st.n ? 2 : 1;
+      const atual = n === st.n;
+      ctx.strokeStyle = atual ? c.brand : alfa(c.muted, 0.38);
+      ctx.lineWidth = atual ? 2.2 : 1;
       ctx.beginPath(); ctx.arc(ax, ay, raio(n), 0, Math.PI * 2); ctx.stroke();
-      texto(ctx, `n=${n}`, ax + raio(n) + 2, ay - 3, c.muted, { tamanho: 9 });
+      // Rótulos numa diagonal, para não se amontoarem.
+      const a = -Math.PI / 4;
+      texto(ctx, `${n}`, ax + Math.cos(a) * raio(n) + 4, ay + Math.sin(a) * raio(n) - 2, atual ? c.brand : c.muted, { tamanho: 10, peso: 700, mono: true });
     }
+    // Núcleo (um próton) e o elétron com brilho, mais lento nas órbitas altas (v ∝ 1/n).
+    const brilho = (x: number, y: number, r: number, cor: string) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, alfa(cor, 0.55));
+      g.addColorStop(1, alfa(cor, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    };
+    brilho(ax, ay, 16, c.danger);
     ctx.fillStyle = c.danger;
-    ctx.beginPath(); ctx.arc(ax, ay, 5, 0, Math.PI * 2); ctx.fill();
-    // Elétron girando (mais devagar em órbitas altas: v ∝ 1/n).
+    ctx.beginPath(); ctx.arc(ax, ay, 6, 0, Math.PI * 2); ctx.fill();
     const ang = (st.t * 4) / st.n;
+    const ex = ax + raio(st.n) * Math.cos(ang);
+    const ey = ay + raio(st.n) * Math.sin(ang);
+    brilho(ex, ey, 13, c.mat);
     ctx.fillStyle = c.mat;
-    ctx.beginPath(); ctx.arc(ax + raio(st.n) * Math.cos(ang), ay + raio(st.n) * Math.sin(ang), 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2); ctx.fill();
     // Fótons saindo como ondas.
     st.fotons = st.fotons.filter((f) => {
       f.idade += dt;
@@ -103,32 +130,52 @@ export default function Hidrogenio() {
       ctx.stroke();
       return true;
     });
-    // Diagrama de energia.
-    const dx0 = w * 0.6;
-    const dx1 = w - 16;
-    const top = h * 0.06;
-    const base = h * 0.7;
-    const Y = (E: number) => top + ((E - 0) / (energiaNivel(1) - 0)) * (base - top);
+    // Diagrama de níveis de energia, com os saltos recentes como setas (branca: absorção; na cor da luz: emissão).
+    const dx0 = w * 0.62;
+    const dx1 = w - 18;
+    const fimLinha = dx1 - 70;
+    const top = sy * 0.12;
+    const base = sy * 0.9;
+    const Y = (E: number) => top + (E / energiaNivel(1)) * (base - top);
+    texto(ctx, 'Níveis de energia', dx0, top - 14, c.muted, { tamanho: 11, peso: 700 });
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = alfa(c.muted, 0.7);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(dx0, Y(0)); ctx.lineTo(fimLinha, Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+    texto(ctx, '0 eV', dx1, Y(0) + 4, c.muted, { alinhar: 'right', tamanho: 10, mono: true });
     for (let n = 1; n <= N_MAX; n++) {
       const y = Y(energiaNivel(n));
-      ctx.strokeStyle = n === st.n ? c.brand : c.fg;
-      ctx.lineWidth = n === st.n ? 3 : 1.5;
-      ctx.beginPath(); ctx.moveTo(dx0, y); ctx.lineTo(dx1 - 70, y); ctx.stroke();
-      texto(ctx, `${fmt(energiaNivel(n), 2)} eV`, dx1, y + 4, c.muted, { alinhar: 'right', tamanho: 10, mono: true });
+      const atual = n === st.n;
+      ctx.strokeStyle = atual ? c.brand : c.fg;
+      ctx.lineWidth = atual ? 3 : 1.5;
+      ctx.beginPath(); ctx.moveTo(dx0, y); ctx.lineTo(fimLinha, y); ctx.stroke();
+      // Os níveis altos ficam colados: só o atual e os três primeiros ganham rótulo.
+      if (n <= 3 || atual) texto(ctx, `n=${n}`, dx0 - 8, y + 4, atual ? c.brand : c.muted, { alinhar: 'right', tamanho: 10, peso: 700, mono: true });
+      if (n <= 3) texto(ctx, `${fmt(energiaNivel(n), 2)} eV`, dx1, y + 4, c.muted, { alinhar: 'right', tamanho: 10, mono: true });
     }
-    ctx.setLineDash([3, 3]);
-    ctx.strokeStyle = c.muted;
-    ctx.beginPath(); ctx.moveTo(dx0, Y(0)); ctx.lineTo(dx1 - 70, Y(0)); ctx.stroke();
-    ctx.setLineDash([]);
-    texto(ctx, '0 eV (ionizado)', dx1, Y(0) + 4, c.muted, { alinhar: 'right', tamanho: 10 });
-    // Espectro: só o visível tem cor; UV e IV aparecem como faixas cinza.
-    const sy = h * 0.8;
-    const sh = h * 0.12;
+    st.saltos.forEach((sa, k) => {
+      const x = dx0 + 22 + ((k * 24) % Math.max(24, fimLinha - dx0 - 44));
+      const cor = sa.nm === null ? c.fg : (rgb(sa.nm) ?? c.muted);
+      ctx.globalAlpha = Math.max(0, 1 - (st.t - sa.t) / 1.6);
+      seta(ctx, x, Y(energiaNivel(sa.de)), x, Y(energiaNivel(sa.para)), cor, 2.5);
+      ctx.globalAlpha = 1;
+    });
+    // Espectro: o visível aparece apagado, de referência; cada linha emitida acende por cima.
+    const sh = h * 0.1;
     const sx0 = 16;
     const sx1 = w - 16;
     const X = (nm: number) => sx0 + ((nm - 380) / (750 - 380)) * (sx1 - sx0);
     ctx.fillStyle = '#05050a';
-    ctx.fillRect(sx0, sy, sx1 - sx0, sh);
+    ctx.beginPath(); ctx.roundRect(sx0, sy, sx1 - sx0, sh, 6); ctx.fill();
+    ctx.globalAlpha = 0.14;
+    for (let x = sx0; x < sx1; x += 2) {
+      const cor = rgb(380 + ((x - sx0) / (sx1 - sx0)) * 370);
+      if (!cor) continue;
+      ctx.fillStyle = cor;
+      ctx.fillRect(x, sy, 2, sh);
+    }
+    ctx.globalAlpha = 1;
     let maxCont = 1;
     st.linhas.forEach((v) => (maxCont = Math.max(maxCont, v)));
     let uv = 0;
@@ -138,13 +185,20 @@ export default function Hidrogenio() {
       const nm = comprimentoTransicao(a, b);
       if (nm < 380) { uv += cont; return; }
       if (nm > 750) { iv += cont; return; }
-      ctx.fillStyle = rgb(nm)!;
-      ctx.globalAlpha = 0.35 + 0.65 * (cont / maxCont);
+      const cor = rgb(nm)!;
+      const g = ctx.createLinearGradient(X(nm) - 8, 0, X(nm) + 8, 0);
+      g.addColorStop(0, alfa(cor, 0));
+      g.addColorStop(0.5, cor);
+      g.addColorStop(1, alfa(cor, 0));
+      ctx.globalAlpha = 0.45 + 0.55 * (cont / maxCont);
+      ctx.fillStyle = g;
+      ctx.fillRect(X(nm) - 8, sy, 16, sh);
+      ctx.fillStyle = cor;
       ctx.fillRect(X(nm) - 1.5, sy, 3, sh);
       ctx.globalAlpha = 1;
-      texto(ctx, `${fmt(nm, 0)}`, X(nm), sy - 4, c.muted, { alinhar: 'center', tamanho: 9 });
+      texto(ctx, `${fmt(nm, 0)} nm`, X(nm), sy - 5, c.fg, { alinhar: 'center', tamanho: 10, mono: true, peso: 600 });
     });
-    texto(ctx, `UV (Lyman): ${uv}`, sx0, sy + sh + 14, c.muted, { tamanho: 10 });
+    texto(ctx, `UV (Lyman): ${uv}`, sx0, sy + sh + 15, c.muted, { tamanho: 10 });
     texto(ctx, `IV (Paschen…): ${iv}`, sx1, sy + sh + 14, c.muted, { alinhar: 'right', tamanho: 10 });
     texto(ctx, 'espectro visível (380 a 750 nm)', (sx0 + sx1) / 2, sy + sh + 14, c.muted, { alinhar: 'center', tamanho: 10 });
   };

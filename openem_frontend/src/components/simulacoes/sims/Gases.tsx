@@ -15,7 +15,7 @@ import {
 } from '../../../lib/simulacoes/gases';
 import { clamp, fmt } from '../../../lib/simulacoes/numerico';
 import { alfa, texto, usaMovimentoReduzido } from '../canvas';
-import { Alternar, BarraExecucao, Bloco, Deslizador, Explicacao, Grafico, LayoutSim, Leituras, Palco2D, type Quadro } from '../ui';
+import { Alternar, BarraExecucao, Bloco, Deslizador, Explicacao, Grafico, LayoutSim, Leituras, Palco2D, type Ponteiro, type Quadro } from '../ui';
 
 const ALTURA = 40; // nm
 const LARG_MAX = 90; // nm
@@ -42,11 +42,36 @@ export default function Gases() {
   const [rodando, setRodando] = useState(!usaMovimentoReduzido());
   const gas = useRef<Gas | null>(null);
   const medida = useRef({ P: 0, acc: 0 });
+  const arrasto = useRef(false);
+  /** Pressão de referência do manômetro: a primeira medida, que fica no meio do mostrador. */
+  const pRef = useRef(0);
   const [vista, setVista] = useState<Vista>({ T: 300, P: 0, Pideal: 0, n: 160, largura: 60, hist: [] });
 
   const reiniciar = () => {
     gas.current = criarGas(N, Talvo, largAlvo, ALTURA, Math.floor(Math.random() * 1e9));
     medida.current = { P: 0, acc: 0 };
+    pRef.current = 0;
+  };
+
+  const geo = (w: number, h: number) => {
+    const esc = Math.min((w - 40) / LARG_MAX, (h - 40) / ALTURA);
+    return { esc, ox: 16, oy: (h - ALTURA * esc) / 2 };
+  };
+
+  // O pistão também se arrasta no palco: apertar o gás é empurrar a parede.
+  const onPonteiro = (e: Ponteiro) => {
+    if (e.tipo === 'up') {
+      arrasto.current = false;
+      return;
+    }
+    const g = gas.current;
+    if (!g) return;
+    const { esc, ox, oy } = geo(e.w, e.h);
+    if (e.tipo === 'down') {
+      const px = ox + g.largura * esc;
+      arrasto.current = e.x > px - 22 && e.y > oy - 10 && e.y < oy + ALTURA * esc + 10;
+    }
+    if (arrasto.current) setLargAlvo(clamp(Math.round((e.x - 5 - ox) / esc), 20, LARG_MAX));
   };
 
   const quadro: Quadro = (ctx, w, h, dt, c) => {
@@ -71,17 +96,71 @@ export default function Gases() {
       }
     }
     // Caixa em escala.
-    const esc = Math.min((w - 40) / LARG_MAX, (h - 40) / ALTURA);
-    const ox = 16;
-    const oy = (h - ALTURA * esc) / 2;
+    const { esc, ox, oy } = geo(w, h);
+    const altPx = ALTURA * esc;
+    const px = ox + g.largura * esc;
+    ctx.fillStyle = alfa(c.surface, 0.5);
+    ctx.fillRect(ox, oy, g.largura * esc, altPx);
+    // O curso do pistão, pontilhado, mostra até onde ele vai.
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = alfa(c.muted, 0.45);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ox, oy, LARG_MAX * esc, altPx);
+    ctx.setLineDash([]);
     ctx.strokeStyle = c.fg;
     ctx.lineWidth = 3;
-    ctx.strokeRect(ox, oy, g.largura * esc, ALTURA * esc);
-    // Pistão.
-    const px = ox + g.largura * esc;
+    ctx.beginPath(); ctx.moveTo(px, oy); ctx.lineTo(ox, oy); ctx.lineTo(ox, oy + altPx); ctx.lineTo(px, oy + altPx); ctx.stroke();
+    // Pistão, haste e a pega de arrastar.
+    ctx.fillStyle = arrasto.current ? c.fg : c.muted;
+    ctx.beginPath(); ctx.roundRect(px, oy - 5, 12, altPx + 10, 3); ctx.fill();
     ctx.fillStyle = c.muted;
-    ctx.fillRect(px, oy - 4, 10, ALTURA * esc + 8);
-    ctx.fillRect(px + 10, oy + (ALTURA * esc) / 2 - 4, w - px - 10, 8);
+    ctx.fillRect(px + 12, oy + altPx / 2 - 4, Math.max(0, w - px - 34), 8);
+    ctx.fillStyle = c.brand;
+    ctx.beginPath(); ctx.arc(Math.min(w - 20, px + 40), oy + altPx / 2, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = c.surface;
+    ctx.lineWidth = 2;
+    const gx = Math.min(w - 20, px + 40);
+    ctx.beginPath();
+    ctx.moveTo(gx - 5, oy + altPx / 2); ctx.lineTo(gx + 5, oy + altPx / 2);
+    ctx.moveTo(gx - 5, oy + altPx / 2); ctx.lineTo(gx - 2, oy + altPx / 2 - 3); ctx.moveTo(gx - 5, oy + altPx / 2); ctx.lineTo(gx - 2, oy + altPx / 2 + 3);
+    ctx.moveTo(gx + 5, oy + altPx / 2); ctx.lineTo(gx + 2, oy + altPx / 2 - 3); ctx.moveTo(gx + 5, oy + altPx / 2); ctx.lineTo(gx + 2, oy + altPx / 2 + 3);
+    ctx.stroke();
+    // Manômetro em cima da caixa: o ponteiro no meio é a pressão do começo.
+    const P = medida.current.P;
+    if (pRef.current === 0 && P > 0) pRef.current = P;
+    if (oy > 86) {
+      const mx = ox + 46;
+      const my = oy - 44;
+      const R = 32;
+      ctx.strokeStyle = c.fg;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(mx, my + R); ctx.lineTo(mx, oy); ctx.stroke();
+      ctx.fillStyle = c.surface;
+      ctx.beginPath(); ctx.arc(mx, my, R, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      const a0 = Math.PI * 0.8;
+      const a1 = Math.PI * 2.2;
+      for (let i = 0; i <= 8; i++) {
+        const a = a0 + ((a1 - a0) * i) / 8;
+        ctx.strokeStyle = i >= 6 ? c.danger : c.muted;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * (R - 8), my + Math.sin(a) * (R - 8)); ctx.lineTo(mx + Math.cos(a) * (R - 3), my + Math.sin(a) * (R - 3)); ctx.stroke();
+      }
+      const fr = pRef.current > 0 ? P / (P + pRef.current) : 0;
+      const an = a0 + (a1 - a0) * fr;
+      ctx.strokeStyle = c.brand;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx + Math.cos(an) * (R - 11), my + Math.sin(an) * (R - 11)); ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = c.fg;
+      ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI * 2); ctx.fill();
+      texto(ctx, 'pressão', mx + R + 10, my - 2, c.muted, { tamanho: 11, peso: 700 });
+      texto(ctx, pRef.current > 0 ? `${fmt(P / pRef.current, 2)} × a inicial` : 'medindo…', mx + R + 10, my + 14, c.fg, { tamanho: 12, peso: 600, mono: true });
+      texto(ctx, `${fmt(temperatura(g), 0)} K`, w - 16, my + 14, c.fg, { alinhar: 'right', tamanho: 12, peso: 600, mono: true });
+      texto(ctx, 'temperatura', w - 16, my - 2, c.muted, { alinhar: 'right', tamanho: 11, peso: 700 });
+    }
     // Moléculas coloridas pela velocidade (azul lenta → vermelha rápida).
     const vmp = Math.sqrt(1.380649e-23 * Math.max(temperatura(g), 1) / g.massa) / 1000;
     // Em escala o disco teria ~1 px: desenhado um pouco maior para se ver.
@@ -108,7 +187,7 @@ export default function Gases() {
   return (
     <div className="lg:h-full">
       <LayoutSim
-        palco={<Palco2D quadro={quadro} rotulo="Moléculas de gás colidindo dentro de um recipiente com pistão" proporcao={16 / 9} />}
+        palco={<Palco2D quadro={quadro} rotulo="Moléculas de gás colidindo dentro de um recipiente com pistão; arraste o pistão para mudar o volume" proporcao={16 / 9} onPonteiro={onPonteiro} />}
         leituras={
           <Leituras
             itens={[

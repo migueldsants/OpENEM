@@ -120,3 +120,14 @@
     position: static;
   }
 }
+
+/* Tela cheia: a simulação inteira (palco, medidas e controles), sem o menu, para projetar na sala. */
+.sim-layout:fullscreen {
+  height: 100dvh;
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.sim-layout:fullscreen .sim-palco-fixo {
+  top: 0;
+}

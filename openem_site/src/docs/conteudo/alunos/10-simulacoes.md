@@ -19,6 +19,8 @@ A tela abre nas quatro matérias, cada uma com algumas simulações rodando em m
 
 Cada simulação tem o mesmo jeito e cabe inteira na tela do computador: a cena grande à esquerda, as **medidas** ao vivo numa faixa logo abaixo e os controles ao lado. No celular, tudo fica um embaixo do outro e a cena gruda no alto da tela enquanto você desce até os controles, para ver o efeito de cada mudança. Medida com um sublinhado pontilhado tem uma nota: toque nela para ler. Mude um controle e veja o que acontece com os números. Quando há gráfico, ele fica na aba **Gráficos**, ao lado dos controles, para a cena continuar à vista. Para passar a outra simulação, use as setas no alto. Algumas cenas aceitam toque: arraste o laser na refração, mova o objeto nas lentes, toque numa lâmpada para queimá-la. Nas cenas 3D, arraste para girar e use dois dedos (ou a roda do mouse) para aproximar.
 
+No computador, a **barra de espaço** roda ou pausa a animação e a tecla **R** reinicia. O botão de **tela cheia**, ao lado do Entenda, mostra só a simulação, com as medidas e os controles, o que ajuda a projetar na sala de aula; o Esc volta.
+
 O botão **Entenda**, no alto, abre a explicação: a física, a química ou a biologia por trás e o quadro **No ENEM**, que resume como o assunto costuma aparecer na prova.
 
 ## Simulações para montar e arrastar
@@ -29,6 +31,7 @@ Várias simulações não usam só controles deslizantes: você mexe direto na c
 - No **Ciclo trigonométrico**, gire o ponto no círculo; em **Triângulos**, arraste os vértices; em **Soma de vetores**, arraste as pontas das setas.
 - Em **Projeções ortográficas**, monte um sólido clicando para pôr e tirar cubos e veja as vistas de frente, de cima e de lado. Nos desafios, você recebe as vistas e precisa montar um sólido que as produza.
 - Em **Isomeria**, gire a ligação simples, veja que a dupla não gira e tente sobrepor uma molécula à sua imagem no espelho.
+- Em **Massa-mola**, puxe o bloco e solte: uma caneta presa nele desenha a posição num papel que desce, e a barra de energia mostra a cinética e a elástica trocando de lugar. Em **Gás ideal**, arraste o pistão e veja o manômetro subir. Em **Probabilidade com dados**, toque numa coluna para acompanhar aquela soma. Na **Titulação**, a curva de pH se desenha ao lado da bureta, gota a gota.
 - Em **Cruzamentos de Mendel**, escolha os genótipos dos pais e sorteie filhos; em **Probabilidade com dados**, lance mil vezes e compare com a conta.
 - Em **Média, mediana e desvio padrão**, arraste os pontos, ponha e tire valores e veja um valor extremo puxar a média enquanto a mediana quase não se mexe.
 - Em **Colisões**, arraste a ponta da seta de cada carrinho para dar a velocidade e escolha a colisão elástica, parcial ou inelástica: a quantidade de movimento total não muda, a energia cinética depende do tipo.

@@ -7,7 +7,7 @@ import {
   periodoPequenasOscilacoes,
 } from '../../../lib/simulacoes/mecanica';
 import { avancar, fmt, grausParaRad, radParaGraus } from '../../../lib/simulacoes/numerico';
-import { alfa, texto, usaMovimentoReduzido } from '../canvas';
+import { alfa, medidorEnergia, seta, texto, usaMovimentoReduzido } from '../canvas';
 import { BarraExecucao, Bloco, Deslizador, Explicacao, Grafico, LayoutSim, Leituras, Palco2D, Seletor, type Quadro } from '../ui';
 
 const JANELA = 10; // s de histórico no gráfico
@@ -20,12 +20,12 @@ export default function Pendulo() {
   const [gKey, setGKey] = useState<string>('terra');
   const [rodando, setRodando] = useState(!usaMovimentoReduzido());
   const g = GRAVIDADES.find((x) => x.key === gKey)!.g;
-  const sim = useRef({ t: 0, s: [grausParaRad(30), 0] as number[], hist: [] as [number, number][], acc: 0 });
+  const sim = useRef({ t: 0, s: [grausParaRad(30), 0] as number[], hist: [] as [number, number][], acc: 0, rastro: [] as number[] });
   // Retrato do estado para a interface, renovado 10 vezes por segundo.
   const [vista, setVista] = useState({ t: 0, s: [grausParaRad(30), 0], hist: [] as [number, number][] });
 
   const reiniciar = (th = theta0) => {
-    sim.current = { t: 0, s: [grausParaRad(th), 0], hist: [], acc: 0 };
+    sim.current = { t: 0, s: [grausParaRad(th), 0], hist: [], acc: 0, rastro: [] };
     setVista({ t: 0, s: [grausParaRad(th), 0], hist: [] });
   };
 
@@ -44,55 +44,69 @@ export default function Pendulo() {
       }
     }
     const [th, om] = st.s;
-    const escala = (h * 0.78) / 3.2; // 3,2 m cabem na altura
+    if (rodando) {
+      st.rastro.push(th);
+      if (st.rastro.length > 26) st.rastro.shift();
+    }
+    // O fio ocupa a altura: até 1,8 m na escala cheia; mais curto, aparece mais curto (dá para comparar).
+    const oy = Math.max(26, h * 0.07);
     const ox = w / 2;
-    const oy = h * 0.08;
-    const bx = ox + L * escala * Math.sin(th);
-    const by = oy + L * escala * Math.cos(th);
-    // Suporte, vertical de referência e arco da amplitude.
-    ctx.fillStyle = c.muted;
-    ctx.fillRect(ox - 60, oy - 6, 120, 6);
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = alfa(c.muted, 0.6);
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, oy + L * escala + 20); ctx.stroke();
+    const alcance = Math.min(h - oy - 92, w / 2 - 50);
+    const escala = alcance / Math.max(L, 1.8);
+    const Lp = L * escala;
+    const pos = (a: number): [number, number] => [ox + Lp * Math.sin(a), oy + Lp * Math.cos(a)];
+    const [bx, by] = pos(th);
+    // Teto com hachura, vertical de referência e o arco da amplitude.
+    ctx.fillStyle = alfa(c.muted, 0.55);
+    ctx.fillRect(ox - 70, oy - 5, 140, 5);
+    ctx.strokeStyle = alfa(c.muted, 0.4);
+    ctx.lineWidth = 1;
+    for (let x = ox - 66; x < ox + 70; x += 10) {
+      ctx.beginPath(); ctx.moveTo(x, oy - 5); ctx.lineTo(x + 7, oy - 13); ctx.stroke();
+    }
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = alfa(c.muted, 0.5);
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, oy + Lp + 24); ctx.stroke();
     ctx.setLineDash([]);
     const a0 = grausParaRad(theta0);
-    ctx.strokeStyle = alfa(c.brand, 0.25);
-    ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.arc(ox, oy, L * escala, Math.PI / 2 - a0, Math.PI / 2 + a0); ctx.stroke();
-    // Fio e massa (raio cresce com a massa, densidade de chumbo).
-    ctx.strokeStyle = c.fg;
+    ctx.strokeStyle = alfa(c.brand, 0.18);
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(ox, oy, Lp, Math.PI / 2 - a0, Math.PI / 2 + a0); ctx.stroke();
+    ctx.lineCap = 'butt';
+    // Ângulo marcado junto do ponto de suspensão.
+    const rAng = Math.min(46, Lp * 0.3);
+    ctx.strokeStyle = alfa(c.fg, 0.55);
     ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(ox, oy, rAng, Math.PI / 2, Math.PI / 2 - th, th > 0); ctx.stroke();
+    // Rastro: as últimas posições, apagando, mostram onde a massa anda mais rápido.
+    const raio = 9 + 7 * Math.cbrt(m);
+    st.rastro.forEach((a, k) => {
+      const [x, y] = pos(a);
+      ctx.fillStyle = alfa(c.brand, (k / st.rastro.length) * 0.22);
+      ctx.beginPath(); ctx.arc(x, y, raio * (0.5 + 0.5 * (k / st.rastro.length)), 0, Math.PI * 2); ctx.fill();
+    });
+    // Fio, massa e a velocidade (tangente ao arco).
+    ctx.strokeStyle = c.fg;
+    ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(bx, by); ctx.stroke();
-    const raio = 8 + 6 * Math.cbrt(m);
+    ctx.fillStyle = c.fg;
+    ctx.beginPath(); ctx.arc(ox, oy, 3.5, 0, Math.PI * 2); ctx.fill();
     const grad = ctx.createRadialGradient(bx - raio / 3, by - raio / 3, 1, bx, by, raio);
     grad.addColorStop(0, alfa(c.fg, 0.95));
     grad.addColorStop(1, c.brand);
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.arc(bx, by, raio, 0, Math.PI * 2); ctx.fill();
-    texto(ctx, `θ = ${fmt(radParaGraus(th), 1)}°`, ox + 10, oy + 26, c.fg, { mono: true });
-    texto(ctx, `t = ${fmt(st.t, 2)} s`, w - 12, 20, c.muted, { alinhar: 'right', mono: true });
-
-    // Barras de energia.
+    const v = om * L; // m/s ao longo do arco
+    const ev = Math.min(70, Math.abs(v) * 22) * Math.sign(v);
+    if (Math.abs(ev) > 4) seta(ctx, bx, by, bx + Math.cos(th) * ev, by - Math.sin(th) * ev, c.mat, 2.5);
+    texto(ctx, `θ = ${fmt(radParaGraus(th), 1)}°`, ox + rAng + 8, oy + rAng * 0.7, c.fg, { mono: true, tamanho: 12, peso: 600 });
+    texto(ctx, `t = ${fmt(st.t, 2)} s`, w - 14, 22, c.muted, { alinhar: 'right', mono: true });
+    // Energia: uma barra só, com a cinética e a potencial somando a mecânica.
     const e = energiaPendulo(m, g, L, th, om);
     const e0 = energiaPendulo(m, g, L, grausParaRad(theta0), 0).total || 1;
-    const bw = 18;
-    const bh = h * 0.42;
-    const baseY = h - 24;
-    const barras: [string, number, string][] = [
-      ['Ec', e.cinetica, c.mat],
-      ['Ep', e.potencial, c.hum],
-      ['Em', e.total, c.nat],
-    ];
-    barras.forEach(([nome, val, cor], i) => {
-      const x = 18 + i * (bw + 12);
-      ctx.fillStyle = alfa(cor, 0.15);
-      ctx.fillRect(x, baseY - bh, bw, bh);
-      ctx.fillStyle = cor;
-      const hh = Math.min(1, val / e0) * bh;
-      ctx.fillRect(x, baseY - hh, bw, hh);
-      texto(ctx, nome, x + bw / 2, baseY + 14, c.muted, { alinhar: 'center', tamanho: 11 });
-    });
+    texto(ctx, 'Energia', 16, h - 50, c.muted, { tamanho: 11, peso: 700 });
+    medidorEnergia(ctx, 16, h - 42, Math.min(280, w * 0.42), [['cinética', e.cinetica, c.mat], ['potencial', e.potencial, c.hum]], e0, c);
   };
 
   const st = vista;
@@ -147,7 +161,7 @@ export default function Pendulo() {
 $$T = 2\\pi\\sqrt{\\frac{L}{g}}.$$
 Aumente a amplitude e compare as duas medidas de período: a 30° a fórmula erra menos de 2%, mas a 90° o período real é 18% maior. A simulação não usa a aproximação: integra $\\ddot\\theta = -\\frac{g}{L}\\sin\\theta$ e o período exato vem da integral elíptica.
 
-Nas barras, a energia **cinética** é máxima no ponto mais baixo e a **potencial**, nos extremos; a soma fica constante. Com amortecimento, a energia mecânica vira calor e a amplitude diminui a cada ida e volta.`}
+Na barra de energia, embaixo, a parte **cinética** (azul) é máxima no ponto mais baixo e a **potencial** (laranja), nos extremos; a soma fica constante e a barra não muda de tamanho. A seta azul é a velocidade, e o rastro mostra onde a massa anda mais depressa. Com amortecimento, a energia mecânica vira calor e a amplitude diminui a cada ida e volta.`}
       </Explicacao>
     </div>
   );

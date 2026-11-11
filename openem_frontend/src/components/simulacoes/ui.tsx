@@ -2,23 +2,52 @@
  * Peças comuns das simulações: o palco 2D (canvas com laço de animação), os
  * controles, as leituras, o gráfico em SVG e o texto de apoio.
  */
-import { useContext, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
-import { Markdown } from '../Markdown';
-import { Portal, useDialog } from '../Modal';
-import { IconBook, IconCube, IconPause, IconPlay, IconUndo, IconX } from '../icons';
-import { marcasEixo, usaMovimentoReduzido, useCores, type Cores } from './canvas';
-import { ExplicacaoCtx, PalcoCheioCtx, type LugarExplicacao } from './contexto';
-import './simulacoes.css';
+import {
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
+import { Markdown } from "../Markdown";
+import { Portal, useDialog } from "../Modal";
+import {
+  IconBook,
+  IconCollapse,
+  IconCube,
+  IconExpand,
+  IconPause,
+  IconPlay,
+  IconUndo,
+  IconX,
+} from "../icons";
+import {
+  marcasEixo,
+  usaMovimentoReduzido,
+  useCores,
+  type Cores,
+} from "./canvas";
+import { ExplicacaoCtx, PalcoCheioCtx, type LugarExplicacao } from "./contexto";
+import "./simulacoes.css";
 
 // ---------------------------------------------------------------------------
 // Palco 2D
 // ---------------------------------------------------------------------------
 
-export type Quadro = (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number, cores: Cores) => void;
+export type Quadro = (
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  dt: number,
+  cores: Cores,
+) => void;
 
 export interface Ponteiro {
-  tipo: 'down' | 'move' | 'up';
+  tipo: "down" | "move" | "up";
   x: number;
   y: number;
   w: number;
@@ -58,7 +87,7 @@ export function Palco2D({
     if (!canvas) return;
     let ctx: CanvasRenderingContext2D | null = null;
     try {
-      ctx = canvas.getContext('2d');
+      ctx = canvas.getContext("2d");
     } catch {
       ctx = null;
     }
@@ -77,7 +106,8 @@ export function Palco2D({
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     medir();
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+    const ro =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(medir) : null;
     ro?.observe(canvas);
     // Fora da tela (o aluno rolou para longe do palco), o laço para: nem física nem desenho.
     let visivel = true;
@@ -94,7 +124,7 @@ export function Palco2D({
     };
     raf = requestAnimationFrame(laco);
     const io =
-      typeof IntersectionObserver !== 'undefined'
+      typeof IntersectionObserver !== "undefined"
         ? new IntersectionObserver(([e]) => {
             if (e.isIntersecting && !visivel) {
               ultimo = performance.now();
@@ -111,23 +141,35 @@ export function Palco2D({
     };
   }, []);
 
-  const ponteiro = (tipo: Ponteiro['tipo']) => (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!onPonteiro) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    if (tipo === 'down') e.currentTarget.setPointerCapture?.(e.pointerId);
-    onPonteiro({ tipo, x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height });
-  };
+  const ponteiro =
+    (tipo: Ponteiro["tipo"]) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!onPonteiro) return;
+      const r = e.currentTarget.getBoundingClientRect();
+      if (tipo === "down") e.currentTarget.setPointerCapture?.(e.pointerId);
+      onPonteiro({
+        tipo,
+        x: e.clientX - r.left,
+        y: e.clientY - r.top,
+        w: r.width,
+        h: r.height,
+      });
+    };
 
   return (
     <canvas
       ref={ref}
       role="img"
       aria-label={rotulo}
-      className={`block w-full touch-none select-none rounded-xl bg-surface-2 ${cheio ? 'sim-palco-cheio' : ''}`}
-      style={{ aspectRatio: String(proporcao), minHeight: alturaMin } as CSSProperties}
-      onPointerDown={onPonteiro ? ponteiro('down') : undefined}
-      onPointerMove={onPonteiro ? ponteiro('move') : undefined}
-      onPointerUp={onPonteiro ? ponteiro('up') : undefined}
+      className={`block w-full touch-none select-none rounded-xl bg-surface-2 ${cheio ? "sim-palco-cheio" : ""}`}
+      style={
+        {
+          aspectRatio: String(proporcao),
+          minHeight: alturaMin,
+        } as CSSProperties
+      }
+      onPointerDown={onPonteiro ? ponteiro("down") : undefined}
+      onPointerMove={onPonteiro ? ponteiro("move") : undefined}
+      onPointerUp={onPonteiro ? ponteiro("up") : undefined}
     />
   );
 }
@@ -143,12 +185,24 @@ export function Palco2D({
  * lado dos controles, para a cena continuar à vista enquanto o gráfico anda.
  * No celular, tudo empilha.
  */
+/** Se o elemento está em tela cheia agora (o Esc do navegador também sai). */
+function useTelaCheia(ref: RefObject<HTMLElement | null>) {
+  const [cheia, setCheia] = useState(false);
+  useEffect(() => {
+    const mudou = () =>
+      setCheia(!!ref.current && document.fullscreenElement === ref.current);
+    document.addEventListener("fullscreenchange", mudou);
+    return () => document.removeEventListener("fullscreenchange", mudou);
+  }, [ref]);
+  return cheia;
+}
+
 export function LayoutSim({
   palco,
   controles,
   leituras,
   extra,
-  rotuloExtra = 'Gráficos',
+  rotuloExtra = "Gráficos",
   palcoFixo = true,
 }: {
   palco: ReactNode;
@@ -164,47 +218,96 @@ export function LayoutSim({
    */
   palcoFixo?: boolean;
 }) {
-  const [aba, setAba] = useState<'controles' | 'graficos'>('controles');
+  const [aba, setAba] = useState<"controles" | "graficos">("controles");
   const id = useId();
+  const caixa = useRef<HTMLDivElement>(null);
+  const cheia = useTelaCheia(caixa);
+  const lugar = useContext(ExplicacaoCtx);
+  const podeCheia =
+    typeof document !== "undefined" && !!document.fullscreenEnabled;
+  const alternarCheia = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void caixa.current?.requestFullscreen?.().catch(() => {});
+  };
+  const botaoCheia = (
+    <button
+      type="button"
+      className="btn btn-ghost px-2.5"
+      onClick={alternarCheia}
+      aria-pressed={cheia}
+      aria-label={cheia ? "Sair da tela cheia" : "Tela cheia"}
+      title={
+        cheia
+          ? "Sair da tela cheia (Esc)"
+          : "Tela cheia: só a simulação, bom para projetar na sala"
+      }
+    >
+      {cheia ? (
+        <IconCollapse width={18} height={18} />
+      ) : (
+        <IconExpand width={18} height={18} />
+      )}
+    </button>
+  );
   return (
-    <div className="grid gap-3 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,340px)]">
+    <div
+      ref={caixa}
+      className="sim-layout grid gap-3 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,340px)]"
+    >
+      {/* Na página, o botão fica no cabeçalho, ao lado do "Entenda"; na tela cheia, no alto dos controles. */}
+      {podeCheia &&
+        lugar?.slot &&
+        !cheia &&
+        createPortal(botaoCheia, lugar.slot)}
       {/* No celular a coluna some (contents): o palco vira item da grade e pode ficar preso ao longo da tela toda. */}
       <div className="contents min-w-0 lg:flex lg:min-h-0 lg:flex-col lg:gap-3">
-        <div className={`min-w-0 lg:min-h-0 lg:flex-1 ${palcoFixo ? 'sim-palco-fixo' : ''}`}>
+        <div
+          className={`min-w-0 lg:min-h-0 lg:flex-1 ${palcoFixo ? "sim-palco-fixo" : ""}`}
+        >
           <div className="card card-raised p-2 lg:h-full">
             <PalcoCheioCtx.Provider value>{palco}</PalcoCheioCtx.Provider>
           </div>
         </div>
         {leituras}
       </div>
-      <aside className="card flex flex-col overflow-hidden lg:min-h-0" aria-label="Controles da simulação">
-        {extra && (
-          <div className="border-b border-line p-2">
-            <div className="seg flex w-full" role="tablist" aria-label="Painel">
-              {(['controles', 'graficos'] as const).map((a) => (
-                <button
-                  key={a}
-                  type="button"
-                  role="tab"
-                  id={`${id}-${a}`}
-                  aria-selected={aba === a}
-                  aria-controls={`${id}-${a}-painel`}
-                  data-active={aba === a}
-                  onClick={() => setAba(a)}
-                  className="flex-1"
-                >
-                  {a === 'controles' ? 'Controles' : rotuloExtra}
-                </button>
-              ))}
-            </div>
+      <aside
+        className="card flex flex-col overflow-hidden lg:min-h-0"
+        aria-label="Controles da simulação"
+      >
+        {(extra || cheia) && (
+          <div className="flex items-center gap-2 border-b border-line p-2">
+            {cheia && botaoCheia}
+            {extra && (
+              <div
+                className="seg flex w-full"
+                role="tablist"
+                aria-label="Painel"
+              >
+                {(["controles", "graficos"] as const).map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    role="tab"
+                    id={`${id}-${a}`}
+                    aria-selected={aba === a}
+                    aria-controls={`${id}-${a}-painel`}
+                    data-active={aba === a}
+                    onClick={() => setAba(a)}
+                    className="flex-1"
+                  >
+                    {a === "controles" ? "Controles" : rotuloExtra}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {/* Os dois ficam montados (hidden), para o gráfico não perder o histórico ao trocar de aba. */}
         <div
           id={`${id}-controles-painel`}
-          role={extra ? 'tabpanel' : undefined}
+          role={extra ? "tabpanel" : undefined}
           aria-labelledby={extra ? `${id}-controles` : undefined}
-          hidden={aba !== 'controles'}
+          hidden={aba !== "controles"}
           className="space-y-5 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
         >
           {controles}
@@ -214,7 +317,7 @@ export function LayoutSim({
             id={`${id}-graficos-painel`}
             role="tabpanel"
             aria-labelledby={`${id}-graficos`}
-            hidden={aba !== 'graficos'}
+            hidden={aba !== "graficos"}
             className="space-y-5 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
           >
             {extra}
@@ -247,7 +350,9 @@ export function Deslizador({
   dica?: string;
 }) {
   const id = useId();
-  const mostrado = formatar ? formatar(valor) : valor.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+  const mostrado = formatar
+    ? formatar(valor)
+    : valor.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
@@ -256,7 +361,12 @@ export function Deslizador({
         </label>
         <span className="font-data text-sm font-semibold tabular-nums">
           {mostrado}
-          {unidade && <span className="ml-0.5 font-sans text-xs font-medium text-muted"> {unidade}</span>}
+          {unidade && (
+            <span className="ml-0.5 font-sans text-xs font-medium text-muted">
+              {" "}
+              {unidade}
+            </span>
+          )}
         </span>
       </div>
       <input
@@ -268,7 +378,7 @@ export function Deslizador({
         value={valor}
         onChange={(e) => onChange(Number(e.target.value))}
         className="sim-range w-full"
-        aria-valuetext={`${mostrado}${unidade ? ` ${unidade}` : ''}`}
+        aria-valuetext={`${mostrado}${unidade ? ` ${unidade}` : ""}`}
       />
       {dica && <p className="text-xs text-muted">{dica}</p>}
     </div>
@@ -292,7 +402,12 @@ export function Seletor<T extends string>({
       <label htmlFor={id} className="text-sm font-medium">
         {rotulo}
       </label>
-      <select id={id} className="input" value={valor} onChange={(e) => onChange(e.target.value as T)}>
+      <select
+        id={id}
+        className="input"
+        value={valor}
+        onChange={(e) => onChange(e.target.value as T)}
+      >
         {opcoes.map((o) => (
           <option key={o.valor} value={o.valor}>
             {o.rotulo}
@@ -317,7 +432,11 @@ export function Segmentos<T extends string>({
   return (
     <div className="space-y-1.5">
       <p className="text-sm font-medium">{rotulo}</p>
-      <div className="seg flex w-full flex-wrap" role="radiogroup" aria-label={rotulo}>
+      <div
+        className="seg flex w-full flex-wrap"
+        role="radiogroup"
+        aria-label={rotulo}
+      >
         {opcoes.map((o) => (
           <button
             key={o.valor}
@@ -350,7 +469,10 @@ export function Alternar({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium">
+      <label
+        htmlFor={id}
+        className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium"
+      >
         {rotulo}
         <input
           id={id}
@@ -382,15 +504,51 @@ export function BarraExecucao({
   onVelocidade?: (v: number) => void;
   velocidades?: number[];
 }) {
+  // Espaço roda ou pausa e R reinicia, de qualquer lugar da tela que não seja um campo ou um botão.
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.repeat)
+        return;
+      const alvo = e.target instanceof Element ? e.target : null;
+      if (
+        alvo?.closest(
+          'input, textarea, select, button, a, [contenteditable="true"], [role="dialog"], [role="slider"]',
+        )
+      )
+        return;
+      if (e.key === " ") {
+        e.preventDefault();
+        onAlternar();
+      } else if ((e.key === "r" || e.key === "R") && onReiniciar) onReiniciar();
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [onAlternar, onReiniciar]);
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        <button type="button" className="btn btn-primary flex-1" onClick={onAlternar}>
-          {rodando ? <IconPause width={16} height={16} /> : <IconPlay width={16} height={16} />}
-          {rodando ? 'Pausar' : 'Rodar'}
+        <button
+          type="button"
+          className="btn btn-primary flex-1"
+          onClick={onAlternar}
+          aria-keyshortcuts="Space"
+          title="Atalho: barra de espaço"
+        >
+          {rodando ? (
+            <IconPause width={16} height={16} />
+          ) : (
+            <IconPlay width={16} height={16} />
+          )}
+          {rodando ? "Pausar" : "Rodar"}
         </button>
         {onReiniciar && (
-          <button type="button" className="btn btn-ghost" onClick={onReiniciar}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={onReiniciar}
+            aria-keyshortcuts="R"
+            title="Atalho: R"
+          >
             <IconUndo width={16} height={16} />
             Reiniciar
           </button>
@@ -400,7 +558,10 @@ export function BarraExecucao({
         <Segmentos
           rotulo="Velocidade da animação"
           valor={String(velocidade)}
-          opcoes={velocidades.map((v) => ({ valor: String(v), rotulo: `${v.toLocaleString('pt-BR')}×` }))}
+          opcoes={velocidades.map((v) => ({
+            valor: String(v),
+            rotulo: `${v.toLocaleString("pt-BR")}×`,
+          }))}
           onChange={(v) => onVelocidade(Number(v))}
         />
       )}
@@ -420,7 +581,13 @@ export interface ItemLeitura {
  * medida (a fórmula, o valor sem ar…) não ocupa a faixa: aparece na dica do
  * mouse, ao tocar no nome da medida (sublinhado pontilhado) e para leitor de tela.
  */
-export function Leituras({ itens, titulo = 'Medidas' }: { itens: ItemLeitura[]; titulo?: string }) {
+export function Leituras({
+  itens,
+  titulo = "Medidas",
+}: {
+  itens: ItemLeitura[];
+  titulo?: string;
+}) {
   // Nota aberta pelo toque (no mouse, a dica do `title` já mostra).
   const [aberta, setAberta] = useState<string | null>(null);
   return (
@@ -429,7 +596,12 @@ export function Leituras({ itens, titulo = 'Medidas' }: { itens: ItemLeitura[]; 
         {itens.map((it) => {
           const rotulo = (
             <>
-              {it.cor && <span className="size-2 shrink-0 rounded-full" style={{ background: it.cor }} />}
+              {it.cor && (
+                <span
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ background: it.cor }}
+                />
+              )}
               <span className="truncate">{it.rotulo}</span>
             </>
           );
@@ -441,7 +613,9 @@ export function Leituras({ itens, titulo = 'Medidas' }: { itens: ItemLeitura[]; 
                     type="button"
                     className="flex max-w-full items-center gap-1.5 text-left underline decoration-dotted decoration-[color-mix(in_oklab,var(--muted)_60%,transparent)] underline-offset-2"
                     aria-expanded={aberta === it.rotulo}
-                    onClick={() => setAberta(aberta === it.rotulo ? null : it.rotulo)}
+                    onClick={() =>
+                      setAberta(aberta === it.rotulo ? null : it.rotulo)
+                    }
                   >
                     {rotulo}
                   </button>
@@ -449,11 +623,16 @@ export function Leituras({ itens, titulo = 'Medidas' }: { itens: ItemLeitura[]; 
                   <span className="flex items-center gap-1.5">{rotulo}</span>
                 )}
               </dt>
-              <dd className="font-data text-sm font-semibold tabular-nums" aria-live="off">
+              <dd
+                className="font-data text-sm font-semibold tabular-nums"
+                aria-live="off"
+              >
                 {it.valor}
                 {it.nota &&
                   (aberta === it.rotulo ? (
-                    <span className="block font-sans text-[11px] font-normal text-muted text-pretty">{it.nota}</span>
+                    <span className="block font-sans text-[11px] font-normal text-muted text-pretty">
+                      {it.nota}
+                    </span>
                   ) : (
                     <span className="sr-only"> ({it.nota})</span>
                   ))}
@@ -466,7 +645,13 @@ export function Leituras({ itens, titulo = 'Medidas' }: { itens: ItemLeitura[]; 
   );
 }
 
-function TextoExplicacao({ children, enem }: { children: string; enem?: string }) {
+function TextoExplicacao({
+  children,
+  enem,
+}: {
+  children: string;
+  enem?: string;
+}) {
   return (
     <>
       <div>
@@ -483,7 +668,17 @@ function TextoExplicacao({ children, enem }: { children: string; enem?: string }
   );
 }
 
-function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExplicacao; onClose: () => void; children: string; enem?: string }) {
+function ModalExplicacao({
+  lugar,
+  onClose,
+  children,
+  enem,
+}: {
+  lugar: LugarExplicacao;
+  onClose: () => void;
+  children: string;
+  enem?: string;
+}) {
   const painel = useRef<HTMLDivElement>(null);
   const titulo = useId();
   // A saída anima antes de desmontar (sem movimento reduzido, fecha na hora).
@@ -499,7 +694,11 @@ function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExpli
   const { info } = lugar;
   return (
     <Portal>
-      <div className="sim-modal-fundo fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4" data-fechando={fechando} onClick={fechar}>
+      <div
+        className="sim-modal-fundo fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4"
+        data-fechando={fechando}
+        onClick={fechar}
+      >
         <div
           ref={painel}
           role="dialog"
@@ -511,13 +710,18 @@ function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExpli
         >
           <div className="flex items-start justify-between gap-3 border-b border-line p-5 pb-4">
             <div className="min-w-0 space-y-1.5">
-              <h2 id={titulo} className="font-display text-xl font-extrabold tracking-tight">
+              <h2
+                id={titulo}
+                className="font-display text-xl font-extrabold tracking-tight"
+              >
                 {info.titulo}
               </h2>
               <p className="text-sm text-muted text-pretty">{info.resumo}</p>
               <ul className="flex flex-wrap gap-1.5 pt-1" aria-label="Assuntos">
                 <li className="chip font-data font-bold">
-                  {info.dimensao === '3D' && <IconCube width={13} height={13} />}
+                  {info.dimensao === "3D" && (
+                    <IconCube width={13} height={13} />
+                  )}
                   {info.dimensao}
                 </li>
                 {info.conceitos.map((c) => (
@@ -527,7 +731,12 @@ function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExpli
                 ))}
               </ul>
             </div>
-            <button type="button" className="btn btn-ghost shrink-0 px-2.5" onClick={fechar} aria-label="Fechar">
+            <button
+              type="button"
+              className="btn btn-ghost shrink-0 px-2.5"
+              onClick={fechar}
+              aria-label="Fechar"
+            >
               <IconX width={18} height={18} />
             </button>
           </div>
@@ -545,7 +754,13 @@ function ModalExplicacao({ lugar, onClose, children, enem }: { lugar: LugarExpli
  * página da simulação vira o botão "Entenda" no cabeçalho, que abre um modal
  * (a cena fica inteira na tela); fora dela, aparece no fluxo.
  */
-export function Explicacao({ children, enem }: { children: string; enem?: string }) {
+export function Explicacao({
+  children,
+  enem,
+}: {
+  children: string;
+  enem?: string;
+}) {
   const lugar = useContext(ExplicacaoCtx);
   const [aberto, setAberto] = useState(false);
   if (!lugar) {
@@ -558,12 +773,21 @@ export function Explicacao({ children, enem }: { children: string; enem?: string
   if (!lugar.slot) return null;
   return createPortal(
     <>
-      <button type="button" className="btn btn-ghost" onClick={() => setAberto(true)} aria-haspopup="dialog">
+      <button
+        type="button"
+        className="btn btn-ghost"
+        onClick={() => setAberto(true)}
+        aria-haspopup="dialog"
+      >
         <IconBook width={16} height={16} />
         Entenda
       </button>
       {aberto && (
-        <ModalExplicacao lugar={lugar} onClose={() => setAberto(false)} enem={enem}>
+        <ModalExplicacao
+          lugar={lugar}
+          onClose={() => setAberto(false)}
+          enem={enem}
+        >
           {children}
         </ModalExplicacao>
       )}
@@ -589,7 +813,7 @@ function useLargura<T extends HTMLElement>() {
   const [w, setW] = useState(600);
   useEffect(() => {
     const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
+    if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(([e]) => setW(e.contentRect.width || 600));
     ro.observe(el);
     return () => ro.disconnect();
@@ -639,37 +863,92 @@ export function Grafico({
   const sy = (y: number) => H - m.b - ((y - y0) / (y1 - y0)) * (H - m.t - m.b);
   const fmtEixo = (v: number) =>
     Math.abs(v) >= 1e5 || (Math.abs(v) < 1e-2 && v !== 0)
-      ? v.toExponential(0).replace('e', '·10^')
-      : v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+      ? v.toExponential(0).replace("e", "·10^")
+      : v.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
   return (
     <figure className="min-w-0" ref={ref}>
-      {titulo && <figcaption className="mb-1 text-sm font-semibold">{titulo}</figcaption>}
-      <svg width={W} height={H} role="img" aria-label={`${titulo ?? 'Gráfico'}: ${rotuloY} em função de ${rotuloX}`} className="block max-w-full overflow-visible">
+      {titulo && (
+        <figcaption className="mb-1 text-sm font-semibold">{titulo}</figcaption>
+      )}
+      <svg
+        width={W}
+        height={H}
+        role="img"
+        aria-label={`${titulo ?? "Gráfico"}: ${rotuloY} em função de ${rotuloX}`}
+        className="block max-w-full overflow-visible"
+      >
         {marcasEixo(y0, y1).map((v) => (
           <g key={`y${v}`}>
-            <line x1={m.e} x2={W - m.d} y1={sy(v)} y2={sy(v)} stroke="var(--line)" strokeWidth={1} />
-            <text x={m.e - 6} y={sy(v)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--muted)">
+            <line
+              x1={m.e}
+              x2={W - m.d}
+              y1={sy(v)}
+              y2={sy(v)}
+              stroke="var(--line)"
+              strokeWidth={1}
+            />
+            <text
+              x={m.e - 6}
+              y={sy(v)}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fontSize={10}
+              fill="var(--muted)"
+            >
               {fmtEixo(v)}
             </text>
           </g>
         ))}
         {marcasEixo(x0, x1, Math.max(3, Math.floor(W / 90))).map((v) => (
-          <text key={`x${v}`} x={sx(v)} y={H - m.b + 14} textAnchor="middle" fontSize={10} fill="var(--muted)">
+          <text
+            key={`x${v}`}
+            x={sx(v)}
+            y={H - m.b + 14}
+            textAnchor="middle"
+            fontSize={10}
+            fill="var(--muted)"
+          >
             {fmtEixo(v)}
           </text>
         ))}
-        <text x={(m.e + W - m.d) / 2} y={H - 4} textAnchor="middle" fontSize={11} fill="var(--muted)">
+        <text
+          x={(m.e + W - m.d) / 2}
+          y={H - 4}
+          textAnchor="middle"
+          fontSize={11}
+          fill="var(--muted)"
+        >
           {rotuloX}
         </text>
-        <text x={12} y={(m.t + H - m.b) / 2} textAnchor="middle" fontSize={11} fill="var(--muted)" transform={`rotate(-90 12 ${(m.t + H - m.b) / 2})`}>
+        <text
+          x={12}
+          y={(m.t + H - m.b) / 2}
+          textAnchor="middle"
+          fontSize={11}
+          fill="var(--muted)"
+          transform={`rotate(-90 12 ${(m.t + H - m.b) / 2})`}
+        >
           {rotuloY}
         </text>
         {horizontais.map((h, i) => (
           <g key={`h${i}`}>
-            <line x1={m.e} x2={W - m.d} y1={sy(h.y)} y2={sy(h.y)} stroke={h.cor ?? 'var(--muted)'} strokeDasharray="4 4" />
+            <line
+              x1={m.e}
+              x2={W - m.d}
+              y1={sy(h.y)}
+              y2={sy(h.y)}
+              stroke={h.cor ?? "var(--muted)"}
+              strokeDasharray="4 4"
+            />
             {h.rotulo && (
-              <text x={W - m.d - 4} y={sy(h.y) - 4} textAnchor="end" fontSize={10} fill={h.cor ?? 'var(--muted)'}>
+              <text
+                x={W - m.d - 4}
+                y={sy(h.y) - 4}
+                textAnchor="end"
+                fontSize={10}
+                fill={h.cor ?? "var(--muted)"}
+              >
                 {h.rotulo}
               </text>
             )}
@@ -677,39 +956,72 @@ export function Grafico({
         ))}
         {verticais.map((v, i) => (
           <g key={`v${i}`}>
-            <line x1={sx(v.x)} x2={sx(v.x)} y1={m.t} y2={H - m.b} stroke={v.cor ?? 'var(--muted)'} strokeDasharray="4 4" />
+            <line
+              x1={sx(v.x)}
+              x2={sx(v.x)}
+              y1={m.t}
+              y2={H - m.b}
+              stroke={v.cor ?? "var(--muted)"}
+              strokeDasharray="4 4"
+            />
             {v.rotulo && (
-              <text x={sx(v.x) + 4} y={m.t + 10} fontSize={10} fill={v.cor ?? 'var(--muted)'}>
+              <text
+                x={sx(v.x) + 4}
+                y={m.t + 10}
+                fontSize={10}
+                fill={v.cor ?? "var(--muted)"}
+              >
                 {v.rotulo}
               </text>
             )}
           </g>
         ))}
-        <clipPath id={`clip-${rotuloX}-${rotuloY}`.replace(/[^a-z0-9-]/gi, '')}>
-          <rect x={m.e} y={m.t - 2} width={W - m.e - m.d} height={H - m.t - m.b + 4} />
+        <clipPath id={`clip-${rotuloX}-${rotuloY}`.replace(/[^a-z0-9-]/gi, "")}>
+          <rect
+            x={m.e}
+            y={m.t - 2}
+            width={W - m.e - m.d}
+            height={H - m.t - m.b + 4}
+          />
         </clipPath>
-        <g clipPath={`url(#${`clip-${rotuloX}-${rotuloY}`.replace(/[^a-z0-9-]/gi, '')})`}>
+        <g
+          clipPath={`url(#${`clip-${rotuloX}-${rotuloY}`.replace(/[^a-z0-9-]/gi, "")})`}
+        >
           {series.map((s) => (
             <polyline
               key={s.rotulo}
               fill="none"
               stroke={s.cor}
               strokeWidth={s.largura ?? 2}
-              strokeDasharray={s.tracejado ? '5 4' : undefined}
+              strokeDasharray={s.tracejado ? "5 4" : undefined}
               strokeLinejoin="round"
-              points={s.pontos.filter((p) => Number.isFinite(p[1])).map((p) => `${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join(' ')}
+              points={s.pontos
+                .filter((p) => Number.isFinite(p[1]))
+                .map((p) => `${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`)
+                .join(" ")}
             />
           ))}
         </g>
         {pontos.map((p, i) => (
-          <circle key={i} cx={sx(p.x)} cy={sy(Math.min(y1, Math.max(y0, p.y)))} r={4.5} fill={p.cor} stroke="var(--surface)" strokeWidth={2} />
+          <circle
+            key={i}
+            cx={sx(p.x)}
+            cy={sy(Math.min(y1, Math.max(y0, p.y)))}
+            r={4.5}
+            fill={p.cor}
+            stroke="var(--surface)"
+            strokeWidth={2}
+          />
         ))}
       </svg>
       {series.length > 1 && (
         <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           {series.map((s) => (
             <li key={s.rotulo} className="flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 rounded" style={{ background: s.cor }} />
+              <span
+                className="inline-block h-0.5 w-4 rounded"
+                style={{ background: s.cor }}
+              />
               {s.rotulo}
             </li>
           ))}
@@ -720,7 +1032,13 @@ export function Grafico({
 }
 
 /** Grupo de um gráfico ou bloco extra (na aba "Gráficos" do painel). */
-export function Bloco({ titulo, children }: { titulo?: string; children: ReactNode }) {
+export function Bloco({
+  titulo,
+  children,
+}: {
+  titulo?: string;
+  children: ReactNode;
+}) {
   return (
     <section className="space-y-2">
       {titulo && <h3 className="text-sm font-bold">{titulo}</h3>}

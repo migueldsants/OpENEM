@@ -64,7 +64,9 @@ export default function Titulacao() {
         else setGotejando(false);
       }
     }
-    const cx = w * 0.42;
+    // Com espaço, a vidraria vai para a direita e a curva de pH se desenha ao lado, gota a gota.
+    const comCurva = w >= 560;
+    const cx = comCurva ? w * 0.66 : w * 0.42;
     // Bureta.
     const bTopo = h * 0.04;
     const bAlt = h * 0.46;
@@ -147,8 +149,57 @@ export default function Titulacao() {
         setAviso(`Uma gota levou o pH de ${fmt(antes, 1)} para ${fmt(depois, 1)}: perto da equivalência quase não sobra ${analito.tipo === 'acido' ? 'ácido' : 'base'} para segurar o pH, e cada gota pesa muito.`);
       }
     }
+    if (comCurva) {
+      const gx0 = 54;
+      const gx1 = w * 0.44;
+      const gy0 = h * 0.14;
+      const gy1 = h * 0.8;
+      const GX = (v: number) => gx0 + (v / Vmax) * (gx1 - gx0);
+      const GY = (ph: number) => gy1 - (ph / 14) * (gy1 - gy0);
+      texto(ctx, 'Curva de titulação: pH a cada gota', gx0, gy0 - 16, c.fg, { tamanho: 12, peso: 700 });
+      // Faixa de viragem do indicador, na cor que ele assume de cada lado.
+      ctx.fillStyle = alfa(c.muted, 0.12);
+      ctx.fillRect(gx0, GY(ind.faixa[1]), gx1 - gx0, GY(ind.faixa[0]) - GY(ind.faixa[1]));
+      texto(ctx, 'viragem do indicador', gx1 - 6, GY(ind.faixa[1]) + 13, c.muted, { alinhar: 'right', tamanho: 10 });
+      ctx.strokeStyle = alfa(c.muted, 0.3);
+      ctx.lineWidth = 1;
+      for (let ph = 0; ph <= 14; ph += 2) {
+        ctx.beginPath(); ctx.moveTo(gx0, GY(ph)); ctx.lineTo(gx1, GY(ph)); ctx.stroke();
+        texto(ctx, String(ph), gx0 - 8, GY(ph) + 4, c.muted, { alinhar: 'right', tamanho: 10, mono: true });
+      }
+      texto(ctx, `0`, gx0, gy1 + 16, c.muted, { alinhar: 'center', tamanho: 10, mono: true });
+      texto(ctx, `${fmt(Vmax, 0)} mL de ${titulante}`, gx1, gy1 + 16, c.muted, { alinhar: 'right', tamanho: 10, mono: true });
+      // O caminho inteiro, apagado, e o trecho já percorrido por cima.
+      const traco = (ate: number, cor: string, larg: number) => {
+        ctx.strokeStyle = cor;
+        ctx.lineWidth = larg;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        let k = 0;
+        for (const [v, ph] of curva) {
+          if (v > ate) break;
+          if (k++) ctx.lineTo(GX(v), GY(ph)); else ctx.moveTo(GX(v), GY(ph));
+        }
+        ctx.stroke();
+      };
+      traco(Vmax, alfa(c.muted, 0.35), 1.5);
+      traco(vRef.current, c.brand, 2.6);
+      // Volume de equivalência e o ponto de agora.
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = alfa(c.fg, 0.5);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(GX(Veq), gy0); ctx.lineTo(GX(Veq), gy1); ctx.stroke();
+      ctx.setLineDash([]);
+      texto(ctx, 'equivalência', GX(Veq) + 5, gy0 + 12, c.fg, { tamanho: 10, peso: 600 });
+      const pxA = GX(vRef.current);
+      const pyA = GY(real);
+      ctx.fillStyle = alfa(c.brand, 0.25);
+      ctx.beginPath(); ctx.arc(pxA, pyA, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = c.brand;
+      ctx.beginPath(); ctx.arc(pxA, pyA, 5, 0, Math.PI * 2); ctx.fill();
+    }
     // pHmetro.
-    const mx = w * 0.72;
+    const mx = comCurva ? Math.min(w - 146, cx + Math.min(w * 0.36, 170) / 2 + 14) : w * 0.72;
     const my = h * 0.62;
     ctx.fillStyle = c.surface;
     ctx.strokeStyle = c.line;

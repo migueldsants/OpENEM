@@ -18,11 +18,12 @@ const CONJUNTOS: { nome: string; dados: number[] }[] = [
 type Ferramenta = 'mover' | 'por' | 'tirar';
 
 /** Geometria do gráfico de pontos: eixo embaixo, pontos empilhados por valor. */
-function geo(w: number, h: number) {
+function geo(w: number, h: number, pilhaMax = 1) {
   const x0 = 28;
   const x1 = w - 28;
   const eixo = h - 64;
-  const r = Math.max(6, Math.min(11, (x1 - x0) / (MAX - MIN) / 2.4));
+  // Os pontos crescem com o palco, mas a pilha mais alta precisa caber embaixo dos rótulos.
+  const r = Math.max(6, Math.min(16, (x1 - x0) / (MAX - MIN) / 2.2, (eixo - 52) / (pilhaMax * 2.2)));
   return { x0, x1, eixo, r, X: (v: number) => x0 + ((v - MIN) / (MAX - MIN)) * (x1 - x0), V: (px: number) => MIN + ((px - x0) / (x1 - x0)) * (MAX - MIN) };
 }
 
@@ -60,7 +61,7 @@ export default function Estatistica() {
   };
 
   const onPonteiro = (e: Ponteiro) => {
-    const g = geo(e.w, e.h);
+    const g = geo(e.w, e.h, alturaPilha);
     if (e.tipo === 'up') {
       arrasto.current = null;
       setAtivo(null);
@@ -89,13 +90,14 @@ export default function Estatistica() {
     if (dados[i] !== v) setDados(dados.map((x, k) => (k === i ? v : x)));
   };
 
+  const alturaPilha = Math.max(1, ...pilhas(dados)) + 1;
   const m = media(dados);
   const md = mediana(dados);
   const mo = modas(dados);
   const dp = desvioPadrao(dados);
 
   const quadro: Quadro = (ctx, w, h, _dt, c) => {
-    const g = geo(w, h);
+    const g = geo(w, h, alturaPilha);
     // Faixa de um desvio padrão para cada lado da média.
     ctx.fillStyle = alfa(c.mat, 0.12);
     ctx.fillRect(g.X(Math.max(MIN, m - dp)), 16, g.X(Math.min(MAX, m + dp)) - g.X(Math.max(MIN, m - dp)), g.eixo - 16);
@@ -131,13 +133,16 @@ export default function Estatistica() {
         ctx.beginPath(); ctx.moveTo(g.X(m), y); ctx.lineTo(x, y); ctx.stroke();
       }
       const moda = mo.includes(v);
-      ctx.fillStyle = moda ? c.brand : c.fg;
+      ctx.fillStyle = moda ? c.lin : c.fg;
       ctx.beginPath(); ctx.arc(x, y, i === ativo ? g.r + 2 : g.r, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = c.surface;
       ctx.lineWidth = 2;
       ctx.stroke();
     });
-    texto(ctx, `± 1 desvio padrão (${num(dp)})`, g.X(Math.min(MAX, m + dp)) - 6, 34, alfa(c.mat, 0.95), { alinhar: 'right', tamanho: 11, peso: 600 });
+    // Legenda da faixa no canto, longe das linhas da média e da mediana.
+    ctx.fillStyle = alfa(c.mat, 0.25);
+    ctx.fillRect(g.x0, 26, 14, 10);
+    texto(ctx, `faixa de ± 1 desvio padrão (${num(dp)})`, g.x0 + 20, 35, c.fg, { tamanho: 11, peso: 600 });
   };
 
   return (
@@ -150,7 +155,7 @@ export default function Estatistica() {
               { rotulo: 'Valores', valor: String(dados.length), nota: [...dados].sort((a, b) => a - b).map((v) => num(v)).join(', ') },
               { rotulo: 'Média', valor: num(m), cor: 'var(--mat)', nota: 'soma dos valores ÷ quantidade' },
               { rotulo: 'Mediana', valor: num(md), cor: 'var(--hum)', nota: 'o valor do meio, com os dados em ordem' },
-              { rotulo: 'Moda', valor: mo.length ? mo.map((v) => num(v)).join(' e ') : 'não tem', cor: 'var(--brand)', nota: 'o valor que mais se repete' },
+              { rotulo: 'Moda', valor: mo.length ? mo.map((v) => num(v)).join(' e ') : 'não tem', cor: 'var(--lin)', nota: 'o valor que mais se repete' },
               { rotulo: 'Amplitude', valor: num(amplitudeDados(dados)), nota: 'maior − menor' },
               { rotulo: 'Variância', valor: num(variancia(dados)), nota: 'média dos quadrados dos desvios' },
               { rotulo: 'Desvio padrão', valor: num(dp), nota: 'raiz quadrada da variância' },

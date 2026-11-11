@@ -143,6 +143,46 @@ export function texto(
   ctx.restore();
 }
 
+/**
+ * Medidor de energia empilhado: as parcelas (cinética, potencial…) lado a
+ * lado numa barra só, sobre o trilho da energia inicial. A soma constante
+ * aparece como a barra que não muda de tamanho enquanto as cores trocam.
+ */
+export function medidorEnergia(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  larg: number,
+  partes: readonly (readonly [string, number, string])[],
+  total0: number,
+  cores: { fg: string; muted: string; line: string },
+) {
+  const alt = 12;
+  const ref = total0 > 0 ? total0 : 1;
+  ctx.save();
+  ctx.fillStyle = alfa(cores.muted, 0.16);
+  ctx.beginPath(); ctx.roundRect(x, y, larg, alt, alt / 2); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x, y, larg, alt, alt / 2); ctx.clip();
+  let px = x;
+  for (const [, valor, cor] of partes) {
+    const dx = Math.max(0, Math.min(1, valor / ref)) * larg;
+    ctx.fillStyle = cor;
+    ctx.fillRect(px, y, Math.min(dx, x + larg - px), alt);
+    px += dx;
+  }
+  ctx.restore();
+  // Legenda embaixo, com o valor de cada parcela em porcentagem da inicial.
+  let lx = x;
+  for (const [nome, valor, cor] of partes) {
+    ctx.fillStyle = cor;
+    ctx.beginPath(); ctx.arc(lx + 4, y + alt + 13, 4, 0, Math.PI * 2); ctx.fill();
+    const rot = `${nome} ${Math.round((valor / ref) * 100)}%`;
+    texto(ctx, rot, lx + 12, y + alt + 17, cores.fg, { tamanho: 11, peso: 600 });
+    ctx.font = '600 11px Inter Variable, Inter, sans-serif';
+    lx += 12 + ctx.measureText(rot).width + 14;
+  }
+}
+
 /** Marcas "redondas" do eixo (1, 2, 5 × 10ⁿ). */
 export function marcasEixo(min: number, max: number, alvo = 5) {
   if (!(max > min)) return [min];

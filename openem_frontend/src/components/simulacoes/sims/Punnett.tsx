@@ -99,11 +99,11 @@ export default function Punnett() {
       <table className="border-separate border-spacing-1 text-center" aria-label="Quadro de Punnett">
         <thead>
           <tr>
-            <th className="p-1 text-[11px] font-medium text-muted">
+            <th className="p-1 text-xs font-medium text-muted">
               ♂ \ ♀
             </th>
             {r.gametasMae.map((g) => (
-              <th key={g.gameta.join()} scope="col" className="rounded-lg bg-[color-mix(in_oklab,var(--lin)_18%,transparent)] px-3 py-1.5 font-data text-base font-bold">
+              <th key={g.gameta.join()} scope="col" className={`rounded-lg bg-[color-mix(in_oklab,var(--lin)_18%,transparent)] px-3 py-1.5 font-data font-bold ${modo === 'di' ? 'text-base' : 'text-lg lg:text-xl'}`}>
                 {g.gameta.join('')}
               </th>
             ))}
@@ -112,14 +112,14 @@ export default function Punnett() {
         <tbody>
           {r.quadro.map((linha, i) => (
             <tr key={i}>
-              <th scope="row" className="rounded-lg bg-[color-mix(in_oklab,var(--mat)_18%,transparent)] px-3 py-1.5 font-data text-base font-bold">
+              <th scope="row" className={`rounded-lg bg-[color-mix(in_oklab,var(--mat)_18%,transparent)] px-3 py-1.5 font-data font-bold ${modo === 'di' ? 'text-base' : 'text-lg lg:text-xl'}`}>
                 {r.gametasPai[i].gameta.join('')}
               </th>
               {linha.map((c, j) => (
-                <td key={j} className={`rounded-lg border border-line bg-surface ${modo === 'di' ? 'px-1.5 py-1' : 'px-4 py-2'}`}>
+                <td key={j} className={`rounded-xl border border-line bg-surface ${modo === 'di' ? 'px-2 py-1.5' : 'px-5 py-3 lg:px-7 lg:py-4'}`}>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Fenotipo genes={genes} filho={c.filho} tam={modo === 'di' ? 30 : 52} />
-                    <span className={`font-data font-semibold ${modo === 'di' ? 'text-xs' : 'text-sm'}`}>{c.filho.join('')}</span>
+                    <Fenotipo genes={genes} filho={c.filho} tam={modo === 'di' ? 38 : 72} />
+                    <span className={`font-data font-semibold ${modo === 'di' ? 'text-xs' : 'text-base'}`}>{c.filho.join('')}</span>
                   </div>
                 </td>
               ))}
@@ -127,12 +127,29 @@ export default function Punnett() {
           ))}
         </tbody>
       </table>
-      <ul className="flex w-full max-w-lg flex-col gap-2 text-sm" aria-label="Proporção de fenótipos">
+      <ul className="flex w-full max-w-xl flex-col gap-2.5 text-sm" aria-label="Proporção de fenótipos">
+        {filhos && (
+          <li className="flex items-center justify-end gap-3 text-xs text-muted" aria-hidden>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-4 rounded-full bg-[var(--nat)]" /> esperado
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-0.5 rounded-full bg-fg" /> sorteado
+            </span>
+          </li>
+        )}
         {r.fenotipos.map((f) => (
           <li key={f.f} className="flex items-center gap-2">
             <span className="w-32 shrink-0 truncate">{f.f}</span>
-            <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface">
-              <span className="block h-full rounded-full bg-[var(--nat)]" style={{ width: `${f.p * 100}%` }} />
+            <span className="relative h-3 flex-1 rounded-full bg-surface">
+              <span className="block h-full rounded-full bg-[var(--nat)] transition-[width] duration-300 ease-[var(--ease-saida)]" style={{ width: `${f.p * 100}%` }} />
+              {/* Quanto saiu no sorteio: a marca escura perto do fim da barra mostra que a amostra chega perto da conta. */}
+              {filhos && totalFilhos > 0 && (
+                <span
+                  className="absolute -inset-y-1 w-0.5 rounded-full bg-fg transition-[left] duration-300 ease-[var(--ease-saida)]"
+                  style={{ left: `calc(${((filhos[f.f] ?? 0) / totalFilhos) * 100}% - 1px)` }}
+                />
+              )}
             </span>
             <span className="w-12 shrink-0 text-right font-data">{fmt(f.p * 100, 1)}%</span>
             {filhos && <span className="w-16 shrink-0 text-right font-data text-muted">{filhos[f.f] ?? 0} filhos</span>}

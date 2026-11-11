@@ -201,11 +201,21 @@ export default function Ligacoes() {
     t.current += dt;
     const p = prog.current;
     const altura = h - 46;
+    // Os átomos e os elétrons têm tamanho fixo: num palco grande, a cena inteira cresce junto.
+    const k = Math.max(1, Math.min(2, w / 440, altura / 250));
+    const W = w / k;
+    const H = altura / k;
     if (modo === 'dativa') {
-      desenharMolecula(ctx, ex.estrutura, w, h, p, c, { lewis });
+      ctx.save();
+      ctx.scale(k, k);
+      desenharMolecula(ctx, ex.estrutura, W, h / k, p, c, { lewis });
+      ctx.restore();
       texto(ctx, ex.formula, w / 2, h - 14, c.fg, { alinhar: 'center', tamanho: 16, peso: 800 });
       return;
     }
+    let titulo: [string, string] | null = null;
+    ctx.save();
+    if (r.tipo !== 'metalica') ctx.scale(k, k);
     if (r.tipo === 'ionica' && r.ions) {
       const { cation, anion } = r.ions;
       const M = A === metal ? A : B;
@@ -215,9 +225,9 @@ export default function Ligacoes() {
       const rC = 24;
       const rA = 30;
       const junta = facil(Math.max(0, (p - 0.55) / 0.45));
-      const colX = (k: number, total: number) => altura / 2 + (k - (total - 1) / 2) * Math.min(80, (altura - 40) / Math.max(1, total));
-      const xC = w * (0.3 + 0.1 * junta);
-      const xA = w * (0.7 - 0.1 * junta);
+      const colX = (i: number, total: number) => H / 2 + (i - (total - 1) / 2) * Math.min(80, (H - 40) / Math.max(1, total));
+      const xC = W * (0.3 + 0.1 * junta);
+      const xA = W * (0.7 - 0.1 * junta);
       const cats = Array.from({ length: cation.n }, (_, i) => [xC, colX(i, cation.n)] as [number, number]);
       const ans = Array.from({ length: anion.n }, (_, i) => [xA, colX(i, anion.n)] as [number, number]);
       // Elétrons que mudam de dono: cada cátion dá `carga`, cada ânion recebe |carga|.
@@ -225,11 +235,11 @@ export default function Ligacoes() {
       let alvo = 0;
       let recebidos = 0;
       cats.forEach(([x, y]) => {
-        for (let k = 0; k < cation.carga; k++) {
+        for (let e = 0; e < cation.carga; e++) {
           const slots = slotsLewis(rA);
           const [ax, ay] = ans[alvo];
           const s = slots[vX + recebidos];
-          const sM = slotsLewis(rC)[k % 8];
+          const sM = slotsLewis(rC)[e % 8];
           transf.push({ de: [x + sM[0], y + sM[1]], para: [ax + (s?.[0] ?? 0), ay + (s?.[1] ?? 0)] });
           recebidos++;
           if (recebidos >= -anion.carga) {
@@ -249,8 +259,8 @@ export default function Ligacoes() {
         slotsLewis(rA).slice(0, vX).forEach(([sx, sy]) => eletron(ctx, x + sx, y + sy, c.hum));
       });
       transf.forEach(({ de, para }) => eletron(ctx, de[0] + (para[0] - de[0]) * ida, de[1] + (para[1] - de[1]) * ida + Math.sin(ida * Math.PI) * -30, c.mat));
-      if (ida > 0 && ida < 1) seta(ctx, xC + rC + 14, altura / 2 - 50, xA - rA - 14, altura / 2 - 50, alfa(c.mat, 0.6), 2);
-      if (junta > 0.3) texto(ctx, 'atração entre cargas opostas', w / 2, 22, c.fg, { alinhar: 'center', tamanho: 12, peso: 600 });
+      if (ida > 0 && ida < 1) seta(ctx, xC + rC + 14, H / 2 - 50, xA - rA - 14, H / 2 - 50, alfa(c.mat, 0.6), 2);
+      if (junta > 0.3) titulo = ['atração entre cargas opostas', c.fg];
     } else if (r.tipo === 'metalica') {
       const cols = 6;
       const lins = 3;
@@ -277,7 +287,7 @@ export default function Ligacoes() {
         const livreY = oy - esp * 0.4 + q(m.y + m.vy * t.current * 0.25) * esp * (lins - 0.2);
         eletron(ctx, presoX + (livreX - presoX) * solto, presoY + (livreY - presoY) * solto, c.hum);
       });
-      if (p > 0.6) texto(ctx, 'mar de elétrons livres', w / 2, 22, c.hum, { alinhar: 'center', tamanho: 12, peso: 600 });
+      if (p > 0.6) titulo = ['mar de elétrons livres', c.hum];
     } else if (r.estrutura) {
       // δ+ no menos eletronegativo quando a ligação é polar.
       const dEN: Record<string, number> = {};
@@ -289,15 +299,17 @@ export default function Ligacoes() {
           if (outro) dEN[`${i}`] = a.el === centralEl ? Math.sign(en(outro) - en(centralEl)) : Math.sign(en(centralEl) - en(a.el));
         });
       }
-      desenharMolecula(ctx, r.estrutura, w, altura + 20, p, c, { lewis, dEN });
+      desenharMolecula(ctx, r.estrutura, W, H + 20 / k, p, c, { lewis, dEN });
     } else {
       // Sem molécula para desenhar: os dois átomos com os elétrons de valência.
       [A, B].forEach((e, i) => {
-        const x = w * (i ? 0.66 : 0.34);
-        atomoDesenho(ctx, x, altura / 2, 30, e.simbolo, alfa(i ? c.hum : c.mat, 0.16), c);
-        slotsLewis(30).slice(0, Math.min(8, eletronsValencia(e) ?? 0)).forEach(([sx, sy]) => eletron(ctx, x + sx, altura / 2 + sy, i ? c.hum : c.mat));
+        const x = W * (i ? 0.66 : 0.34);
+        atomoDesenho(ctx, x, H / 2, 30, e.simbolo, alfa(i ? c.hum : c.mat, 0.16), c);
+        slotsLewis(30).slice(0, Math.min(8, eletronsValencia(e) ?? 0)).forEach(([sx, sy]) => eletron(ctx, x + sx, H / 2 + sy, i ? c.hum : c.mat));
       });
     }
+    ctx.restore();
+    if (titulo) texto(ctx, titulo[0], w / 2, 24, titulo[1], { alinhar: 'center', tamanho: 13, peso: 700 });
     // Régua da diferença de eletronegatividade.
     if (r.dEN !== null) {
       const x0 = 30;

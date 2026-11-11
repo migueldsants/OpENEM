@@ -3,7 +3,7 @@ import { distribuicaoSoma, esperanca } from '../../../lib/simulacoes/matematica'
 import { criarRng } from '../../../lib/simulacoes/numerico';
 import { alfa, texto } from '../canvas';
 import { num } from '../plano';
-import { Bloco, Explicacao, Grafico, LayoutSim, Leituras, Palco2D, Segmentos, type Quadro } from '../ui';
+import { Bloco, Explicacao, Grafico, LayoutSim, Leituras, Palco2D, Segmentos, type Ponteiro, type Quadro } from '../ui';
 
 const PIPS: Record<number, [number, number][]> = {
   1: [[0, 0]],
@@ -71,10 +71,20 @@ export default function Probabilidade() {
     setAlvo(Math.round(3.5 * nn));
   };
 
+  // Tocar numa coluna do histograma escolhe a soma acompanhada.
+  const onPonteiro = (e: Ponteiro) => {
+    if (e.tipo !== 'down' || e.y < e.h * 0.3) return;
+    const colunas = maximo - minimo + 1;
+    const i = Math.floor((e.x - 20) / ((e.w - 40) / colunas));
+    if (i < 0 || i >= colunas || minimo + i === alvo) return;
+    setAlvo(minimo + i);
+    setHistorico([]);
+  };
+
   const quadro: Quadro = (ctx, w, h, dt, c) => {
     giro.current = Math.max(0, giro.current - dt * 1.6);
     // Dados do último lançamento.
-    const L = Math.min(56, h * 0.16);
+    const L = Math.max(44, Math.min(76, h * 0.14));
     const topo = L * 0.9;
     ultimo.forEach((f, i) => {
       const x = w / 2 + (i - (ultimo.length - 1) / 2) * (L * 1.4);
@@ -90,9 +100,16 @@ export default function Probabilidade() {
     somas.forEach((s, i) => {
       const x = 20 + i * bw;
       const obs = total ? (contagem[s] ?? 0) / total : 0;
-      ctx.fillStyle = s === alvo ? c.brand : alfa(c.mat, 0.7);
-      ctx.fillRect(x + bw * 0.12, base - (obs / maxP) * alto, bw * 0.76, (obs / maxP) * alto);
       const yt = base - (teorica[s] / maxP) * alto;
+      // A forma esperada aparece desde o começo, apagada; as barras observadas enchem por cima.
+      ctx.fillStyle = alfa(s === alvo ? c.brand : c.fg, s === alvo ? 0.16 : 0.07);
+      ctx.beginPath(); ctx.roundRect(x + bw * 0.12, yt, bw * 0.76, base - yt, [5, 5, 0, 0]); ctx.fill();
+      ctx.fillStyle = s === alvo ? c.brand : alfa(c.mat, 0.8);
+      const ho = Math.min(alto * 1.1, (obs / maxP) * alto);
+      if (ho > 0.5) {
+        ctx.beginPath(); ctx.roundRect(x + bw * 0.12, base - ho, bw * 0.76, ho, [5, 5, 0, 0]); ctx.fill();
+      }
+      if (total && bw > 34) texto(ctx, `${num(obs * 100, 0)}%`, x + bw / 2, Math.min(base - ho, yt) - 6, s === alvo ? c.fg : c.muted, { alinhar: 'center', tamanho: 10, mono: true });
       ctx.strokeStyle = c.fg;
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x + bw * 0.1, yt); ctx.lineTo(x + bw * 0.9, yt); ctx.stroke();
@@ -101,8 +118,15 @@ export default function Probabilidade() {
     ctx.strokeStyle = c.muted;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(14, base); ctx.lineTo(w - 14, base); ctx.stroke();
-    texto(ctx, '▬ probabilidade teórica', w - 16, base - alto - 6, c.fg, { alinhar: 'right', tamanho: 11 });
-    texto(ctx, '■ frequência observada', 16, base - alto - 6, c.mat, { tamanho: 11 });
+    // Legenda desenhada (sem depender de glifo da fonte).
+    const yl = base - alto - 22;
+    ctx.fillStyle = alfa(c.mat, 0.8);
+    ctx.beginPath(); ctx.roundRect(16, yl - 9, 12, 10, 2); ctx.fill();
+    texto(ctx, 'frequência observada', 34, yl, c.fg, { tamanho: 11 });
+    ctx.strokeStyle = c.fg;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(w - 16 - 150, yl - 4); ctx.lineTo(w - 16 - 136, yl - 4); ctx.stroke();
+    texto(ctx, 'probabilidade teórica', w - 16, yl, c.fg, { alinhar: 'right', tamanho: 11 });
   };
 
   const media = total ? contagem.reduce((s, x, i) => s + x * i, 0) / total : 0;
@@ -111,7 +135,7 @@ export default function Probabilidade() {
   return (
     <div className="lg:h-full">
       <LayoutSim
-        palco={<Palco2D quadro={quadro} rotulo={`Lançamento de ${nd} dados com ${total} lançamentos`} proporcao={16 / 10} alturaMin={280} />}
+        palco={<Palco2D quadro={quadro} rotulo={`Lançamento de ${nd} dados com ${total} lançamentos`} proporcao={16 / 10} alturaMin={280} onPonteiro={onPonteiro} />}
         leituras={
           <Leituras
             itens={[
