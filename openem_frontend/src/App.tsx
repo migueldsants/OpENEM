@@ -27,6 +27,7 @@ import {
   IconUser,
   IconPalette,
   IconPen,
+  IconPlanet,
   IconQuestion,
   IconTabelaPeriodica,
 } from './components/icons';
@@ -73,6 +74,9 @@ import Questoes from './pages/Questoes';
 import Quadro from './pages/Quadro';
 import Revisao from './pages/Revisao';
 import Simulados from './pages/Simulados';
+import Simulacao from './pages/Simulacao';
+import Simulacoes from './pages/Simulacoes';
+import SimulacoesMateria from './pages/SimulacoesMateria';
 import TabelaPeriodica from './pages/TabelaPeriodica';
 import Videos from './pages/Videos';
 
@@ -101,6 +105,7 @@ const NAV: NavItem[] = [
   { to: '/cronometros', label: 'Cronômetros', Icon: IconHourglass, mobile: 'more', section: 'Planejar' },
   { to: '/formulas', label: 'Fórmulas', Icon: IconFormula, mobile: 'more', section: 'Planejar' },
   { to: '/tabela-periodica', label: 'Tabela periódica', Icon: IconTabelaPeriodica, mobile: 'more', section: 'Planejar' },
+  { to: '/simulacoes', label: 'Simulações', Icon: IconPlanet, mobile: 'more', section: 'Planejar' },
   { to: '/videos', label: 'Vídeos', Icon: IconPlay, mobile: 'more', section: 'Planejar' },
   { to: '/quadro', label: 'Quadro', Icon: IconBoard, mobile: 'more', section: 'Planejar' },
 
@@ -324,6 +329,7 @@ export default function App() {
   // Botão "Mais" fica destacado quando a rota atual é uma tela secundária.
   const moreActive =
     location.pathname === '/conquistas' ||
+    location.pathname.startsWith('/simulacoes/') ||
     MOBILE_MORE.some((n) => n.to === location.pathname);
   const maxWidth = CONTENT_MAX_W[contentWidth(location.pathname)];
   // Usuários recém-cadastrados (onboarded=false) passam pelo onboarding antes do app.
@@ -382,6 +388,14 @@ export default function App() {
       <Route path="/flashcards" element={<Flashcards />} />
       <Route path="/formulas" element={<Formulas />} />
       <Route path="/tabela-periodica" element={<TabelaPeriodica />} />
+      <Route path="/simulacoes" element={<Simulacoes />} />
+      {/* Rotas fixas das matérias: ganham da rota de cada simulação (catalogo.test.ts cobra). */}
+      <Route path="/simulacoes/fisica" element={<SimulacoesMateria materia="Física" />} />
+      <Route path="/simulacoes/quimica" element={<SimulacoesMateria materia="Química" />} />
+      <Route path="/simulacoes/biologia" element={<SimulacoesMateria materia="Biologia" />} />
+      <Route path="/simulacoes/matematica" element={<SimulacoesMateria materia="Matemática" />} />
+      <Route path="/simulacoes/geografia" element={<SimulacoesMateria materia="Geografia" />} />
+      <Route path="/simulacoes/:slug" element={<Simulacao />} />
       <Route path="/videos" element={<Videos />} />
       <Route
         path="/quadro"

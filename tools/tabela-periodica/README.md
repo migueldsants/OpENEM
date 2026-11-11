@@ -19,7 +19,16 @@ node tools/tabela-periodica/baixar.mjs        # baixa as fontes para fontes/ (e 
 node tools/tabela-periodica/montar.mjs        # grava o catálogo
 node tools/tabela-periodica/verificar.mjs     # confere contra a segunda fonte
 node tools/tabela-periodica/verificar.mjs --todas  # lista também as explicadas
+node tools/tabela-periodica/nuclideos.mjs     # grava nuclideos.json (simulador de átomo)
 ```
+
+`nuclideos.mjs` grava `openem_frontend/src/data/nuclideos.json`: todos os
+nuclídeos já observados de cada elemento (estado fundamental, com meia-vida,
+modo de decaimento e abundância), da mesma IAEA LiveChart que dá o
+"radioativo" e o "isótopo mais estável" do catálogo. O simulador de átomo usa
+a lista para só deixar montar isótopos que existem. Fica num arquivo à parte
+para a tabela periódica não baixar o que não mostra; também nunca é editado à
+mão.
 
 A data mais recente de `fontes/baixado-em.json` vira o "Dados conferidos em"
 da tela. Quando a CIAAW ou a IUPAC revisarem algo, ou um elemento novo for

@@ -25,6 +25,13 @@ describe('contentWidth', () => {
     expect(CONTENT_MAX_W.leitura).toContain('2xl:max-w-5xl');
   });
 
+  it('as simulações (lista, matérias e cada simulação) usam a grade larga', () => {
+    expect(contentWidth('/simulacoes')).toBe('grade');
+    expect(contentWidth('/simulacoes/fisica')).toBe('grade');
+    expect(contentWidth('/simulacoes/geografia')).toBe('grade');
+    expect(contentWidth('/simulacoes/pendulo')).toBe('grade');
+  });
+
   it('a grade do cronograma mantém os 1700px de antes', () => {
     expect(CONTENT_MAX_W.grade).toBe('max-w-[1700px]');
   });

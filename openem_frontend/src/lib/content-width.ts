@@ -20,6 +20,9 @@ const PAINEL = new Set([
 export function contentWidth(pathname: string): ContentWidth {
   if (pathname === '/cronograma' || pathname === '/tabela-periodica') return 'grade';
   if (PAINEL.has(pathname)) return 'painel';
+  // Simulações: as grades de prévias e a própria simulação (palco grande e
+  // painel ao lado, sem rolar) aproveitam a largura toda.
+  if (pathname === '/simulacoes' || pathname.startsWith('/simulacoes/')) return 'grade';
   return 'leitura';
 }
 

@@ -291,7 +291,7 @@ export function lerPubchem() {
 }
 
 /** CSV simples (sem aspas com vírgula dentro: é o caso da IAEA). */
-function lerCsv(texto) {
+export function lerCsv(texto) {
   const [cab, ...linhas] = texto.split(/\r?\n/).filter(Boolean);
   const nomes = cab.split(',');
   return linhas.map((l) => Object.fromEntries(l.split(',').map((v, i) => [nomes[i], v])));

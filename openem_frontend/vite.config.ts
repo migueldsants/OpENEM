@@ -42,6 +42,11 @@ export default defineConfig({
       workbox: {
         // App shell offline: navegações caem no index.html mesmo sem rede.
         navigateFallback: 'index.html',
+        // O three.js (só das simulações 3D, ~250 kB gzip) fica fora do
+        // precache: quem nunca abre uma cena 3D não paga o download. Ele entra
+        // no cache na primeira vez (regra "three" abaixo) e depois funciona
+        // offline.
+        globIgnores: ['**/assets/three-*.js'],
         // Cache das respostas da API (issue #42): network-first com fallback
         // ao cache — dados atualizados quando há rede, última versão quando
         // não há. Só GETs de leitura; mutações passam pela fila offline.
@@ -101,6 +106,20 @@ export default defineConfig({
             },
           },
           {
+            // three.js das simulações 3D (fora do precache, ver globIgnores).
+            // O nome tem hash: o conteúdo nunca muda sob o mesmo caminho.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin &&
+              // Literal, não BASE (ver a regra das figuras de redação).
+              url.pathname.startsWith('/app/assets/three-'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'three',
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             // Fontes do próprio app (fontsource, em /app/assets/ com hash no
             // nome). Fora do precache: são dezenas de recortes por alfabeto e
             // o navegador só baixa o que a página usa; o que baixou fica para
@@ -121,6 +140,19 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // O Rollup já separa o three.js num chunk só das cenas 3D; aqui ele só
+        // ganha um nome fixo ("three-<hash>"), que o service worker reconhece
+        // para deixar fora do precache. (manualChunks puxaria o React junto.)
+        chunkFileNames: (chunk) =>
+          chunk.moduleIds.some((id) => /node_modules[\\/]three[\\/]/.test(id))
+            ? 'assets/three-[hash].js'
+            : 'assets/[name]-[hash].js',
+      },
+    },
+  },
   server: {
     // Em dev, encaminha chamadas de API para o backend NestJS.
     // Alvo configurável via VITE_PROXY_TARGET (padrão: porta 3000).
