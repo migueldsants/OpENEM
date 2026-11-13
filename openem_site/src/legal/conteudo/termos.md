@@ -1,7 +1,7 @@
 ---
 titulo: Termos de Uso
 descricao: As regras para usar o OpENEM: quem pode usar, o que vale na comunidade, o que o app oferece e o que ele não garante.
-atualizado: 2026-10-25
+atualizado: 2026-11-13
 ---
 
 ## O que é o OpENEM
@@ -46,6 +46,15 @@ O que você escreve continua sendo seu. Ao publicar no fórum, ou ao tornar púb
 - A classificação das questões por assunto e os comentários gerados por inteligência artificial podem ter erros. O gabarito é sempre o oficial.
 - Os simulados não preveem a sua nota no ENEM.
 - Recomendações, metas e cronograma são sugestões de estudo, não garantia de aprovação.
+
+## Links e materiais de outros sites
+
+A tela **Onde estudar** leva a cursos, livros e outros materiais gratuitos no site de outras instituições, como o Inep, universidades e a Khan Academy.
+
+- Só entram instituições públicas ou sem fins lucrativos, com material gratuito publicado no site delas. O OpENEM não recebe nada por esses links, não usa link de afiliado e não registra em quais você clica.
+- Ao abrir um desses links, você sai do OpENEM. O conteúdo, a disponibilidade e o uso dos seus dados nesses sites são de responsabilidade de cada instituição, e lá valem os termos e a política de privacidade dela.
+- Cada link é conferido por uma pessoa antes de entrar e de novo periodicamente; o que fica um ano sem nova conferência sai da lista sozinho. Mesmo assim, outro site pode mudar sem aviso.
+- Encontrou um link quebrado, que passou a cobrar, que leva a conteúdo impróprio ou que desrespeita direitos autorais ou outros direitos? Avise pelo contato no fim desta página. O link sai da lista enquanto o pedido é analisado. Quem tem direitos sobre um conteúdo e não quer o link aqui pode pedir a remoção pelo mesmo contato.
 
 ## Software livre
 

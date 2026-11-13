@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-d
 import { api, HttpError, type IncidenceWindow, type TrackDetail, type TrackStage, type TrackTopic } from '../api';
 import { useAuth } from '../auth';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconCheck, IconChevronLeft } from '../components/icons';
+import { IconBooks, IconCheck, IconChevronLeft } from '../components/icons';
 import { PageHeader } from '../components/PageHeader';
 import { Skeleton } from '../components/Skeleton';
 import { ComoCalculamos, PontoDeEstado, PorProva, QuestoesPorProva, TiraDosAnos } from '../components/TrilhaUI';
@@ -111,6 +111,15 @@ export default function Materia() {
       {voltar}
       <PageHeader
         title={dados.subject.name}
+        actions={
+          <NavLink
+            to={`/onde-estudar?materia=${encodeURIComponent(dados.subject.name)}`}
+            className="btn btn-ghost"
+          >
+            <IconBooks width={18} height={18} aria-hidden />
+            Onde estudar
+          </NavLink>
+        }
         subtitle={
           <>
             {/* Em Matemática, área e matéria têm o mesmo nome: não repete. */}

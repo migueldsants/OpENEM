@@ -1,7 +1,7 @@
 ---
 titulo: Privacy Policy
 descricao: What data OpENEM keeps, what for, for how long, who it is shared with and how you exercise your rights.
-atualizado: 2026-10-25
+atualizado: 2026-11-13
 ---
 
 ## Summary
@@ -98,6 +98,7 @@ On every request, the web server (nginx) records the IP address, the date and ti
 - **Google Fonts:** the app loads its fonts from Google's servers, which receive your IP and browser data when you open the app. The site and the documentation use self-hosted fonts and do not do this.
 - **YouTube:** in the video library, videos play in the youtube-nocookie.com player, which only sets cookies once you press play. When you press play and when thumbnails load, YouTube (Google) receives your IP and browser data. To fetch the title and thumbnail of a video you saved, the server sends YouTube only the video link.
 - **GitHub:** the Ferramentas (Tools) screen shows repository stars, which the server fetches from GitHub without any data about you. The links open github.com, where GitHub's policy applies.
+- **Onde estudar (Where to study):** the links open each institution's website in a new tab. OpENEM sends them no data about you, does not record clicks and opens the link without saying where you came from. What happens on the institution's website follows its own privacy policy.
 - **Hosting:** [PLACEHOLDER: hosting company and country where the servers are].
 
 Google, YouTube and GitHub are outside Brazil, usually in the United States. What your browser sends them (IP and browser data) is an international data transfer (LGPD, art. 33).

@@ -1,7 +1,7 @@
 ---
 titulo: Política de Privacidade
 descricao: Quais dados o OpENEM guarda, para quê, por quanto tempo, com quem eles são compartilhados e como você exerce os seus direitos.
-atualizado: 2026-10-25
+atualizado: 2026-11-13
 ---
 
 ## Resumo
@@ -98,6 +98,7 @@ O servidor web (nginx) registra, a cada acesso, o endereço IP, a data e a hora,
 - **Google Fonts:** o app carrega as fontes dos servidores do Google, que recebem o seu IP e dados do navegador quando você abre o app. O site e a documentação usam fontes próprias e não fazem isso.
 - **YouTube:** na Videoteca, o vídeo toca no player do youtube-nocookie.com, que só grava cookies quando você dá play. Ao dar play e ao carregar as miniaturas, o YouTube (Google) recebe o seu IP e dados do navegador. Para buscar o título e a miniatura de um vídeo que você salvou, o servidor envia ao YouTube só o link do vídeo.
 - **GitHub:** a tela Ferramentas mostra as estrelas dos repositórios, que o servidor busca no GitHub sem nenhum dado seu. Os links abrem o github.com, e lá vale a política do GitHub.
+- **Onde estudar:** os links abrem o site de cada instituição numa nova aba. O OpENEM não envia dados seus a elas, não registra os cliques e abre o link sem informar de onde você veio. O que acontece no site da instituição segue a política de privacidade dela.
 - **Hospedagem:** [PLACEHOLDER: empresa de hospedagem e país onde ficam os servidores].
 
 Google, YouTube e GitHub ficam fora do Brasil, em geral nos Estados Unidos. O que o seu navegador envia a eles (IP e dados do navegador) é uma transferência internacional de dados (LGPD, art. 33).

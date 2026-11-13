@@ -854,6 +854,42 @@ export interface Tool {
   /** null quando o servidor ainda não conseguiu falar com o GitHub. */
   stars: number | null;
 }
+
+export type StudyResourceType =
+  | 'curso'
+  | 'videoaulas'
+  | 'exercicios'
+  | 'livros'
+  | 'acervo'
+  | 'simulador'
+  | 'dicionario'
+  | 'documento';
+
+/** Material da tela Onde estudar (catálogo do backend, conferido à mão). */
+export interface StudyResource {
+  id: string;
+  title: string;
+  url: string;
+  types: StudyResourceType[];
+  /** Vazio = serve para todas as matérias. */
+  subjects: string[];
+  topics: string[];
+  description: string;
+  language: 'pt' | 'en' | 'es';
+  /** AAAA-MM-DD: quando uma pessoa conferiu o link. */
+  checkedAt: string;
+  provider: {
+    id: string;
+    name: string;
+    kind: 'publico' | 'sem-fins-lucrativos';
+    about: string;
+  };
+}
+
+export interface StudyResources {
+  resources: StudyResource[];
+  maxCheckAgeDays: number;
+}
 /** Recorte de um simulado personalizado (mesmos campos do backend). */
 export interface SimulationFilters {
   subjectAreaIds?: string[];
@@ -1442,6 +1478,8 @@ export const api = {
   clearStudyPlan: () => request<StudyPlan>('/study-plan', { method: 'DELETE' }),
 
   tools: () => request<Tool[]>('/tools'),
+  /** Onde estudar: materiais gratuitos de instituições públicas ou sem fins lucrativos. */
+  studyResources: () => request<StudyResources>('/study-resources'),
   /** Tela Matérias: o que cai em cada matéria e quanto o aluno domina. */
   tracks: () => request<TracksOverview>('/tracks'),
   /** Trilha de uma matéria, com a incidência e o domínio de cada assunto. */

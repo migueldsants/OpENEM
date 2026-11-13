@@ -118,6 +118,9 @@ services:
       # AI_DAILY_LIMIT (soma de todos os alunos) para limitar o custo.
       - AI_EXPLANATION_DAILY_LIMIT=${AI_EXPLANATION_DAILY_LIMIT:-}
       - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-}
+      # Onde estudar: materiais retirados por quem hospeda (ids separados por
+      # vírgula), para atender um pedido de remoção sem esperar nova versão.
+      - STUDY_RESOURCES_BLOCKED=${STUDY_RESOURCES_BLOCKED:-}
     ports:
       # Só na máquina local: com TRUST_PROXY ligado, quem chegasse direto na
       # porta 3000 pela rede poderia forjar o X-Forwarded-For e escapar do rate

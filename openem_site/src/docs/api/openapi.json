@@ -3582,6 +3582,26 @@
           "tools"
         ]
       }
+    },
+    "/api/v1/study-resources": {
+      "get": {
+        "operationId": "StudyResourcesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Materiais gratuitos de instituições públicas ou sem fins lucrativos (tela Onde estudar), sem os bloqueados por STUDY_RESOURCES_BLOCKED e sem os de conferência vencida",
+        "tags": [
+          "study-resources"
+        ]
+      }
     }
   },
   "info": {

@@ -18,6 +18,7 @@ import {
   IconMore,
   IconToolbox,
   IconPath,
+  IconBooks,
   IconPlay,
   IconRepeat,
   IconStack,
@@ -57,6 +58,7 @@ import Formulas from './pages/Formulas';
 import Home from './pages/Home';
 import Materia from './pages/Materia';
 import Materias from './pages/Materias';
+import OndeEstudar from './pages/OndeEstudar';
 import Painel from './pages/Painel';
 import Login from './pages/Login';
 import EntrarGoogle from './pages/EntrarGoogle';
@@ -93,6 +95,7 @@ const NAV: NavItem[] = [
 
   { to: '/questoes', label: 'Questões', Icon: IconStack, mobile: 'primary', section: 'Estudar' },
   { to: '/materias', label: 'Matérias', Icon: IconPath, mobile: 'more', section: 'Estudar' },
+  { to: '/onde-estudar', label: 'Onde estudar', Icon: IconBooks, mobile: 'more', section: 'Estudar' },
   { to: '/simulados', label: 'Simulados', Icon: IconTimer, mobile: 'primary', section: 'Estudar' },
   { to: '/revisao', label: 'Revisão', Icon: IconRepeat, mobile: 'primary', section: 'Estudar' },
   { to: '/redacoes', label: 'Redações', Icon: IconPen, mobile: 'more', section: 'Estudar' },
@@ -379,6 +382,7 @@ export default function App() {
       <Route path="/pomodoro" element={<Pomodoro />} />
       <Route path="/cronometros" element={<Cronometros />} />
       <Route path="/ferramentas" element={<Ferramentas />} />
+      <Route path="/onde-estudar" element={<OndeEstudar />} />
       <Route path="/redacoes" element={<Redacoes />} />
       <Route path="/comunidade" element={<Comunidade />} />
       <Route path="/perfil" element={<Perfil />} />

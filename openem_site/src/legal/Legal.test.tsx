@@ -8,7 +8,7 @@ describe('Legal', () => {
   it('mostra a política com a data, o título e o link para o inglês', () => {
     render(<Legal url="/privacidade/" />);
     expect(screen.getByRole('heading', { level: 1, name: 'Política de Privacidade' })).toBeInTheDocument();
-    expect(screen.getByText('25 de outubro de 2026')).toHaveAttribute('dateTime', '2026-10-25');
+    expect(screen.getByText('13 de novembro de 2026')).toHaveAttribute('dateTime', '2026-11-13');
     expect(screen.getByRole('link', { name: /Read in English/ })).toHaveAttribute('href', '/en/privacidade/');
     expect(document.documentElement.lang).toBe('pt-BR');
   });

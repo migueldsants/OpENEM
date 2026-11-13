@@ -37,6 +37,7 @@ import { VideosModule } from './videos/videos.module';
 import { ThemesModule } from './themes/themes.module';
 import { ToolsModule } from './tools/tools.module';
 import { TracksModule } from './tracks/tracks.module';
+import { StudyResourcesModule } from './study-resources/study-resources.module';
 import { AppThrottlerGuard } from './rate-limit/app-throttler.guard';
 import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { RateThrottlerStorage } from './rate-limit/rate-throttler.storage';
@@ -109,6 +110,7 @@ import { makeTracker } from './rate-limit/tracker';
     ThemesModule,
     ToolsModule,
     TracksModule,
+    StudyResourcesModule,
   ],
   controllers: [AppController],
   providers: [
