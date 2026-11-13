@@ -66,63 +66,72 @@ function renderizar() {
   );
 }
 
-describe('Matérias', () => {
+async function paradas() {
+  const mapa = await screen.findByRole('list', { name: 'Mapa das matérias' });
+  return within(mapa).getAllByRole('link');
+}
+
+describe('Matérias (mapa)', () => {
   beforeEach(() => {
     vi.mocked(api.tracks).mockReset();
     localStorage.clear();
   });
 
-  it('aluno novo vê por onde começar, com o link para a trilha', async () => {
+  it('o caminho passa pelas matérias na ordem da prova, com a Redação fechando Linguagens', async () => {
     vi.mocked(api.tracks).mockResolvedValue(visao());
     renderizar();
-    const cartao = (await screen.findByRole('heading', { name: 'Por onde começar' })).closest('section')!;
-    const link = within(cartao).getByRole('link', { name: 'Abrir a trilha de Matemática' });
-    expect(link).toHaveAttribute('href', '/materias/s-mat');
-    expect(within(cartao).getByText('Base numérica')).toBeInTheDocument();
+    const nomes = (await paradas()).map((l) => l.getAttribute('aria-label')!.split(',')[0]);
+    expect(nomes).toEqual(['Língua Portuguesa', 'Redação', 'História', 'Matemática']);
+    expect(screen.getByRole('link', { name: /^Redação/ })).toHaveAttribute('href', '/redacoes');
+  });
+
+  it('cada matéria abre a trilha e diz quanto cai e quanto o aluno domina', async () => {
+    vi.mocked(api.tracks).mockResolvedValue(visao());
+    renderizar();
+    const historia = await screen.findByRole('link', { name: /^História/ });
+    expect(historia).toHaveAttribute('href', '/materias/s-hist');
+    expect(historia).toHaveAccessibleName(/12 questões por prova, você domina 42%, etapa 1 de 2/);
+    expect(historia).toHaveTextContent('42% · etapa 1 de 2');
+    expect(screen.getByRole('link', { name: /^Língua Portuguesa/ })).toHaveTextContent('Não iniciada');
+  });
+
+  it('marca o próximo passo; aluno sem respostas vê "Comece aqui"', async () => {
+    vi.mocked(api.tracks).mockResolvedValue(visao());
+    renderizar();
+    const mat = await screen.findByRole('link', { name: /^Matemática.*próximo passo/ });
+    expect(mat).toHaveTextContent('Comece aqui');
     expect(
       screen.getByText('O que caiu nas provas regulares de 2016 a 2025 e quanto disso você já domina.'),
     ).toBeInTheDocument();
   });
 
-  it('agrupa por área na ordem da prova e põe a Redação em Linguagens', async () => {
-    vi.mocked(api.tracks).mockResolvedValue(visao());
-    renderizar();
-    const areas = (await screen.findAllByRole('heading', { level: 2 }))
-      .map((h) => h.textContent)
-      .filter((t) => t !== 'Por onde começar');
-    expect(areas).toEqual(['Linguagens', 'Humanas', 'Matemática']);
-    const linguagens = screen.getByRole('heading', { name: 'Linguagens' }).closest('section')!;
-    expect(within(linguagens).getByRole('link', { name: /Redação/ })).toHaveAttribute('href', '/redacoes');
-  });
-
-  it('mostra quanto cai e o domínio de quem já começou', async () => {
-    vi.mocked(api.tracks).mockResolvedValue(visao());
-    renderizar();
-    const historia = await screen.findByRole('link', { name: /História/ });
-    expect(historia).toHaveTextContent('12 questões por prova');
-    expect(historia).toHaveTextContent('42%');
-    expect(historia).toHaveAttribute('href', '/materias/s-hist');
-    expect(screen.getByRole('link', { name: /Matemática.*não iniciada/ })).toHaveTextContent(
-      '44,8 questões por prova',
-    );
-  });
-
-  it('com respostas suficientes, o topo diz quanto o aluno domina', async () => {
+  it('com respostas suficientes, o título diz quanto o aluno domina', async () => {
     vi.mocked(api.tracks).mockResolvedValue(
       visao({ overall: { mastery: 31, answered: 412, enough: true } }),
     );
     renderizar();
     expect(
-      await screen.findByRole('heading', { name: 'Você domina cerca de 31% do que cai' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Próximo passo: Matemática/)).toBeInTheDocument();
+      await screen.findByText(/Você domina cerca de/),
+    ).toHaveTextContent('Você domina cerca de 31% do que caiu nas provas regulares de 2016 a 2025.');
+    expect(await screen.findByRole('link', { name: /^Matemática/ })).toHaveTextContent('Próximo passo');
   });
 
   it('"já sei isso" gravado neste aparelho avança a etapa mostrada', async () => {
     localStorage.setItem('openem.trilhas.puladas:u1', JSON.stringify({ 's-mat': ['Base numérica'] }));
     vi.mocked(api.tracks).mockResolvedValue(visao());
     renderizar();
-    expect(await screen.findByRole('link', { name: /Matemática.*etapa 2 de 2/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /^Matemática.*etapa 2 de 2/ })).toBeInTheDocument();
+  });
+
+  it('trilha concluída ganha o selo', async () => {
+    localStorage.setItem(
+      'openem.trilhas.puladas:u1',
+      JSON.stringify({ 's-mat': ['Base numérica', 'Proporção e porcentagem'] }),
+    );
+    vi.mocked(api.tracks).mockResolvedValue(visao());
+    renderizar();
+    const mat = await screen.findByRole('link', { name: /^Matemática.*trilha concluída/ });
+    expect(mat).toHaveTextContent('Trilha concluída');
   });
 
   it('erro de rede mostra o aviso com tentar de novo', async () => {

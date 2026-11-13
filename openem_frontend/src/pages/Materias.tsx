@@ -1,39 +1,38 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  api,
-  type TrackSubjectSummary,
-  type TrackSuggestion,
-  type TracksOverview,
-} from '../api';
+import { api, type TracksOverview } from '../api';
 import { useAuth } from '../auth';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconChevronRight } from '../components/icons';
+import { IconCheck } from '../components/icons';
+import { IconeDaMateria } from '../components/IconeDaMateria';
 import { PageHeader } from '../components/PageHeader';
 import { Skeleton } from '../components/Skeleton';
-import { BarraDeDominio, ComoCalculamos, QuestoesPorProva } from '../components/TrilhaUI';
-import { AREA_DOT, AREA_TEXT, areaCurta, areaKey, type AreaKey } from '../lib/areas';
+import { ComoCalculamos } from '../components/TrilhaUI';
+import { AREA_SOFT, AREA_TEXT } from '../lib/areas';
 import {
-  decimal,
-  etapaAtual,
-  etapasFeitas,
-  lerPuladas,
-  ORDEM_DAS_AREAS,
-  recorte,
-  RESPOSTAS_PARA_PORCENTAGEM,
-} from '../lib/trilhas';
+  alturaDoMapa,
+  caminhoSuave,
+  paradasDoMapa,
+  posicoesNoCaminho,
+  tracadoDoCaminho,
+  type Parada,
+  type Ponto,
+} from '../lib/mapa-materias';
+import { decimal, etapaAtual, etapasFeitas, lerPuladas, recorte } from '../lib/trilhas';
+import '../mapa-materias.css';
 
 /**
- * Matérias (discussão #122): o que cai em cada matéria nas provas regulares
- * recentes e quanto disso o aluno domina. Cada linha abre a trilha da
- * matéria. Os números vêm de `GET /tracks`.
+ * Matérias (discussão #122) como mapa de fases: um caminho no chão passa por
+ * um ícone de cada matéria, na ordem das áreas da prova. O tamanho da ficha
+ * diz quanto a matéria cai, o anel diz quanto o aluno domina e o marcador
+ * aponta o próximo passo. Tocar numa matéria abre a trilha dela, onde também
+ * estão os materiais gratuitos. Os números vêm de `GET /tracks`.
  */
 export default function Materias() {
   const { me } = useAuth();
   const [dados, setDados] = useState<TracksOverview | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [recarregar, setRecarregar] = useState(0);
-  const puladas = useMemo(() => lerPuladas(me?.id), [me?.id]);
 
   useEffect(() => {
     let vivo = true;
@@ -51,60 +50,29 @@ export default function Materias() {
     };
   }, [recarregar]);
 
-  const grupos = useMemo(() => agrupar(dados?.subjects ?? []), [dados]);
+  const subtitulo = !dados ? (
+    'O que caiu nas provas regulares recentes e quanto disso você já domina.'
+  ) : dados.overall.enough ? (
+    <>
+      Você domina cerca de{' '}
+      <span className="font-data tabular-nums">{dados.overall.mastery}%</span> do que caiu{' '}
+      {recorte(dados.window)}.
+    </>
+  ) : (
+    `O que caiu ${recorte(dados.window)} e quanto disso você já domina.`
+  );
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Matérias"
-        subtitle={`O que caiu ${dados ? recorte(dados.window) : 'nas provas regulares recentes'} e quanto disso você já domina.`}
-      />
+      <PageHeader title="Matérias" subtitle={subtitulo} />
 
       <ErrorBanner message={erro} onRetry={() => setRecarregar((k) => k + 1)} />
 
       {!dados ? (
-        !erro && (
-          <div className="space-y-6" aria-busy>
-            <Skeleton className="h-40" />
-            <Skeleton className="h-64" />
-          </div>
-        )
+        !erro && <Skeleton className="h-[36rem]" aria-busy />
       ) : (
         <>
-          <Resumo dados={dados} />
-
-          {grupos.map(({ area, nome, materias }) => (
-            <section key={area} aria-labelledby={`area-${area}`} className="space-y-3">
-              <h2 id={`area-${area}`} className={`font-display text-lg font-bold ${AREA_TEXT[area]}`}>
-                {nome}
-              </h2>
-              <ul className="card divide-y divide-line">
-                {materias.map((m) => (
-                  <li key={m.id}>
-                    <LinhaDaMateria materia={m} area={area} puladas={new Set(puladas[m.id] ?? [])} />
-                  </li>
-                ))}
-                {area === 'lin' && (
-                  <li>
-                    <NavLink
-                      to="/redacoes"
-                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2"
-                    >
-                      <span aria-hidden className={`h-9 w-1 shrink-0 rounded-full ${AREA_DOT.red}`} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-semibold">Redação</span>
-                        <span className="block text-xs text-muted">
-                          1 texto, até 1.000 pontos. Veja todos os temas desde 1998.
-                        </span>
-                      </span>
-                      <IconChevronRight width={16} height={16} aria-hidden className="shrink-0 text-muted" />
-                    </NavLink>
-                  </li>
-                )}
-              </ul>
-            </section>
-          ))}
-
+          <Mapa dados={dados} userId={me?.id} />
           <ComoCalculamos janela={dados.window} />
         </>
       )}
@@ -112,158 +80,202 @@ export default function Materias() {
   );
 }
 
-function agrupar(materias: TrackSubjectSummary[]) {
-  const porArea = new Map<AreaKey, TrackSubjectSummary[]>();
-  for (const m of materias) {
-    const k = areaKey(m.area.name);
-    porArea.set(k, [...(porArea.get(k) ?? []), m]);
-  }
-  return ORDEM_DAS_AREAS.flatMap((area) => {
-    const lista = porArea.get(area);
-    if (!lista?.length) return [];
-    return [
-      {
-        area,
-        nome: areaCurta(lista[0].area.name),
-        materias: [...lista].sort((a, b) => b.perExam - a.perExam || a.name.localeCompare(b.name)),
-      },
-    ];
-  });
-}
+function Mapa({ dados, userId }: { dados: TracksOverview; userId?: string }) {
+  const caixa = useRef<HTMLDivElement>(null);
+  const [largura, setLargura] = useState(0);
+  const mascara = useId();
+  const puladas = useMemo(() => lerPuladas(userId), [userId]);
+  const paradas = useMemo(() => paradasDoMapa(dados.subjects), [dados.subjects]);
 
-function LinhaDaMateria({
-  materia: m,
-  area,
-  puladas,
-}: {
-  materia: TrackSubjectSummary;
-  area: AreaKey;
-  puladas: ReadonlySet<string>;
-}) {
-  const feitas = etapasFeitas(m.stages, puladas);
-  const atual = etapaAtual(m.stages, puladas);
-  const comecou = m.answered > 0 || feitas > 0;
-  return (
-    <NavLink
-      to={`/materias/${encodeURIComponent(m.id)}`}
-      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2"
-    >
-      <span aria-hidden className={`h-9 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`} />
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold">{m.name}</span>
-        <span className="block text-xs text-muted">
-          <QuestoesPorProva n={m.perExam} />
-          {' · '}
-          {atual === null
-            ? 'trilha concluída'
-            : `etapa ${atual + 1} de ${m.stages.length}`}
-        </span>
-      </span>
-      {/* O leitor de tela ouve a frase do sr-only abaixo, não o número solto. */}
-      <span aria-hidden className="flex w-20 shrink-0 flex-col items-end gap-1 sm:w-28">
-        {comecou ? (
-          <>
-            <span className="font-data text-sm font-semibold tabular-nums">{m.mastery}%</span>
-            <BarraDeDominio valor={m.mastery} className="w-full" />
-          </>
-        ) : (
-          <span className="text-xs text-muted">não iniciada</span>
-        )}
-      </span>
-      <span className="sr-only">
-        {comecou ? `, você domina ${m.mastery}%` : ', ainda não iniciada'}
-      </span>
-      <IconChevronRight width={16} height={16} aria-hidden className="shrink-0 text-muted" />
-    </NavLink>
-  );
-}
+  useLayoutEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    const medir = () => setLargura(el.clientWidth);
+    medir();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-/** O cartão do topo: quanto o aluno domina ou, antes disso, por onde começar. */
-function Resumo({ dados }: { dados: TracksOverview }) {
-  const { overall, suggestions } = dados;
-  if (overall.enough) {
-    const proxima = suggestions[0];
-    return (
-      <section className="card card-raised space-y-4 p-4 sm:p-5" aria-labelledby="resumo-dominio">
-        <div>
-          <h2 id="resumo-dominio" className="font-display text-xl font-extrabold text-balance">
-            Você domina cerca de <span className="font-data tabular-nums">{overall.mastery}%</span> do que cai
-          </h2>
-          <BarraDeDominio valor={overall.mastery} className="mt-3 h-2" />
-          <p className="mt-2 text-xs text-muted text-pretty">
-            Pelas suas últimas respostas em{' '}
-            <span className="font-data tabular-nums">{overall.answered.toLocaleString('pt-BR')}</span> questões com
-            assunto, pesando cada assunto pelo quanto ele cai.{' '}
-            <a href="#como-calculamos" className="font-medium text-brand underline-offset-2 hover:underline">
-              Como calculamos
-            </a>
-          </p>
-        </div>
-        {proxima && (
-          <div className="border-t border-line pt-4">
-            <Sugestao sugestao={proxima} principal rotulo="Próximo passo" />
-          </div>
-        )}
-      </section>
-    );
-  }
+  // Sem medida (primeiro quadro, testes em jsdom), desenha na largura de celular.
+  const w = largura || 360;
+  const pontos = useMemo(() => posicoesNoCaminho(paradas.length, w), [paradas.length, w]);
+  const d = useMemo(() => caminhoSuave(tracadoDoCaminho(pontos, w)), [pontos, w]);
+  const altura = alturaDoMapa(paradas.length, w);
+  const proximo = dados.suggestions[0]?.subjectId ?? null;
+  const novato = dados.overall.answered === 0;
 
   return (
-    <section className="card card-raised p-4 sm:p-5" aria-labelledby="por-onde-comecar">
-      <h2 id="por-onde-comecar" className="font-display text-xl font-extrabold">
-        Por onde começar
-      </h2>
-      <p className="mt-1 text-sm text-muted text-pretty">
-        As etapas que mais rendem agora, pelo que caiu nas últimas provas. Cada etapa
-        tem um simulado curto com questões que já caíram no ENEM.
-      </p>
-      {suggestions.length > 0 && (
-        <ul className="mt-3 divide-y divide-line">
-          {suggestions.map((s, i) => (
-            <li key={s.subjectId} className="py-3 first:pt-1 last:pb-0">
-              <Sugestao sugestao={s} principal={i === 0} />
-            </li>
-          ))}
-        </ul>
-      )}
-      {overall.answered > 0 && (
-        <p className="mt-3 text-xs text-muted text-pretty">
-          Com <span className="font-data tabular-nums">{RESPOSTAS_PARA_PORCENTAGEM}</span> respostas em
-          questões com assunto, esta tela mostra quanto você já domina do que cai (você tem{' '}
-          <span className="font-data tabular-nums">{overall.answered}</span>).
-        </p>
-      )}
-    </section>
-  );
-}
-
-function Sugestao({
-  sugestao: s,
-  principal,
-  rotulo,
-}: {
-  sugestao: TrackSuggestion;
-  principal: boolean;
-  rotulo?: string;
-}) {
-  const area = areaKey(s.areaName);
-  return (
-    <div className="flex items-center gap-3">
-      <span aria-hidden className={`h-10 w-1 shrink-0 rounded-full ${AREA_DOT[area]}`} />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-muted">
-          {rotulo ? `${rotulo}: ` : ''}
-          {s.subjectName}, etapa <span className="font-data tabular-nums">{decimal(s.stageIndex + 1)}</span>
-        </p>
-        <p className="font-semibold text-balance">{s.title}</p>
-      </div>
-      <NavLink
-        to={`/materias/${encodeURIComponent(s.subjectId)}`}
-        className={`btn shrink-0 px-3 py-1.5 text-sm ${principal ? 'btn-primary' : 'btn-ghost'}`}
-        aria-label={`Abrir a trilha de ${s.subjectName}`}
+    <div ref={caixa} className="relative mx-auto w-full max-w-4xl" style={{ height: altura }}>
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-visible"
+        width={w}
+        height={altura}
+        viewBox={`0 0 ${w} ${altura}`}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        Abrir trilha
-      </NavLink>
+        <defs>
+          <mask id={mascara} maskUnits="userSpaceOnUse" x={-40} y={-80} width={w + 80} height={altura + 160}>
+            <path d={d} stroke="white" strokeWidth={48} pathLength={1} className="mapa-desenho" />
+          </mask>
+        </defs>
+        <g mask={`url(#${mascara})`}>
+          {/* A sombra no chão, a borda, o leito e as pedras do caminho. */}
+          <path d={d} stroke="var(--fg)" strokeOpacity={0.05} strokeWidth={36} transform="translate(0 5)" />
+          <path d={d} stroke="var(--line)" strokeWidth={30} />
+          <path d={d} stroke="var(--surface-2)" strokeWidth={24} />
+          <path d={d} stroke="var(--muted)" strokeOpacity={0.45} strokeWidth={3.5} strokeDasharray="0.1 14" />
+        </g>
+      </svg>
+
+      <ol aria-label="Mapa das matérias" className="relative">
+        {paradas.map((p, i) => (
+          <ParadaNoMapa
+            key={p.id}
+            parada={p}
+            ponto={pontos[i]}
+            ordem={i}
+            puladas={new Set(p.tipo === 'materia' ? (puladas[p.id] ?? []) : [])}
+            proximo={p.id === proximo}
+            novato={novato}
+          />
+        ))}
+      </ol>
     </div>
+  );
+}
+
+/** Tamanho da ficha pelo quanto a matéria cai: marco grande no mapa é o que mais pesa. */
+function tamanho(parada: Parada): { ficha: string; miolo: string; icone: number } {
+  const n = parada.tipo === 'materia' ? parada.materia.perExam : 8;
+  if (n >= 20) return { ficha: 'size-20', miolo: 'size-[3.75rem]', icone: 34 };
+  if (n >= 8) return { ficha: 'size-[4.25rem]', miolo: 'size-[3.125rem]', icone: 28 };
+  return { ficha: 'size-14', miolo: 'size-10', icone: 22 };
+}
+
+function ParadaNoMapa({
+  parada: p,
+  ponto,
+  ordem,
+  puladas,
+  proximo,
+  novato,
+}: {
+  parada: Parada;
+  ponto: Ponto;
+  ordem: number;
+  puladas: ReadonlySet<string>;
+  proximo: boolean;
+  novato: boolean;
+}) {
+  const t = tamanho(p);
+  const m = p.tipo === 'materia' ? p.materia : null;
+  const feitas = m ? etapasFeitas(m.stages, puladas) : 0;
+  const atual = m ? etapaAtual(m.stages, puladas) : null;
+  const comecou = m ? m.answered > 0 || feitas > 0 : false;
+  const concluida = m !== null && m.stages.length > 0 && atual === null;
+
+
+  const rotulo = m
+    ? [
+        m.name,
+        `${decimal(m.perExam)} questões por prova`,
+        comecou ? `você domina ${m.mastery}%` : 'ainda não iniciada',
+        concluida ? 'trilha concluída' : `etapa ${(atual ?? 0) + 1} de ${m.stages.length}`,
+        proximo ? 'próximo passo' : null,
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : 'Redação, um texto de até 1.000 pontos, todos os temas desde 1998';
+
+  return (
+    <li
+      className="absolute w-36"
+      // O centro da ficha cai no ponto do caminho; o nome fica embaixo.
+      style={{ left: ponto.x, top: ponto.y, transform: 'translate(-50%, -2.5rem)' }}
+    >
+      <NavLink
+        to={m ? `/materias/${encodeURIComponent(m.id)}` : '/redacoes'}
+        aria-label={rotulo}
+        className="parada parada-entra flex flex-col items-center text-center"
+        style={{ ['--i' as string]: ordem }}
+      >
+        <span className="relative grid h-20 place-items-center">
+          {proximo && (
+            <span className="parada-pino absolute bottom-[calc(100%-0.25rem)] left-1/2 z-10 whitespace-nowrap rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-brand-ink shadow-[var(--shadow)]">
+              {novato ? 'Comece aqui' : 'Próximo passo'}
+              <span
+                aria-hidden
+                className="absolute left-1/2 top-full -ml-1 border-x-4 border-t-4 border-x-transparent border-t-brand"
+              />
+            </span>
+          )}
+          <span
+            aria-hidden
+            className="parada-sombra absolute bottom-0 left-1/2 -ml-7 h-3 w-14 rounded-[50%] bg-fg/10"
+          />
+          <span
+            aria-hidden
+            className={`parada-ficha relative grid place-items-center rounded-full border border-line bg-surface ${t.ficha}`}
+          >
+            {comecou && m && <AnelDeDominio valor={m.mastery} />}
+            <span className={`grid place-items-center rounded-full ${t.miolo} ${AREA_SOFT[p.area]} ${AREA_TEXT[p.area]}`}>
+              <IconeDaMateria nome={p.nome} width={t.icone} height={t.icone} weight="duotone" />
+            </span>
+            {concluida && (
+              <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-brand text-brand-ink ring-2 ring-surface">
+                <IconCheck width={13} height={13} weight="bold" />
+              </span>
+            )}
+          </span>
+        </span>
+        {/* Recorte no fundo da página: onde o caminho passa por baixo do nome,
+            o texto continua legível; no resto, o recorte é invisível. */}
+        <span className="mt-2 rounded-md bg-bg px-1.5 font-display text-sm font-bold leading-tight text-balance">
+          {p.nome}
+        </span>
+        <span className="rounded-md bg-bg px-1.5 text-xs text-muted">
+          {!m ? (
+            'Temas desde 1998'
+          ) : concluida ? (
+            'Trilha concluída'
+          ) : comecou ? (
+            <>
+              <span className="font-data tabular-nums">{m.mastery}%</span> · etapa{' '}
+              <span className="font-data tabular-nums">{(atual ?? 0) + 1}</span> de{' '}
+              <span className="font-data tabular-nums">{m.stages.length}</span>
+            </>
+          ) : (
+            'Não iniciada'
+          )}
+        </span>
+      </NavLink>
+    </li>
+  );
+}
+
+/** Anel em volta da ficha: quanto da matéria o aluno domina, na cor da marca. */
+function AnelDeDominio({ valor }: { valor: number }) {
+  return (
+    <svg className="absolute -inset-[5px] size-[calc(100%+10px)] -rotate-90" viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="47" stroke="var(--line)" strokeWidth="4" />
+      {/* Com 0%, a ponta arredondada desenharia um ponto rosa solto. */}
+      {valor > 0 && (
+        <circle
+          cx="50"
+          cy="50"
+          r="47"
+          stroke="var(--brand)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          pathLength={100}
+          strokeDasharray={`${Math.min(100, valor)} 100`}
+        />
+      )}
+    </svg>
   );
 }

@@ -95,7 +95,11 @@ describe('OndeEstudar', () => {
     )!;
     expect(within(cartao as HTMLElement).getByText(/BBC · Instituição pública/)).toBeInTheDocument();
     expect(within(cartao as HTMLElement).getByText('Em inglês')).toBeInTheDocument();
-    expect(within(cartao as HTMLElement).getByText(/Conferido em 13\/11\/2026/)).toBeInTheDocument();
+    expect(within(cartao as HTMLElement).getByText(/Conferido em/)).toHaveTextContent(
+      'Conferido em 13/11/2026',
+    );
+    // O host quebra depois de cada ponto (<wbr>), mas o texto continua inteiro.
+    expect(cartao).toHaveTextContent('bbc.co.uk');
   });
 
   it('endereço que não é https nunca vira link', async () => {

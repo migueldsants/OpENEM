@@ -3,7 +3,7 @@ titulo: Onde estudar
 descricao: Cursos, videoaulas, livros e exercícios gratuitos de instituições públicas e sem fins lucrativos, separados por matéria e conferidos pela equipe.
 ---
 
-A tela **Onde estudar** responde a pergunta de quem não sabe onde buscar o conteúdo: ela reúne cursos, videoaulas, livros, exercícios e acervos **gratuitos**, separados por matéria. Ela fica no menu, logo depois de **Matérias** (no celular, em **Mais**). Na página de cada matéria, o botão **Onde estudar** abre a tela já filtrada.
+A tela **Onde estudar** responde a pergunta de quem não sabe onde buscar o conteúdo: ela reúne cursos, videoaulas, livros, exercícios e acervos **gratuitos**, separados por matéria. Ela fica no menu, logo depois de **Matérias** (no celular, em **Mais**). A página de cada matéria também mostra os materiais dela, e **Ver todos os materiais** abre esta tela já filtrada.
 
 ## Como usar
 

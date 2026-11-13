@@ -1,0 +1,87 @@
+/* Mapa de Matérias (pages/Materias.tsx): o caminho no chão e as fichas de
+   cada matéria. Só transform e opacidade; com movimento reduzido, nada anda. */
+
+/* O caminho se desenha uma vez ao abrir: a máscara corre do começo ao fim. */
+.mapa-desenho {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: mapa-desenha 1600ms var(--ease-movimento) both;
+}
+@keyframes mapa-desenha {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+/* Cada ficha sobe do chão, na ordem do caminho. */
+.parada-entra {
+  animation: parada-entra 520ms var(--ease-saida) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 240ms);
+}
+@keyframes parada-entra {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+}
+
+.parada-ficha,
+.parada-sombra {
+  transition:
+    transform 220ms var(--ease-saida),
+    opacity 220ms var(--ease-saida),
+    box-shadow 220ms var(--ease-saida);
+}
+
+/* Só com mouse: no toque o :hover fica preso depois do toque. */
+@media (hover: hover) and (pointer: fine) {
+  .parada:hover .parada-ficha {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow);
+  }
+  .parada:hover .parada-sombra {
+    transform: scale(0.78);
+    opacity: 0.6;
+  }
+}
+.parada:active .parada-ficha {
+  transform: translateY(1px) scale(0.95);
+  transition-duration: 120ms;
+}
+.parada:focus-visible {
+  outline: none;
+}
+.parada:focus-visible .parada-ficha {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+/* O marcador do próximo passo quica de leve, como num mapa de fases. */
+.parada-pino {
+  animation: pino-quica 2.6s var(--ease-saida) infinite;
+}
+@keyframes pino-quica {
+  0%,
+  55%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  27% {
+    transform: translate(-50%, -6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-desenho,
+  .parada-entra,
+  .parada-pino {
+    animation: none;
+  }
+  .parada-pino {
+    transform: translate(-50%, 0);
+  }
+  .parada-ficha,
+  .parada-sombra {
+    transition: none;
+  }
+}

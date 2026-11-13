@@ -1,22 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, type StudyResource, type StudyResources } from '../api';
+import { api, type StudyResources } from '../api';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconArrowRight } from '../components/icons';
+import { MaterialCard } from '../components/MaterialCard';
 import { PageHeader } from '../components/PageHeader';
 import { SkeletonCard } from '../components/Skeleton';
 import { AREA_DOT, areaKey } from '../lib/areas';
 import {
   agrupar,
-  dataCurta,
   filtrar,
   GUIA_MATERIAIS_URL,
-  hostDe,
-  linkSeguro,
   materiasComMaterial,
-  ROTULO_IDIOMA,
-  ROTULO_INSTITUICAO,
-  ROTULO_TIPO,
   TERMOS_LINKS_URL,
 } from '../lib/onde-estudar';
 
@@ -163,73 +157,6 @@ export default function OndeEstudar() {
   );
 }
 
-function MaterialCard({ recurso: r }: { recurso: StudyResource }) {
-  const href = linkSeguro(r.url);
-  const host = hostDe(r.url);
-  const idioma = ROTULO_IDIOMA[r.language];
-  return (
-    <article className="card flex h-full flex-col gap-3 p-4 sm:p-5">
-      <div className="min-w-0">
-        <h3 className="font-display font-bold leading-snug">{r.title}</h3>
-        <p className="mt-0.5 text-xs text-muted">
-          {r.provider.name} · {ROTULO_INSTITUICAO[r.provider.kind]}
-        </p>
-      </div>
-
-      <p className="text-sm text-muted text-pretty">{r.description}</p>
-
-      <ul className="flex flex-wrap gap-2" aria-label="Tipo de material">
-        {r.types.map((t) => (
-          <li key={t} className="chip">
-            {ROTULO_TIPO[t]}
-          </li>
-        ))}
-        {idioma && (
-          <li className="chip" data-active="true">
-            {idioma}
-          </li>
-        )}
-      </ul>
-
-      {r.topics.length > 0 && (
-        <p className="text-xs text-muted">
-          <span className="font-semibold text-fg">Assuntos:</span> {r.topics.join(', ')}
-        </p>
-      )}
-
-      <details className="text-xs text-muted">
-        <summary className="cursor-pointer select-none font-semibold text-fg">
-          Por que é gratuito
-        </summary>
-        <p className="mt-1.5 text-pretty">{r.provider.about}</p>
-      </details>
-
-      <div className="mt-auto flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted">
-          <span className="font-data">{host}</span>
-          <span aria-hidden> · </span>
-          <span className="block sm:inline">Conferido em {dataCurta(r.checkedAt)}</span>
-        </p>
-        {href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-            referrerPolicy="no-referrer"
-            className="btn btn-primary shrink-0 justify-center"
-            aria-label={`Abrir ${r.title} em ${host} (sai do OpENEM, numa nova aba)`}
-          >
-            Abrir no site
-            <IconArrowRight width={16} height={16} aria-hidden />
-          </a>
-        ) : (
-          <p className="text-xs text-muted">Link indisponível</p>
-        )}
-      </div>
-    </article>
-  );
-}
-
 function ComoEscolhemos({ dias }: { dias: number }) {
   return (
     <section className="card space-y-3 p-4 text-sm sm:p-5" aria-labelledby="como-escolhemos">
@@ -262,14 +189,14 @@ function ComoEscolhemos({ dias }: { dias: number }) {
         Achou um link quebrado, que passou a cobrar ou que desrespeita direitos de alguém?{' '}
         <a
           href={TERMOS_LINKS_URL}
-          className="font-semibold text-brand-ink underline-offset-2 hover:underline"
+          className="font-semibold text-brand underline underline-offset-2"
         >
           Veja como pedir a remoção
         </a>
         . Quer sugerir um material?{' '}
         <a
           href={GUIA_MATERIAIS_URL}
-          className="font-semibold text-brand-ink underline-offset-2 hover:underline"
+          className="font-semibold text-brand underline underline-offset-2"
         >
           Leia o guia de contribuição
         </a>
