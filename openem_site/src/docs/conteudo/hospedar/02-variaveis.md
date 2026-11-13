@@ -122,6 +122,12 @@ Detalhes em [Inteligência artificial](/docs/hospedar/ia/).
 
 A fila vale para o caderno de simulado e o caderno de fórmulas. Aumente `PDF_CONCURRENCY` só se o servidor tiver núcleos sobrando.
 
+## Onde estudar
+
+| Variável | Padrão | O que faz |
+| --- | --- | --- |
+| `STUDY_RESOURCES_BLOCKED` | nenhum | Ids de materiais da tela **Onde estudar** que saem da lista já, sem esperar nova versão, separados por vírgula (por exemplo `khan-em-algebra-1,rae-diccionario`). Use para atender um pedido de remoção ou tirar um link quebrado; os ids estão em `openem_backend/src/study-resources/study-resources-catalog.ts`. Vale ao reiniciar o backend, e a API avisa no log se citar um id que não existe. |
+
 ## Import e dados
 
 | Variável | Padrão | O que faz |

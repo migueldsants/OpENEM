@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { api, HttpError, type IncidenceWindow, type TrackDetail, type TrackStage, type TrackTopic } from '../api';
+import {
+  api,
+  HttpError,
+  type IncidenceWindow,
+  type StudyResource,
+  type TrackDetail,
+  type TrackStage,
+  type TrackTopic,
+} from '../api';
 import { useAuth } from '../auth';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { IconCheck, IconChevronLeft } from '../components/icons';
+import { MaterialCard } from '../components/MaterialCard';
+import { IconBooks, IconCheck, IconChevronLeft } from '../components/icons';
 import { PageHeader } from '../components/PageHeader';
 import { Skeleton } from '../components/Skeleton';
 import { ComoCalculamos, PontoDeEstado, PorProva, QuestoesPorProva, TiraDosAnos } from '../components/TrilhaUI';
@@ -111,6 +120,13 @@ export default function Materia() {
       {voltar}
       <PageHeader
         title={dados.subject.name}
+        actions={
+          // Os materiais estão no fim da página; o botão leva até eles.
+          <a href="#onde-estudar" className="btn btn-ghost">
+            <IconBooks width={18} height={18} aria-hidden />
+            Onde estudar
+          </a>
+        }
         subtitle={
           <>
             {/* Em Matemática, área e matéria têm o mesmo nome: não repete. */}
@@ -159,6 +175,8 @@ export default function Materia() {
           <OQueCai dados={dados} />
         )}
       </div>
+
+      <OndeEstudarNaMateria materia={dados.subject.name} />
 
       <ComoCalculamos janela={dados.window} />
     </div>
@@ -453,6 +471,53 @@ function OQueCai({ dados }: { dados: TrackDetail }) {
         Estimativa do OpENEM: o INEP não divulga o assunto de cada questão. A classificação foi feita por palavras-chave
         e por IA e pode errar.
       </p>
+    </section>
+  );
+}
+
+/**
+ * Os materiais gratuitos do Onde estudar desta matéria (discussão #126). Se o
+ * catálogo não carregar, a seção some: a trilha continua funcionando.
+ */
+function OndeEstudarNaMateria({ materia }: { materia: string }) {
+  const [recursos, setRecursos] = useState<StudyResource[] | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    api
+      .studyResources()
+      .then((d) => vivo && setRecursos(d.resources.filter((r) => r.subjects.includes(materia))))
+      .catch(() => vivo && setRecursos([]));
+    return () => {
+      vivo = false;
+    };
+  }, [materia]);
+
+  if (!recursos?.length) return null;
+  return (
+    <section id="onde-estudar" aria-labelledby="titulo-onde-estudar" className="scroll-mt-20 space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id="titulo-onde-estudar" className="font-display text-lg font-bold">
+          Onde estudar
+        </h2>
+        <NavLink
+          to={`/onde-estudar?materia=${encodeURIComponent(materia)}`}
+          className="text-sm font-semibold text-brand underline-offset-2 hover:underline"
+        >
+          Ver todos os materiais
+        </NavLink>
+      </div>
+      <p className="text-sm text-muted text-pretty">
+        Cursos, videoaulas e exercícios gratuitos de instituições públicas e sem fins lucrativos, conferidos pela
+        equipe do OpENEM. Abrem no site da instituição.
+      </p>
+      <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label={`Materiais gratuitos de ${materia}`}>
+        {recursos.map((r) => (
+          <li key={r.id}>
+            <MaterialCard recurso={r} discreto />
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

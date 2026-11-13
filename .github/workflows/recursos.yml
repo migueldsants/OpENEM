@@ -1,0 +1,34 @@
+name: Links do Onde estudar
+
+# Abre toda semana os links da tela "Onde estudar" (discussão #126) e fica
+# vermelho quando um deles quebrou, mudou de dono, foi para login ou
+# pagamento, ou quando a conferência de algum venceu. O GitHub avisa quem
+# mantém o projeto quando um workflow agendado falha. Fora do CI dos PRs de
+# propósito: um site fora do ar não pode travar o trabalho de ninguém.
+on:
+  schedule:
+    - cron: '17 9 * * 1' # segunda-feira, 06:17 em Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Verificar links
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openem_backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: openem_backend/package-lock.json
+
+      - run: npm ci --ignore-scripts
+
+      - run: npm run recursos:verificar

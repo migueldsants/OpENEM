@@ -7,9 +7,14 @@ A tela **Matérias** responde três perguntas: o que cai em cada matéria, quant
 
 ## O que cai em cada matéria
 
-As matérias aparecem agrupadas por área, na ordem dos dias de prova. Cada linha mostra quantas questões da matéria caem, em média, por prova, e quanto você domina dela. Matemática tem 45 questões por prova; as outras áreas dividem as suas 45 entre as matérias, e essa divisão muda um pouco de ano para ano.
+A tela é um mapa, como o de fases de um jogo: um caminho passa por um ícone de cada matéria, área por área, na ordem dos dias de prova, e dentro de cada área da matéria que mais cai para a que menos cai.
 
-Toque numa matéria para abrir a trilha dela. A **Redação** aparece em Linguagens e leva aos [temas de redação](/docs/alunos/redacoes/), porque ela é um texto, não questões de assunto.
+- O **tamanho do ícone** diz quanto a matéria cai: quanto maior, mais questões por prova. Matemática tem 45 questões por prova; as outras áreas dividem as suas 45 entre as matérias, e essa divisão muda um pouco de ano para ano.
+- O **anel** em volta do ícone enche conforme você domina a matéria, e embaixo do nome aparecem a porcentagem e a etapa em que você está.
+- O marcador **Próximo passo** (ou **Comece aqui**, se você ainda não respondeu nada) fica na matéria que mais rende estudar agora.
+- Trilha concluída ganha um selo no ícone.
+
+Toque numa matéria para abrir a trilha dela. A **Redação** fecha Linguagens no caminho e leva aos [temas de redação](/docs/alunos/redacoes/), porque ela é um texto, não questões de assunto.
 
 Os números saem das **provas regulares** mais recentes que estão no banco (hoje, de 2016 a 2025). Reaplicação, PPL e as outras aplicações ficam fora, para a mesma prova não contar duas vezes. Em Língua Estrangeira conta só o idioma escolhido no seu perfil.
 
@@ -23,7 +28,7 @@ Em cada assunto, o domínio é o seu acerto nas **últimas 10 respostas** daquel
 - **Praticando** é o assunto que você já respondeu, mas ainda não domina.
 - **Dominado** pede pelo menos 5 respostas e 70% de acerto nas últimas 10.
 
-A porcentagem da matéria pesa cada assunto pelo quanto ele cai: dominar um assunto que aparece em toda prova vale mais do que dominar um que quase nunca aparece. A porcentagem geral, no topo da tela, aparece depois de 30 respostas em questões com assunto. Antes disso, o topo mostra **Por onde começar**, com as etapas que mais rendem para você agora.
+A porcentagem da matéria pesa cada assunto pelo quanto ele cai: dominar um assunto que aparece em toda prova vale mais do que dominar um que quase nunca aparece. A porcentagem geral, no topo da tela, aparece depois de 30 respostas em questões com assunto.
 
 ## A trilha de uma matéria
 
@@ -42,6 +47,10 @@ A etapa fica concluída quando todos os assuntos dela chegam a **dominado**. No 
 ## O que cai, assunto por assunto
 
 A aba **O que cai** lista os assuntos da matéria do que mais cai para o que menos cai. Cada linha mostra a média por prova, uma barra para comparar com os outros assuntos, uma tira com uma casa por prova (preenchida quando o assunto caiu naquele ano) e o seu acerto nas últimas respostas.
+
+## Onde estudar a matéria
+
+No fim da página de cada matéria ficam os materiais gratuitos dela: cursos, videoaulas, livros e exercícios de instituições públicas e sem fins lucrativos, os mesmos do [Onde estudar](/docs/alunos/onde-estudar/). O botão **Onde estudar**, no alto da página, leva até eles, e **Ver todos os materiais** abre a tela completa já filtrada pela matéria. Cada link abre no site da instituição, numa aba nova.
 
 ## Na Home e no Desempenho
 

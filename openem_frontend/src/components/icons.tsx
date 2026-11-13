@@ -95,6 +95,14 @@ import {
   User,
   Warning,
   X,
+  MathOperations,
+  Magnet,
+  Brain,
+  UsersThree,
+  BookOpenText,
+  Feather,
+  Translate,
+  PaintBrush,
 } from '@phosphor-icons/react';
 import { forwardRef, type ReactElement } from 'react';
 
@@ -262,3 +270,13 @@ const TabelaPeriodica = forwardRef<SVGSVGElement, IconProps>((props, ref) => (
 )) as PhosphorIcon;
 TabelaPeriodica.displayName = 'TabelaPeriodica';
 export const IconTabelaPeriodica = shim(TabelaPeriodica, 'duotone');
+
+// Matérias (mapa de Matérias): um ícone por matéria, em duotone.
+export const IconMathOperations = shim(MathOperations, 'duotone');
+export const IconMagnet = shim(Magnet, 'duotone');
+export const IconBrain = shim(Brain, 'duotone');
+export const IconUsersThree = shim(UsersThree, 'duotone');
+export const IconBookOpenText = shim(BookOpenText, 'duotone');
+export const IconFeather = shim(Feather, 'duotone');
+export const IconTranslate = shim(Translate, 'duotone');
+export const IconPaintBrush = shim(PaintBrush, 'duotone');

@@ -122,6 +122,12 @@ Details in [Artificial intelligence](/docs/en/hospedar/ia/).
 
 The queue covers both the simulation booklet and the formula booklet. Raise `PDF_CONCURRENCY` only if the server has spare cores.
 
+## Where to study
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `STUDY_RESOURCES_BLOCKED` | none | Ids of materials on the **Onde estudar** (Where to study) screen that leave the list right away, without waiting for a new version, separated by commas (for example `khan-em-algebra-1,rae-diccionario`). Use it to honor a removal request or take down a broken link; the ids are in `openem_backend/src/study-resources/study-resources-catalog.ts`. It applies when the backend restarts, and the API logs a warning if it names an id that does not exist. |
+
 ## Import and data
 
 | Variable | Default | What it does |

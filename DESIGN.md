@@ -215,6 +215,23 @@ components:
     textColor: "{colors.fg}"
     rounded: "{rounded.full}"
     padding: "0.05rem 0.45rem"
+  ficha-mapa:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.full}"
+    size: "56px"
+  ficha-mapa-media:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.full}"
+    size: "68px"
+  ficha-mapa-grande:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.full}"
+    size: "80px"
+  marcador-proximo-passo:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.brand-ink}"
+    rounded: "{rounded.full}"
+    padding: "0.25rem 0.625rem"
 ---
 
 # Design System: OpENEM
@@ -314,6 +331,8 @@ A landing centraliza em 1200px com 16px de margem (24px a partir de `sm`); o cab
 
 A tabela periódica é a grade da IUPAC no tamanho em que se lê, dentro de um `.card-raised`: 18 colunas medidas pela largura do cartão (container de tamanho inline), casas de no mínimo 46px (60px com zoom), altura 1,14× a largura e 3px de vão; os números dos grupos (IUPAC e antigo) em cima, os períodos à esquerda e as séries f embaixo, depois de um respiro de 0,75rem. Abaixo do mínimo, o cartão rola na horizontal em vez de encolher; no celular há também a lista, uma linha por elemento. O vão entre o H e o He (colunas 3 a 12, linhas 1 a 3) vira o painel do elemento em foco e da legenda, posicionado pela mesma geometria.
 
+O mapa de Matérias mede a própria largura (centralizado, até 896px, `max-w-4xl`) e põe as paradas em serpentina: 2 por volta abaixo de 520px, 3 abaixo de 860px e 4 acima, com voltas de 168px (184px a partir de 520px) e um desvio pequeno e fixo em cada parada, para o caminho não sair em grade. Em cada virada, o caminho passa por um ponto 84px fora da última ficha da volta, para contornar a ficha e o nome em vez de descer por cima deles. A geometria é pura e testada (`src/lib/mapa-materias.ts`).
+
 ## Elevation & Depth
 
 Híbrido, quase plano. A separação vem primeiro de tom (`bg` → `surface`) e da borda de 1 px em `line`; sombra é um realce, não a estrutura. Cada tema define a sua `--shadow` e o seu `--glow`; no OLED e nas famílias escuras de preto puro (Eclipse, Abissal, Brasa) a sombra vira contorno (`0 0 0 1px var(--line)`), e no Contraste é anel sólido.
@@ -364,6 +383,18 @@ Marcador estabelecido dos itens de lista (Questões, Revisão, Simulados, Favori
 
 ### Faixa da semana (signature, Desempenho)
 Sete células em grade, 6 a 8px de gap, 36px de altura (24px na versão compacta das semanas passadas), raio 8px, número do dia em mono. Estudado: preenchido na marca. Hoje: contorno de 2px na marca por dentro (hoje e estudado: preenchido com anel externo afastado 2px). Sem estudo: `surface-2` e `muted`. Futuro: borda tracejada em `line`. A barra de meta embaixo tem 6px, em pílula, e enche uma vez ao aparecer (`.barra-enche`, 700ms, `cubic-bezier(0.23,1,0.32,1)`, via `@starting-style`).
+
+### Mapa de matérias (signature, Matérias)
+Um mapa de fases sem fundo próprio: um caminho no chão serpenteia pela tela e passa por uma ficha de cada matéria, na ordem das áreas da prova (Linguagens com a Redação no fim, Humanas, Natureza, Matemática; dentro da área, da matéria que mais cai para a que menos cai). Nenhum painel, legenda ou cartão por cima do mapa.
+- **Caminho:** um traço SVG em camadas, com pontas e juntas redondas: sombra no chão em `fg` a 5% (36px, 5px abaixo), borda em `line` (30px), leito em `surface-2` (24px) e pegadas em `muted` a 45% (pontos de 3,5px a cada 14px). Entra e sai da tela como trilha que continua.
+- **Ficha:** círculo em `surface` com borda `line`; dentro, o ícone Phosphor duotone da matéria (`IconeDaMateria`) na cor da área sobre o tom suave da área (12%). O tamanho é a incidência: 56px abaixo de 8 questões por prova, 68px de 8 a 20, 80px a partir de 20. Embaixo, uma sombra elíptica de 56 × 12px em `fg` a 10%.
+- **Domínio:** anel de 4px na marca sobre um anel em `line`, 5px para fora da ficha, só depois que o aluno começou a matéria; a 0% o traço da marca não aparece (a ponta arredondada viraria um ponto rosa solto). Trilha concluída: selo redondo de 24px na marca com o check, no canto de cima, com anel de 2px em `surface`.
+- **Nome:** Bricolage 700 a 0,875rem e, embaixo, a linha de estado em 0,75rem `muted` ("56% · etapa 2 de 6", números em mono), cada um numa placa em `bg` com raio 6px: onde o caminho passa por baixo, a placa o recorta e o texto continua legível; no resto, ela some.
+- **Próximo passo:** pílula na marca com `brand-ink` em 0,75rem 600, `--shadow` e um bico de 4px, em cima da ficha da matéria sugerida ("Comece aqui" para quem ainda não respondeu nada). É recomendação e ação, por isso rosa (The Rose Means Act Rule).
+- **Movimento** (`mapa-materias.css`): o caminho se desenha uma vez por uma máscara SVG (1600ms `--ease-movimento`); as fichas sobem 12px de uma escala de 0,9 na ordem do caminho (520ms `--ease-saida`, 70ms entre elas); com ponteiro fino, o hover ergue a ficha 5px com `--shadow` e encolhe a sombra no chão; pressionar desce 1px com escala 0,95 em 120ms; o marcador quica 6px a cada 2,6s. Foco: contorno de 2px na marca, afastado 3px, na ficha. Com movimento reduzido, nada anda.
+
+### Cartão de material (Onde estudar e página da matéria)
+Um `.card` com título em Bricolage 700, instituição em 0,75rem `muted`, descrição, os tipos em `.chip` e o idioma num chip neutro com o ícone de tradução e texto `fg` 600 (idioma é conteúdo, não seleção: sem o rosa). No rodapé, depois de um `border-t` em `line`, o endereço em mono (quebra só depois de um ponto) e a data da conferência, e o botão "Abrir no site" com a seta; a linha quebra em vez de empurrar, e o botão fica sempre à direita. O botão é primário no Onde estudar e ghost (`discreto`) na página da matéria, onde a ação principal é a trilha.
 
 ### Caderno da hero (signature, landing)
 Um caderno de prova numa folha `.card .card-raised` de 1,25rem, com duas folhas neutras (`surface-2` e `surface`, borda `line`) giradas 3° e 1,4° atrás dele. A capa é a faixa da marca com "Caderno de prova" em mono a 0,75rem e "ENEM <ano>" em Bricolage 800, e uma pílula com o formato ("Prova única" ou "Dois dias"); a capa é rosa porque é o ano escolhido. Embaixo: o total de questões, cada dia com as suas áreas e a redação, as áreas em `.chip` com o ponto na cor da área ("Interdisciplinar" até 2008) e, depois de um traço tracejado, "Tema da redação" em mono na cor `red` e o tema regular do ano em Bricolage 700, tirado do catálogo do app (2008 diz que o caderno não tem frase-tema). As regras de formato espelham o importador (`src/landing/prova.ts`). Abaixo do caderno, os 28 anos em grade de 7 colunas, botões de 44px em mono; até 2008 o fundo é `surface-2`, o ano escolhido é preenchido na marca com `--shadow`. Trocar de ano remonta a folha com a `.troca` (opacidade 0, escala 0,985 e desfoque de 6px em 260ms `--ease-saida`; sem escala e desfoque com movimento reduzido).

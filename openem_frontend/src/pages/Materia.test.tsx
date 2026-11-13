@@ -6,7 +6,7 @@ import { api, HttpError, type TrackDetail, type TrackTopic } from '../api';
 
 vi.mock('../api', async (importOriginal) => {
   const real = await importOriginal<typeof import('../api')>();
-  return { ...real, api: { track: vi.fn(), startSimulation: vi.fn() } };
+  return { ...real, api: { track: vi.fn(), startSimulation: vi.fn(), studyResources: vi.fn() } };
 });
 vi.mock('../auth', () => ({ useAuth: () => ({ me: { id: 'u1' } }) }));
 
@@ -108,6 +108,8 @@ describe('Matéria (trilha)', () => {
   beforeEach(() => {
     vi.mocked(api.track).mockReset();
     vi.mocked(api.startSimulation).mockReset();
+    vi.mocked(api.studyResources).mockReset();
+    vi.mocked(api.studyResources).mockResolvedValue({ resources: [], maxCheckAgeDays: 365 });
     localStorage.clear();
   });
 
@@ -179,5 +181,34 @@ describe('Matéria (trilha)', () => {
     renderizar('/materias/nao-existe');
     expect(await screen.findByRole('heading', { name: 'Matéria não encontrada' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Matérias' })).toHaveAttribute('href', '/materias');
+  });
+  it('mostra os materiais gratuitos da matéria e leva ao Onde estudar', async () => {
+    const recurso = {
+      id: 'khan',
+      title: 'Matemática EM: Álgebra 1',
+      url: 'https://pt.khanacademy.org/math/em-mat-algebra',
+      types: ['curso' as const],
+      subjects: ['Matemática'],
+      topics: [],
+      description: 'Curso com vídeos e exercícios sobre funções.',
+      language: 'pt' as const,
+      checkedAt: '2026-11-13',
+      provider: { id: 'khan-academy', name: 'Khan Academy', kind: 'sem-fins-lucrativos' as const, about: 'ONG.' },
+    };
+    vi.mocked(api.studyResources).mockResolvedValue({
+      resources: [recurso, { ...recurso, id: 'bbc', title: 'BBC Learning English', subjects: ['Língua Estrangeira'] }],
+      maxCheckAgeDays: 365,
+    });
+    vi.mocked(api.track).mockResolvedValue(trilha());
+    renderizar();
+    const secao = (await screen.findByRole('heading', { name: 'Onde estudar' })).closest('section')!;
+    expect(within(secao).getByRole('heading', { name: 'Matemática EM: Álgebra 1' })).toBeInTheDocument();
+    expect(within(secao).queryByRole('heading', { name: 'BBC Learning English' })).not.toBeInTheDocument();
+    expect(within(secao).getByRole('link', { name: /Abrir Matemática EM/ })).toHaveAttribute('rel', 'noopener noreferrer nofollow');
+    expect(within(secao).getByRole('link', { name: 'Ver todos os materiais' })).toHaveAttribute(
+      'href',
+      '/onde-estudar?materia=Matem%C3%A1tica',
+    );
+    expect(screen.getByRole('link', { name: 'Onde estudar' })).toHaveAttribute('href', '#onde-estudar');
   });
 });

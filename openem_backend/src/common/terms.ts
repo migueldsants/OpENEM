@@ -5,4 +5,4 @@
  * data aqui e no cabeçalho `atualizado` de cada página. O teste do site
  * (`src/legal/documentos.test.ts`) cobra que as duas batam.
  */
-export const TERMS_VERSION = '2026-10-25';
+export const TERMS_VERSION = '2026-11-13';
