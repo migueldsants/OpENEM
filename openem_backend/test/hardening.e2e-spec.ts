@@ -305,9 +305,10 @@ describe('Hardening (e2e)', () => {
 
   describe('rate limiting atrás de proxy (TRUST_PROXY)', () => {
     // Cada teste sobe um app inteiro e faz mais de 30 logins: no runner do CI
-    // isso já passou dos 5 s padrão do Jest, sem nada estar errado.
-    beforeAll(() => jest.setTimeout(30_000));
-    afterAll(() => jest.setTimeout(5_000));
+    // isso já passou dos 5 s padrão do Jest, sem nada estar errado. O prazo vai
+    // em cada `it`: `jest.setTimeout` dentro de um `beforeAll` não chega aos
+    // testes do bloco, que continuavam com 5 s.
+    const PRAZO_MS = 30_000;
 
     // Instância dedicada por teste: cada app tem os próprios contadores.
     async function appDedicada(trustProxy?: string) {
@@ -346,56 +347,68 @@ describe('Hardening (e2e)', () => {
       }
     }
 
-    it('com o proxy confiável, o atacante não bloqueia o login dos outros', async () => {
-      const dedicada = await appDedicada('1');
-      try {
-        await esgotaLogin(dedicada, '203.0.113.10');
-        // O próprio atacante fica bloqueado...
-        await request(dedicada.getHttpServer())
-          .post('/api/v1/auth/login')
-          .set('X-Forwarded-For', '203.0.113.10')
-          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
-          .expect(429);
-        // ...e o aluno, em outro IP, entra normalmente.
-        const aluno = await request(dedicada.getHttpServer())
-          .post('/api/v1/auth/login')
-          .set('X-Forwarded-For', '198.51.100.20')
-          .send({ email: emailA, password: 'senhaForte123' })
-          .expect(200);
-        expect(aluno.body.accessToken).toBeDefined();
-      } finally {
-        await dedicada.close();
-      }
-    });
+    it(
+      'com o proxy confiável, o atacante não bloqueia o login dos outros',
+      async () => {
+        const dedicada = await appDedicada('1');
+        try {
+          await esgotaLogin(dedicada, '203.0.113.10');
+          // O próprio atacante fica bloqueado...
+          await request(dedicada.getHttpServer())
+            .post('/api/v1/auth/login')
+            .set('X-Forwarded-For', '203.0.113.10')
+            .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+            .expect(429);
+          // ...e o aluno, em outro IP, entra normalmente.
+          const aluno = await request(dedicada.getHttpServer())
+            .post('/api/v1/auth/login')
+            .set('X-Forwarded-For', '198.51.100.20')
+            .send({ email: emailA, password: 'senhaForte123' })
+            .expect(200);
+          expect(aluno.body.accessToken).toBeDefined();
+        } finally {
+          await dedicada.close();
+        }
+      },
+      PRAZO_MS,
+    );
 
-    it('vale o endereço que o proxy acrescenta, não o que o cliente escreve', async () => {
-      const dedicada = await appDedicada('1');
-      try {
-        // O nginx acrescenta o IP real ao fim da lista; o início é do cliente.
-        await esgotaLogin(dedicada, '1.1.1.1, 203.0.113.10');
-        await request(dedicada.getHttpServer())
-          .post('/api/v1/auth/login')
-          .set('X-Forwarded-For', '9.9.9.9, 203.0.113.10')
-          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
-          .expect(429);
-      } finally {
-        await dedicada.close();
-      }
-    });
+    it(
+      'vale o endereço que o proxy acrescenta, não o que o cliente escreve',
+      async () => {
+        const dedicada = await appDedicada('1');
+        try {
+          // O nginx acrescenta o IP real ao fim da lista; o início é do cliente.
+          await esgotaLogin(dedicada, '1.1.1.1, 203.0.113.10');
+          await request(dedicada.getHttpServer())
+            .post('/api/v1/auth/login')
+            .set('X-Forwarded-For', '9.9.9.9, 203.0.113.10')
+            .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+            .expect(429);
+        } finally {
+          await dedicada.close();
+        }
+      },
+      PRAZO_MS,
+    );
 
-    it('sem TRUST_PROXY, X-Forwarded-For forjado não escapa do limite', async () => {
-      const dedicada = await appDedicada(undefined);
-      try {
-        await esgotaLogin(dedicada, '203.0.113.10');
-        await request(dedicada.getHttpServer())
-          .post('/api/v1/auth/login')
-          .set('X-Forwarded-For', '198.51.100.20')
-          .send({ email: 'nao-existe@exemplo.com', password: 'x' })
-          .expect(429);
-      } finally {
-        await dedicada.close();
-      }
-    });
+    it(
+      'sem TRUST_PROXY, X-Forwarded-For forjado não escapa do limite',
+      async () => {
+        const dedicada = await appDedicada(undefined);
+        try {
+          await esgotaLogin(dedicada, '203.0.113.10');
+          await request(dedicada.getHttpServer())
+            .post('/api/v1/auth/login')
+            .set('X-Forwarded-For', '198.51.100.20')
+            .send({ email: 'nao-existe@exemplo.com', password: 'x' })
+            .expect(429);
+        } finally {
+          await dedicada.close();
+        }
+      },
+      PRAZO_MS,
+    );
   });
 
   describe('voto em deck de flashcards', () => {
